@@ -19,11 +19,9 @@ export interface Produce {
 
 export interface Shift {
   id: string;
-  date: string;
-  time: string;
-  squad: string;
-  location: string;
-  status: "scheduled" | "available" | "completed" | "missed";
+  startTime: string;
+  endTime: string;
+  shiftName: string;
 }
 
 export interface AuthSession {

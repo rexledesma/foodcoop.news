@@ -129,34 +129,13 @@ export function ShiftList({ isAuthenticated }: ShiftListProps) {
             key={shift.id}
             className="bg-white dark:bg-zinc-800 rounded-xl p-4 border border-zinc-200 dark:border-zinc-700"
           >
-            <div className="flex items-start justify-between">
-              <div>
-                <p className="font-semibold text-zinc-900 dark:text-zinc-100">
-                  {shift.date}
-                </p>
-                <p className="text-sm text-zinc-500 dark:text-zinc-400">
-                  {shift.time}
-                </p>
-                {shift.squad && (
-                  <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">
-                    {shift.squad}
-                  </p>
-                )}
-                {shift.location && (
-                  <p className="text-xs text-zinc-400 mt-1">{shift.location}</p>
-                )}
-              </div>
-              <span
-                className={`px-2 py-1 rounded text-xs font-medium ${
-                  shift.status === "scheduled"
-                    ? "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400"
-                    : shift.status === "completed"
-                      ? "bg-zinc-100 dark:bg-zinc-700 text-zinc-600 dark:text-zinc-400"
-                      : "bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400"
-                }`}
-              >
-                {shift.status}
-              </span>
+            <div>
+              <p className="font-semibold text-zinc-900 dark:text-zinc-100">
+                {shift.shiftName}
+              </p>
+              <p className="text-sm text-zinc-500 dark:text-zinc-400">
+                {shift.startTime} - {shift.endTime.split(", ")[1]}
+              </p>
             </div>
           </div>
         ))}

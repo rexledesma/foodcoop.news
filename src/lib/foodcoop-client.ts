@@ -340,23 +340,54 @@ function parseShifts(html: string): Shift[] {
   const $ = cheerio.load(html);
   const shifts: Shift[] = [];
 
-  // Parse shift table or list - adjust selectors based on actual structure
-  $(".shift, .workslot, tr[data-shift]").each((index, element) => {
-    const $el = $(element);
+  // Find the "Scheduled Shifts" section by locating the category label
+  // then traverse to find the shiftcard elements within that section
+  $(".category").each((_, categoryEl) => {
+    const categoryText = $(categoryEl).text().trim();
+    if (categoryText === "Scheduled Shifts:") {
+      // Get the parent row and find the sibling column with shift cards
+      const $row = $(categoryEl).closest(".row");
+      const $shiftContainer = $row.find(".col-12.col-sm-9, .col-12.col-md-10").first();
 
-    const date = $el.find(".date, td:nth-child(1)").text().trim();
-    const time = $el.find(".time, td:nth-child(2)").text().trim();
-    const squad = $el.find(".squad, td:nth-child(3)").text().trim();
-    const location = $el.find(".location, td:nth-child(4)").text().trim();
+      $shiftContainer.find(".shiftcard").each((index, shiftEl) => {
+        const $shift = $(shiftEl);
 
-    if (date) {
-      shifts.push({
-        id: `shift-${index}`,
-        date,
-        time,
-        squad,
-        location,
-        status: "scheduled",
+        // Extract date components from datecard
+        const month = $shift.find(".datecard .month").text().trim();
+        const day = $shift.find(".datecard .date").text().trim();
+
+        // Extract time range from timecard (e.g., "8:00am - 10:45am")
+        const timeText = $shift.find(".timecard").text().trim().replace(/\s+/g, " ");
+        const timeMatch = timeText.match(/(\d+:\d+[ap]m)\s*-\s*(\d+:\d+[ap]m)/i);
+
+        let startTime = "";
+        let endTime = "";
+        if (timeMatch && month && day) {
+          // Create ISO-ish date strings: "February 9, 8:00am"
+          startTime = `${month} ${day}, ${timeMatch[1]}`;
+          endTime = `${month} ${day}, ${timeMatch[2]}`;
+        }
+
+        // Extract shift name - it's the text after the timecard, before "View in"
+        const $infoCol = $shift.find('[style*="line-height"]');
+        let shiftName = "";
+        if ($infoCol.length) {
+          // Clone and remove elements we don't want
+          const $clone = $infoCol.clone();
+          $clone.find(".timecard, .small, b").remove();
+          const text = $clone.text().trim().replace(/\s+/g, " ");
+          // Clean up: remove leading/trailing punctuation and "Team Shift" labels
+          shiftName = text.replace(/^[\s♻️-]+/, "").replace(/[\s-]+$/, "").trim();
+        }
+
+        if (startTime && shiftName) {
+          shifts.push({
+            id: `shift-${index}`,
+            startTime,
+            endTime,
+            shiftName,
+          });
+        }
       });
     }
   });
