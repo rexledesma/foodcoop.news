@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import type { Shift } from "@/lib/types";
+import { AddToCalendarButton } from "./AddToCalendarButton";
 
 interface ShiftListProps {
   isAuthenticated: boolean;
@@ -129,13 +130,16 @@ export function ShiftList({ isAuthenticated }: ShiftListProps) {
             key={shift.id}
             className="bg-white dark:bg-zinc-800 rounded-xl p-4 border border-zinc-200 dark:border-zinc-700"
           >
-            <div>
-              <p className="font-semibold text-zinc-900 dark:text-zinc-100">
-                {shift.shiftName}
-              </p>
-              <p className="text-sm text-zinc-500 dark:text-zinc-400">
-                {shift.startTime} - {shift.endTime.split(", ")[1]}
-              </p>
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="font-semibold text-zinc-900 dark:text-zinc-100">
+                  {shift.shiftName}
+                </p>
+                <p className="text-sm text-zinc-500 dark:text-zinc-400">
+                  {shift.startTime} - {shift.endTime.split(", ")[1]}
+                </p>
+              </div>
+              <AddToCalendarButton shift={shift} />
             </div>
           </div>
         ))}
