@@ -14,11 +14,13 @@
   },
   "dependencies": {
     "@opennextjs/cloudflare": "^1.14.8",
+    "@zxing/library": "^0.21.3",
     "cheerio": "^1.1.2",
     "next": "16.1.1",
     "pdf417-generator": "^1.0.5",
     "react": "19.2.3",
     "react-dom": "19.2.3",
+    "sharp": "^0.34.5",
     "wrangler": "^4.59.1"
   },
   "devDependencies": {

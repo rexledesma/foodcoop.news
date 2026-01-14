@@ -3,6 +3,7 @@ export interface Member {
   name: string;
   status: "active" | "alert" | "suspended" | "unknown";
   memberNumber: string;
+  barcodeValue?: string;
   householdId?: string;
 }
 

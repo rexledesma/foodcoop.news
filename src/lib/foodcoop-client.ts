@@ -1,7 +1,75 @@
 import * as cheerio from "cheerio";
+import sharp from "sharp";
+import {
+  BinaryBitmap,
+  HybridBinarizer,
+  PDF417Reader,
+  RGBLuminanceSource,
+} from "@zxing/library";
 import type { AuthSession, Member, Shift } from "./types";
 
 const MEMBER_SERVICES_URL = "https://members.foodcoop.com/services";
+
+async function fetchAndDecodeBarcode(
+  cookies: string,
+  memberId: string
+): Promise<string | null> {
+  try {
+    // Fetch the barcode image from PSFC
+    const response = await fetch(
+      `${MEMBER_SERVICES_URL}/member_barcode/${memberId}/`,
+      {
+        headers: {
+          "User-Agent":
+            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+          Cookie: cookies,
+        },
+      }
+    );
+
+    if (!response.ok) {
+      console.error("Failed to fetch barcode image:", response.status);
+      return null;
+    }
+
+    const imageBuffer = Buffer.from(await response.arrayBuffer());
+
+    // Use sharp to get raw pixel data
+    const { data, info } = await sharp(imageBuffer)
+      .ensureAlpha()
+      .raw()
+      .toBuffer({ resolveWithObject: true });
+
+    // Compute luminance values from RGBA
+    // RGBLuminanceSource expects pre-computed luminance values (1 byte per pixel)
+    // Luminance formula: L = 0.299*R + 0.587*G + 0.114*B
+    const luminanceData = new Uint8ClampedArray(info.width * info.height);
+    for (let i = 0; i < info.width * info.height; i++) {
+      const r = data[i * 4];
+      const g = data[i * 4 + 1];
+      const b = data[i * 4 + 2];
+      luminanceData[i] = Math.round(0.299 * r + 0.587 * g + 0.114 * b);
+    }
+
+    // Create luminance source and binary bitmap
+    const luminanceSource = new RGBLuminanceSource(
+      luminanceData,
+      info.width,
+      info.height
+    );
+    const binaryBitmap = new BinaryBitmap(new HybridBinarizer(luminanceSource));
+
+    // Decode the PDF417 barcode
+    const reader = new PDF417Reader();
+    const result = reader.decode(binaryBitmap);
+
+    console.log("Decoded barcode value:", result.getText());
+    return result.getText();
+  } catch (error) {
+    console.error("Error decoding barcode:", error);
+    return null;
+  }
+}
 
 interface LoginResult {
   success: boolean;
@@ -133,6 +201,18 @@ export async function login(
       console.log("Home page length:", homeHtml.length);
       const member = parseMemberInfo(homeHtml);
       console.log("Parsed member:", JSON.stringify(member));
+
+      // Decode the barcode to get the zero-padded member ID
+      if (member.memberNumber) {
+        const barcodeValue = await fetchAndDecodeBarcode(
+          allCookies,
+          member.memberNumber
+        );
+        if (barcodeValue) {
+          member.barcodeValue = barcodeValue;
+          console.log("Decoded barcode value:", barcodeValue);
+        }
+      }
 
       return {
         success: true,

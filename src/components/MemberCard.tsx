@@ -26,11 +26,14 @@ export function MemberCard({ member }: MemberCardProps) {
     unknown: "Unknown",
   };
 
+  // Use decoded barcode value (zero-padded) if available, otherwise fall back to member number
+  const barcodeData = member.barcodeValue || member.memberNumber;
+
   useEffect(() => {
-    if (canvasRef.current && member.memberNumber && showBarcode) {
-      PDF417.draw(member.memberNumber, canvasRef.current, 3, -1, 2);
+    if (canvasRef.current && barcodeData && showBarcode) {
+      PDF417.draw(barcodeData, canvasRef.current, 3, -1, 2);
     }
-  }, [member.memberNumber, showBarcode]);
+  }, [barcodeData, showBarcode]);
 
   return (
     <div className="w-full max-w-sm mx-auto">
@@ -67,11 +70,11 @@ export function MemberCard({ member }: MemberCardProps) {
           className="bg-white p-4 cursor-pointer"
           onClick={() => setShowBarcode(!showBarcode)}
         >
-          {showBarcode && member.memberNumber ? (
+          {showBarcode && barcodeData ? (
             <div className="flex flex-col items-center">
               <canvas ref={canvasRef} className="max-w-full" />
               <p className="text-zinc-600 text-sm font-mono mt-2">
-                {member.memberNumber}
+                {barcodeData}
               </p>
             </div>
           ) : (
