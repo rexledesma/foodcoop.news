@@ -1,0 +1,34 @@
+{
+  "name": "foodcoop.tech",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev --turbopack",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint",
+    "build:worker": "opennextjs-cloudflare build",
+    "dev:worker": "wrangler dev --port 8771",
+    "preview": "pnpm build:worker && pnpm dev:worker",
+    "deploy": "pnpm build:worker && wrangler deploy"
+  },
+  "dependencies": {
+    "@opennextjs/cloudflare": "^1.14.8",
+    "cheerio": "^1.1.2",
+    "next": "16.1.1",
+    "pdf417-generator": "^1.0.5",
+    "react": "19.2.3",
+    "react-dom": "19.2.3",
+    "wrangler": "^4.59.1"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "16.1.1",
+    "tailwindcss": "^4",
+    "typescript": "^5"
+  }
+}
