@@ -122,7 +122,7 @@ export function ProduceList() {
         {filteredProduce.map((item) => (
           <div
             key={item.id}
-            className="bg-white dark:bg-zinc-800 rounded-xl p-4 border border-zinc-200 dark:border-zinc-700"
+            className="bg-white dark:bg-zinc-800 rounded-xl p-4 border border-zinc-200 dark:border-zinc-700 overflow-hidden"
           >
             <div className="flex items-start justify-between gap-3">
               <div className="flex-1 min-w-0">
