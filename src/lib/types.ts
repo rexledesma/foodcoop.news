@@ -49,3 +49,11 @@ export interface FeedPost {
   repostCount: number;
   replyCount: number;
 }
+
+export interface GazetteArticle {
+  id: string;
+  title: string;
+  link: string;
+  pubDate: string;
+  image?: string;
+}

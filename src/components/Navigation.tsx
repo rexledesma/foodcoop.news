@@ -8,7 +8,7 @@ const navItems = [
   { href: "/", label: "Home", icon: "home" },
   { href: "/produce", label: "Produce", icon: "leaf" },
   { href: "/shifts", label: "Shifts", icon: "calendar" },
-  { href: "/feed", label: "Discover", icon: "compass" },
+  { href: "/discover", label: "Discover", icon: "compass" },
 ];
 
 function NavIcon({ icon }: { icon: string }) {
