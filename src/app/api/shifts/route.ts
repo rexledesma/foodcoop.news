@@ -31,6 +31,15 @@ export async function GET() {
     });
   } catch (error) {
     console.error("Shifts API error:", error);
+
+    // Check if the error is due to session expiration
+    if (error instanceof Error && error.message === "Session expired") {
+      return NextResponse.json(
+        { error: "Session expired" },
+        { status: 401 }
+      );
+    }
+
     return NextResponse.json(
       { error: "Failed to fetch shifts" },
       { status: 500 }

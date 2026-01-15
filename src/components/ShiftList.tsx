@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import type { Shift } from "@/lib/types";
 import { AddToCalendarButton } from "./AddToCalendarButton";
+import { LoginForm } from "./LoginForm";
 
 interface ShiftListProps {
   isAuthenticated: boolean;
@@ -12,6 +13,7 @@ export function ShiftList({ isAuthenticated }: ShiftListProps) {
   const [shifts, setShifts] = useState<Shift[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [sessionExpired, setSessionExpired] = useState(false);
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -24,7 +26,15 @@ export function ShiftList({ isAuthenticated }: ShiftListProps) {
   const fetchShifts = async () => {
     try {
       setLoading(true);
+      setError("");
       const response = await fetch("/api/shifts");
+
+      if (response.status === 401) {
+        setSessionExpired(true);
+        setLoading(false);
+        return;
+      }
+
       const data = await response.json();
 
       if (response.ok) {
@@ -67,6 +77,22 @@ export function ShiftList({ isAuthenticated }: ShiftListProps) {
     return (
       <div className="flex items-center justify-center py-12">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600"></div>
+      </div>
+    );
+  }
+
+  if (sessionExpired) {
+    return (
+      <div className="space-y-6">
+        <div className="bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 px-4 py-3 rounded-xl text-sm text-center">
+          Your session has expired. Please sign in again to view your shifts.
+        </div>
+        <LoginForm
+          onSuccess={() => {
+            setSessionExpired(false);
+            fetchShifts();
+          }}
+        />
       </div>
     );
   }

@@ -315,25 +315,27 @@ function parseMemberInfo(html: string): Member {
 }
 
 export async function fetchShifts(cookies: string): Promise<Shift[]> {
-  try {
-    const response = await fetch(`${MEMBER_SERVICES_URL}/home`, {
-      headers: {
-        "User-Agent":
-          "Mozilla/5.0 (compatible; FoodCoopTech/1.0; +https://foodcoop.tech)",
-        Cookie: cookies,
-      },
-    });
+  const response = await fetch(`${MEMBER_SERVICES_URL}/home`, {
+    headers: {
+      "User-Agent":
+        "Mozilla/5.0 (compatible; FoodCoopTech/1.0; +https://foodcoop.tech)",
+      Cookie: cookies,
+    },
+  });
 
-    if (!response.ok) {
-      throw new Error("Failed to fetch shifts");
-    }
-
-    const html = await response.text();
-    return parseShifts(html);
-  } catch (error) {
-    console.error("Error fetching shifts:", error);
-    return [];
+  if (!response.ok) {
+    throw new Error("Failed to fetch shifts");
   }
+
+  const html = await response.text();
+
+  // Check if we got redirected to login page (session expired)
+  // The login page contains a CSRF token input field
+  if (html.includes('name="csrfmiddlewaretoken"') && html.includes('name="password"')) {
+    throw new Error("Session expired");
+  }
+
+  return parseShifts(html);
 }
 
 function parseShifts(html: string): Shift[] {
