@@ -35,6 +35,20 @@ body {
   padding-bottom: env(safe-area-inset-bottom);
 }
 
+.safe-area-pt {
+  padding-top: env(safe-area-inset-top);
+}
+
+/* Responsive safe area overrides for desktop */
+@media (min-width: 768px) {
+  .md\:safe-area-pb-0 {
+    padding-bottom: 0;
+  }
+  .md\:safe-area-pt {
+    padding-top: env(safe-area-inset-top);
+  }
+}
+
 /* Prevent pull-to-refresh on mobile */
 html {
   overscroll-behavior: none;

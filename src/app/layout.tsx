@@ -48,7 +48,7 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} ${firaSans.variable} antialiased bg-zinc-50 dark:bg-zinc-950`}
       >
-        <main className="min-h-screen pb-20">
+        <main className="min-h-screen pb-20 md:pb-0 md:pt-16">
           {children}
         </main>
         <Navigation />
