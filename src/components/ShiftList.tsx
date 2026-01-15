@@ -1,9 +1,11 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import type { Shift } from "@/lib/types";
 import { AddToCalendarButton } from "./AddToCalendarButton";
-import { LoginForm } from "./LoginForm";
+
+const SHIFTS_CACHE_KEY = "cached_shifts";
 
 interface ShiftListProps {
   isAuthenticated: boolean;
@@ -19,6 +21,16 @@ export function ShiftList({ isAuthenticated }: ShiftListProps) {
     if (isAuthenticated) {
       fetchShifts();
     } else {
+      // Try to load cached shifts when not authenticated
+      const cached = localStorage.getItem(SHIFTS_CACHE_KEY);
+      if (cached) {
+        try {
+          setShifts(JSON.parse(cached));
+          setSessionExpired(true);
+        } catch {
+          // Invalid cache, ignore
+        }
+      }
       setLoading(false);
     }
   }, [isAuthenticated]);
@@ -30,6 +42,15 @@ export function ShiftList({ isAuthenticated }: ShiftListProps) {
       const response = await fetch("/api/shifts");
 
       if (response.status === 401) {
+        // Try to load cached shifts
+        const cached = localStorage.getItem(SHIFTS_CACHE_KEY);
+        if (cached) {
+          try {
+            setShifts(JSON.parse(cached));
+          } catch {
+            // Invalid cache, ignore
+          }
+        }
         setSessionExpired(true);
         setLoading(false);
         return;
@@ -39,6 +60,9 @@ export function ShiftList({ isAuthenticated }: ShiftListProps) {
 
       if (response.ok) {
         setShifts(data.shifts);
+        // Cache shifts for offline/expired session access
+        localStorage.setItem(SHIFTS_CACHE_KEY, JSON.stringify(data.shifts));
+        setSessionExpired(false);
       } else {
         setError(data.error || "Failed to load shifts");
       }
@@ -49,7 +73,8 @@ export function ShiftList({ isAuthenticated }: ShiftListProps) {
     }
   };
 
-  if (!isAuthenticated) {
+  if (!isAuthenticated && !sessionExpired) {
+    // Not authenticated and no cached shifts
     return (
       <div className="text-center py-12">
         <svg
@@ -81,18 +106,33 @@ export function ShiftList({ isAuthenticated }: ShiftListProps) {
     );
   }
 
-  if (sessionExpired) {
+  if (sessionExpired && shifts.length === 0) {
+    // No cached shifts, prompt to sign in
     return (
-      <div className="space-y-6">
-        <div className="bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 px-4 py-3 rounded-xl text-sm text-center">
-          Your session has expired. Please sign in again to view your shifts.
-        </div>
-        <LoginForm
-          onSuccess={() => {
-            setSessionExpired(false);
-            fetchShifts();
-          }}
-        />
+      <div className="text-center py-12">
+        <svg
+          className="w-16 h-16 mx-auto text-zinc-300 dark:text-zinc-700"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <rect x="3" y="4" width="18" height="18" rx="2" strokeWidth="2" />
+          <line x1="16" y1="2" x2="16" y2="6" strokeWidth="2" />
+          <line x1="8" y1="2" x2="8" y2="6" strokeWidth="2" />
+          <line x1="3" y1="10" x2="21" y2="10" strokeWidth="2" />
+        </svg>
+        <h3 className="mt-4 text-lg font-semibold text-zinc-900 dark:text-zinc-100">
+          Session expired
+        </h3>
+        <p className="mt-2 text-zinc-500 dark:text-zinc-400">
+          Sign in again to view your shifts
+        </p>
+        <Link
+          href="/login?redirect=/shifts"
+          className="inline-block mt-4 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-colors"
+        >
+          Sign In
+        </Link>
       </div>
     );
   }
@@ -146,6 +186,18 @@ export function ShiftList({ isAuthenticated }: ShiftListProps) {
 
   return (
     <div className="space-y-4">
+      {sessionExpired && (
+        <div className="bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 px-4 py-3 rounded-xl text-sm flex items-center justify-between">
+          <span>Session expired. Showing cached shifts.</span>
+          <Link
+            href="/login?redirect=/shifts"
+            className="font-medium hover:underline"
+          >
+            Sign in to refresh
+          </Link>
+        </div>
+      )}
+
       <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
         Upcoming Shifts
       </h2>
