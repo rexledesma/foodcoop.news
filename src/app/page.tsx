@@ -47,7 +47,7 @@ export default function Home() {
   return (
     <div className="px-4 py-8">
       {authenticated && member ? (
-        <div>
+        <div className="flex flex-col items-center justify-center min-h-[calc(100vh-4rem)]">
           <MemberCard member={member} />
           <button
             onClick={handleLogout}
