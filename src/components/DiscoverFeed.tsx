@@ -259,16 +259,6 @@ export function DiscoverFeed() {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <span className="text-xs text-zinc-400">{items.length} items</span>
-        <button
-          onClick={fetchFeeds}
-          className="text-xs text-green-600 hover:text-green-700 dark:text-green-400"
-        >
-          Refresh
-        </button>
-      </div>
-
       <div className="grid gap-4">
         {items.map((item) =>
           item.type === "gazette" ? (
