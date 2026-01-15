@@ -30,12 +30,6 @@ export default function Home() {
     }
   };
 
-  const handleLogout = async () => {
-    await fetch("/api/auth", { method: "DELETE" });
-    setAuthenticated(false);
-    setMember(null);
-  };
-
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -49,12 +43,6 @@ export default function Home() {
       {authenticated && member ? (
         <div className="flex flex-col items-center justify-center min-h-[calc(100vh-4rem)]">
           <MemberCard member={member} />
-          <button
-            onClick={handleLogout}
-            className="mt-6 w-full max-w-sm mx-auto block text-center text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300 text-sm"
-          >
-            Sign Out
-          </button>
         </div>
       ) : (
         <LoginForm onSuccess={checkAuth} />
