@@ -5,15 +5,15 @@ import { usePathname } from "next/navigation";
 import { UserMenu } from "./UserMenu";
 
 const navItems = [
-  { href: "/", label: "Card", icon: "credit-card" },
+  { href: "/", label: "Home", icon: "home" },
   { href: "/produce", label: "Produce", icon: "leaf" },
   { href: "/shifts", label: "Shifts", icon: "calendar" },
-  { href: "/feed", label: "Feed", icon: "rss" },
+  { href: "/feed", label: "Discover", icon: "compass" },
 ];
 
 function NavIcon({ icon }: { icon: string }) {
   switch (icon) {
-    case "credit-card":
+    case "home":
       return (
         <svg
           className="w-6 h-6 md:w-5 md:h-5"
@@ -21,8 +21,12 @@ function NavIcon({ icon }: { icon: string }) {
           stroke="currentColor"
           viewBox="0 0 24 24"
         >
-          <rect x="2" y="5" width="20" height="14" rx="2" strokeWidth="2" />
-          <line x1="2" y1="10" x2="22" y2="10" strokeWidth="2" />
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth="2"
+            d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
+          />
         </svg>
       );
     case "leaf":
@@ -37,13 +41,13 @@ function NavIcon({ icon }: { icon: string }) {
             strokeLinecap="round"
             strokeLinejoin="round"
             strokeWidth="2"
-            d="M12 2C6.5 2 2 6.5 2 12c0 1.8.5 3.5 1.3 5L12 22l8.7-5c.8-1.5 1.3-3.2 1.3-5 0-5.5-4.5-10-10-10z"
+            d="M6 21s-2-6 2-12c3-4 8-5 12-3 1 1 2 3 1 5-1 3-4 5-8 5-3 0-5-1-6-3-1 3 0 6-1 8z"
           />
           <path
             strokeLinecap="round"
             strokeLinejoin="round"
             strokeWidth="2"
-            d="M12 2v20"
+            d="M11 11c2-2 5-3 7-2"
           />
         </svg>
       );
@@ -61,7 +65,7 @@ function NavIcon({ icon }: { icon: string }) {
           <line x1="3" y1="10" x2="21" y2="10" strokeWidth="2" />
         </svg>
       );
-    case "rss":
+    case "compass":
       return (
         <svg
           className="w-6 h-6 md:w-5 md:h-5"
@@ -69,16 +73,13 @@ function NavIcon({ icon }: { icon: string }) {
           stroke="currentColor"
           viewBox="0 0 24 24"
         >
-          <circle cx="6" cy="18" r="2" strokeWidth="2" fill="currentColor" />
-          <path
-            strokeLinecap="round"
-            strokeWidth="2"
-            d="M4 4a16 16 0 0 1 16 16"
-          />
-          <path
-            strokeLinecap="round"
-            strokeWidth="2"
-            d="M4 11a9 9 0 0 1 9 9"
+          <circle cx="12" cy="12" r="10" strokeWidth="2" />
+          <polygon
+            fill="currentColor"
+            stroke="currentColor"
+            strokeWidth="1"
+            points="12,2 14,12 12,22 10,12"
+            transform="rotate(45 12 12)"
           />
         </svg>
       );
@@ -112,7 +113,9 @@ export function Navigation() {
                 }`}
               >
                 <NavIcon icon={item.icon} />
-                <span className="text-xs md:text-sm mt-1 md:mt-0 font-medium">{item.label}</span>
+                <span className="text-xs md:text-sm mt-1 md:mt-0 font-medium">
+                  {item.label}
+                </span>
               </Link>
             );
           })}
