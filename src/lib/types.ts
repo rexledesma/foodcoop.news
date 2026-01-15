@@ -30,3 +30,22 @@ export interface AuthSession {
   cookies?: string;
   expiresAt?: number;
 }
+
+export interface FeedPost {
+  id: string;
+  uri: string;
+  text: string;
+  createdAt: string;
+  author: {
+    handle: string;
+    displayName: string;
+    avatar?: string;
+  };
+  images?: {
+    thumb: string;
+    alt: string;
+  }[];
+  likeCount: number;
+  repostCount: number;
+  replyCount: number;
+}

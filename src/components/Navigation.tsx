@@ -7,6 +7,7 @@ const navItems = [
   { href: "/", label: "Card", icon: "credit-card" },
   { href: "/produce", label: "Produce", icon: "leaf" },
   { href: "/shifts", label: "Shifts", icon: "calendar" },
+  { href: "/feed", label: "Feed", icon: "rss" },
 ];
 
 function NavIcon({ icon }: { icon: string }) {
@@ -57,6 +58,27 @@ function NavIcon({ icon }: { icon: string }) {
           <line x1="16" y1="2" x2="16" y2="6" strokeWidth="2" />
           <line x1="8" y1="2" x2="8" y2="6" strokeWidth="2" />
           <line x1="3" y1="10" x2="21" y2="10" strokeWidth="2" />
+        </svg>
+      );
+    case "rss":
+      return (
+        <svg
+          className="w-6 h-6"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <circle cx="6" cy="18" r="2" strokeWidth="2" fill="currentColor" />
+          <path
+            strokeLinecap="round"
+            strokeWidth="2"
+            d="M4 4a16 16 0 0 1 16 16"
+          />
+          <path
+            strokeLinecap="round"
+            strokeWidth="2"
+            d="M4 11a9 9 0 0 1 9 9"
+          />
         </svg>
       );
     default:
