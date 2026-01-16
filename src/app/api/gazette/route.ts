@@ -66,9 +66,11 @@ async function fetchGazetteFeed(): Promise<GazetteArticle[]> {
     const title = extractTextContent(itemXml, 'title');
     const link = extractTextContent(itemXml, 'link');
     const pubDate = extractTextContent(itemXml, 'pubDate');
+    const guid = extractTextContent(itemXml, 'guid');
 
-    // Create a unique ID from link
-    const id = Buffer.from(link).toString('base64').slice(0, 20);
+    // Extract post ID from guid (e.g., "https://linewaitersgazette.com/?p=12345")
+    const postIdMatch = guid.match(/[?&]p=(\d+)/);
+    const id = postIdMatch ? postIdMatch[1] : Buffer.from(link).toString('base64').slice(0, 20);
 
     parsedItems.push({
       id,
