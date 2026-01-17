@@ -6,7 +6,3 @@ compatibility_flags = ["nodejs_compat"]
 
 main = ".open-next/worker.js"
 assets = { directory = ".open-next/assets", binding = "ASSETS" }
-
-[vars]
-# Environment variables (set secrets via wrangler secret put)
-# FOODCOOP_USERNAME and FOODCOOP_PASSWORD should be set as secrets

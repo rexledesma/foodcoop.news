@@ -42,9 +42,3 @@ The app scrapes data from the Park Slope Food Coop Member Services portal:
 - **Barcode**: `@zxing/library` + `sharp` for PDF417 decoding server-side
 - **Caching**: 5-minute server-side cache for produce and feed APIs
 - **Deployment**: Standalone output mode required for OpenNext Cloudflare adapter
-
-## Environment Variables
-
-Required as Cloudflare secrets (see `wrangler.toml`):
-- `FOODCOOP_USERNAME`
-- `FOODCOOP_PASSWORD`
