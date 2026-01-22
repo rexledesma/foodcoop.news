@@ -1,5 +1,6 @@
 "use client";
 
+/* eslint-disable @next/next/no-img-element */
 import { useState, useEffect } from "react";
 import type { FeedPost, GazetteArticle } from "@/lib/types";
 
@@ -55,7 +56,7 @@ function GazetteCard({ article }: { article: GazetteArticle; date: Date }) {
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
             <span className="font-semibold text-zinc-900 dark:text-zinc-100">
-              Linewaiters' Gazette
+              Linewaiters&apos; Gazette
             </span>
             <span className="text-sm text-zinc-400 dark:text-zinc-500 shrink-0">
               {formatRelativeTime(new Date(article.pubDate))}
