@@ -21,7 +21,10 @@ const firaSans = Fira_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "Park Slope Food Coop",
+  title: {
+    template: "%s · foodcoop.news",
+    default: "foodcoop.news",
+  },
   description: "Web app for Park Slope Food Coop members",
   manifest: "/manifest.json",
   appleWebApp: {

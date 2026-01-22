@@ -1,5 +1,9 @@
 import { DiscoverFeed } from "@/components/DiscoverFeed";
 
+export const metadata = {
+  title: "Discover",
+};
+
 export default function DiscoverPage() {
   return (
     <div className="px-4 py-6 max-w-3xl mx-auto">
