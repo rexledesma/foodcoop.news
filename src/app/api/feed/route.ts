@@ -11,12 +11,36 @@ const CACHE_DURATION = 5 * 60 * 1000;
 
 interface BlueskyImage {
   thumb: string;
+  fullsize: string;
   alt: string;
 }
 
 interface BlueskyEmbed {
   $type: string;
   images?: BlueskyImage[];
+  media?: {
+    $type: string;
+    images?: BlueskyImage[];
+  };
+}
+
+function extractImages(embed?: BlueskyEmbed): BlueskyImage[] | undefined {
+  if (!embed) return undefined;
+
+  // Direct images embed
+  if (embed.$type === "app.bsky.embed.images#view" && embed.images) {
+    return embed.images;
+  }
+
+  // Record with media (quote post with images)
+  if (
+    embed.$type === "app.bsky.embed.recordWithMedia#view" &&
+    embed.media?.images
+  ) {
+    return embed.media.images;
+  }
+
+  return undefined;
 }
 
 interface BlueskyPost {
@@ -61,10 +85,7 @@ async function fetchBlueskyFeed(): Promise<FeedPost[]> {
 
   return data.feed.map((item) => {
     const post = item.post;
-    const images =
-      post.embed?.$type === "app.bsky.embed.images#view"
-        ? post.embed.images
-        : undefined;
+    const images = extractImages(post.embed);
 
     const parent = item.reply?.parent
       ? {

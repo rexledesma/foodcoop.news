@@ -52,6 +52,7 @@ export interface FeedPost {
   author: FeedPostAuthor;
   images?: {
     thumb: string;
+    fullsize: string;
     alt: string;
   }[];
   likeCount: number;

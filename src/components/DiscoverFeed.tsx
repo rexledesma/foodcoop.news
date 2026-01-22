@@ -144,9 +144,9 @@ function BlueskyCard({ post }: { post: FeedPost; date: Date }) {
               {post.images.map((img, idx) => (
                 <img
                   key={idx}
-                  src={img.thumb}
+                  src={img.fullsize}
                   alt={img.alt || "Post image"}
-                  className="rounded-lg w-full object-cover max-h-48"
+                  className="rounded-lg w-full"
                 />
               ))}
             </div>
