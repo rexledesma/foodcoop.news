@@ -1,19 +1,3 @@
-export interface Member {
-  id: string;
-  name: string;
-  status: "active" | "alert" | "suspended" | "unknown";
-  memberNumber: string;
-  barcodeValue?: string;
-  householdId?: string;
-}
-
-export interface AuthSession {
-  authenticated: boolean;
-  member?: Member;
-  cookies?: string;
-  expiresAt?: number;
-}
-
 export interface FeedPostAuthor {
   handle: string;
   displayName: string;
