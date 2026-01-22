@@ -13,9 +13,12 @@
     "deploy": "pnpm build:worker && wrangler deploy"
   },
   "dependencies": {
+    "@convex-dev/better-auth": "^0.10.10",
     "@opennextjs/cloudflare": "^1.14.8",
     "@zxing/library": "^0.21.3",
+    "better-auth": "^1.4.9",
     "cheerio": "^1.1.2",
+    "convex": "^1.31.6",
     "next": "16.1.1",
     "pdf417-generator": "^1.0.5",
     "react": "19.2.3",
