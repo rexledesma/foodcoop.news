@@ -123,8 +123,8 @@ export default function SettingsPage() {
   const calendarDisplayUrl = calendarOrigin
     ? `${calendarOrigin}${calendarPath}`
     : calendarPath;
-  const googleCalendarUrl = `https://calendar.google.com/calendar/r?cid=${encodeURIComponent(
-    calendarDisplayUrl,
+  const googleCalendarUrl = `https://calendar.google.com/calendar/render?cid=${encodeURIComponent(
+    calendarDisplayUrl.replace(/^https:\/\//, "http://"),
   )}`;
 
   const normalizedSearch = jobSearch.trim().toLowerCase();
