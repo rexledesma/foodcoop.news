@@ -134,6 +134,13 @@ export function Navigation() {
                       {session.user.email}
                     </p>
                   </div>
+                  <Link
+                    href="/settings"
+                    onClick={() => setIsDropdownOpen(false)}
+                    className="block w-full px-4 py-3 text-left text-sm text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors"
+                  >
+                    Settings
+                  </Link>
                   <button
                     onClick={handleSignOut}
                     className="w-full px-4 py-3 text-left text-sm text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors"
