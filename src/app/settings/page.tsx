@@ -8,6 +8,8 @@ import { useSession } from "@/lib/auth-client";
 
 const CALENDAR_PROXY_PATH = "/api/calendar";
 
+type ToastVariant = "success" | "error" | "warning";
+
 export default function SettingsPage() {
   const router = useRouter();
   const { data: session, isPending: sessionPending } = useSession();
@@ -19,16 +21,12 @@ export default function SettingsPage() {
   const [fullName, setFullName] = useState("");
   const [memberId, setMemberId] = useState("");
   const [isSaving, setIsSaving] = useState(false);
-  const [saveMessage, setSaveMessage] = useState<{
-    type: "success" | "error";
-    text: string;
-  } | null>(null);
   const [isCalendarModalOpen, setIsCalendarModalOpen] = useState(false);
   const [calendarProxyUrl, setCalendarProxyUrl] = useState("");
   const [toasts, setToasts] = useState<
     {
       id: number;
-      variant: "success" | "error";
+      variant: "success" | "error" | "warning";
       message: string;
       visible: boolean;
     }[]
@@ -58,7 +56,7 @@ export default function SettingsPage() {
     calendarDisplayUrl,
   )}`;
 
-  const enqueueToast = (variant: "success" | "error", message: string) => {
+  const showToast = (variant: ToastVariant, message: string) => {
     const id = Date.now();
     setToasts((previous) => [
       ...previous,
@@ -73,6 +71,25 @@ export default function SettingsPage() {
       );
     }, 10);
 
+    return id;
+  };
+
+  const updateToast = (
+    id: number,
+    updates: Partial<{
+      variant: ToastVariant;
+      message: string;
+      visible: boolean;
+    }>,
+  ) => {
+    setToasts((previous) =>
+      previous.map((toast) =>
+        toast.id === id ? { ...toast, ...updates } : toast,
+      ),
+    );
+  };
+
+  const dismissToast = (id: number) => {
     window.setTimeout(() => {
       setToasts((previous) =>
         previous.map((toast) =>
@@ -84,6 +101,11 @@ export default function SettingsPage() {
     window.setTimeout(() => {
       setToasts((previous) => previous.filter((toast) => toast.id !== id));
     }, 3000);
+  };
+
+  const enqueueToast = (variant: ToastVariant, message: string) => {
+    const id = showToast(variant, message);
+    dismissToast(id);
   };
 
   const handleCopyCalendarUrl = async () => {
@@ -101,20 +123,26 @@ export default function SettingsPage() {
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSaving(true);
-    setSaveMessage(null);
+
+    const toastId = showToast("warning", "Saving profile...");
 
     try {
       await updateMemberProfile({
         memberName: fullName.trim(),
         memberId: memberId.trim(),
       });
-      setSaveMessage({ type: "success", text: "Settings saved" });
+      updateToast(toastId, {
+        variant: "success",
+        message: "Profile successfully updated.",
+      });
+      dismissToast(toastId);
     } catch (error) {
-      setSaveMessage({
-        type: "error",
-        text:
+      updateToast(toastId, {
+        variant: "error",
+        message:
           error instanceof Error ? error.message : "Failed to save settings",
       });
+      dismissToast(toastId);
     } finally {
       setIsSaving(false);
     }
@@ -141,61 +169,55 @@ export default function SettingsPage() {
       </h1>
 
       <form onSubmit={handleSave} className="space-y-6">
-        <div>
-          <label
-            htmlFor="fullName"
-            className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2"
-          >
-            Full Name
-          </label>
-          <input
-            type="text"
-            id="fullName"
-            value={fullName}
-            onChange={(e) => setFullName(e.target.value)}
-            className="w-full px-4 py-3 rounded-xl border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400"
-            placeholder="Enter your full name"
-          />
-        </div>
-
-        <div>
-          <label
-            htmlFor="memberId"
-            className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2"
-          >
-            Member ID
-          </label>
-          <input
-            type="text"
-            id="memberId"
-            inputMode="numeric"
-            pattern="[0-9]*"
-            value={memberId}
-            onChange={(e) => {
-              const value = e.target.value.replace(/\D/g, "");
-              setMemberId(value);
-            }}
-            className="w-full px-4 py-3 rounded-xl border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 font-mono"
-            placeholder="Enter your member ID"
-          />
-        </div>
-
-        {saveMessage && (
-          <div
-            className={`p-4 rounded-xl ${
-              saveMessage.type === "success"
-                ? "bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400"
-                : "bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400"
-            }`}
-          >
-            {saveMessage.text}
+        <section className="space-y-4">
+          <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
+            Profile
+          </h2>
+          <div>
+            <label
+              htmlFor="fullName"
+              className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2"
+            >
+              Full Name
+            </label>
+            <input
+              type="text"
+              id="fullName"
+              value={fullName}
+              onChange={(e) => setFullName(e.target.value)}
+              className="w-1/2 px-4 py-3 rounded-xl border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400"
+              placeholder="Enter your full name"
+            />
           </div>
-        )}
+
+          <div>
+            <label
+              htmlFor="memberId"
+              className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2"
+            >
+              Member ID
+            </label>
+            <input
+              type="text"
+              id="memberId"
+              inputMode="numeric"
+              pattern="[0-9]*"
+              value={memberId}
+              onChange={(e) => {
+                const value = e.target.value.replace(/\D/g, "");
+                setMemberId(value);
+              }}
+              className="w-1/2 px-4 py-3 rounded-xl border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 font-mono"
+              placeholder="Enter your member ID"
+            />
+          </div>
+        </section>
+
 
         <button
           type="submit"
           disabled={isSaving}
-          className="w-full px-4 py-3 bg-green-600 hover:bg-green-700 disabled:bg-green-400 text-white font-medium rounded-xl transition-colors"
+          className="w-auto px-6 py-2.5 bg-green-600 hover:bg-green-700 disabled:bg-green-400 disabled:opacity-60 text-white font-medium rounded-xl transition-colors"
         >
           {isSaving ? "Saving..." : "Save Changes"}
         </button>
@@ -289,7 +311,9 @@ export default function SettingsPage() {
                 className={
                   toast.variant === "success"
                     ? "text-green-600 dark:text-green-400"
-                    : "text-red-600 dark:text-red-400"
+                    : toast.variant === "warning"
+                      ? "text-amber-600 dark:text-amber-400"
+                      : "text-red-600 dark:text-red-400"
                 }
               >
                 {toast.message}
