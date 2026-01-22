@@ -44,6 +44,18 @@ export interface FeedPostParent {
   author: FeedPostAuthor;
 }
 
+export interface FeedPostQuoted {
+  uri: string;
+  text: string;
+  createdAt: string;
+  author: FeedPostAuthor;
+  images?: {
+    thumb: string;
+    fullsize: string;
+    alt: string;
+  }[];
+}
+
 export interface FeedPost {
   id: string;
   uri: string;
@@ -59,6 +71,7 @@ export interface FeedPost {
   repostCount: number;
   replyCount: number;
   parent?: FeedPostParent;
+  quotedPost?: FeedPostQuoted;
 }
 
 export interface GazetteArticle {

@@ -15,6 +15,22 @@ interface BlueskyImage {
   alt: string;
 }
 
+interface BlueskyEmbedRecord {
+  $type: string;
+  uri: string;
+  cid: string;
+  author: {
+    handle: string;
+    displayName?: string;
+    avatar?: string;
+  };
+  value: {
+    text: string;
+    createdAt: string;
+  };
+  embeds?: BlueskyEmbed[];
+}
+
 interface BlueskyEmbed {
   $type: string;
   images?: BlueskyImage[];
@@ -22,6 +38,9 @@ interface BlueskyEmbed {
     $type: string;
     images?: BlueskyImage[];
   };
+  // For app.bsky.embed.record#view, record is BlueskyEmbedRecord directly
+  // For app.bsky.embed.recordWithMedia#view, record is { record: BlueskyEmbedRecord }
+  record?: BlueskyEmbedRecord | { record: BlueskyEmbedRecord };
 }
 
 function extractImages(embed?: BlueskyEmbed): BlueskyImage[] | undefined {
@@ -38,6 +57,75 @@ function extractImages(embed?: BlueskyEmbed): BlueskyImage[] | undefined {
     embed.media?.images
   ) {
     return embed.media.images;
+  }
+
+  return undefined;
+}
+
+interface QuotedPost {
+  uri: string;
+  text: string;
+  createdAt: string;
+  author: {
+    handle: string;
+    displayName: string;
+    avatar?: string;
+  };
+  images?: BlueskyImage[];
+}
+
+function extractQuotedPost(embed?: BlueskyEmbed): QuotedPost | undefined {
+  if (!embed) return undefined;
+
+  // Direct record embed (quote post without media)
+  if (embed.$type === "app.bsky.embed.record#view" && embed.record) {
+    // For this type, record is BlueskyEmbedRecord directly
+    const record = embed.record as BlueskyEmbedRecord;
+    // Only handle view records, not blocked/notFound/etc
+    if (record.$type !== "app.bsky.embed.record#viewRecord") {
+      return undefined;
+    }
+    // Extract images from the quoted post's embeds if any
+    const quotedImages = record.embeds?.[0]
+      ? extractImages(record.embeds[0])
+      : undefined;
+
+    return {
+      uri: record.uri,
+      text: record.value.text,
+      createdAt: record.value.createdAt,
+      author: {
+        handle: record.author.handle,
+        displayName: record.author.displayName || record.author.handle,
+        avatar: record.author.avatar,
+      },
+      images: quotedImages,
+    };
+  }
+
+  // Record with media (quote post with images on the quoting post)
+  // For this type, the actual record is nested: embed.record.record
+  if (embed.$type === "app.bsky.embed.recordWithMedia#view" && embed.record) {
+    const wrapper = embed.record as { record: BlueskyEmbedRecord };
+    const record = wrapper.record;
+    if (!record || record.$type !== "app.bsky.embed.record#viewRecord") {
+      return undefined;
+    }
+    const quotedImages = record.embeds?.[0]
+      ? extractImages(record.embeds[0])
+      : undefined;
+
+    return {
+      uri: record.uri,
+      text: record.value.text,
+      createdAt: record.value.createdAt,
+      author: {
+        handle: record.author.handle,
+        displayName: record.author.displayName || record.author.handle,
+        avatar: record.author.avatar,
+      },
+      images: quotedImages,
+    };
   }
 
   return undefined;
@@ -86,6 +174,7 @@ async function fetchBlueskyFeed(): Promise<FeedPost[]> {
   return data.feed.map((item) => {
     const post = item.post;
     const images = extractImages(post.embed);
+    const quotedPost = extractQuotedPost(post.embed);
 
     const parent = item.reply?.parent
       ? {
@@ -117,6 +206,7 @@ async function fetchBlueskyFeed(): Promise<FeedPost[]> {
       repostCount: post.repostCount || 0,
       replyCount: post.replyCount || 0,
       parent,
+      quotedPost,
     };
   });
 }

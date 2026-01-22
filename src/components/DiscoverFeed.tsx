@@ -151,6 +151,42 @@ function BlueskyCard({ post }: { post: FeedPost; date: Date }) {
               ))}
             </div>
           )}
+          {post.quotedPost && (
+            <div className="mt-3 border border-zinc-200 dark:border-zinc-700 rounded-lg p-3">
+              <div className="flex items-center gap-2">
+                {post.quotedPost.author.avatar && (
+                  <img
+                    src={post.quotedPost.author.avatar}
+                    alt={post.quotedPost.author.displayName}
+                    className="w-5 h-5 rounded-full"
+                  />
+                )}
+                <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+                  {post.quotedPost.author.displayName}
+                </span>
+                <span className="text-xs text-zinc-400 dark:text-zinc-500">
+                  {formatRelativeTime(new Date(post.quotedPost.createdAt))}
+                </span>
+              </div>
+              {post.quotedPost.text && (
+                <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400 whitespace-pre-wrap break-words">
+                  {post.quotedPost.text}
+                </p>
+              )}
+              {post.quotedPost.images && post.quotedPost.images.length > 0 && (
+                <div className="mt-2 grid gap-2 grid-cols-2">
+                  {post.quotedPost.images.map((img, idx) => (
+                    <img
+                      key={idx}
+                      src={img.fullsize}
+                      alt={img.alt || "Quoted post image"}
+                      className="rounded-lg w-full"
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
           <div className="mt-3 flex items-center gap-4 text-sm text-zinc-500 dark:text-zinc-400">
             <span className="flex items-center gap-1">
               <svg
