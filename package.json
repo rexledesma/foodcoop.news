@@ -6,15 +6,10 @@
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint",
-    "build:worker": "opennextjs-cloudflare build",
-    "dev:worker": "wrangler dev --port 8771",
-    "preview": "pnpm build:worker && pnpm dev:worker",
-    "deploy": "pnpm build:worker && wrangler deploy"
+    "lint": "eslint"
   },
   "dependencies": {
     "@convex-dev/better-auth": "^0.10.10",
-    "@opennextjs/cloudflare": "^1.14.8",
     "@zxing/browser": "^0.1.5",
     "@zxing/library": "^0.21.3",
     "better-auth": "^1.4.9",
@@ -25,8 +20,7 @@
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "sharp": "^0.34.5",
-    "uuid": "^13.0.0",
-    "wrangler": "^4.59.1"
+    "uuid": "^13.0.0"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
