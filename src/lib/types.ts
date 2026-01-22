@@ -31,16 +31,25 @@ export interface AuthSession {
   expiresAt?: number;
 }
 
+export interface FeedPostAuthor {
+  handle: string;
+  displayName: string;
+  avatar?: string;
+}
+
+export interface FeedPostParent {
+  uri: string;
+  text: string;
+  createdAt: string;
+  author: FeedPostAuthor;
+}
+
 export interface FeedPost {
   id: string;
   uri: string;
   text: string;
   createdAt: string;
-  author: {
-    handle: string;
-    displayName: string;
-    avatar?: string;
-  };
+  author: FeedPostAuthor;
   images?: {
     thumb: string;
     alt: string;
@@ -48,6 +57,7 @@ export interface FeedPost {
   likeCount: number;
   repostCount: number;
   replyCount: number;
+  parent?: FeedPostParent;
 }
 
 export interface GazetteArticle {

@@ -39,6 +39,10 @@ interface BlueskyPost {
 
 interface BlueskyFeedItem {
   post: BlueskyPost;
+  reply?: {
+    parent: BlueskyPost;
+    root: BlueskyPost;
+  };
 }
 
 interface BlueskyResponse {
@@ -62,6 +66,21 @@ async function fetchBlueskyFeed(): Promise<FeedPost[]> {
         ? post.embed.images
         : undefined;
 
+    const parent = item.reply?.parent
+      ? {
+          uri: item.reply.parent.uri,
+          text: item.reply.parent.record.text,
+          createdAt: item.reply.parent.record.createdAt,
+          author: {
+            handle: item.reply.parent.author.handle,
+            displayName:
+              item.reply.parent.author.displayName ||
+              item.reply.parent.author.handle,
+            avatar: item.reply.parent.author.avatar,
+          },
+        }
+      : undefined;
+
     return {
       id: post.cid,
       uri: post.uri,
@@ -76,6 +95,7 @@ async function fetchBlueskyFeed(): Promise<FeedPost[]> {
       likeCount: post.likeCount || 0,
       repostCount: post.repostCount || 0,
       replyCount: post.replyCount || 0,
+      parent,
     };
   });
 }

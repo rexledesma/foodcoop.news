@@ -85,6 +85,32 @@ function BlueskyCard({ post }: { post: FeedPost; date: Date }) {
       rel="noopener noreferrer"
       className="block bg-white dark:bg-zinc-800 rounded-xl p-4 border border-zinc-200 dark:border-zinc-700 hover:border-green-300 dark:hover:border-green-700 transition-colors"
     >
+      {post.parent && (
+        <div className="mb-3 pb-3 border-b border-zinc-200 dark:border-zinc-700">
+          <div className="flex items-start gap-3">
+            {post.parent.author.avatar && (
+              <img
+                src={post.parent.author.avatar}
+                alt={post.parent.author.displayName}
+                className="w-10 h-10 rounded-full shrink-0"
+              />
+            )}
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-medium text-zinc-600 dark:text-zinc-400">
+                  {post.parent.author.displayName}
+                </span>
+                <span className="text-xs text-zinc-400 dark:text-zinc-500">
+                  {formatRelativeTime(new Date(post.parent.createdAt))}
+                </span>
+              </div>
+              <p className="text-sm text-zinc-500 dark:text-zinc-500 line-clamp-2 whitespace-pre-wrap break-words">
+                {post.parent.text}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
       <div className="flex items-start gap-3">
         {post.author.avatar && (
           <img
