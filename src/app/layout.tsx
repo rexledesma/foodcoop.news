@@ -1,13 +1,8 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono, Fira_Sans } from "next/font/google";
+import { Geist_Mono, Fira_Sans } from "next/font/google";
 import "./globals.css";
 import { Navigation } from "@/components/Navigation";
 import { ConvexClientProvider } from "@/components/ConvexClientProvider";
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
 
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
@@ -50,7 +45,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} ${firaSans.variable} antialiased bg-zinc-50 dark:bg-zinc-950`}
+        className={`${geistMono.variable} ${firaSans.variable} antialiased bg-zinc-50 dark:bg-zinc-950`}
       >
         <ConvexClientProvider>
           <main className="min-h-screen pb-20 md:pb-0 md:pt-16">
