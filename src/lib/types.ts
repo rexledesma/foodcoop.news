@@ -7,23 +7,6 @@ export interface Member {
   householdId?: string;
 }
 
-export interface Produce {
-  id: string;
-  name: string;
-  price: string;
-  priceUnit: "per pound" | "each" | "unknown";
-  organic: boolean;
-  growingPractice: string;
-  origin: string;
-}
-
-export interface Shift {
-  id: string;
-  startTime: string;
-  endTime: string;
-  shiftName: string;
-}
-
 export interface AuthSession {
   authenticated: boolean;
   member?: Member;

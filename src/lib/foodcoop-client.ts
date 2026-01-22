@@ -6,7 +6,7 @@ import {
   PDF417Reader,
   RGBLuminanceSource,
 } from "@zxing/library";
-import type { AuthSession, Member, Shift } from "./types";
+import type { AuthSession, Member } from "./types";
 
 const MEMBER_SERVICES_URL = "https://members.foodcoop.com/services";
 
@@ -312,89 +312,6 @@ function parseMemberInfo(html: string): Member {
     memberNumber,
     status,
   };
-}
-
-export async function fetchShifts(cookies: string): Promise<Shift[]> {
-  const response = await fetch(`${MEMBER_SERVICES_URL}/home`, {
-    headers: {
-      "User-Agent":
-        "Mozilla/5.0 (compatible; FoodCoopTech/1.0; +https://foodcoop.tech)",
-      Cookie: cookies,
-    },
-  });
-
-  if (!response.ok) {
-    throw new Error("Failed to fetch shifts");
-  }
-
-  const html = await response.text();
-
-  // Check if we got redirected to login page (session expired)
-  // The login page contains a CSRF token input field
-  if (html.includes('name="csrfmiddlewaretoken"') && html.includes('name="password"')) {
-    throw new Error("Session expired");
-  }
-
-  return parseShifts(html);
-}
-
-function parseShifts(html: string): Shift[] {
-  const $ = cheerio.load(html);
-  const shifts: Shift[] = [];
-
-  // Find the "Scheduled Shifts" section by locating the category label
-  // then traverse to find the shiftcard elements within that section
-  $(".category").each((_, categoryEl) => {
-    const categoryText = $(categoryEl).text().trim();
-    if (categoryText === "Scheduled Shifts:") {
-      // Get the parent row and find the sibling column with shift cards
-      const $row = $(categoryEl).closest(".row");
-      const $shiftContainer = $row.find(".col-12.col-sm-9, .col-12.col-md-10").first();
-
-      $shiftContainer.find(".shiftcard").each((index, shiftEl) => {
-        const $shift = $(shiftEl);
-
-        // Extract date components from datecard
-        const month = $shift.find(".datecard .month").text().trim();
-        const day = $shift.find(".datecard .date").text().trim();
-
-        // Extract time range from timecard (e.g., "8:00am - 10:45am")
-        const timeText = $shift.find(".timecard").text().trim().replace(/\s+/g, " ");
-        const timeMatch = timeText.match(/(\d+:\d+[ap]m)\s*-\s*(\d+:\d+[ap]m)/i);
-
-        let startTime = "";
-        let endTime = "";
-        if (timeMatch && month && day) {
-          // Create ISO-ish date strings: "February 9, 8:00am"
-          startTime = `${month} ${day}, ${timeMatch[1]}`;
-          endTime = `${month} ${day}, ${timeMatch[2]}`;
-        }
-
-        // Extract shift name - it's the text after the timecard, before "View in"
-        const $infoCol = $shift.find('[style*="line-height"]');
-        let shiftName = "";
-        if ($infoCol.length) {
-          // Clone and remove elements we don't want
-          const $clone = $infoCol.clone();
-          $clone.find(".timecard, .small, b").remove();
-          const text = $clone.text().trim().replace(/\s+/g, " ");
-          // Clean up: remove leading/trailing punctuation and "Team Shift" labels
-          shiftName = text.replace(/^[\s♻️-]+/, "").replace(/[\s-]+$/, "").trim();
-        }
-
-        if (startTime && shiftName) {
-          shifts.push({
-            id: `shift-${index}`,
-            startTime,
-            endTime,
-            shiftName,
-          });
-        }
-      });
-    }
-  });
-
-  return shifts;
 }
 
 export async function fetchMemberPage(
