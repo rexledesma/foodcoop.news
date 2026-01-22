@@ -1,0 +1,119 @@
+import { v } from "convex/values";
+import { mutation, query } from "./_generated/server";
+import { authComponent } from "./auth";
+
+export const createMemberProfile = mutation({
+  args: {
+    memberId: v.string(),
+    memberName: v.string(),
+    passSerialNumber: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const user = await authComponent.getAuthUser(ctx);
+    if (!user) {
+      throw new Error("Not authenticated");
+    }
+
+    // Check if profile already exists
+    const existing = await ctx.db
+      .query("memberProfiles")
+      .withIndex("by_userId", (q) => q.eq("userId", user._id))
+      .first();
+
+    if (existing) {
+      throw new Error("Member profile already exists");
+    }
+
+    const now = Date.now();
+    return await ctx.db.insert("memberProfiles", {
+      userId: user._id,
+      memberId: args.memberId,
+      memberName: args.memberName,
+      passSerialNumber: args.passSerialNumber,
+      createdAt: now,
+      updatedAt: now,
+    });
+  },
+});
+
+export const updateMemberProfile = mutation({
+  args: {
+    memberId: v.optional(v.string()),
+    memberName: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const user = await authComponent.getAuthUser(ctx);
+    if (!user) {
+      throw new Error("Not authenticated");
+    }
+
+    const profile = await ctx.db
+      .query("memberProfiles")
+      .withIndex("by_userId", (q) => q.eq("userId", user._id))
+      .first();
+
+    if (!profile) {
+      throw new Error("Member profile not found");
+    }
+
+    const updates: Partial<{
+      memberId: string;
+      memberName: string;
+      updatedAt: number;
+    }> = {
+      updatedAt: Date.now(),
+    };
+
+    if (args.memberId !== undefined) {
+      updates.memberId = args.memberId;
+    }
+    if (args.memberName !== undefined) {
+      updates.memberName = args.memberName;
+    }
+
+    await ctx.db.patch(profile._id, updates);
+    return profile._id;
+  },
+});
+
+export const getMemberProfile = query({
+  args: {},
+  handler: async (ctx) => {
+    try {
+      const user = await authComponent.getAuthUser(ctx);
+      if (!user) {
+        return null;
+      }
+
+      return await ctx.db
+        .query("memberProfiles")
+        .withIndex("by_userId", (q) => q.eq("userId", user._id))
+        .first();
+    } catch {
+      // User is not authenticated
+      return null;
+    }
+  },
+});
+
+export const hasCompletedOnboarding = query({
+  args: {},
+  handler: async (ctx) => {
+    try {
+      const user = await authComponent.getAuthUser(ctx);
+      if (!user) {
+        return null; // Return null to indicate "unknown" (not authenticated)
+      }
+
+      const profile = await ctx.db
+        .query("memberProfiles")
+        .withIndex("by_userId", (q) => q.eq("userId", user._id))
+        .first();
+
+      return profile !== null;
+    } catch {
+      // User is not authenticated
+      return null;
+    }
+  },
+});
