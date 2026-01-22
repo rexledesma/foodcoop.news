@@ -90,7 +90,7 @@ export default function SettingsPage() {
     try {
       await navigator.clipboard.writeText(calendarDisplayUrl);
       enqueueToast("success", "Copied calendar URL to clipboard.");
-    } catch (error) {
+    } catch {
       enqueueToast(
         "error",
         "Clipboard copy failed. Copy manually from the modal.",
@@ -122,7 +122,7 @@ export default function SettingsPage() {
 
   if (sessionPending || memberProfile === undefined) {
     return (
-      <div className="px-4 py-6 max-w-2xl mx-auto">
+      <div className="px-4 py-6 max-w-3xl mx-auto">
         <div className="animate-pulse">
           <div className="h-8 bg-zinc-200 dark:bg-zinc-700 rounded w-32 mb-6" />
           <div className="space-y-4">
@@ -135,7 +135,7 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="px-4 py-6 max-w-2xl mx-auto">
+    <div className="px-4 py-6 max-w-3xl mx-auto">
       <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100 mb-6">
         Settings
       </h1>

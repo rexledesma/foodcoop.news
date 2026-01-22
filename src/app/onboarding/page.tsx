@@ -112,7 +112,7 @@ export default function OnboardingPage() {
 
   return (
     <div className="min-h-screen bg-zinc-950 px-4 py-8">
-      <div className="max-w-md mx-auto">
+      <div className="max-w-3xl mx-auto">
         {step === "welcome" && (
           <OnboardingWelcome onContinue={() => setStep("upload")} />
         )}
@@ -149,6 +149,7 @@ export default function OnboardingPage() {
             </div>
 
             <button
+              type="button"
               onClick={() => setStep("manual")}
               className="w-full py-3 px-4 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-medium rounded-xl transition-colors"
             >
