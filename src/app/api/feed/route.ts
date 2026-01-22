@@ -149,12 +149,24 @@ interface BlueskyPost {
   replyCount?: number;
 }
 
+interface BlueskyRepostReason {
+  $type: "app.bsky.feed.defs#reasonRepost";
+  by: {
+    did: string;
+    handle: string;
+    displayName?: string;
+    avatar?: string;
+  };
+  indexedAt: string;
+}
+
 interface BlueskyFeedItem {
   post: BlueskyPost;
   reply?: {
     parent: BlueskyPost;
     root: BlueskyPost;
   };
+  reason?: BlueskyRepostReason;
 }
 
 interface BlueskyResponse {
@@ -191,6 +203,16 @@ async function fetchBlueskyFeed(): Promise<FeedPost[]> {
         }
       : undefined;
 
+    const repostedBy =
+      item.reason?.$type === "app.bsky.feed.defs#reasonRepost"
+        ? {
+            handle: item.reason.by.handle,
+            displayName:
+              item.reason.by.displayName || item.reason.by.handle,
+            avatar: item.reason.by.avatar,
+          }
+        : undefined;
+
     return {
       id: post.cid,
       uri: post.uri,
@@ -207,6 +229,7 @@ async function fetchBlueskyFeed(): Promise<FeedPost[]> {
       replyCount: post.replyCount || 0,
       parent,
       quotedPost,
+      repostedBy,
     };
   });
 }

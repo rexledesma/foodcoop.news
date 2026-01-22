@@ -78,6 +78,9 @@ function GazetteCard({ article }: { article: GazetteArticle; date: Date }) {
 }
 
 function BlueskyCard({ post }: { post: FeedPost; date: Date }) {
+  const isSelfRepost =
+    post.repostedBy && post.repostedBy.handle === post.author.handle;
+
   return (
     <a
       href={getPostUrl(post.uri)}
@@ -85,6 +88,28 @@ function BlueskyCard({ post }: { post: FeedPost; date: Date }) {
       rel="noopener noreferrer"
       className="block bg-white dark:bg-zinc-800 rounded-xl p-4 border border-zinc-200 dark:border-zinc-700 hover:border-green-300 dark:hover:border-green-700 transition-colors"
     >
+      {post.repostedBy && (
+        <div className="flex items-center gap-2 mb-3 text-sm text-zinc-500 dark:text-zinc-400">
+          <svg
+            className="w-4 h-4"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="2"
+              d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+            />
+          </svg>
+          <span>
+            {isSelfRepost
+              ? "Reposted their own post"
+              : `Reposted by ${post.repostedBy.displayName}`}
+          </span>
+        </div>
+      )}
       {post.parent && (
         <div className="mb-3 pb-3 border-b border-zinc-200 dark:border-zinc-700">
           <div className="flex items-start gap-3">
@@ -331,7 +356,11 @@ export function DiscoverFeed() {
             />
           ) : (
             <BlueskyCard
-              key={`bluesky-${item.data.id}`}
+              key={
+                item.data.repostedBy
+                  ? `bluesky-${item.data.id}-repost-${item.data.repostedBy.handle}`
+                  : `bluesky-${item.data.id}`
+              }
               post={item.data}
               date={item.date}
             />

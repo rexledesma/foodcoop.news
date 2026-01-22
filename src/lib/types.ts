@@ -23,6 +23,12 @@ export interface FeedPostQuoted {
   }[];
 }
 
+export interface FeedPostRepostedBy {
+  handle: string;
+  displayName: string;
+  avatar?: string;
+}
+
 export interface FeedPost {
   id: string;
   uri: string;
@@ -39,6 +45,7 @@ export interface FeedPost {
   replyCount: number;
   parent?: FeedPostParent;
   quotedPost?: FeedPostQuoted;
+  repostedBy?: FeedPostRepostedBy;
 }
 
 export interface GazetteArticle {
