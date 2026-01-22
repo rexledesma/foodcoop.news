@@ -30,6 +30,8 @@ export const createMemberProfile = mutation({
       memberId: args.memberId,
       memberName: args.memberName,
       passSerialNumber: args.passSerialNumber,
+      calendarId: crypto.randomUUID(),
+      jobFilters: [],
       createdAt: now,
       updatedAt: now,
     });
@@ -40,6 +42,7 @@ export const updateMemberProfile = mutation({
   args: {
     memberId: v.optional(v.string()),
     memberName: v.optional(v.string()),
+    jobFilters: v.optional(v.array(v.string())),
   },
   handler: async (ctx, args) => {
     const user = await authComponent.getAuthUser(ctx);
@@ -59,6 +62,7 @@ export const updateMemberProfile = mutation({
     const updates: Partial<{
       memberId: string;
       memberName: string;
+      jobFilters: string[];
       updatedAt: number;
     }> = {
       updatedAt: Date.now(),
@@ -70,9 +74,24 @@ export const updateMemberProfile = mutation({
     if (args.memberName !== undefined) {
       updates.memberName = args.memberName;
     }
+    if (args.jobFilters !== undefined) {
+      updates.jobFilters = args.jobFilters;
+    }
 
     await ctx.db.patch(profile._id, updates);
     return profile._id;
+  },
+});
+
+export const getProfileByCalendarId = query({
+  args: {
+    calendarId: v.string(),
+  },
+  handler: async (ctx, args) => {
+    return await ctx.db
+      .query("memberProfiles")
+      .withIndex("by_calendarId", (q) => q.eq("calendarId", args.calendarId))
+      .first();
   },
 });
 

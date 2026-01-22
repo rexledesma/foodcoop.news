@@ -1,12 +1,61 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { useSession } from "@/lib/auth-client";
 
 const CALENDAR_PROXY_PATH = "/api/calendar";
+
+const SHIFT_JOB_OPTIONS = [
+  "🚽 Bathroom",
+  "🍺 Beer",
+  "🧼 Bins",
+  "🍞 Bread Stocking",
+  "🫘 Bulk Lifting",
+  "🛒 Cart Return",
+  "🧽 Case Maintenance",
+  "💵 Cashier",
+  "💳 Checkout",
+  "🍛 CHIPS Food Drive",
+  "CHiPS Gala",
+  "🏝 Cleaning",
+  "🥛 Dairy Lifting",
+  "🚛 Delivery Support",
+  "💰 Drawer",
+  "⌨️ Enrollment Data Entry",
+  "📃 Enrollment",
+  "🎟 Entrance/Greeter",
+  "🥫 Flex",
+  "🍿 Food Processing TL ",
+  "🍿 Food Processing ",
+  "👀 Front End Support",
+  "🗳️ General Meeting",
+  "🧴 Health & Beauty",
+  "🖥 Inventory Data",
+  "📋 Inventory",
+  "🍀 Inventory: Produce",
+  "🚚 Lifting",
+  "🍖 Meat Processing & Lifting",
+  "📗 Office",
+  "🥬 Produce Processing",
+  "🥦 Producer",
+  "📦 Receiving: Team Leader",
+  "🛠 Repairs",
+  "🖨 Scan Invoices",
+  "🧺 Set-up & Equipment Cleaning",
+  "🗂 Sort & Collate",
+  "Soup Cleaning",
+  "🍲 Soup: Food Services",
+  "✍️ Soup: Guest Services- Outdoor",
+  "🙂 Soup: Reception",
+  "Special Project: Data Entry",
+  "📦 Stocking",
+  "🦃 Turkey",
+  "🍬 Vitamins",
+  "🧾 Vouchers",
+];
 
 type ToastVariant = "success" | "error" | "warning";
 
@@ -20,9 +69,15 @@ export default function SettingsPage() {
 
   const [fullName, setFullName] = useState("");
   const [memberId, setMemberId] = useState("");
+  const [selectedJobs, setSelectedJobs] = useState<string[]>([]);
+  const [calendarId, setCalendarId] = useState("");
+  const [calendarOrigin, setCalendarOrigin] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [isCalendarModalOpen, setIsCalendarModalOpen] = useState(false);
-  const [calendarProxyUrl, setCalendarProxyUrl] = useState("");
+  const [jobSearch, setJobSearch] = useState("");
+  const [isJobDropdownOpen, setIsJobDropdownOpen] = useState(false);
+  const [highlightedJobIndex, setHighlightedJobIndex] = useState(0);
+  const jobOptionRefs = useRef<Record<string, HTMLButtonElement | null>>({});
   const [toasts, setToasts] = useState<
     {
       id: number;
@@ -32,11 +87,24 @@ export default function SettingsPage() {
     }[]
   >([]);
 
+  const normalizeJobSortKey = (job: string) =>
+    job
+      .replace(/^\p{Extended_Pictographic}+\s*/gu, "")
+      .toLowerCase()
+      .trim();
+
   // Initialize form with profile data
   useEffect(() => {
+    const sortJobs = (jobs: string[]) =>
+      [...jobs].sort((a, b) =>
+        normalizeJobSortKey(a).localeCompare(normalizeJobSortKey(b)),
+      );
+
     if (memberProfile) {
       setFullName(memberProfile.memberName || "");
       setMemberId(memberProfile.memberId || "");
+      setSelectedJobs(sortJobs(memberProfile.jobFilters || []));
+      setCalendarId(memberProfile.calendarId || "");
     }
   }, [memberProfile]);
 
@@ -48,13 +116,45 @@ export default function SettingsPage() {
   }, [session, sessionPending, router]);
 
   useEffect(() => {
-    setCalendarProxyUrl(`${window.location.origin}${CALENDAR_PROXY_PATH}`);
+    setCalendarOrigin(window.location.origin);
   }, []);
 
-  const calendarDisplayUrl = calendarProxyUrl || CALENDAR_PROXY_PATH;
+  const calendarPath = `${CALENDAR_PROXY_PATH}/${calendarId}`;
+  const calendarDisplayUrl = calendarOrigin
+    ? `${calendarOrigin}${calendarPath}`
+    : calendarPath;
   const googleCalendarUrl = `https://calendar.google.com/calendar/r?cid=${encodeURIComponent(
     calendarDisplayUrl,
   )}`;
+
+  const normalizedSearch = jobSearch.trim().toLowerCase();
+  const filteredJobOptions = normalizedSearch
+    ? SHIFT_JOB_OPTIONS.filter((job) =>
+        job.toLowerCase().includes(normalizedSearch),
+      )
+    : SHIFT_JOB_OPTIONS;
+
+  useEffect(() => {
+    if (!isJobDropdownOpen) {
+      return;
+    }
+
+    if (filteredJobOptions.length === 0) {
+      setHighlightedJobIndex(-1);
+    } else {
+      setHighlightedJobIndex(0);
+    }
+  }, [filteredJobOptions.length, isJobDropdownOpen]);
+
+  useEffect(() => {
+    if (!isJobDropdownOpen || highlightedJobIndex < 0) {
+      return;
+    }
+
+    const job = filteredJobOptions[highlightedJobIndex];
+    const element = job ? jobOptionRefs.current[job] : null;
+    element?.scrollIntoView({ block: "nearest" });
+  }, [filteredJobOptions, highlightedJobIndex, isJobDropdownOpen]);
 
   const showToast = (variant: ToastVariant, message: string) => {
     const id = Date.now();
@@ -108,7 +208,47 @@ export default function SettingsPage() {
     dismissToast(id);
   };
 
+  const saveJobFilters = async (nextJobs: string[]) => {
+    try {
+      await updateMemberProfile({ jobFilters: nextJobs });
+    } catch (error) {
+      enqueueToast(
+        "error",
+        error instanceof Error
+          ? error.message
+          : "Failed to update shift filters",
+      );
+    }
+  };
+
+  const toggleJob = (job: string) => {
+    setSelectedJobs((previous) => {
+      const nextJobs = previous.includes(job)
+        ? previous.filter((item) => item !== job)
+        : [...previous, job];
+      void saveJobFilters(nextJobs);
+      return nextJobs;
+    });
+  };
+
+  const removeJob = (job: string) => {
+    setSelectedJobs((previous) => {
+      const nextJobs = previous.filter((item) => item !== job);
+      void saveJobFilters(nextJobs);
+      return nextJobs;
+    });
+  };
+
+  const handleOpenCalendarModal = () => {
+    setIsCalendarModalOpen(true);
+  };
+
   const handleCopyCalendarUrl = async () => {
+    if (!calendarId) {
+      enqueueToast("error", "Create a calendar subscription first.");
+      return;
+    }
+
     try {
       await navigator.clipboard.writeText(calendarDisplayUrl);
       enqueueToast("success", "Copied calendar URL to clipboard.");
@@ -130,6 +270,7 @@ export default function SettingsPage() {
       await updateMemberProfile({
         memberName: fullName.trim(),
         memberId: memberId.trim(),
+        jobFilters: selectedJobs,
       });
       updateToast(toastId, {
         variant: "success",
@@ -213,7 +354,6 @@ export default function SettingsPage() {
           </div>
         </section>
 
-
         <button
           type="submit"
           disabled={isSaving}
@@ -228,7 +368,7 @@ export default function SettingsPage() {
           Third Party Accounts
         </h2>
         <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
-          Connect services like Google Calendar to keep your shifts in sync.
+          Link your account to your calendar to view your prospective shifts.
         </p>
 
         <div className="mt-6 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 p-4">
@@ -238,17 +378,160 @@ export default function SettingsPage() {
                 Shift Calendar Syncing
               </h3>
               <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
-                Sync the Shift Calendar with your Google, Outlook, or Apple
+                Sync the shift calendar with your Google, Outlook, or Apple
                 calendar.
               </p>
             </div>
             <button
               type="button"
-              onClick={() => setIsCalendarModalOpen(true)}
+              onClick={handleOpenCalendarModal}
               className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-medium rounded-xl transition-colors"
             >
               Add iCal subscription
             </button>
+          </div>
+
+          <div className="mt-6 space-y-3">
+            <div className="space-y-1">
+              <h3 className="text-base font-semibold text-zinc-900 dark:text-zinc-100">
+                Selected Shifts
+              </h3>
+              <p className="text-sm text-zinc-600 dark:text-zinc-400">
+                Filter the shift calendar for your preferred shifts.
+              </p>
+            </div>
+            <div className="relative">
+              <input
+                type="text"
+                value={jobSearch}
+                onChange={(event) => {
+                  setJobSearch(event.target.value);
+                  setIsJobDropdownOpen(true);
+                }}
+                onFocus={() => setIsJobDropdownOpen(true)}
+                onBlur={() => {
+                  window.setTimeout(() => setIsJobDropdownOpen(false), 150);
+                }}
+                onKeyDown={(event: React.KeyboardEvent<HTMLInputElement>) => {
+                  if (event.key === "ArrowDown") {
+                    event.preventDefault();
+                    setIsJobDropdownOpen(true);
+                    if (filteredJobOptions.length === 0) {
+                      return;
+                    }
+                    setHighlightedJobIndex((previous) =>
+                      previous < filteredJobOptions.length - 1
+                        ? previous + 1
+                        : 0,
+                    );
+                    return;
+                  }
+
+                  if (event.key === "ArrowUp") {
+                    event.preventDefault();
+                    setIsJobDropdownOpen(true);
+                    if (filteredJobOptions.length === 0) {
+                      return;
+                    }
+                    setHighlightedJobIndex((previous) =>
+                      previous > 0
+                        ? previous - 1
+                        : filteredJobOptions.length - 1,
+                    );
+                    return;
+                  }
+
+                  if (event.key === "Enter") {
+                    if (!isJobDropdownOpen) {
+                      setIsJobDropdownOpen(true);
+                      return;
+                    }
+                    if (filteredJobOptions.length === 0) {
+                      return;
+                    }
+                    event.preventDefault();
+                    const job =
+                      filteredJobOptions[Math.max(highlightedJobIndex, 0)];
+                    if (job) {
+                      toggleJob(job);
+                    }
+                    return;
+                  }
+
+                  if (event.key === "Escape") {
+                    setIsJobDropdownOpen(false);
+                  }
+                }}
+                placeholder="Search jobs"
+                className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100 dark:focus:ring-green-400"
+              />
+              {isJobDropdownOpen && (
+                <div className="absolute z-10 mt-2 w-full rounded-xl border border-zinc-200 bg-white shadow-lg dark:border-zinc-700 dark:bg-zinc-900">
+                  <div className="max-h-48 overflow-y-auto">
+                    {filteredJobOptions.length > 0 ? (
+                      filteredJobOptions.map((job, index) => {
+                        const isSelected = selectedJobs.includes(job);
+                        const isHighlighted = index === highlightedJobIndex;
+                        return (
+                          <button
+                            key={job}
+                            ref={(element) => {
+                              jobOptionRefs.current[job] = element;
+                            }}
+                            type="button"
+                            onClick={() => toggleJob(job)}
+                            onMouseEnter={() => setHighlightedJobIndex(index)}
+                            className={`flex w-full items-center justify-between px-3 py-2 text-left text-sm transition-colors ${
+                              isSelected
+                                ? "bg-green-50 text-green-700 dark:bg-green-500/20 dark:text-green-200"
+                                : "text-zinc-700 hover:bg-zinc-100 dark:text-zinc-200 dark:hover:bg-zinc-800"
+                            } ${
+                              isHighlighted && !isSelected
+                                ? "bg-zinc-100 dark:bg-zinc-800"
+                                : ""
+                            }`}
+                          >
+                            <span>{job}</span>
+                            {isSelected && (
+                              <span className="text-xs">Selected</span>
+                            )}
+                          </button>
+                        );
+                      })
+                    ) : (
+                      <div className="px-3 py-2 text-sm text-zinc-500 dark:text-zinc-400">
+                        No matching jobs.
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="flex flex-wrap gap-2">
+              {selectedJobs.length > 0 ? (
+                selectedJobs.map((job) => (
+                  <span
+                    key={job}
+                    className="group inline-flex items-center gap-2 rounded-full bg-zinc-100 px-3 py-1 text-xs font-medium text-zinc-700 transition-colors hover:bg-red-50 hover:text-red-700 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-red-500/20 dark:hover:text-red-200"
+                  >
+                    {job}
+                    <button
+                      type="button"
+                      onClick={() => removeJob(job)}
+                      className="text-xs font-semibold text-zinc-400 transition-colors group-hover:text-red-600 dark:text-zinc-400 dark:group-hover:text-red-200"
+                      aria-label={`Remove ${job}`}
+                    >
+                      ×
+                    </button>
+                  </span>
+                ))
+              ) : (
+                <span className="text-sm text-zinc-500 dark:text-zinc-400">
+                  All shifts included.
+                </span>
+              )}
+            </div>
           </div>
         </div>
       </section>
@@ -287,7 +570,8 @@ export default function SettingsPage() {
               <button
                 type="button"
                 onClick={handleCopyCalendarUrl}
-                className="w-full px-4 py-2 rounded-xl bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400 font-medium hover:text-zinc-700 dark:hover:text-zinc-200 transition-colors"
+                disabled={!calendarId}
+                className="w-full px-4 py-2 rounded-xl bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400 font-medium hover:text-zinc-700 dark:hover:text-zinc-200 disabled:opacity-60 disabled:hover:text-zinc-500 dark:disabled:hover:text-zinc-400 transition-colors"
               >
                 Add URL to clipboard
               </button>
