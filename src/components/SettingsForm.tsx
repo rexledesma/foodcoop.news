@@ -537,25 +537,22 @@ export function SettingsForm() {
       </section>
 
       {isCalendarModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
-          <div className="w-full max-w-md rounded-2xl bg-white dark:bg-zinc-900 p-6 shadow-xl">
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
-                  Add iCal subscription
-                </h3>
-                <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
-                  Add the shift calendar to your calendar app to keep up with
-                  new shifts and updates.
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setIsCalendarModalOpen(false)}
-                className="text-sm text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200"
-              >
-                Close
-              </button>
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4"
+          onClick={() => setIsCalendarModalOpen(false)}
+        >
+          <div
+            className="w-full max-w-md rounded-2xl bg-white dark:bg-zinc-900 p-6 shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div>
+              <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
+                Add iCal subscription
+              </h3>
+              <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
+                Add the shift calendar to your calendar app to keep up with
+                new shifts and updates.
+              </p>
             </div>
 
             <div className="mt-6 space-y-3">
