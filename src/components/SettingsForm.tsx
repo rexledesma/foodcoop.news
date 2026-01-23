@@ -366,9 +366,13 @@ export function SettingsForm() {
             type="button"
             onClick={handleAddToWallet}
             disabled={isGeneratingPass || !memberId || !fullName}
-            className="flex items-center gap-1.5 px-4 py-1.5 text-sm bg-zinc-900 dark:bg-white hover:bg-zinc-800 dark:hover:bg-zinc-100 disabled:bg-zinc-400 disabled:opacity-60 text-white dark:text-zinc-900 font-medium rounded-lg transition-colors"
+            className="disabled:opacity-40 transition-opacity hover:opacity-80"
           >
-            {isGeneratingPass ? "Generating..." : "Add to Apple Wallet"}
+            <img
+              src="/apple-wallet.svg"
+              alt="Add to Apple Wallet"
+              className="h-[34px]"
+            />
           </button>
         </div>
       </form>
