@@ -13,22 +13,8 @@ function NavIcon({ icon }: { icon: string }) {
   switch (icon) {
     case "compass":
       return <span className="text-xl md:text-lg">🧭</span>;
-    case "user":
-      return (
-        <svg
-          className="w-6 h-6 md:w-5 md:h-5"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth="2"
-            d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-          />
-        </svg>
-      );
+    case "carrot":
+      return <span className="text-xl md:text-lg">🥕</span>;
     default:
       return null;
   }
@@ -140,7 +126,7 @@ export function Navigation() {
                   : "text-zinc-500 dark:text-zinc-400 hover:text-black dark:hover:text-white"
               }`}
             >
-              <NavIcon icon="user" />
+              <NavIcon icon="carrot" />
               <span className="hidden md:inline text-sm font-medium">
                 Sign In
               </span>
