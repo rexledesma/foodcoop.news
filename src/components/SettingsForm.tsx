@@ -87,6 +87,7 @@ export function SettingsForm() {
       visible: boolean;
     }[]
   >([]);
+  const [isGeneratingPass, setIsGeneratingPass] = useState(false);
 
   const normalizeJobSortKey = (job: string) =>
     job
@@ -290,6 +291,33 @@ export function SettingsForm() {
     }
   };
 
+  const handleAddToWallet = async () => {
+    setIsGeneratingPass(true);
+    try {
+      const response = await fetch("/api/wallet/pass");
+      if (!response.ok) {
+        throw new Error("Failed to generate pass");
+      }
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "psfc-member-card.pkpass";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      enqueueToast("success", "Pass downloaded successfully");
+    } catch (error) {
+      enqueueToast(
+        "error",
+        error instanceof Error ? error.message : "Failed to generate pass",
+      );
+    } finally {
+      setIsGeneratingPass(false);
+    }
+  };
+
   if (sessionPending || memberProfile === undefined) {
     return (
       <div className="px-4 py-6 max-w-3xl mx-auto">
@@ -336,13 +364,11 @@ export function SettingsForm() {
           </button>
           <button
             type="button"
-            disabled
-            className="flex items-center gap-1.5 px-4 py-1.5 text-sm bg-zinc-200 dark:bg-zinc-700 text-zinc-400 dark:text-zinc-500 font-medium rounded-lg cursor-not-allowed"
+            onClick={handleAddToWallet}
+            disabled={isGeneratingPass || !memberId || !fullName}
+            className="flex items-center gap-1.5 px-4 py-1.5 text-sm bg-zinc-900 dark:bg-white hover:bg-zinc-800 dark:hover:bg-zinc-100 disabled:bg-zinc-400 disabled:opacity-60 text-white dark:text-zinc-900 font-medium rounded-lg transition-colors"
           >
-            Add to Apple Wallet
-            <span className="text-xs bg-zinc-300 dark:bg-zinc-600 px-1.5 py-0.5 rounded-full">
-              Soon
-            </span>
+            {isGeneratingPass ? "Generating..." : "Add to Apple Wallet"}
           </button>
         </div>
       </form>
