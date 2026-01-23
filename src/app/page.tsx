@@ -6,17 +6,13 @@ import { useSession } from "@/lib/auth-client";
 
 export default function Home() {
   const router = useRouter();
-  const { data: session, isPending } = useSession();
+  const { isPending } = useSession();
 
   useEffect(() => {
     if (!isPending) {
-      if (session) {
-        router.replace("/discover");
-      } else {
-        router.replace("/login");
-      }
+      router.replace("/discover");
     }
-  }, [session, isPending, router]);
+  }, [isPending, router]);
 
   return (
     <div className="min-h-screen flex items-center justify-center">
