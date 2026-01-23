@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { useSession } from "@/lib/auth-client";
+import { AppleWalletCard } from "./AppleWalletCard";
 
 const CALENDAR_PROXY_PATH = "/api/calendar";
 
@@ -314,53 +315,36 @@ export function SettingsForm() {
           <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
             Profile
           </h2>
-          <div>
-            <label
-              htmlFor="fullName"
-              className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2"
-            >
-              Full Name
-            </label>
-            <input
-              type="text"
-              id="fullName"
-              value={fullName}
-              onChange={(e) => setFullName(e.target.value)}
-              className="w-1/2 px-4 py-3 rounded-xl border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400"
-              placeholder="Enter your full name"
-            />
-          </div>
-
-          <div>
-            <label
-              htmlFor="memberId"
-              className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2"
-            >
-              Member ID
-            </label>
-            <input
-              type="text"
-              id="memberId"
-              inputMode="numeric"
-              pattern="[0-9]*"
-              value={memberId}
-              onChange={(e) => {
-                const value = e.target.value.replace(/\D/g, "");
-                setMemberId(value);
-              }}
-              className="w-1/2 px-4 py-3 rounded-xl border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 font-mono"
-              placeholder="Enter your member ID"
-            />
-          </div>
+          <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
+            Edit your unofficial member card.
+          </p>
+          <AppleWalletCard
+            memberName={fullName}
+            memberId={memberId}
+            onMemberNameChange={setFullName}
+            onMemberIdChange={(value) => setMemberId(value.replace(/\D/g, ""))}
+          />
         </section>
 
-        <button
-          type="submit"
-          disabled={isSaving}
-          className="w-auto px-6 py-2.5 bg-green-600 hover:bg-green-700 disabled:bg-green-400 disabled:opacity-60 text-white font-medium rounded-xl transition-colors"
-        >
-          {isSaving ? "Saving..." : "Save Changes"}
-        </button>
+        <div className="flex gap-2">
+          <button
+            type="submit"
+            disabled={isSaving}
+            className="px-4 py-1.5 text-sm bg-green-600 hover:bg-green-700 disabled:bg-green-400 disabled:opacity-60 text-white font-medium rounded-lg transition-colors"
+          >
+            {isSaving ? "Saving..." : "Save Changes"}
+          </button>
+          <button
+            type="button"
+            disabled
+            className="flex items-center gap-1.5 px-4 py-1.5 text-sm bg-zinc-200 dark:bg-zinc-700 text-zinc-400 dark:text-zinc-500 font-medium rounded-lg cursor-not-allowed"
+          >
+            Add to Apple Wallet
+            <span className="text-xs bg-zinc-300 dark:bg-zinc-600 px-1.5 py-0.5 rounded-full">
+              Soon
+            </span>
+          </button>
+        </div>
       </form>
 
       <section className="mt-10">
@@ -550,8 +534,8 @@ export function SettingsForm() {
                 Add iCal subscription
               </h3>
               <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
-                Add the shift calendar to your calendar app to keep up with
-                new shifts and updates.
+                Add the shift calendar to your calendar app to keep up with new
+                shifts and updates.
               </p>
             </div>
 
