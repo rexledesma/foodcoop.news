@@ -107,7 +107,7 @@ export function AppleWalletCard({
         </div>
 
         {/* Secondary field - Member ID (editable) */}
-        <div className="absolute bottom-16 left-4 right-4">
+        <div className="absolute bottom-[18%] left-4 right-4">
           <label
             htmlFor="cardMemberId"
             className="block text-[10px] uppercase tracking-wider"
