@@ -86,7 +86,11 @@ export function Navigation() {
               <Link
                 key={item.href}
                 href={item.href}
-                className="flex flex-col md:flex-row items-center justify-center md:gap-2 flex-1 md:flex-initial h-full md:h-auto md:px-4 md:py-2 md:rounded-lg transition-colors text-zinc-500 dark:text-zinc-400 hover:text-black dark:hover:text-white"
+                className={`flex flex-col md:flex-row items-center justify-center md:gap-2 flex-1 md:flex-initial h-full md:h-auto md:px-4 md:py-2 md:rounded-lg transition-colors ${
+                  isActive
+                    ? "text-black dark:text-white"
+                    : "text-zinc-500 dark:text-zinc-400 hover:text-black dark:hover:text-white"
+                }`}
               >
                 <NavIcon icon={item.icon} />
                 <span className="text-xs md:text-sm mt-1 md:mt-0 font-medium">
@@ -104,7 +108,11 @@ export function Navigation() {
             <>
               <button
                 onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                className="flex flex-col md:flex-row items-center justify-center md:gap-2 flex-1 md:flex-initial h-full md:h-auto md:px-4 md:py-2 md:rounded-lg transition-colors text-zinc-500 dark:text-zinc-400 hover:text-black dark:hover:text-white"
+                className={`flex flex-col md:flex-row items-center justify-center md:gap-2 flex-1 md:flex-initial h-full md:h-auto md:px-4 md:py-2 md:rounded-lg transition-colors ${
+                  pathname === "/settings"
+                    ? "text-black dark:text-white"
+                    : "text-zinc-500 dark:text-zinc-400 hover:text-black dark:hover:text-white"
+                }`}
               >
                 <NavIcon icon="user" />
                 <span className="text-xs md:text-sm mt-1 md:mt-0 font-medium hidden md:inline">
