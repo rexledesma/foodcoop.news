@@ -48,6 +48,10 @@ export default function RootLayout({
         className={`${geistMono.variable} ${firaSans.variable} antialiased bg-zinc-50 dark:bg-zinc-950`}
       >
         <ConvexClientProvider>
+          <div
+            className="fixed top-0 left-0 right-0 h-32 bg-gradient-to-b from-[#0693e3]/10 via-[#00d084]/10 to-transparent pointer-events-none z-30"
+            aria-hidden="true"
+          />
           <main className="min-h-screen pb-20 md:pb-0 md:pt-16">
             {children}
           </main>
