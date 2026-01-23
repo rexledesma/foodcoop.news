@@ -52,7 +52,7 @@ export default function RootLayout({
             className="fixed top-0 left-0 right-0 h-32 bg-gradient-to-b from-[#0693e3]/10 via-[#00d084]/10 to-transparent pointer-events-none z-30"
             aria-hidden="true"
           />
-          <main className="min-h-screen pb-20 md:pb-0 md:pt-16">
+          <main className="min-h-screen pt-16 md:pt-14">
             {children}
           </main>
           <Navigation />
