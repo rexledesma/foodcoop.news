@@ -88,6 +88,7 @@ export function SettingsForm() {
     }[]
   >([]);
   const [isGeneratingPass, setIsGeneratingPass] = useState(false);
+  const [isGeneratingGooglePass, setIsGeneratingGooglePass] = useState(false);
 
   const normalizeJobSortKey = (job: string) =>
     job
@@ -322,6 +323,26 @@ export function SettingsForm() {
     }
   };
 
+  const handleAddToGoogleWallet = async () => {
+    setIsGeneratingGooglePass(true);
+    try {
+      const response = await fetch("/api/wallet/google");
+      if (!response.ok) {
+        throw new Error("Failed to generate pass");
+      }
+      const { url } = await response.json();
+      window.open(url, "_blank");
+      enqueueToast("success", "Opening Google Wallet...");
+    } catch (error) {
+      enqueueToast(
+        "error",
+        error instanceof Error ? error.message : "Failed to generate pass",
+      );
+    } finally {
+      setIsGeneratingGooglePass(false);
+    }
+  };
+
   if (sessionPending || memberProfile === undefined) {
     return (
       <div className="px-4 py-6 max-w-3xl mx-auto">
@@ -376,6 +397,19 @@ export function SettingsForm() {
             <img
               src="/apple-wallet.svg"
               alt="Add to Apple Wallet"
+              className="h-[34px]"
+            />
+          </button>
+          <button
+            type="button"
+            onClick={handleAddToGoogleWallet}
+            disabled={isGeneratingGooglePass || !memberId || !fullName}
+            className="disabled:opacity-40 transition-opacity hover:opacity-80"
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/google-wallet.svg"
+              alt="Add to Google Wallet"
               className="h-[34px]"
             />
           </button>
