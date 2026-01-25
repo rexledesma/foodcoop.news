@@ -7,7 +7,18 @@ import path from "node:path";
 import { PKPass } from "passkit-generator";
 import sharp from "sharp";
 
-async function loadCoopAsset(): Promise<Buffer> {
+async function loadIconAsset(): Promise<Buffer> {
+  const sourcePath = path.join(
+    process.cwd(),
+    "public",
+    "assets",
+    "coop.png",
+  );
+
+  return readFile(sourcePath);
+}
+
+async function loadLogoAsset(): Promise<Buffer> {
   const sourcePath = path.join(
     process.cwd(),
     "public",
@@ -261,17 +272,18 @@ export async function generatePKPass(config: {
     longitude: -73.9767898621368,
   });
 
-  const [coopAsset, stripAsset] = await Promise.all([
-    loadCoopAsset(),
+  const [iconAsset, logoAsset, stripAsset] = await Promise.all([
+    loadIconAsset(),
+    loadLogoAsset(),
     loadStripAsset(),
   ]);
   const [icon1x, icon2x, icon3x, logo1x, logo2x, strip1x, strip2x] =
     await Promise.all([
-      generateIconFromAsset(coopAsset, 29),
-      generateIconFromAsset(coopAsset, 58),
-      generateIconFromAsset(coopAsset, 87),
-      generateLogoFromAsset(coopAsset, 160, 50),
-      generateLogoFromAsset(coopAsset, 320, 100),
+      generateIconFromAsset(iconAsset, 29),
+      generateIconFromAsset(iconAsset, 58),
+      generateIconFromAsset(iconAsset, 87),
+      generateLogoFromAsset(logoAsset, 160, 50),
+      generateLogoFromAsset(logoAsset, 320, 100),
       generateStripFromAsset(stripAsset, 320, 123),
       generateStripFromAsset(stripAsset, 640, 246),
     ]);
