@@ -128,6 +128,10 @@ export function SettingsForm() {
   const googleCalendarUrl = `https://calendar.google.com/calendar/render?cid=${encodeURIComponent(
     calendarDisplayUrl.replace(/^https:\/\//, "http://"),
   )}`;
+  const outlookCalendarUrl = `https://outlook.live.com/calendar/0/addcalendar?url=${encodeURIComponent(
+    calendarDisplayUrl.replace(/^https:\/\//, "webcal://"),
+  )}`;
+  const appleCalendarUrl = calendarDisplayUrl;
 
   const normalizedSearch = jobSearch.trim().toLowerCase();
   const filteredJobOptions = normalizedSearch
@@ -557,12 +561,12 @@ export function SettingsForm() {
           onClick={() => setIsCalendarModalOpen(false)}
         >
           <div
-            className="w-full max-w-md rounded-2xl bg-white dark:bg-zinc-900 p-6 shadow-xl"
+            className="w-full max-w-sm rounded-2xl bg-white dark:bg-zinc-900 p-6 shadow-xl"
             onClick={(e) => e.stopPropagation()}
           >
             <div>
               <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
-                Add iCal subscription
+                📅 Add iCal subscription
               </h3>
               <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
                 Add the shift calendar to your calendar app to keep up with new
@@ -575,9 +579,23 @@ export function SettingsForm() {
                 href={googleCalendarUrl}
                 target="_blank"
                 rel="noreferrer"
-                className="block w-full text-center px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-medium rounded-xl transition-colors"
+                className="block w-full text-center px-4 py-2 bg-[#0b57d0] hover:bg-[#0842a0] text-white font-medium rounded-xl transition-colors"
               >
                 Add to Google Calendar
+              </a>
+              <a
+                href={outlookCalendarUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="block w-full text-center px-4 py-2 bg-[#0F6CBD] hover:bg-[#0c5a9e] text-white font-medium rounded-xl transition-colors"
+              >
+                Add to Outlook Calendar
+              </a>
+              <a
+                href={appleCalendarUrl}
+                className="block w-full text-center px-4 py-2 bg-black hover:bg-zinc-800 text-white font-medium rounded-xl transition-colors"
+              >
+                Add to Apple Calendar
               </a>
               <button
                 type="button"
