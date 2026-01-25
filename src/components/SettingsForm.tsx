@@ -368,6 +368,7 @@ export function SettingsForm() {
             disabled={isGeneratingPass || !memberId || !fullName}
             className="disabled:opacity-40 transition-opacity hover:opacity-80"
           >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src="/apple-wallet.svg"
               alt="Add to Apple Wallet"

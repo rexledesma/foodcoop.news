@@ -69,6 +69,7 @@ export function AppleWalletCard({
         {/* Header with organization name */}
         <div className="absolute top-4 left-4 right-4 flex justify-between items-start">
           <div className="flex items-center gap-2">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src="/assets/coop-padded.png"
               alt="Park Slope Food Coop"
