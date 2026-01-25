@@ -10,8 +10,6 @@
   },
   "dependencies": {
     "@convex-dev/better-auth": "^0.10.10",
-    "@zxing/browser": "^0.1.5",
-    "@zxing/library": "^0.21.3",
     "better-auth": "^1.4.9",
     "cheerio": "^1.1.2",
     "convex": "^1.31.6",

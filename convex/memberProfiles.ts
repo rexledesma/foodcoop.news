@@ -115,24 +115,3 @@ export const getMemberProfile = query({
   },
 });
 
-export const hasCompletedOnboarding = query({
-  args: {},
-  handler: async (ctx) => {
-    try {
-      const user = await authComponent.getAuthUser(ctx);
-      if (!user) {
-        return null; // Return null to indicate "unknown" (not authenticated)
-      }
-
-      const profile = await ctx.db
-        .query("memberProfiles")
-        .withIndex("by_userId", (q) => q.eq("userId", user._id))
-        .first();
-
-      return profile !== null;
-    } catch {
-      // User is not authenticated
-      return null;
-    }
-  },
-});
