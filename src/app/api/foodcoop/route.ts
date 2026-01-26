@@ -77,7 +77,7 @@ async function fetchFoodCoopFeed(): Promise<FoodCoopAnnouncement[]> {
   while ((match = itemRegex.exec(xml)) !== null) {
     const itemXml = match[1];
 
-    const title = extractTextContent(itemXml, "title");
+    const title = decode(extractTextContent(itemXml, "title"));
     const rawDescription = extractTextContent(itemXml, "description");
     // Strip HTML tags and decode entities from description
     const description = decode(rawDescription.replace(/<[^>]*>/g, "")).trim();
