@@ -27,6 +27,8 @@ const FILTER_OPTIONS: { value: FilterType; label: string }[] = [
   { value: "foodcoopcooks", label: "Food Coop Cooks" },
 ];
 
+const COOP_BLUESKY_HANDLE = "foodcoop.bsky.social";
+
 function getItemKey(item: FeedItem) {
   if (item.type === "gazette") return `gazette-${item.data.id}`;
   if (item.type === "foodcoop") return `foodcoop-${item.data.id}`;
@@ -522,7 +524,11 @@ export function DiscoverFeed() {
           url: "/api/feed",
           map: (data: { posts: FeedPost[] }) =>
             data.posts
-              .filter((post) => !post.repostedBy)
+              .filter((post) => {
+                if (!post.repostedBy) return true;
+                if (post.repostedBy.handle !== COOP_BLUESKY_HANDLE) return false;
+                return post.author.handle !== COOP_BLUESKY_HANDLE;
+              })
               .map((post) => ({
                 type: "bluesky" as const,
                 data: post,
