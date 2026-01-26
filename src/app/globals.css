@@ -63,3 +63,70 @@ html {
 * {
   -webkit-tap-highlight-color: transparent;
 }
+
+@keyframes feedItemIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes feedShimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.feed-item-enter {
+  animation: feedItemIn 220ms ease-out both;
+}
+
+.feed-shimmer {
+  position: relative;
+  overflow: hidden;
+  background: #e4e4e7;
+}
+
+.feed-shimmer::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.7),
+    transparent
+  );
+  animation: feedShimmer 1.2s ease-in-out infinite;
+}
+
+@media (prefers-color-scheme: dark) {
+  .feed-shimmer {
+    background: #27272a;
+  }
+  .feed-shimmer::after {
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgba(255, 255, 255, 0.12),
+      transparent
+    );
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .feed-item-enter {
+    animation: none;
+  }
+  .feed-shimmer::after {
+    animation: none;
+  }
+}

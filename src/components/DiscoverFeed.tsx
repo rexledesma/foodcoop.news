@@ -1,7 +1,7 @@
 "use client";
 
 /* eslint-disable @next/next/no-img-element */
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import type {
   FeedPost,
   GazetteArticle,
@@ -26,6 +26,18 @@ const FILTER_OPTIONS: { value: FilterType; label: string }[] = [
   { value: "bluesky", label: "Bluesky" },
   { value: "foodcoopcooks", label: "Food Coop Cooks" },
 ];
+
+function getItemKey(item: FeedItem) {
+  if (item.type === "gazette") return `gazette-${item.data.id}`;
+  if (item.type === "foodcoop") return `foodcoop-${item.data.id}`;
+  if (item.type === "foodcoopcooks") return `foodcoopcooks-${item.data.id}`;
+  if (item.type === "foodcoopcooks-events") {
+    return `foodcoopcooks-event-${item.data.id}`;
+  }
+  return item.data.repostedBy
+    ? `bluesky-${item.data.id}-repost-${item.data.repostedBy.handle}`
+    : `bluesky-${item.data.id}`;
+}
 
 function formatRelativeTime(date: Date): string {
   const now = new Date();
@@ -426,6 +438,11 @@ export function DiscoverFeed() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [filter, setFilter] = useState<FilterType>("all");
+  const [pendingSources, setPendingSources] = useState(0);
+
+  const hasItemsRef = useRef(false);
+  const hasSuccessRef = useRef(false);
+  const finalizedRef = useRef(false);
 
   const filteredItems = items.filter((item) => {
     if (filter === "all") return true;
@@ -439,89 +456,124 @@ export function DiscoverFeed() {
     try {
       setLoading(true);
       setError("");
+      hasItemsRef.current = false;
+      hasSuccessRef.current = false;
+      finalizedRef.current = false;
+      setItems([]);
 
-      const [gazetteRes, blueskyRes, foodcoopRes, foodcoopCooksRes, foodcoopCooksEventsRes] =
-        await Promise.all([
-          fetch("/api/gazette"),
-          fetch("/api/feed"),
-          fetch("/api/foodcoop"),
-          fetch("/api/foodcoopcooks"),
-          fetch("/api/foodcoopcooks/events"),
-        ]);
-
-      const combinedItems: FeedItem[] = [];
-
-      if (gazetteRes.ok) {
-        const gazetteData = await gazetteRes.json();
-        for (const article of gazetteData.articles as GazetteArticle[]) {
-          combinedItems.push({
-            type: "gazette",
-            data: article,
-            date: new Date(article.pubDate),
-          });
-        }
-      }
-
-      if (blueskyRes.ok) {
-        const blueskyData = await blueskyRes.json();
-        for (const post of blueskyData.posts as FeedPost[]) {
-          // Skip reposts in the UI (they're still available in the API)
-          if (post.repostedBy) continue;
-          combinedItems.push({
-            type: "bluesky",
-            data: post,
-            date: new Date(post.createdAt),
-          });
-        }
-      }
-
-      if (foodcoopRes.ok) {
-        const foodcoopData = await foodcoopRes.json();
-        for (const announcement of foodcoopData.articles as FoodCoopAnnouncement[]) {
-          combinedItems.push({
-            type: "foodcoop",
-            data: announcement,
-            date: new Date(announcement.pubDate),
-          });
-        }
-      }
-
-      if (foodcoopCooksRes.ok) {
-        const foodcoopCooksData = await foodcoopCooksRes.json();
-        for (const article of foodcoopCooksData.articles as FoodCoopCooksArticle[]) {
-          combinedItems.push({
-            type: "foodcoopcooks",
-            data: article,
-            date: new Date(article.pubDate),
-          });
-        }
-      }
-
-      if (foodcoopCooksEventsRes.ok) {
-        const foodcoopCooksEventsData = await foodcoopCooksEventsRes.json();
-        for (const event of foodcoopCooksEventsData.events as FoodCoopCooksEvent[]) {
-          combinedItems.push({
-            type: "foodcoopcooks-events",
-            data: event,
-            date: new Date(event.startUtc),
-          });
-        }
-      }
-
-      // Sort by date, newest first
-      combinedItems.sort((a, b) => b.date.getTime() - a.date.getTime());
-
-      // Filter to only show items from the last 45 days
       const fortyFiveDaysAgo = new Date();
       fortyFiveDaysAgo.setDate(fortyFiveDaysAgo.getDate() - 45);
-      const recentItems = combinedItems.filter(
-        (item) => item.date >= fortyFiveDaysAgo
-      );
 
-      setItems(recentItems);
+      const appendItems = (newItems: FeedItem[]) => {
+        if (newItems.length === 0) return;
+        setItems((prev) => {
+          const seen = new Set(prev.map(getItemKey));
+          const filtered = newItems.filter(
+            (item) => item.date >= fortyFiveDaysAgo && !seen.has(getItemKey(item))
+          );
+          if (filtered.length === 0) return prev;
+          const merged = [...prev, ...filtered];
+          if (!hasItemsRef.current && merged.length > 0) {
+            hasItemsRef.current = true;
+            setLoading(false);
+          }
+          return merged;
+        });
+      };
+
+      const sources = [
+        {
+          key: "gazette",
+          url: "/api/gazette",
+          map: (data: { articles: GazetteArticle[] }) =>
+            data.articles.map((article) => ({
+              type: "gazette" as const,
+              data: article,
+              date: new Date(article.pubDate),
+            })),
+        },
+        {
+          key: "bluesky",
+          url: "/api/feed",
+          map: (data: { posts: FeedPost[] }) =>
+            data.posts
+              .filter((post) => !post.repostedBy)
+              .map((post) => ({
+                type: "bluesky" as const,
+                data: post,
+                date: new Date(post.createdAt),
+              })),
+        },
+        {
+          key: "foodcoop",
+          url: "/api/foodcoop",
+          map: (data: { articles: FoodCoopAnnouncement[] }) =>
+            data.articles.map((announcement) => ({
+              type: "foodcoop" as const,
+              data: announcement,
+              date: new Date(announcement.pubDate),
+            })),
+        },
+        {
+          key: "foodcoopcooks",
+          url: "/api/foodcoopcooks",
+          map: (data: { articles: FoodCoopCooksArticle[] }) =>
+            data.articles.map((article) => ({
+              type: "foodcoopcooks" as const,
+              data: article,
+              date: new Date(article.pubDate),
+            })),
+        },
+        {
+          key: "foodcoopcooks-events",
+          url: "/api/foodcoopcooks/events",
+          map: (data: { events: FoodCoopCooksEvent[] }) =>
+            data.events.map((event) => ({
+              type: "foodcoopcooks-events" as const,
+              data: event,
+              date: new Date(event.startUtc),
+            })),
+        },
+      ];
+
+      setPendingSources(sources.length);
+
+      const finalize = () => {
+        if (finalizedRef.current) return;
+        finalizedRef.current = true;
+        setItems((prev) => {
+          const sorted = [...prev].sort(
+            (a, b) => b.date.getTime() - a.date.getTime()
+          );
+          return sorted.filter((item) => item.date >= fortyFiveDaysAgo);
+        });
+        if (!hasSuccessRef.current) {
+          setError("Failed to load feed");
+        }
+        setLoading(false);
+      };
+
+      for (const source of sources) {
+        fetch(source.url)
+          .then(async (response) => {
+            if (!response.ok) return;
+            hasSuccessRef.current = true;
+            const data = await response.json();
+            appendItems(source.map(data));
+          })
+          .catch(() => {
+            // Ignore per-source errors; show overall error if all fail.
+          })
+          .finally(() => {
+            setPendingSources((prev) => {
+              const next = Math.max(0, prev - 1);
+              if (next === 0) finalize();
+              return next;
+            });
+          });
+      }
     } catch {
       setError("Failed to load feed");
-    } finally {
       setLoading(false);
     }
   }, []);
@@ -530,7 +582,7 @@ export function DiscoverFeed() {
     fetchFeeds();
   }, [fetchFeeds]);
 
-  if (loading) {
+  if (loading && items.length === 0) {
     return (
       <div className="flex items-center justify-center py-12">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600"></div>
@@ -538,7 +590,7 @@ export function DiscoverFeed() {
     );
   }
 
-  if (error) {
+  if (error && items.length === 0) {
     return (
       <div className="bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 px-4 py-3 rounded-xl text-sm">
         {error}
@@ -576,59 +628,65 @@ export function DiscoverFeed() {
         {filteredItems.map((item) => {
           if (item.type === "gazette") {
             return (
-              <GazetteCard
-                key={`gazette-${item.data.id}`}
-                article={item.data}
-                date={item.date}
-              />
+              <div key={getItemKey(item)} className="feed-item-enter">
+                <GazetteCard article={item.data} date={item.date} />
+              </div>
             );
           }
           if (item.type === "foodcoop") {
             return (
-              <FoodCoopCard
-                key={`foodcoop-${item.data.id}`}
-                article={item.data}
-                date={item.date}
-              />
+              <div key={getItemKey(item)} className="feed-item-enter">
+                <FoodCoopCard article={item.data} date={item.date} />
+              </div>
             );
           }
           if (item.type === "foodcoopcooks") {
             return (
-              <FoodCoopCooksCard
-                key={`foodcoopcooks-${item.data.id}`}
-                article={item.data}
-                date={item.date}
-              />
+              <div key={getItemKey(item)} className="feed-item-enter">
+                <FoodCoopCooksCard article={item.data} date={item.date} />
+              </div>
             );
           }
           if (item.type === "foodcoopcooks-events") {
             return (
-              <FoodCoopCooksEventCard
-                key={`foodcoopcooks-event-${item.data.id}`}
-                event={item.data}
-                date={item.date}
-              />
+              <div key={getItemKey(item)} className="feed-item-enter">
+                <FoodCoopCooksEventCard event={item.data} date={item.date} />
+              </div>
             );
           }
           return (
-            <BlueskyCard
-              key={
-                item.data.repostedBy
-                  ? `bluesky-${item.data.id}-repost-${item.data.repostedBy.handle}`
-                  : `bluesky-${item.data.id}`
-              }
-              post={item.data}
-              date={item.date}
-            />
+            <div key={getItemKey(item)} className="feed-item-enter">
+              <BlueskyCard post={item.data} date={item.date} />
+            </div>
           );
         })}
+        {items.length > 0 && pendingSources > 0 && <FeedItemSkeleton />}
       </div>
 
-      {filteredItems.length === 0 && (
+      {filteredItems.length === 0 && pendingSources === 0 && (
         <p className="text-center text-zinc-500 dark:text-zinc-400 py-8">
           No items found.
         </p>
       )}
+    </div>
+  );
+}
+
+function FeedItemSkeleton() {
+  return (
+    <div className="bg-white dark:bg-zinc-800 rounded-xl p-4 border border-zinc-200 dark:border-zinc-700">
+      <div className="flex items-start gap-3">
+        <div className="w-10 h-10 rounded-full feed-shimmer" />
+        <div className="flex-1 min-w-0 space-y-3">
+          <div className="h-4 w-40 rounded-full feed-shimmer" />
+          <div className="space-y-2">
+            <div className="h-3 w-full rounded-full feed-shimmer" />
+            <div className="h-3 w-5/6 rounded-full feed-shimmer" />
+            <div className="h-3 w-2/3 rounded-full feed-shimmer" />
+          </div>
+        </div>
+      </div>
+      <div className="mt-4 h-32 rounded-lg feed-shimmer" />
     </div>
   );
 }
