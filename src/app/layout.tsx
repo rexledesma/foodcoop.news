@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Geist_Mono, Fira_Sans } from "next/font/google";
+import { Analytics } from "@vercel/analytics/react";
 import "./globals.css";
 import { Navigation } from "@/components/Navigation";
 import { Footer } from "@/components/Footer";
@@ -83,6 +84,7 @@ export default function RootLayout({
           </div>
           <Navigation />
         </ConvexClientProvider>
+        <Analytics />
       </body>
     </html>
   );
