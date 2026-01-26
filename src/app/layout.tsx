@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Geist_Mono, Fira_Sans } from "next/font/google";
 import "./globals.css";
 import { Navigation } from "@/components/Navigation";
+import { Footer } from "@/components/Footer";
 import { ConvexClientProvider } from "@/components/ConvexClientProvider";
 
 const geistMono = Geist_Mono({
@@ -52,9 +53,12 @@ export default function RootLayout({
             className="fixed top-0 left-0 right-0 h-32 bg-gradient-to-b from-[#0693e3]/10 via-[#00d084]/10 to-transparent pointer-events-none z-30"
             aria-hidden="true"
           />
-          <main className="min-h-screen pt-16 md:pt-14">
-            {children}
-          </main>
+          <div className="flex flex-col min-h-screen">
+            <main className="pt-16 md:pt-14">
+              {children}
+            </main>
+            <Footer />
+          </div>
           <Navigation />
         </ConvexClientProvider>
       </body>
