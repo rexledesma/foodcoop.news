@@ -398,7 +398,14 @@ export function DiscoverFeed() {
       // Sort by date, newest first
       combinedItems.sort((a, b) => b.date.getTime() - a.date.getTime());
 
-      setItems(combinedItems);
+      // Filter to only show items from the last 45 days
+      const fortyFiveDaysAgo = new Date();
+      fortyFiveDaysAgo.setDate(fortyFiveDaysAgo.getDate() - 45);
+      const recentItems = combinedItems.filter(
+        (item) => item.date >= fortyFiveDaysAgo
+      );
+
+      setItems(recentItems);
     } catch {
       setError("Failed to load feed");
     } finally {
