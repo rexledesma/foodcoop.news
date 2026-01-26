@@ -73,3 +73,15 @@ export interface FoodCoopCooksArticle {
   pubDate: string;
   image?: string;
 }
+
+export interface FoodCoopCooksEvent {
+  id: string;
+  title: string;
+  description?: string;
+  url: string;
+  startUtc: string;
+  timezone: string;
+  venueName?: string;
+  venueAddress?: string;
+  image?: string;
+}

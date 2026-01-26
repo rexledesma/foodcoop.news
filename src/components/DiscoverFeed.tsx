@@ -7,13 +7,15 @@ import type {
   GazetteArticle,
   FoodCoopAnnouncement,
   FoodCoopCooksArticle,
+  FoodCoopCooksEvent,
 } from "@/lib/types";
 
 type FeedItem =
   | { type: "gazette"; data: GazetteArticle; date: Date }
   | { type: "bluesky"; data: FeedPost; date: Date }
   | { type: "foodcoop"; data: FoodCoopAnnouncement; date: Date }
-  | { type: "foodcoopcooks"; data: FoodCoopCooksArticle; date: Date };
+  | { type: "foodcoopcooks"; data: FoodCoopCooksArticle; date: Date }
+  | { type: "foodcoopcooks-events"; data: FoodCoopCooksEvent; date: Date };
 
 type FilterType = "all" | "foodcoop" | "gazette" | "bluesky" | "foodcoopcooks";
 
@@ -37,6 +39,15 @@ function formatRelativeTime(date: Date): string {
   if (diffHours < 24) return `${diffHours}h ago`;
   if (diffDays < 7) return `${diffDays}d ago`;
   return date.toLocaleDateString();
+}
+
+function formatEventDateTime(startUtc: string, timezone: string): string {
+  const date = new Date(startUtc);
+  return date.toLocaleString("en-US", {
+    dateStyle: "medium",
+    timeStyle: "short",
+    timeZone: timezone,
+  });
 }
 
 function getPostUrl(uri: string): string {
@@ -71,7 +82,11 @@ function GazetteCard({ article }: { article: GazetteArticle; date: Date }) {
             {article.title}
           </p>
           {article.image && (
-            <img src={article.image} alt="" className="mt-3 rounded-lg w-full" />
+            <img
+              src={article.image}
+              alt={`${article.title} cover`}
+              className="mt-3 rounded-lg w-full"
+            />
           )}
         </div>
       </div>
@@ -109,7 +124,11 @@ function FoodCoopCard({ article }: { article: FoodCoopAnnouncement; date: Date }
             </p>
           )}
           {article.image && (
-            <img src={article.image} alt="" className="mt-3 rounded-lg w-full" />
+            <img
+              src={article.image}
+              alt={`${article.title} cover`}
+              className="mt-3 rounded-lg w-full"
+            />
           )}
         </div>
       </div>
@@ -147,7 +166,58 @@ function FoodCoopCooksCard({ article }: { article: FoodCoopCooksArticle; date: D
             </p>
           )}
           {article.image && (
-            <img src={article.image} alt="" className="mt-3 rounded-lg w-full" />
+            <img
+              src={article.image}
+              alt={`${article.title} cover`}
+              className="mt-3 rounded-lg w-full"
+            />
+          )}
+        </div>
+      </div>
+    </a>
+  );
+}
+
+function FoodCoopCooksEventCard({ event }: { event: FoodCoopCooksEvent; date: Date }) {
+  return (
+    <a
+      href={event.url}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="block bg-white dark:bg-zinc-800 rounded-xl p-4 border border-zinc-200 dark:border-zinc-700 hover:border-green-300 dark:hover:border-green-700 transition-colors"
+    >
+      <div className="flex items-start gap-3">
+        <div className="w-10 h-10 rounded-full shrink-0 bg-rose-100 dark:bg-rose-900/30 flex items-center justify-center text-xl">
+          📅
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="font-semibold text-zinc-900 dark:text-zinc-100">
+              Food Coop Cooks
+            </span>
+            <span className="text-sm text-zinc-400 dark:text-zinc-500 shrink-0">
+              {formatEventDateTime(event.startUtc, event.timezone)}
+            </span>
+          </div>
+          <p className="mt-2 font-medium text-zinc-700 dark:text-zinc-300">
+            {event.title}
+          </p>
+          {event.description && (
+            <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400 line-clamp-3">
+              {event.description}
+            </p>
+          )}
+          {(event.venueName || event.venueAddress) && (
+            <p className="mt-2 text-sm text-zinc-500 dark:text-zinc-400">
+              {[event.venueName, event.venueAddress].filter(Boolean).join(" • ")}
+            </p>
+          )}
+          {event.image && (
+            <img
+              src={event.image}
+              alt={`Poster for ${event.title}`}
+              className="mt-3 rounded-lg w-full"
+            />
           )}
         </div>
       </div>
@@ -173,6 +243,7 @@ function BlueskyCard({ post }: { post: FeedPost; date: Date }) {
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
+            aria-hidden="true"
           >
             <path
               strokeLinecap="round"
@@ -298,6 +369,7 @@ function BlueskyCard({ post }: { post: FeedPost; date: Date }) {
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
+                aria-hidden="true"
               >
                 <path
                   strokeLinecap="round"
@@ -314,6 +386,7 @@ function BlueskyCard({ post }: { post: FeedPost; date: Date }) {
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
+                aria-hidden="true"
               >
                 <path
                   strokeLinecap="round"
@@ -330,6 +403,7 @@ function BlueskyCard({ post }: { post: FeedPost; date: Date }) {
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
+                aria-hidden="true"
               >
                 <path
                   strokeLinecap="round"
@@ -353,21 +427,27 @@ export function DiscoverFeed() {
   const [error, setError] = useState("");
   const [filter, setFilter] = useState<FilterType>("all");
 
-  const filteredItems = items.filter(
-    (item) => filter === "all" || item.type === filter
-  );
+  const filteredItems = items.filter((item) => {
+    if (filter === "all") return true;
+    if (filter === "foodcoopcooks") {
+      return item.type === "foodcoopcooks" || item.type === "foodcoopcooks-events";
+    }
+    return item.type === filter;
+  });
 
   const fetchFeeds = useCallback(async () => {
     try {
       setLoading(true);
       setError("");
 
-      const [gazetteRes, blueskyRes, foodcoopRes, foodcoopCooksRes] = await Promise.all([
-        fetch("/api/gazette"),
-        fetch("/api/feed"),
-        fetch("/api/foodcoop"),
-        fetch("/api/foodcoopcooks"),
-      ]);
+      const [gazetteRes, blueskyRes, foodcoopRes, foodcoopCooksRes, foodcoopCooksEventsRes] =
+        await Promise.all([
+          fetch("/api/gazette"),
+          fetch("/api/feed"),
+          fetch("/api/foodcoop"),
+          fetch("/api/foodcoopcooks"),
+          fetch("/api/foodcoopcooks/events"),
+        ]);
 
       const combinedItems: FeedItem[] = [];
 
@@ -417,6 +497,17 @@ export function DiscoverFeed() {
         }
       }
 
+      if (foodcoopCooksEventsRes.ok) {
+        const foodcoopCooksEventsData = await foodcoopCooksEventsRes.json();
+        for (const event of foodcoopCooksEventsData.events as FoodCoopCooksEvent[]) {
+          combinedItems.push({
+            type: "foodcoopcooks-events",
+            data: event,
+            date: new Date(event.startUtc),
+          });
+        }
+      }
+
       // Sort by date, newest first
       combinedItems.sort((a, b) => b.date.getTime() - a.date.getTime());
 
@@ -451,7 +542,11 @@ export function DiscoverFeed() {
     return (
       <div className="bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 px-4 py-3 rounded-xl text-sm">
         {error}
-        <button onClick={fetchFeeds} className="ml-2 underline hover:no-underline">
+        <button
+          type="button"
+          onClick={fetchFeeds}
+          className="ml-2 underline hover:no-underline"
+        >
           Retry
         </button>
       </div>
@@ -463,6 +558,7 @@ export function DiscoverFeed() {
       <div className="flex gap-2 overflow-x-auto pb-2">
         {FILTER_OPTIONS.map((option) => (
           <button
+            type="button"
             key={option.value}
             onClick={() => setFilter(option.value)}
             className={`px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
@@ -501,6 +597,15 @@ export function DiscoverFeed() {
               <FoodCoopCooksCard
                 key={`foodcoopcooks-${item.data.id}`}
                 article={item.data}
+                date={item.date}
+              />
+            );
+          }
+          if (item.type === "foodcoopcooks-events") {
+            return (
+              <FoodCoopCooksEventCard
+                key={`foodcoopcooks-event-${item.data.id}`}
+                event={item.data}
                 date={item.date}
               />
             );
