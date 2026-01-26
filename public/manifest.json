@@ -1,7 +1,7 @@
 {
   "name": "Park Slope Food Coop",
   "short_name": "PSFC",
-  "description": "Web app for Park Slope Food Coop members",
+  "description": "Stay in the loop with the Park Slope Food Coop.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#fafafa",

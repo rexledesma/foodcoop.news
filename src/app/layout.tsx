@@ -22,7 +22,7 @@ export const metadata: Metadata = {
     template: "%s · foodcoop.news",
     default: "foodcoop.news",
   },
-  description: "Web app for Park Slope Food Coop members",
+  description: "Stay in the loop with the Park Slope Food Coop.",
   metadataBase: new URL("https://foodcoop.news"),
   manifest: "/manifest.json",
   appleWebApp: {
@@ -32,7 +32,7 @@ export const metadata: Metadata = {
   },
   openGraph: {
     title: "foodcoop.news",
-    description: "Web app for Park Slope Food Coop members",
+    description: "Stay in the loop with the Park Slope Food Coop.",
     url: "/",
     siteName: "foodcoop.news",
     images: [
@@ -48,7 +48,7 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     title: "foodcoop.news",
-    description: "Web app for Park Slope Food Coop members",
+    description: "Stay in the loop with the Park Slope Food Coop.",
     images: ["/og.png"],
   },
 };
@@ -77,9 +77,7 @@ export default function RootLayout({
             aria-hidden="true"
           />
           <div className="flex flex-col min-h-screen">
-            <main className="pt-16 md:pt-14">
-              {children}
-            </main>
+            <main className="pt-16 md:pt-14">{children}</main>
             <Footer />
           </div>
           <Navigation />
