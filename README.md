@@ -19,3 +19,7 @@ Foodcoop News is a web app for Park Slope Food Coop members to stay up to date a
 ```bash
 pnpm dev
 ```
+
+## License
+
+This project is licensed under the [MIT License](LICENSE).
