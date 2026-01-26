@@ -9,6 +9,15 @@ type FeedItem =
   | { type: "bluesky"; data: FeedPost; date: Date }
   | { type: "foodcoop"; data: FoodCoopAnnouncement; date: Date };
 
+type FilterType = "all" | "foodcoop" | "gazette" | "bluesky";
+
+const FILTER_OPTIONS: { value: FilterType; label: string }[] = [
+  { value: "all", label: "All" },
+  { value: "foodcoop", label: "Coop Announcements" },
+  { value: "gazette", label: "Linewaiters' Gazette" },
+  { value: "bluesky", label: "Bluesky" },
+];
+
 function formatRelativeTime(date: Date): string {
   const now = new Date();
   const diffMs = now.getTime() - date.getTime();
@@ -328,6 +337,11 @@ export function DiscoverFeed() {
   const [items, setItems] = useState<FeedItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [filter, setFilter] = useState<FilterType>("all");
+
+  const filteredItems = items.filter(
+    (item) => filter === "all" || item.type === filter
+  );
 
   useEffect(() => {
     fetchFeeds();
@@ -416,8 +430,24 @@ export function DiscoverFeed() {
 
   return (
     <div className="space-y-4">
+      <div className="flex gap-2 overflow-x-auto pb-2">
+        {FILTER_OPTIONS.map((option) => (
+          <button
+            key={option.value}
+            onClick={() => setFilter(option.value)}
+            className={`px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
+              filter === option.value
+                ? "bg-green-600 text-white"
+                : "bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-700"
+            }`}
+          >
+            {option.label}
+          </button>
+        ))}
+      </div>
+
       <div className="grid gap-4">
-        {items.map((item) => {
+        {filteredItems.map((item) => {
           if (item.type === "gazette") {
             return (
               <GazetteCard
@@ -450,7 +480,7 @@ export function DiscoverFeed() {
         })}
       </div>
 
-      {items.length === 0 && (
+      {filteredItems.length === 0 && (
         <p className="text-center text-zinc-500 dark:text-zinc-400 py-8">
           No items found.
         </p>
