@@ -133,6 +133,11 @@ export async function GET(
       "\r\n",
     );
 
+    const cacheMaxAgeSeconds = 300;
+    const recentlyUpdated =
+      typeof profile.updatedAt === "number" &&
+      Date.now() - profile.updatedAt < cacheMaxAgeSeconds * 1000;
+
     return new NextResponse(
       filteredCalendar.endsWith("\r\n")
         ? filteredCalendar
@@ -140,7 +145,9 @@ export async function GET(
       {
         headers: {
           "content-type": "text/calendar; charset=utf-8",
-          "cache-control": "public, max-age=300, s-maxage=300",
+          "cache-control": recentlyUpdated
+            ? "no-store"
+            : `public, max-age=${cacheMaxAgeSeconds}, s-maxage=${cacheMaxAgeSeconds}`,
         },
       },
     );
