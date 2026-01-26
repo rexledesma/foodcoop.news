@@ -26,7 +26,7 @@ function getServiceAccountCredentials(): {
     decodedCredentials = Buffer.from(credentialsJson, "base64").toString(
       "utf8",
     );
-  } catch (error) {
+  } catch {
     throw new Error("GOOGLE_APPLICATION_CREDENTIALS is not valid base64");
   }
 
@@ -41,7 +41,7 @@ function getServiceAccountCredentials(): {
       private_key: string;
       private_key_id: string;
     };
-  } catch (error) {
+  } catch {
     throw new Error("GOOGLE_APPLICATION_CREDENTIALS is not valid JSON");
   }
   return {

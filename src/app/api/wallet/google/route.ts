@@ -5,7 +5,7 @@ import { generateGoogleWalletURL } from "@/lib/google-wallet";
 
 export const runtime = "nodejs";
 
-export async function GET(request: Request) {
+export async function GET() {
   try {
     const profile = await fetchAuthQuery(
       api.memberProfiles.getMemberProfile,
