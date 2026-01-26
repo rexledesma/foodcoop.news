@@ -400,19 +400,24 @@ export function SettingsForm() {
               className="h-[34px]"
             />
           </button>
-          <button
-            type="button"
-            onClick={handleAddToGoogleWallet}
-            disabled={isGeneratingGooglePass || !memberId || !fullName}
-            className="disabled:opacity-40 transition-opacity hover:opacity-80"
-          >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src="/google-wallet.svg"
-              alt="Add to Google Wallet"
-              className="h-[34px]"
-            />
-          </button>
+          <span className="relative inline-flex items-center group">
+            <button
+              type="button"
+              disabled
+              aria-disabled="true"
+              className="disabled:opacity-40 transition-opacity cursor-not-allowed"
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/google-wallet.svg"
+                alt="Add to Google Wallet"
+                className="h-[34px]"
+              />
+            </button>
+            <span className="pointer-events-none absolute left-1/2 top-full z-10 mt-2 -translate-x-1/2 whitespace-nowrap rounded-md bg-zinc-900 px-2 py-1 text-xs font-medium text-white opacity-0 shadow-sm transition-opacity group-hover:opacity-100">
+              Coming soon!
+            </span>
+          </span>
         </div>
       </form>
 
