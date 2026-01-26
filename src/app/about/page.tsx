@@ -54,7 +54,7 @@ export default function AboutPage() {
           >
             Rex Ledesma
           </Link>
-          , inspired by Jonah Burke's{" "}
+          , inspired by the{" "}
           <Link
             href="https://apps.apple.com/sa/app/park-slope-food-coop/id1236581358"
             target="_blank"
