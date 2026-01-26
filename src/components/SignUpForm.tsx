@@ -103,7 +103,7 @@ export function SignUpForm() {
         Create Account
       </h1>
 
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} className="space-y-4 max-w-sm mx-auto">
         {error && (
           <div className="p-3 text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 rounded-lg">
             {error}
@@ -210,7 +210,7 @@ export function SignUpForm() {
         </button>
       </form>
 
-      <p className="mt-4 text-center text-sm text-zinc-600 dark:text-zinc-400">
+      <p className="mt-4 text-sm text-zinc-600 dark:text-zinc-400 max-w-sm mx-auto text-center">
         Already have an account?{" "}
         <Link
           href="/login"
