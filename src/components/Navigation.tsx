@@ -9,6 +9,40 @@ import { useSession, signOut } from "@/lib/auth-client";
 
 const navItems = [{ href: "/discover", label: "Discover", icon: "compass" }];
 
+type CoopStatus = "open" | "closing-soon" | "closed";
+
+function getCoopStatus(date: Date): CoopStatus {
+  // Get current time in EST/EDT
+  const estOptions = { timeZone: "America/New_York" };
+  const estString = date.toLocaleString("en-US", estOptions);
+  const estDate = new Date(estString);
+
+  const dayOfWeek = estDate.getDay(); // 0 = Sunday, 1 = Monday, etc.
+  const hour = estDate.getHours();
+
+  // Sunday: 8am - 8pm, closing soon at 7pm
+  if (dayOfWeek === 0) {
+    if (hour >= 19 && hour < 20) return "closing-soon";
+    if (hour >= 8 && hour < 20) return "open";
+    return "closed";
+  }
+
+  // Monday - Saturday: 8am - 9pm, closing soon at 8pm
+  if (hour >= 20 && hour < 21) return "closing-soon";
+  if (hour >= 8 && hour < 21) return "open";
+  return "closed";
+}
+
+function formatTimeEST(date: Date): string {
+  return date.toLocaleTimeString("en-US", {
+    timeZone: "America/New_York",
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+    timeZoneName: "short",
+  });
+}
+
 function NavIcon({ icon }: { icon: string }) {
   switch (icon) {
     case "compass":
@@ -26,6 +60,26 @@ export function Navigation() {
   const memberProfile = useQuery(api.memberProfiles.getMemberProfile);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const [timeDisplay, setTimeDisplay] = useState<{
+    time: string;
+    status: CoopStatus;
+  } | null>(null);
+
+  // Update time display every second
+  useEffect(() => {
+    function updateTime() {
+      const now = new Date();
+      setTimeDisplay({
+        time: formatTimeEST(now),
+        status: getCoopStatus(now),
+      });
+    }
+
+    updateTime(); // Initial update
+    const interval = setInterval(updateTime, 1000); // Update every second for smooth transitions
+
+    return () => clearInterval(interval);
+  }, []);
 
   const handleSignOut = async () => {
     await signOut();
@@ -71,7 +125,24 @@ export function Navigation() {
           })}
         </div>
 
-        <div className="flex items-center relative" ref={dropdownRef}>
+        <div className="flex items-center gap-2 relative" ref={dropdownRef}>
+          {timeDisplay && (
+            <div className="relative group">
+              <div className="text-sm text-zinc-500 dark:text-zinc-400 cursor-default">
+                <span>
+                  {timeDisplay.status === "open" && "✨"}
+                  {timeDisplay.status === "closing-soon" && "⏳"}
+                  {timeDisplay.status === "closed" && "🔒"}
+                </span>{" "}
+                <span>{timeDisplay.time}</span>
+              </div>
+              <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 px-3 py-1.5 bg-zinc-800 dark:bg-zinc-700 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
+                {timeDisplay.status === "open" && "The Coop is open"}
+                {timeDisplay.status === "closing-soon" && "The Coop closes soon"}
+                {timeDisplay.status === "closed" && "The Coop is closed"}
+              </div>
+            </div>
+          )}
           {isPending ? (
             <div className="w-8 h-8 md:w-auto md:h-auto md:px-4 md:py-2" />
           ) : session?.user ? (
