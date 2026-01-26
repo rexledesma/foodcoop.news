@@ -64,3 +64,12 @@ export interface FoodCoopAnnouncement {
   pubDate: string;
   image?: string;
 }
+
+export interface FoodCoopCooksArticle {
+  id: string;
+  title: string;
+  description?: string;
+  link: string;
+  pubDate: string;
+  image?: string;
+}

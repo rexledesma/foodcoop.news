@@ -1,21 +1,28 @@
 "use client";
 
 /* eslint-disable @next/next/no-img-element */
-import { useState, useEffect } from "react";
-import type { FeedPost, GazetteArticle, FoodCoopAnnouncement } from "@/lib/types";
+import { useState, useEffect, useCallback } from "react";
+import type {
+  FeedPost,
+  GazetteArticle,
+  FoodCoopAnnouncement,
+  FoodCoopCooksArticle,
+} from "@/lib/types";
 
 type FeedItem =
   | { type: "gazette"; data: GazetteArticle; date: Date }
   | { type: "bluesky"; data: FeedPost; date: Date }
-  | { type: "foodcoop"; data: FoodCoopAnnouncement; date: Date };
+  | { type: "foodcoop"; data: FoodCoopAnnouncement; date: Date }
+  | { type: "foodcoopcooks"; data: FoodCoopCooksArticle; date: Date };
 
-type FilterType = "all" | "foodcoop" | "gazette" | "bluesky";
+type FilterType = "all" | "foodcoop" | "gazette" | "bluesky" | "foodcoopcooks";
 
 const FILTER_OPTIONS: { value: FilterType; label: string }[] = [
   { value: "all", label: "All" },
   { value: "foodcoop", label: "Coop Announcements" },
   { value: "gazette", label: "Linewaiters' Gazette" },
   { value: "bluesky", label: "Bluesky" },
+  { value: "foodcoopcooks", label: "Food Coop Cooks" },
 ];
 
 function formatRelativeTime(date: Date): string {
@@ -64,11 +71,7 @@ function GazetteCard({ article }: { article: GazetteArticle; date: Date }) {
             {article.title}
           </p>
           {article.image && (
-            <img
-              src={article.image}
-              alt=""
-              className="mt-3 rounded-lg w-full"
-            />
+            <img src={article.image} alt="" className="mt-3 rounded-lg w-full" />
           )}
         </div>
       </div>
@@ -106,11 +109,45 @@ function FoodCoopCard({ article }: { article: FoodCoopAnnouncement; date: Date }
             </p>
           )}
           {article.image && (
-            <img
-              src={article.image}
-              alt=""
-              className="mt-3 rounded-lg w-full"
-            />
+            <img src={article.image} alt="" className="mt-3 rounded-lg w-full" />
+          )}
+        </div>
+      </div>
+    </a>
+  );
+}
+
+function FoodCoopCooksCard({ article }: { article: FoodCoopCooksArticle; date: Date }) {
+  return (
+    <a
+      href={article.link}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="block bg-white dark:bg-zinc-800 rounded-xl p-4 border border-zinc-200 dark:border-zinc-700 hover:border-green-300 dark:hover:border-green-700 transition-colors"
+    >
+      <div className="flex items-start gap-3">
+        <div className="w-10 h-10 rounded-full shrink-0 bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center text-xl">
+          🧑‍🍳
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="font-semibold text-zinc-900 dark:text-zinc-100">
+              Food Coop Cooks
+            </span>
+            <span className="text-sm text-zinc-400 dark:text-zinc-500 shrink-0">
+              {formatRelativeTime(new Date(article.pubDate))}
+            </span>
+          </div>
+          <p className="mt-2 font-medium text-zinc-700 dark:text-zinc-300">
+            {article.title}
+          </p>
+          {article.description && (
+            <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400 line-clamp-3">
+              {article.description}
+            </p>
+          )}
+          {article.image && (
+            <img src={article.image} alt="" className="mt-3 rounded-lg w-full" />
           )}
         </div>
       </div>
@@ -193,6 +230,7 @@ function BlueskyCard({ post }: { post: FeedPost; date: Date }) {
               fill="currentColor"
               aria-label="Bluesky"
             >
+              <title>Bluesky</title>
               <path d="m135.72 44.03c66.496 49.921 138.02 151.14 164.28 205.46 26.262-54.316 97.782-155.54 164.28-205.46 47.98-36.021 125.72-63.892 125.72 24.795 0 17.712-10.155 148.79-16.111 170.07-20.703 73.984-96.144 92.854-163.25 81.433 117.3 19.964 147.14 86.092 82.697 152.22-122.39 125.59-175.91-31.511-189.63-71.766-2.514-7.3797-6.0634-17.664-8.9824-26.262-2.9191 8.5976-6.4685 18.882-8.9824 26.262-13.723 40.255-67.243 197.36-189.63 71.766-64.444-66.128-34.605-132.26 82.697-152.22-67.108 11.421-142.55-7.4491-163.25-81.433-5.9562-21.282-16.111-152.36-16.111-170.07 0-88.687 77.742-60.816 125.72-24.795z" />
             </svg>
             <span className="font-semibold text-zinc-900 dark:text-zinc-100 truncate">
@@ -209,9 +247,9 @@ function BlueskyCard({ post }: { post: FeedPost; date: Date }) {
             <div className="mt-3 grid gap-2 grid-cols-2">
               {post.images.map((img, idx) => (
                 <img
-                  key={idx}
+                  key={`${img.fullsize}-${idx}`}
                   src={img.fullsize}
-                  alt={img.alt || "Post image"}
+                   alt={img.alt || "Post media"}
                   className="rounded-lg w-full"
                 />
               ))}
@@ -243,9 +281,9 @@ function BlueskyCard({ post }: { post: FeedPost; date: Date }) {
                 <div className="mt-2 grid gap-2 grid-cols-2">
                   {post.quotedPost.images.map((img, idx) => (
                     <img
-                      key={idx}
+                      key={`${img.fullsize}-${idx}`}
                       src={img.fullsize}
-                      alt={img.alt || "Quoted post image"}
+                      alt={img.alt || "Quoted post media"}
                       className="rounded-lg w-full"
                     />
                   ))}
@@ -319,19 +357,16 @@ export function DiscoverFeed() {
     (item) => filter === "all" || item.type === filter
   );
 
-  useEffect(() => {
-    fetchFeeds();
-  }, []);
-
-  const fetchFeeds = async () => {
+  const fetchFeeds = useCallback(async () => {
     try {
       setLoading(true);
       setError("");
 
-      const [gazetteRes, blueskyRes, foodcoopRes] = await Promise.all([
+      const [gazetteRes, blueskyRes, foodcoopRes, foodcoopCooksRes] = await Promise.all([
         fetch("/api/gazette"),
         fetch("/api/feed"),
         fetch("/api/foodcoop"),
+        fetch("/api/foodcoopcooks"),
       ]);
 
       const combinedItems: FeedItem[] = [];
@@ -371,6 +406,17 @@ export function DiscoverFeed() {
         }
       }
 
+      if (foodcoopCooksRes.ok) {
+        const foodcoopCooksData = await foodcoopCooksRes.json();
+        for (const article of foodcoopCooksData.articles as FoodCoopCooksArticle[]) {
+          combinedItems.push({
+            type: "foodcoopcooks",
+            data: article,
+            date: new Date(article.pubDate),
+          });
+        }
+      }
+
       // Sort by date, newest first
       combinedItems.sort((a, b) => b.date.getTime() - a.date.getTime());
 
@@ -387,7 +433,11 @@ export function DiscoverFeed() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    fetchFeeds();
+  }, [fetchFeeds]);
 
   if (loading) {
     return (
@@ -401,10 +451,7 @@ export function DiscoverFeed() {
     return (
       <div className="bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 px-4 py-3 rounded-xl text-sm">
         {error}
-        <button
-          onClick={fetchFeeds}
-          className="ml-2 underline hover:no-underline"
-        >
+        <button onClick={fetchFeeds} className="ml-2 underline hover:no-underline">
           Retry
         </button>
       </div>
@@ -444,6 +491,15 @@ export function DiscoverFeed() {
             return (
               <FoodCoopCard
                 key={`foodcoop-${item.data.id}`}
+                article={item.data}
+                date={item.date}
+              />
+            );
+          }
+          if (item.type === "foodcoopcooks") {
+            return (
+              <FoodCoopCooksCard
+                key={`foodcoopcooks-${item.data.id}`}
                 article={item.data}
                 date={item.date}
               />
