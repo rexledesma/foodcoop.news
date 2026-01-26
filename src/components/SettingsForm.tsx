@@ -132,7 +132,6 @@ export function SettingsForm() {
   const outlookCalendarUrl = `https://outlook.live.com/calendar/0/addcalendar?url=${encodeURIComponent(
     calendarDisplayUrl.replace(/^https:\/\//, "webcal://"),
   )}`;
-  const appleCalendarUrl = calendarDisplayUrl;
 
   const normalizedSearch = jobSearch.trim().toLowerCase();
   const filteredJobOptions = normalizedSearch
@@ -662,12 +661,6 @@ export function SettingsForm() {
                 className="block w-full text-center px-4 py-2 bg-[#0F6CBD] hover:bg-[#0c5a9e] text-white font-medium rounded-xl transition-colors"
               >
                 Add to Outlook Calendar
-              </a>
-              <a
-                href={appleCalendarUrl}
-                className="block w-full text-center px-4 py-2 bg-black hover:bg-zinc-800 text-white font-medium rounded-xl transition-colors"
-              >
-                Add to Apple Calendar
               </a>
               <button
                 type="button"
