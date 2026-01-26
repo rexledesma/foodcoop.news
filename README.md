@@ -1,3 +1,5 @@
+# foodcoop.news
+
 Foodcoop News is a web app for Park Slope Food Coop members to stay up to date and manage their member tools in one place.
 
 ## Features
