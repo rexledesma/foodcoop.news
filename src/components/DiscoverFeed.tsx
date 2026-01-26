@@ -360,6 +360,8 @@ export function DiscoverFeed() {
       if (blueskyRes.ok) {
         const blueskyData = await blueskyRes.json();
         for (const post of blueskyData.posts as FeedPost[]) {
+          // Skip reposts in the UI (they're still available in the API)
+          if (post.repostedBy) continue;
           combinedItems.push({
             type: "bluesky",
             data: post,
