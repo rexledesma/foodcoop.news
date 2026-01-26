@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useMutation } from "convex/react";
 import { v4 as uuidv4 } from "uuid";
@@ -10,8 +10,9 @@ import { api } from "../../convex/_generated/api";
 
 export function SignUpForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const createMemberProfile = useMutation(api.memberProfiles.createMemberProfile);
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useState(searchParams.get("email") ?? "");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [name, setName] = useState("");
