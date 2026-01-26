@@ -1,7 +1,7 @@
 "use client";
 
 /* eslint-disable @next/next/no-img-element */
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type {
   FeedPost,
   GazetteArticle,
@@ -106,7 +106,12 @@ function GazetteCard({ article }: { article: GazetteArticle; date: Date }) {
   );
 }
 
-function FoodCoopCard({ article }: { article: FoodCoopAnnouncement; date: Date }) {
+function FoodCoopCard({
+  article,
+}: {
+  article: FoodCoopAnnouncement;
+  date: Date;
+}) {
   return (
     <a
       href={article.link}
@@ -148,7 +153,12 @@ function FoodCoopCard({ article }: { article: FoodCoopAnnouncement; date: Date }
   );
 }
 
-function FoodCoopCooksCard({ article }: { article: FoodCoopCooksArticle; date: Date }) {
+function FoodCoopCooksCard({
+  article,
+}: {
+  article: FoodCoopCooksArticle;
+  date: Date;
+}) {
   return (
     <a
       href={article.link}
@@ -190,7 +200,12 @@ function FoodCoopCooksCard({ article }: { article: FoodCoopCooksArticle; date: D
   );
 }
 
-function FoodCoopCooksEventCard({ event }: { event: FoodCoopCooksEvent; date: Date }) {
+function FoodCoopCooksEventCard({
+  event,
+}: {
+  event: FoodCoopCooksEvent;
+  date: Date;
+}) {
   return (
     <a
       href={event.url}
@@ -221,7 +236,9 @@ function FoodCoopCooksEventCard({ event }: { event: FoodCoopCooksEvent; date: Da
           )}
           {(event.venueName || event.venueAddress) && (
             <p className="mt-2 text-sm text-zinc-500 dark:text-zinc-400">
-              {[event.venueName, event.venueAddress].filter(Boolean).join(" • ")}
+              {[event.venueName, event.venueAddress]
+                .filter(Boolean)
+                .join(" • ")}
             </p>
           )}
           {event.image && (
@@ -332,7 +349,7 @@ function BlueskyCard({ post }: { post: FeedPost; date: Date }) {
                 <img
                   key={`${img.fullsize}-${idx}`}
                   src={img.fullsize}
-                   alt={img.alt || "Post media"}
+                  alt={img.alt || "Post media"}
                   className="rounded-lg w-full"
                 />
               ))}
@@ -447,7 +464,9 @@ export function DiscoverFeed() {
   const filteredItems = items.filter((item) => {
     if (filter === "all") return true;
     if (filter === "foodcoopcooks") {
-      return item.type === "foodcoopcooks" || item.type === "foodcoopcooks-events";
+      return (
+        item.type === "foodcoopcooks" || item.type === "foodcoopcooks-events"
+      );
     }
     return item.type === filter;
   });
@@ -464,20 +483,26 @@ export function DiscoverFeed() {
       const fortyFiveDaysAgo = new Date();
       fortyFiveDaysAgo.setDate(fortyFiveDaysAgo.getDate() - 45);
 
+      const sortAndPrune = (list: FeedItem[]) =>
+        [...list]
+          .sort((a, b) => b.date.getTime() - a.date.getTime())
+          .filter((item) => item.date >= fortyFiveDaysAgo);
+
       const appendItems = (newItems: FeedItem[]) => {
-        if (newItems.length === 0) return;
         setItems((prev) => {
+          if (newItems.length === 0) return sortAndPrune(prev);
           const seen = new Set(prev.map(getItemKey));
           const filtered = newItems.filter(
-            (item) => item.date >= fortyFiveDaysAgo && !seen.has(getItemKey(item))
+            (item) =>
+              item.date >= fortyFiveDaysAgo && !seen.has(getItemKey(item)),
           );
-          if (filtered.length === 0) return prev;
+          if (filtered.length === 0) return sortAndPrune(prev);
           const merged = [...prev, ...filtered];
           if (!hasItemsRef.current && merged.length > 0) {
             hasItemsRef.current = true;
             setLoading(false);
           }
-          return merged;
+          return sortAndPrune(merged);
         });
       };
 
@@ -542,10 +567,7 @@ export function DiscoverFeed() {
         if (finalizedRef.current) return;
         finalizedRef.current = true;
         setItems((prev) => {
-          const sorted = [...prev].sort(
-            (a, b) => b.date.getTime() - a.date.getTime()
-          );
-          return sorted.filter((item) => item.date >= fortyFiveDaysAgo);
+          return sortAndPrune(prev);
         });
         if (!hasSuccessRef.current) {
           setError("Failed to load feed");
@@ -565,6 +587,7 @@ export function DiscoverFeed() {
             // Ignore per-source errors; show overall error if all fail.
           })
           .finally(() => {
+            setItems((prev) => sortAndPrune(prev));
             setPendingSources((prev) => {
               const next = Math.max(0, prev - 1);
               if (next === 0) finalize();
@@ -579,7 +602,10 @@ export function DiscoverFeed() {
   }, []);
 
   useEffect(() => {
-    fetchFeeds();
+    const loadTimeout = window.setTimeout(() => {
+      fetchFeeds();
+    }, 0);
+    return () => window.clearTimeout(loadTimeout);
   }, [fetchFeeds]);
 
   if (loading && items.length === 0) {
