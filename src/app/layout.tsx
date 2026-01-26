@@ -22,11 +22,33 @@ export const metadata: Metadata = {
     default: "foodcoop.news",
   },
   description: "Web app for Park Slope Food Coop members",
+  metadataBase: new URL("https://foodcoop.news"),
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
     title: "PSFC",
+  },
+  openGraph: {
+    title: "foodcoop.news",
+    description: "Web app for Park Slope Food Coop members",
+    url: "/",
+    siteName: "foodcoop.news",
+    images: [
+      {
+        url: "/og.png",
+        width: 1200,
+        height: 630,
+        alt: "📰 foodcoop.news",
+      },
+    ],
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "foodcoop.news",
+    description: "Web app for Park Slope Food Coop members",
+    images: ["/og.png"],
   },
 };
 
