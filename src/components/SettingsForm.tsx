@@ -61,7 +61,10 @@ const SHIFT_JOB_OPTIONS = [
 type ToastVariant = "success" | "error" | "warning";
 
 const normalizeJobSortKey = (job: string) =>
-  job.replace(/^\p{Extended_Pictographic}+\s*/gu, "").toLowerCase().trim();
+  job
+    .replace(/^\p{Extended_Pictographic}+\s*/gu, "")
+    .toLowerCase()
+    .trim();
 
 export function SettingsForm() {
   const router = useRouter();
@@ -159,6 +162,23 @@ export function SettingsForm() {
     const element = job ? jobOptionRefs.current[job] : null;
     element?.scrollIntoView({ block: "nearest" });
   }, [filteredJobOptions, highlightedJobIndex, isJobDropdownOpen]);
+
+  useEffect(() => {
+    if (!isCalendarModalOpen) {
+      return;
+    }
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setIsCalendarModalOpen(false);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isCalendarModalOpen]);
 
   const showToast = (variant: ToastVariant, message: string) => {
     const id = Date.now();
@@ -608,22 +628,13 @@ export function SettingsForm() {
       </section>
 
       {isCalendarModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4 relative">
-          <button
-            type="button"
-            className="absolute inset-0 cursor-default"
-            aria-label="Close calendar modal"
-            onClick={() => setIsCalendarModalOpen(false)}
-            onKeyDown={(event) => {
-              if (event.key === "Escape") {
-                setIsCalendarModalOpen(false);
-              }
-            }}
-          />
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4"
+          onClick={() => setIsCalendarModalOpen(false)}
+        >
           <div
-            className="relative w-full max-w-sm rounded-2xl bg-white dark:bg-zinc-900 p-6 shadow-xl"
-            role="dialog"
-            aria-modal="true"
+            className="w-full max-w-sm rounded-2xl bg-white dark:bg-zinc-900 p-6 shadow-xl"
+            onClick={(e) => e.stopPropagation()}
           >
             <div>
               <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
