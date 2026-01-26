@@ -357,19 +357,35 @@ export function SettingsForm() {
 
   const handleAddToGoogleWallet = async () => {
     setIsGeneratingGooglePass(true);
+    const toastId = showToast("warning", "Saving card details...");
     try {
+      await updateMemberProfile({
+        memberName: fullName.trim(),
+        memberId: memberId.trim(),
+      });
+      updateToast(toastId, {
+        variant: "success",
+        message: "Card details saved. Generating pass...",
+      });
+
       const response = await fetch("/api/wallet/google");
       if (!response.ok) {
         throw new Error("Failed to generate pass");
       }
       const { url } = await response.json();
       window.open(url, "_blank");
-      enqueueToast("success", "Opening Google Wallet...");
+      updateToast(toastId, {
+        variant: "success",
+        message: "Opening Google Wallet...",
+      });
+      dismissToast(toastId);
     } catch (error) {
-      enqueueToast(
-        "error",
-        error instanceof Error ? error.message : "Failed to generate pass",
-      );
+      updateToast(toastId, {
+        variant: "error",
+        message:
+          error instanceof Error ? error.message : "Failed to generate pass",
+      });
+      dismissToast(toastId);
     } finally {
       setIsGeneratingGooglePass(false);
     }
@@ -432,24 +448,19 @@ export function SettingsForm() {
               className="h-[34px]"
             />
           </button>
-          <span className="relative inline-flex items-center group">
-            <button
-              type="button"
-              disabled
-              aria-disabled="true"
-              className="disabled:opacity-40 transition-opacity cursor-not-allowed"
-            >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src="/google-wallet.svg"
-                alt="Add to Google Wallet"
-                className="h-[34px]"
-              />
-            </button>
-            <span className="pointer-events-none absolute left-1/2 top-full z-10 mt-2 -translate-x-1/2 whitespace-nowrap rounded-md bg-zinc-900 px-2 py-1 text-xs font-medium text-white opacity-0 shadow-sm transition-opacity group-hover:opacity-100">
-              Coming soon!
-            </span>
-          </span>
+          <button
+            type="button"
+            onClick={handleAddToGoogleWallet}
+            disabled={isGeneratingGooglePass || !memberId || !fullName}
+            className="disabled:opacity-40 transition-opacity hover:opacity-80"
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/google-wallet.svg"
+              alt="Add to Google Wallet"
+              className="h-[34px]"
+            />
+          </button>
         </div>
       </form>
 
