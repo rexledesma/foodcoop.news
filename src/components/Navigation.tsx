@@ -138,7 +138,8 @@ export function Navigation() {
               </div>
               <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 px-3 py-1.5 bg-zinc-800 dark:bg-zinc-700 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
                 {timeDisplay.status === "open" && "The Coop is open"}
-                {timeDisplay.status === "closing-soon" && "The Coop closes soon"}
+                {timeDisplay.status === "closing-soon" &&
+                  "The Coop closes soon"}
                 {timeDisplay.status === "closed" && "The Coop is closed"}
               </div>
             </div>
@@ -149,9 +150,10 @@ export function Navigation() {
             <>
               <button
                 onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                className="flex items-center justify-center w-10 h-10 rounded-full transition-colors hover:bg-zinc-200/50 dark:hover:bg-zinc-700/50"
+                className="inline-flex items-center gap-1.5 rounded-full px-2 py-2 text-sm font-medium text-zinc-700 transition-colors hover:text-zinc-900 dark:text-zinc-300 dark:hover:text-zinc-100"
               >
                 <span className="text-xl">🥕</span>
+                <span className="hidden sm:inline">Account</span>
               </button>
 
               {isDropdownOpen && (
