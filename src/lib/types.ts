@@ -55,3 +55,12 @@ export interface GazetteArticle {
   pubDate: string;
   image?: string;
 }
+
+export interface FoodCoopAnnouncement {
+  id: string;
+  title: string;
+  description?: string;
+  link: string;
+  pubDate: string;
+  image?: string;
+}

@@ -13,6 +13,7 @@
     "better-auth": "^1.4.9",
     "cheerio": "^1.1.2",
     "convex": "^1.31.6",
+    "html-entities": "^2.6.0",
     "jsonwebtoken": "^9.0.3",
     "next": "16.1.1",
     "passkit-generator": "^3.5.7",

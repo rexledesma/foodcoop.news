@@ -2,11 +2,12 @@
 
 /* eslint-disable @next/next/no-img-element */
 import { useState, useEffect } from "react";
-import type { FeedPost, GazetteArticle } from "@/lib/types";
+import type { FeedPost, GazetteArticle, FoodCoopAnnouncement } from "@/lib/types";
 
 type FeedItem =
   | { type: "gazette"; data: GazetteArticle; date: Date }
-  | { type: "bluesky"; data: FeedPost; date: Date };
+  | { type: "bluesky"; data: FeedPost; date: Date }
+  | { type: "foodcoop"; data: FoodCoopAnnouncement; date: Date };
 
 function formatRelativeTime(date: Date): string {
   const now = new Date();
@@ -65,6 +66,60 @@ function GazetteCard({ article }: { article: GazetteArticle; date: Date }) {
           <p className="mt-2 text-zinc-700 dark:text-zinc-300">
             {article.title}
           </p>
+          {article.image && (
+            <img
+              src={article.image}
+              alt=""
+              className="mt-3 rounded-lg w-full"
+            />
+          )}
+        </div>
+      </div>
+    </a>
+  );
+}
+
+function FoodCoopCard({ article }: { article: FoodCoopAnnouncement; date: Date }) {
+  return (
+    <a
+      href={article.link}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="block bg-white dark:bg-zinc-800 rounded-xl p-4 border border-zinc-200 dark:border-zinc-700 hover:border-green-300 dark:hover:border-green-700 transition-colors"
+    >
+      <div className="flex items-start gap-3">
+        <div className="w-10 h-10 rounded-full shrink-0 bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
+          <svg
+            className="w-5 h-5 text-green-700 dark:text-green-400"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="2"
+              d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
+            />
+          </svg>
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="font-semibold text-zinc-900 dark:text-zinc-100">
+              Park Slope Food Coop
+            </span>
+            <span className="text-sm text-zinc-400 dark:text-zinc-500 shrink-0">
+              {formatRelativeTime(new Date(article.pubDate))}
+            </span>
+          </div>
+          <p className="mt-2 font-medium text-zinc-700 dark:text-zinc-300">
+            {article.title}
+          </p>
+          {article.description && (
+            <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400 line-clamp-3">
+              {article.description}
+            </p>
+          )}
           {article.image && (
             <img
               src={article.image}
@@ -283,9 +338,10 @@ export function DiscoverFeed() {
       setLoading(true);
       setError("");
 
-      const [gazetteRes, blueskyRes] = await Promise.all([
+      const [gazetteRes, blueskyRes, foodcoopRes] = await Promise.all([
         fetch("/api/gazette"),
         fetch("/api/feed"),
+        fetch("/api/foodcoop"),
       ]);
 
       const combinedItems: FeedItem[] = [];
@@ -308,6 +364,17 @@ export function DiscoverFeed() {
             type: "bluesky",
             data: post,
             date: new Date(post.createdAt),
+          });
+        }
+      }
+
+      if (foodcoopRes.ok) {
+        const foodcoopData = await foodcoopRes.json();
+        for (const announcement of foodcoopData.articles as FoodCoopAnnouncement[]) {
+          combinedItems.push({
+            type: "foodcoop",
+            data: announcement,
+            date: new Date(announcement.pubDate),
           });
         }
       }
@@ -348,14 +415,26 @@ export function DiscoverFeed() {
   return (
     <div className="space-y-4">
       <div className="grid gap-4">
-        {items.map((item) =>
-          item.type === "gazette" ? (
-            <GazetteCard
-              key={`gazette-${item.data.id}`}
-              article={item.data}
-              date={item.date}
-            />
-          ) : (
+        {items.map((item) => {
+          if (item.type === "gazette") {
+            return (
+              <GazetteCard
+                key={`gazette-${item.data.id}`}
+                article={item.data}
+                date={item.date}
+              />
+            );
+          }
+          if (item.type === "foodcoop") {
+            return (
+              <FoodCoopCard
+                key={`foodcoop-${item.data.id}`}
+                article={item.data}
+                date={item.date}
+              />
+            );
+          }
+          return (
             <BlueskyCard
               key={
                 item.data.repostedBy
@@ -365,8 +444,8 @@ export function DiscoverFeed() {
               post={item.data}
               date={item.date}
             />
-          )
-        )}
+          );
+        })}
       </div>
 
       {items.length === 0 && (
