@@ -14,14 +14,14 @@ export const createMemberProfile = mutation({
       throw new Error("Not authenticated");
     }
 
-    // Check if profile already exists
+    // Check if profile already exists - return existing ID (idempotent)
     const existing = await ctx.db
       .query("memberProfiles")
       .withIndex("by_userId", (q) => q.eq("userId", user._id))
       .first();
 
     if (existing) {
-      throw new Error("Member profile already exists");
+      return existing._id;
     }
 
     const now = Date.now();

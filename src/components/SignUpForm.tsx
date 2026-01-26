@@ -1,51 +1,19 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { useMutation } from "convex/react";
-import { v4 as uuidv4 } from "uuid";
 import { signUp } from "@/lib/auth-client";
-import { api } from "../../convex/_generated/api";
 
 export function SignUpForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const createMemberProfile = useMutation(api.memberProfiles.createMemberProfile);
   const [email, setEmail] = useState(searchParams.get("email") ?? "");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [name, setName] = useState("");
-  const [memberId, setMemberId] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const [pendingProfile, setPendingProfile] = useState<{
-    memberId: string;
-    memberName: string;
-  } | null>(null);
-
-  // Create member profile after signup completes
-  useEffect(() => {
-    if (!pendingProfile) return;
-
-    const createProfile = async () => {
-      try {
-        await createMemberProfile({
-          memberId: pendingProfile.memberId,
-          memberName: pendingProfile.memberName,
-          passSerialNumber: uuidv4(),
-        });
-        router.push("/discover");
-      } catch (err) {
-        console.error("Failed to create profile:", err);
-        setError("Failed to create member profile. Please try again.");
-        setLoading(false);
-        setPendingProfile(null);
-      }
-    };
-
-    createProfile();
-  }, [pendingProfile, createMemberProfile, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -60,16 +28,6 @@ export function SignUpForm() {
       setError("Password must be at least 8 characters");
       return;
     }
-
-    // Validate member ID (4-10 digits)
-    const memberIdDigits = memberId.replace(/\D/g, "");
-    if (memberIdDigits.length < 4 || memberIdDigits.length > 10) {
-      setError("Member ID must be 4-10 digits");
-      return;
-    }
-
-    // Normalize member ID to at least 6 digits
-    const normalizedMemberId = memberIdDigits.padStart(6, "0");
 
     setLoading(true);
 
@@ -86,11 +44,8 @@ export function SignUpForm() {
         return;
       }
 
-      // Set pending profile to trigger creation after auth is ready
-      setPendingProfile({
-        memberId: normalizedMemberId,
-        memberName: name,
-      });
+      // Profile is auto-created via Convex trigger on user creation
+      router.push("/discover");
     } catch {
       setError("An unexpected error occurred");
       setLoading(false);
@@ -125,25 +80,6 @@ export function SignUpForm() {
             required
             className="w-full px-3 py-2 border border-zinc-300 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400"
             placeholder="Your name"
-          />
-        </div>
-
-        <div>
-          <label
-            htmlFor="memberId"
-            className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1"
-          >
-            Member ID
-          </label>
-          <input
-            id="memberId"
-            type="text"
-            inputMode="numeric"
-            value={memberId}
-            onChange={(e) => setMemberId(e.target.value)}
-            required
-            className="w-full px-3 py-2 border border-zinc-300 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400"
-            placeholder="Your PSFC member ID"
           />
         </div>
 

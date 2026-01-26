@@ -60,6 +60,9 @@ const SHIFT_JOB_OPTIONS = [
 
 type ToastVariant = "success" | "error" | "warning";
 
+const normalizeJobSortKey = (job: string) =>
+  job.replace(/^\p{Extended_Pictographic}+\s*/gu, "").toLowerCase().trim();
+
 export function SettingsForm() {
   const router = useRouter();
   const { data: session, isPending: sessionPending } = useSession();
@@ -89,12 +92,6 @@ export function SettingsForm() {
   >([]);
   const [isGeneratingPass, setIsGeneratingPass] = useState(false);
   const [isGeneratingGooglePass, setIsGeneratingGooglePass] = useState(false);
-
-  const normalizeJobSortKey = (job: string) =>
-    job
-      .replace(/^\p{Extended_Pictographic}+\s*/gu, "")
-      .toLowerCase()
-      .trim();
 
   // Initialize form with profile data
   useEffect(() => {
@@ -298,7 +295,17 @@ export function SettingsForm() {
 
   const handleAddToWallet = async () => {
     setIsGeneratingPass(true);
+    const toastId = showToast("warning", "Saving card details...");
     try {
+      await updateMemberProfile({
+        memberName: fullName.trim(),
+        memberId: memberId.trim(),
+      });
+      updateToast(toastId, {
+        variant: "success",
+        message: "Card details saved. Generating pass...",
+      });
+
       const response = await fetch("/api/wallet/pass");
       if (!response.ok) {
         throw new Error("Failed to generate pass");
@@ -312,12 +319,18 @@ export function SettingsForm() {
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
-      enqueueToast("success", "Pass downloaded successfully");
+      updateToast(toastId, {
+        variant: "success",
+        message: "Pass downloaded successfully.",
+      });
+      dismissToast(toastId);
     } catch (error) {
-      enqueueToast(
-        "error",
-        error instanceof Error ? error.message : "Failed to generate pass",
-      );
+      updateToast(toastId, {
+        variant: "error",
+        message:
+          error instanceof Error ? error.message : "Failed to generate pass",
+      });
+      dismissToast(toastId);
     } finally {
       setIsGeneratingPass(false);
     }
@@ -595,13 +608,22 @@ export function SettingsForm() {
       </section>
 
       {isCalendarModalOpen && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4"
-          onClick={() => setIsCalendarModalOpen(false)}
-        >
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4 relative">
+          <button
+            type="button"
+            className="absolute inset-0 cursor-default"
+            aria-label="Close calendar modal"
+            onClick={() => setIsCalendarModalOpen(false)}
+            onKeyDown={(event) => {
+              if (event.key === "Escape") {
+                setIsCalendarModalOpen(false);
+              }
+            }}
+          />
           <div
-            className="w-full max-w-sm rounded-2xl bg-white dark:bg-zinc-900 p-6 shadow-xl"
-            onClick={(e) => e.stopPropagation()}
+            className="relative w-full max-w-sm rounded-2xl bg-white dark:bg-zinc-900 p-6 shadow-xl"
+            role="dialog"
+            aria-modal="true"
           >
             <div>
               <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
