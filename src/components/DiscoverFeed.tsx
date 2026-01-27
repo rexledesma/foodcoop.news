@@ -174,7 +174,7 @@ function FoodCoopCard({
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
             <span className="font-semibold text-zinc-900 dark:text-zinc-100">
-              Park Slope Food Coop
+              Announcements
             </span>
             <span className="text-sm text-zinc-400 dark:text-zinc-500 shrink-0">
               {formatRelativeTime(new Date(article.pubDate))}
@@ -221,7 +221,7 @@ function FoodCoopCooksCard({
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
             <span className="font-semibold text-zinc-900 dark:text-zinc-100">
-              Food Coop Cooks
+              Cooking
             </span>
             <span className="text-sm text-zinc-400 dark:text-zinc-500 shrink-0">
               {formatRelativeTime(new Date(article.pubDate))}
@@ -820,8 +820,8 @@ export function DiscoverFeed() {
               <div key={getItemKey(item)} className="feed-item-enter">
                 <EventbriteEventCard
                   event={item.data}
-                  label="Food Coop Cooks"
-                  emoji="📅"
+                  label="Cooking"
+                  emoji="🧑‍🍳"
                 />
               </div>
             );
@@ -842,7 +842,7 @@ export function DiscoverFeed() {
               <div key={getItemKey(item)} className="feed-item-enter">
                 <EventbriteEventCard
                   event={item.data}
-                  label="Concert Series"
+                  label="Concerts"
                   emoji="🎶"
                 />
               </div>
