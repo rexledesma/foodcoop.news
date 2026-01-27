@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
@@ -8,6 +9,7 @@ import { useSession } from "@/lib/auth-client";
 import { AppleWalletCard } from "./AppleWalletCard";
 
 const CALENDAR_PROXY_PATH = "/api/calendar";
+const DRAFT_STORAGE_KEY = "integrations:draft";
 
 const SHIFT_JOB_OPTIONS = [
   "🚽 Bathroom",
@@ -59,6 +61,65 @@ const SHIFT_JOB_OPTIONS = [
 ];
 
 type ToastVariant = "success" | "error" | "warning";
+type IntegrationDraft = {
+  fullName: string;
+  memberId: string;
+  selectedJobs: string[];
+};
+
+const loadDraft = (): IntegrationDraft | null => {
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  try {
+    const raw = window.localStorage.getItem(DRAFT_STORAGE_KEY);
+    if (!raw) {
+      return null;
+    }
+
+    const parsed = JSON.parse(raw) as Partial<IntegrationDraft>;
+    if (!parsed || typeof parsed !== "object") {
+      return null;
+    }
+
+    const fullName = typeof parsed.fullName === "string" ? parsed.fullName : "";
+    const memberId = typeof parsed.memberId === "string" ? parsed.memberId : "";
+    const selectedJobs = Array.isArray(parsed.selectedJobs)
+      ? parsed.selectedJobs.filter(
+          (job): job is string => typeof job === "string",
+        )
+      : [];
+
+    return { fullName, memberId, selectedJobs };
+  } catch {
+    return null;
+  }
+};
+
+const saveDraft = (draft: IntegrationDraft) => {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  try {
+    window.localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(draft));
+  } catch {
+    // Ignore localStorage write errors
+  }
+};
+
+const clearDraft = () => {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  try {
+    window.localStorage.removeItem(DRAFT_STORAGE_KEY);
+  } catch {
+    // Ignore localStorage errors
+  }
+};
 
 const normalizeJobSortKey = (job: string) =>
   job
@@ -85,6 +146,7 @@ export function Integrations() {
   const [isJobDropdownOpen, setIsJobDropdownOpen] = useState(false);
   const [highlightedJobIndex, setHighlightedJobIndex] = useState(0);
   const jobOptionRefs = useRef<Record<string, HTMLButtonElement | null>>({});
+  const isDraftReadyRef = useRef(false);
   const [toasts, setToasts] = useState<
     {
       id: number;
@@ -111,16 +173,43 @@ export function Integrations() {
     }
   }, [memberProfile]);
 
-  // Redirect if not authenticated
   useEffect(() => {
-    if (!sessionPending && !session?.user) {
-      router.push("/signup?reason=integrations");
+    if (session?.user) {
+      return;
     }
-  }, [session, sessionPending, router]);
+    const draft = loadDraft();
+    if (draft) {
+      setFullName(draft.fullName);
+      setMemberId(draft.memberId);
+      setSelectedJobs(draft.selectedJobs);
+    }
+    isDraftReadyRef.current = true;
+  }, [session?.user]);
+
+  useEffect(() => {
+    if (session?.user && memberProfile) {
+      clearDraft();
+    }
+  }, [session?.user, memberProfile]);
+
+  useEffect(() => {
+    if (session?.user || !isDraftReadyRef.current) {
+      return;
+    }
+    saveDraft({ fullName, memberId, selectedJobs });
+  }, [fullName, memberId, selectedJobs, session?.user]);
 
   useEffect(() => {
     setCalendarOrigin(window.location.origin);
   }, []);
+
+  const requireAuth = () => {
+    if (session?.user) {
+      return true;
+    }
+    router.push("/signup?reason=integrations");
+    return false;
+  };
 
   const calendarPath = `${CALENDAR_PROXY_PATH}/${calendarId}`;
   const calendarDisplayUrl = calendarOrigin
@@ -232,6 +321,9 @@ export function Integrations() {
   };
 
   const saveJobFilters = async (nextJobs: string[]) => {
+    if (!session?.user) {
+      return;
+    }
     try {
       await updateMemberProfile({ jobFilters: nextJobs });
     } catch (error) {
@@ -263,10 +355,16 @@ export function Integrations() {
   };
 
   const handleOpenCalendarModal = () => {
+    if (!requireAuth()) {
+      return;
+    }
     setIsCalendarModalOpen(true);
   };
 
   const handleCopyCalendarUrl = async () => {
+    if (!requireAuth()) {
+      return;
+    }
     if (!calendarId) {
       enqueueToast("error", "Create a calendar subscription first.");
       return;
@@ -285,6 +383,9 @@ export function Integrations() {
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!requireAuth()) {
+      return;
+    }
     setIsSaving(true);
 
     const toastId = showToast("warning", "Saving profile...");
@@ -313,6 +414,9 @@ export function Integrations() {
   };
 
   const handleAddToWallet = async () => {
+    if (!requireAuth()) {
+      return;
+    }
     setIsGeneratingPass(true);
     const toastId = showToast("warning", "Saving card details...");
     try {
@@ -356,6 +460,9 @@ export function Integrations() {
   };
 
   const handleAddToGoogleWallet = async () => {
+    if (!requireAuth()) {
+      return;
+    }
     setIsGeneratingGooglePass(true);
     const toastId = showToast("warning", "Saving card details...");
     try {
@@ -410,6 +517,19 @@ export function Integrations() {
       <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100 mb-6">
         Integrations
       </h1>
+
+      {!session?.user && !sessionPending && (
+        <div className="mb-6 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+          <Link
+            href="/signup?reason=integrations"
+            className="font-semibold underline underline-offset-4"
+          >
+            Create an account
+          </Link>{" "}
+          to save changes, add wallet passes, and subscribe to the shift
+          calendar.
+        </div>
+      )}
 
       <form onSubmit={handleSave} className="space-y-6">
         <section className="space-y-4">

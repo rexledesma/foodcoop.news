@@ -13,7 +13,6 @@ const navItems = [
     href: "/integrations",
     label: "Integrations",
     icon: "gear",
-    requiresAuth: true,
   },
 ];
 
@@ -115,24 +114,15 @@ export function Navigation() {
       <div className="flex justify-between items-center h-16 md:h-14 max-w-3xl mx-auto md:gap-2 px-4">
         <div className="flex justify-start md:justify-center items-center md:gap-2 -ml-2 md:-ml-4">
           {navItems.map((item) => {
-            const isDisabled = item.requiresAuth && !session?.user;
-            const isActive = !isDisabled && pathname === item.href;
-            const href = isDisabled
-              ? "/signup?reason=integrations"
-              : item.href;
+            const isActive = pathname === item.href;
             return (
               <Link
                 key={item.href}
-                href={href}
-                aria-disabled={isDisabled}
+                href={item.href}
                 className={`flex flex-row items-center justify-center gap-2 px-2 py-2 md:px-4 rounded-lg transition-colors ${
                   isActive
                     ? "text-black dark:text-white"
                     : "text-zinc-500 dark:text-zinc-400 hover:text-black dark:hover:text-white"
-                } ${
-                  isDisabled
-                    ? "opacity-60 hover:text-zinc-500 dark:hover:text-zinc-400"
-                    : ""
                 }`}
               >
                 <NavIcon icon={item.icon} />

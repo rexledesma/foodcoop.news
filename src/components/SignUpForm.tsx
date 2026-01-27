@@ -63,8 +63,8 @@ export function SignUpForm() {
       <form onSubmit={handleSubmit} className="space-y-4 max-w-sm mx-auto">
         {showIntegrationsPrompt && (
           <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-            To use features like shift calendar sync and digital wallet ids,
-            create an account.
+            Create an account to save changes, add wallet passes, and subscribe
+            to the shift calendar.
           </div>
         )}
         {error && (
