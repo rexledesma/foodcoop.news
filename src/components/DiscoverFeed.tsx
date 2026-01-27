@@ -8,6 +8,7 @@ import type {
   FoodCoopAnnouncement,
   FoodCoopCooksArticle,
   EventbriteEvent,
+  FoodcoopEvent,
 } from "@/lib/types";
 
 type FeedItem =
@@ -17,7 +18,8 @@ type FeedItem =
   | { type: "foodcoopcooks"; data: FoodCoopCooksArticle; date: Date }
   | { type: "foodcoopcooks-events"; data: EventbriteEvent; date: Date }
   | { type: "wordsprouts-events"; data: EventbriteEvent; date: Date }
-  | { type: "concert-series-events"; data: EventbriteEvent; date: Date };
+  | { type: "concert-series-events"; data: EventbriteEvent; date: Date }
+  | { type: "gm-events"; data: FoodcoopEvent; date: Date };
 
 type FilterType =
   | "latest"
@@ -54,6 +56,9 @@ function getItemKey(item: FeedItem) {
   }
   if (item.type === "concert-series-events") {
     return `concert-series-event-${item.data.id}`;
+  }
+  if (item.type === "gm-events") {
+    return `gm-event-${item.data.id}`;
   }
   return item.data.repostedBy
     ? `bluesky-${item.data.id}-repost-${item.data.repostedBy.handle}`
@@ -488,7 +493,8 @@ export function DiscoverFeed() {
   const isEventItem = (item: FeedItem) =>
     item.type === "foodcoopcooks-events" ||
     item.type === "wordsprouts-events" ||
-    item.type === "concert-series-events";
+    item.type === "concert-series-events" ||
+    item.type === "gm-events";
 
   const now = new Date();
 
@@ -509,6 +515,9 @@ export function DiscoverFeed() {
     }
     if (filter === "upcoming") {
       return isEventItem(item) && item.date >= now;
+    }
+    if (filter === "foodcoop") {
+      return item.type === "foodcoop" || item.type === "gm-events";
     }
     return item.type === filter;
   });
@@ -634,6 +643,16 @@ export function DiscoverFeed() {
           map: (data: { events: EventbriteEvent[] }) =>
             data.events.map((event) => ({
               type: "concert-series-events" as const,
+              data: event,
+              date: new Date(event.startUtc),
+            })),
+        },
+        {
+          key: "gm-events",
+          url: "/api/foodcoop/gm-events",
+          map: (data: { events: FoodcoopEvent[] }) =>
+            data.events.map((event) => ({
+              type: "gm-events" as const,
               data: event,
               date: new Date(event.startUtc),
             })),
@@ -803,6 +822,17 @@ export function DiscoverFeed() {
                   event={item.data}
                   label="Concert Series"
                   emoji="🎶"
+                />
+              </div>
+            );
+          }
+          if (item.type === "gm-events") {
+            return (
+              <div key={getItemKey(item)} className="feed-item-enter">
+                <EventbriteEventCard
+                  event={item.data}
+                  label="General Meeting"
+                  emoji="🗳️"
                 />
               </div>
             );
