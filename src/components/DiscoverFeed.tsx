@@ -81,11 +81,33 @@ function formatRelativeTime(date: Date): string {
 
 function formatEventDateTime(startUtc: string, timezone: string): string {
   const date = new Date(startUtc);
-  return date.toLocaleString("en-US", {
+  const now = new Date();
+
+  // Get date strings in the event's timezone for comparison
+  const eventDateStr = date.toLocaleDateString("en-US", { timeZone: timezone });
+  const todayStr = now.toLocaleDateString("en-US", { timeZone: timezone });
+
+  // Calculate tomorrow's date
+  const tomorrow = new Date(now);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  const tomorrowStr = tomorrow.toLocaleDateString("en-US", {
+    timeZone: timezone,
+  });
+
+  const fullDateTime = date.toLocaleString("en-US", {
     dateStyle: "medium",
     timeStyle: "short",
     timeZone: timezone,
   });
+
+  if (eventDateStr === todayStr) {
+    return `Today, ${fullDateTime}`;
+  }
+  if (eventDateStr === tomorrowStr) {
+    return `Tomorrow, ${fullDateTime}`;
+  }
+
+  return fullDateTime;
 }
 
 function getPostUrl(uri: string): string {
