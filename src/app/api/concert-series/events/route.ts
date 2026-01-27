@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import type { EventbriteEvent } from "@/lib/types";
 
-const EVENTBRITE_ORGANIZER_ID = "106518851821";
+const EVENTBRITE_ORGANIZER_ID = "111655166091";
 const EVENTBRITE_API_URL = `https://www.eventbriteapi.com/v3/organizers/${EVENTBRITE_ORGANIZER_ID}/events/`;
 
 // Cache event data for 5 minutes
@@ -49,7 +49,7 @@ function formatVenueAddress(address?: EventbriteVenueAddress): string | undefine
   return parts.length > 0 ? parts.join(", ") : undefined;
 }
 
-async function fetchFoodCoopCooksEvents(): Promise<EventbriteEvent[]> {
+async function fetchConcertSeriesEvents(): Promise<EventbriteEvent[]> {
   const apiKey = process.env.EVENTBRITE_API_KEY;
   if (!apiKey) {
     throw new Error("Missing EVENTBRITE_API_KEY");
@@ -82,7 +82,7 @@ async function fetchFoodCoopCooksEvents(): Promise<EventbriteEvent[]> {
     })
     .map((event) => ({
       id: event.id,
-      title: event.name?.text || "Food Coop Cooks Event",
+      title: event.name?.text || "Concert Series Event",
       description: event.description?.text || undefined,
       url: event.url,
       startUtc: event.start.utc,
@@ -97,7 +97,7 @@ export async function GET() {
   try {
     const now = Date.now();
     if (!cachedEvents || now - cacheTime > CACHE_DURATION) {
-      cachedEvents = await fetchFoodCoopCooksEvents();
+      cachedEvents = await fetchConcertSeriesEvents();
       cacheTime = now;
     }
 
@@ -107,9 +107,9 @@ export async function GET() {
       lastUpdated: new Date(cacheTime).toISOString(),
     });
   } catch (error) {
-    console.error("Food Coop Cooks Eventbrite API error:", error);
+    console.error("Concert Series Eventbrite API error:", error);
     return NextResponse.json(
-      { error: "Failed to fetch Food Coop Cooks events" },
+      { error: "Failed to fetch Concert Series events" },
       { status: 500 }
     );
   }

@@ -7,7 +7,7 @@ import type {
   GazetteArticle,
   FoodCoopAnnouncement,
   FoodCoopCooksArticle,
-  FoodCoopCooksEvent,
+  EventbriteEvent,
 } from "@/lib/types";
 
 type FeedItem =
@@ -15,16 +15,29 @@ type FeedItem =
   | { type: "bluesky"; data: FeedPost; date: Date }
   | { type: "foodcoop"; data: FoodCoopAnnouncement; date: Date }
   | { type: "foodcoopcooks"; data: FoodCoopCooksArticle; date: Date }
-  | { type: "foodcoopcooks-events"; data: FoodCoopCooksEvent; date: Date };
+  | { type: "foodcoopcooks-events"; data: EventbriteEvent; date: Date }
+  | { type: "wordsprouts-events"; data: EventbriteEvent; date: Date }
+  | { type: "concert-series-events"; data: EventbriteEvent; date: Date };
 
-type FilterType = "all" | "foodcoop" | "gazette" | "bluesky" | "foodcoopcooks";
+type FilterType =
+  | "latest"
+  | "foodcoop"
+  | "gazette"
+  | "bluesky"
+  | "foodcoopcooks"
+  | "wordsprouts"
+  | "concert-series"
+  | "upcoming";
 
 const FILTER_OPTIONS: { value: FilterType; label: string }[] = [
-  { value: "all", label: "All" },
-  { value: "foodcoop", label: "Coop Announcements" },
+  { value: "latest", label: "Latest" },
+  { value: "upcoming", label: "Upcoming" },
+  { value: "foodcoop", label: "Announcements" },
   { value: "gazette", label: "Linewaiters' Gazette" },
   { value: "bluesky", label: "Bluesky" },
-  { value: "foodcoopcooks", label: "Food Coop Cooks" },
+  { value: "foodcoopcooks", label: "Cooking" },
+  { value: "wordsprouts", label: "Wordsprouts" },
+  { value: "concert-series", label: "Concerts" },
 ];
 
 const COOP_BLUESKY_HANDLE = "foodcoop.bsky.social";
@@ -35,6 +48,12 @@ function getItemKey(item: FeedItem) {
   if (item.type === "foodcoopcooks") return `foodcoopcooks-${item.data.id}`;
   if (item.type === "foodcoopcooks-events") {
     return `foodcoopcooks-event-${item.data.id}`;
+  }
+  if (item.type === "wordsprouts-events") {
+    return `wordsprouts-event-${item.data.id}`;
+  }
+  if (item.type === "concert-series-events") {
+    return `concert-series-event-${item.data.id}`;
   }
   return item.data.repostedBy
     ? `bluesky-${item.data.id}-repost-${item.data.repostedBy.handle}`
@@ -202,11 +221,14 @@ function FoodCoopCooksCard({
   );
 }
 
-function FoodCoopCooksEventCard({
+function EventbriteEventCard({
   event,
+  label,
+  emoji,
 }: {
-  event: FoodCoopCooksEvent;
-  date: Date;
+  event: EventbriteEvent;
+  label: string;
+  emoji: string;
 }) {
   return (
     <a
@@ -217,12 +239,12 @@ function FoodCoopCooksEventCard({
     >
       <div className="flex items-start gap-3">
         <div className="w-10 h-10 rounded-full shrink-0 bg-rose-100 dark:bg-rose-900/30 flex items-center justify-center text-xl">
-          📅
+          {emoji}
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
             <span className="font-semibold text-zinc-900 dark:text-zinc-100">
-              Food Coop Cooks
+              {label}
             </span>
             <span className="text-sm text-zinc-400 dark:text-zinc-500 shrink-0">
               {formatEventDateTime(event.startUtc, event.timezone)}
@@ -456,22 +478,45 @@ export function DiscoverFeed() {
   const [items, setItems] = useState<FeedItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [filter, setFilter] = useState<FilterType>("all");
+  const [filter, setFilter] = useState<FilterType>("latest");
   const [pendingSources, setPendingSources] = useState(0);
 
   const hasItemsRef = useRef(false);
   const hasSuccessRef = useRef(false);
   const finalizedRef = useRef(false);
 
+  const isEventItem = (item: FeedItem) =>
+    item.type === "foodcoopcooks-events" ||
+    item.type === "wordsprouts-events" ||
+    item.type === "concert-series-events";
+
+  const now = new Date();
+
   const filteredItems = items.filter((item) => {
-    if (filter === "all") return true;
+    if (filter === "latest") {
+      return !isEventItem(item) || item.date < now;
+    }
     if (filter === "foodcoopcooks") {
       return (
         item.type === "foodcoopcooks" || item.type === "foodcoopcooks-events"
       );
     }
+    if (filter === "wordsprouts") {
+      return item.type === "wordsprouts-events";
+    }
+    if (filter === "concert-series") {
+      return item.type === "concert-series-events";
+    }
+    if (filter === "upcoming") {
+      return isEventItem(item) && item.date >= now;
+    }
     return item.type === filter;
   });
+
+  const displayedItems =
+    filter === "upcoming"
+      ? [...filteredItems].sort((a, b) => a.date.getTime() - b.date.getTime())
+      : filteredItems;
 
   const fetchFeeds = useCallback(async () => {
     try {
@@ -485,19 +530,27 @@ export function DiscoverFeed() {
       const fortyFiveDaysAgo = new Date();
       fortyFiveDaysAgo.setDate(fortyFiveDaysAgo.getDate() - 45);
 
+      const fortyFiveDaysAhead = new Date();
+      fortyFiveDaysAhead.setDate(fortyFiveDaysAhead.getDate() + 45);
+
       const sortAndPrune = (list: FeedItem[]) =>
         [...list]
           .sort((a, b) => b.date.getTime() - a.date.getTime())
-          .filter((item) => item.date >= fortyFiveDaysAgo);
+          .filter(
+            (item) =>
+              item.date >= fortyFiveDaysAgo && item.date <= fortyFiveDaysAhead,
+          );
 
       const appendItems = (newItems: FeedItem[]) => {
         setItems((prev) => {
           if (newItems.length === 0) return sortAndPrune(prev);
           const seen = new Set(prev.map(getItemKey));
-          const filtered = newItems.filter(
-            (item) =>
-              item.date >= fortyFiveDaysAgo && !seen.has(getItemKey(item)),
-          );
+            const filtered = newItems.filter(
+              (item) =>
+                item.date >= fortyFiveDaysAgo &&
+                item.date <= fortyFiveDaysAhead &&
+                !seen.has(getItemKey(item)),
+            );
           if (filtered.length === 0) return sortAndPrune(prev);
           const merged = [...prev, ...filtered];
           if (!hasItemsRef.current && merged.length > 0) {
@@ -558,9 +611,29 @@ export function DiscoverFeed() {
         {
           key: "foodcoopcooks-events",
           url: "/api/foodcoopcooks/events",
-          map: (data: { events: FoodCoopCooksEvent[] }) =>
+          map: (data: { events: EventbriteEvent[] }) =>
             data.events.map((event) => ({
               type: "foodcoopcooks-events" as const,
+              data: event,
+              date: new Date(event.startUtc),
+            })),
+        },
+        {
+          key: "wordsprouts-events",
+          url: "/api/wordsprouts/events",
+          map: (data: { events: EventbriteEvent[] }) =>
+            data.events.map((event) => ({
+              type: "wordsprouts-events" as const,
+              data: event,
+              date: new Date(event.startUtc),
+            })),
+        },
+        {
+          key: "concert-series-events",
+          url: "/api/concert-series/events",
+          map: (data: { events: EventbriteEvent[] }) =>
+            data.events.map((event) => ({
+              type: "concert-series-events" as const,
               data: event,
               date: new Date(event.startUtc),
             })),
@@ -639,25 +712,47 @@ export function DiscoverFeed() {
 
   return (
     <div className="space-y-4">
-      <div className="flex gap-2 overflow-x-auto pb-2">
-        {FILTER_OPTIONS.map((option) => (
-          <button
-            type="button"
-            key={option.value}
-            onClick={() => setFilter(option.value)}
-            className={`px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
-              filter === option.value
-                ? "bg-green-600 text-white"
-                : "bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-700"
-            }`}
-          >
-            {option.label}
-          </button>
-        ))}
+      <div className="space-y-3">
+        <div className="flex gap-2 overflow-x-auto">
+          {FILTER_OPTIONS.filter((option) =>
+            ["latest", "upcoming"].includes(option.value),
+          ).map((option) => (
+            <button
+              type="button"
+              key={option.value}
+              onClick={() => setFilter(option.value)}
+              className={`px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
+                filter === option.value
+                  ? "bg-green-600 text-white"
+                  : "bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-700"
+              }`}
+            >
+              {option.label}
+            </button>
+          ))}
+        </div>
+        <div className="flex gap-2 overflow-x-auto pb-2">
+          {FILTER_OPTIONS.filter(
+            (option) => !["latest", "upcoming"].includes(option.value),
+          ).map((option) => (
+            <button
+              type="button"
+              key={option.value}
+              onClick={() => setFilter(option.value)}
+              className={`px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
+                filter === option.value
+                  ? "bg-green-600 text-white"
+                  : "bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-700"
+              }`}
+            >
+              {option.label}
+            </button>
+          ))}
+        </div>
       </div>
 
       <div className="grid gap-4">
-        {filteredItems.map((item) => {
+        {displayedItems.map((item) => {
           if (item.type === "gazette") {
             return (
               <div key={getItemKey(item)} className="feed-item-enter">
@@ -682,7 +777,33 @@ export function DiscoverFeed() {
           if (item.type === "foodcoopcooks-events") {
             return (
               <div key={getItemKey(item)} className="feed-item-enter">
-                <FoodCoopCooksEventCard event={item.data} date={item.date} />
+                <EventbriteEventCard
+                  event={item.data}
+                  label="Food Coop Cooks"
+                  emoji="📅"
+                />
+              </div>
+            );
+          }
+          if (item.type === "wordsprouts-events") {
+            return (
+              <div key={getItemKey(item)} className="feed-item-enter">
+                <EventbriteEventCard
+                  event={item.data}
+                  label="Wordsprouts"
+                  emoji="🌱"
+                />
+              </div>
+            );
+          }
+          if (item.type === "concert-series-events") {
+            return (
+              <div key={getItemKey(item)} className="feed-item-enter">
+                <EventbriteEventCard
+                  event={item.data}
+                  label="Concert Series"
+                  emoji="🎶"
+                />
               </div>
             );
           }

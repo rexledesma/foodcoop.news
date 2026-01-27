@@ -74,7 +74,7 @@ export interface FoodCoopCooksArticle {
   image?: string;
 }
 
-export interface FoodCoopCooksEvent {
+export interface EventbriteEvent {
   id: string;
   title: string;
   description?: string;
@@ -85,3 +85,5 @@ export interface FoodCoopCooksEvent {
   venueAddress?: string;
   image?: string;
 }
+
+export type FoodCoopCooksEvent = EventbriteEvent;

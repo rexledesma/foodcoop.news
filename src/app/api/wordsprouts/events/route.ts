@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
 import type { EventbriteEvent } from "@/lib/types";
 
-const EVENTBRITE_ORGANIZER_ID = "106518851821";
+const EVENTBRITE_ORGANIZER_ID = "31080353121";
 const EVENTBRITE_API_URL = `https://www.eventbriteapi.com/v3/organizers/${EVENTBRITE_ORGANIZER_ID}/events/`;
+const WORDSPROUTS_QUERY = /wordsprouts/i;
 
 // Cache event data for 5 minutes
 let cachedEvents: EventbriteEvent[] | null = null;
@@ -49,7 +50,7 @@ function formatVenueAddress(address?: EventbriteVenueAddress): string | undefine
   return parts.length > 0 ? parts.join(", ") : undefined;
 }
 
-async function fetchFoodCoopCooksEvents(): Promise<EventbriteEvent[]> {
+async function fetchWordsproutsEvents(): Promise<EventbriteEvent[]> {
   const apiKey = process.env.EVENTBRITE_API_KEY;
   if (!apiKey) {
     throw new Error("Missing EVENTBRITE_API_KEY");
@@ -80,9 +81,10 @@ async function fetchFoodCoopCooksEvents(): Promise<EventbriteEvent[]> {
       const eventTime = new Date(event.start.utc).getTime();
       return eventTime >= now && eventTime <= fortyFiveDaysAhead;
     })
+    .filter((event) => WORDSPROUTS_QUERY.test(event.name?.text || ""))
     .map((event) => ({
       id: event.id,
-      title: event.name?.text || "Food Coop Cooks Event",
+      title: event.name?.text || "Wordsprouts Event",
       description: event.description?.text || undefined,
       url: event.url,
       startUtc: event.start.utc,
@@ -97,7 +99,7 @@ export async function GET() {
   try {
     const now = Date.now();
     if (!cachedEvents || now - cacheTime > CACHE_DURATION) {
-      cachedEvents = await fetchFoodCoopCooksEvents();
+      cachedEvents = await fetchWordsproutsEvents();
       cacheTime = now;
     }
 
@@ -107,9 +109,9 @@ export async function GET() {
       lastUpdated: new Date(cacheTime).toISOString(),
     });
   } catch (error) {
-    console.error("Food Coop Cooks Eventbrite API error:", error);
+    console.error("Wordsprouts Eventbrite API error:", error);
     return NextResponse.json(
-      { error: "Failed to fetch Food Coop Cooks events" },
+      { error: "Failed to fetch Wordsprouts events" },
       { status: 500 }
     );
   }
