@@ -47,7 +47,11 @@ export function SignUpForm() {
       }
 
       // Profile is auto-created via Convex trigger on user creation
-      router.push("/discover");
+      if (reason === "integrations") {
+        router.push("/integrations");
+      } else {
+        router.push("/discover");
+      }
     } catch {
       setError("An unexpected error occurred");
       setLoading(false);
