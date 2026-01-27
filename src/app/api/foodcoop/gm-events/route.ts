@@ -48,9 +48,23 @@ function parseGMDateTime(text: string): Date | null {
   if (isPM && hour !== 12) hour += 12;
   if (!isPM && hour === 12) hour = 0;
 
-  // Create date in local timezone
-  const localDate = new Date(year, month, day, hour, minute, 0, 0);
-  return localDate;
+  // Get the UTC offset for America/New_York on this specific date
+  // This ensures correct handling regardless of server timezone (UTC on Cloudflare, local on dev)
+  const refDate = new Date(Date.UTC(year, month, day, 12, 0, 0));
+  const formatter = new Intl.DateTimeFormat("en-US", {
+    timeZone: TIMEZONE,
+    timeZoneName: "shortOffset",
+  });
+  const parts = formatter.formatToParts(refDate);
+  const tzPart = parts.find((p) => p.type === "timeZoneName");
+  // tzPart.value will be like "GMT-5" or "GMT-4"
+  const offsetMatch = tzPart?.value.match(/GMT([+-]\d+)/);
+  const offsetHours = offsetMatch ? parseInt(offsetMatch[1], 10) : -5;
+
+  // Create UTC date by subtracting the Eastern Time offset
+  // e.g., 7:00 PM ET (GMT-5) = 7:00 PM - (-5) = 7:00 PM + 5 = 12:00 AM UTC next day
+  const utcHour = hour - offsetHours;
+  return new Date(Date.UTC(year, month, day, utcHour, minute, 0));
 }
 
 async function fetchGMEvents(): Promise<FoodcoopEvent[]> {
