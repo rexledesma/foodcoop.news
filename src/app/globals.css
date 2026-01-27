@@ -50,13 +50,12 @@ body {
 }
 
 /* Prevent pull-to-refresh on mobile */
+/* Smooth scrolling */
+/* Reserve space for scrollbar to prevent layout shift */
 html {
   overscroll-behavior: none;
-}
-
-/* Smooth scrolling */
-html {
   scroll-behavior: smooth;
+  scrollbar-gutter: stable;
 }
 
 /* Remove tap highlight on mobile */

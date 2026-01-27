@@ -730,8 +730,23 @@ export function DiscoverFeed() {
 
   if (loading && items.length === 0) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600"></div>
+      <div className="space-y-4">
+        <div className="space-y-3">
+          <div className="flex gap-2">
+            <div className="h-8 w-16 rounded-full feed-shimmer" />
+            <div className="h-8 w-20 rounded-full feed-shimmer" />
+          </div>
+          <div className="flex gap-2">
+            <div className="h-8 w-28 rounded-full feed-shimmer" />
+            <div className="h-8 w-36 rounded-full feed-shimmer" />
+            <div className="h-8 w-20 rounded-full feed-shimmer" />
+          </div>
+        </div>
+        <div className="grid gap-4">
+          <FeedItemSkeleton />
+          <FeedItemSkeleton />
+          <FeedItemSkeleton />
+        </div>
       </div>
     );
   }
