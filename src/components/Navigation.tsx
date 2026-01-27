@@ -7,7 +7,15 @@ import { useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { useSession, signOut } from "@/lib/auth-client";
 
-const navItems = [{ href: "/discover", label: "Discover", icon: "compass" }];
+const navItems = [
+  { href: "/discover", label: "Discover", icon: "compass" },
+  {
+    href: "/integrations",
+    label: "Integrations",
+    icon: "gear",
+    requiresAuth: true,
+  },
+];
 
 type CoopStatus = "open" | "closing-soon" | "closed";
 
@@ -49,6 +57,8 @@ function NavIcon({ icon }: { icon: string }) {
       return <span className="text-xl md:text-lg">🧭</span>;
     case "carrot":
       return <span className="text-xl md:text-lg">🥕</span>;
+    case "gear":
+      return <span className="text-xl md:text-lg">⚙️</span>;
     default:
       return null;
   }
@@ -105,15 +115,24 @@ export function Navigation() {
       <div className="flex justify-between items-center h-16 md:h-14 max-w-3xl mx-auto md:gap-2 px-4">
         <div className="flex justify-start md:justify-center items-center md:gap-2 -ml-2 md:-ml-4">
           {navItems.map((item) => {
-            const isActive = pathname === item.href;
+            const isDisabled = item.requiresAuth && !session?.user;
+            const isActive = !isDisabled && pathname === item.href;
+            const href = isDisabled
+              ? "/signup?reason=integrations"
+              : item.href;
             return (
               <Link
                 key={item.href}
-                href={item.href}
+                href={href}
+                aria-disabled={isDisabled}
                 className={`flex flex-row items-center justify-center gap-2 px-2 py-2 md:px-4 rounded-lg transition-colors ${
                   isActive
                     ? "text-black dark:text-white"
                     : "text-zinc-500 dark:text-zinc-400 hover:text-black dark:hover:text-white"
+                } ${
+                  isDisabled
+                    ? "opacity-60 hover:text-zinc-500 dark:hover:text-zinc-400"
+                    : ""
                 }`}
               >
                 <NavIcon icon={item.icon} />
@@ -149,6 +168,7 @@ export function Navigation() {
           ) : session?.user ? (
             <>
               <button
+                type="button"
                 onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                 className="inline-flex items-center gap-1.5 rounded-full px-2 py-2 text-sm font-medium text-zinc-700 transition-colors hover:text-zinc-900 dark:text-zinc-300 dark:hover:text-zinc-100"
               >
@@ -174,14 +194,8 @@ export function Navigation() {
                       {session.user.email}
                     </p>
                   </div>
-                  <Link
-                    href="/settings"
-                    onClick={() => setIsDropdownOpen(false)}
-                    className="block w-full px-4 py-3 text-left text-sm text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors"
-                  >
-                    Settings
-                  </Link>
                   <button
+                    type="button"
                     onClick={handleSignOut}
                     className="w-full px-4 py-3 text-left text-sm text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors"
                   >

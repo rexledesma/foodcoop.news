@@ -14,6 +14,8 @@ export function SignUpForm() {
   const [name, setName] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const reason = searchParams.get("reason");
+  const showIntegrationsPrompt = reason === "integrations";
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -59,6 +61,12 @@ export function SignUpForm() {
       </h1>
 
       <form onSubmit={handleSubmit} className="space-y-4 max-w-sm mx-auto">
+        {showIntegrationsPrompt && (
+          <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+            To use features like shift calendar sync and digital wallet ids,
+            create an account.
+          </div>
+        )}
         {error && (
           <div className="p-3 text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 rounded-lg">
             {error}

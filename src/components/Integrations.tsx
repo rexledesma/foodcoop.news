@@ -66,7 +66,7 @@ const normalizeJobSortKey = (job: string) =>
     .toLowerCase()
     .trim();
 
-export function SettingsForm() {
+export function Integrations() {
   const router = useRouter();
   const { data: session, isPending: sessionPending } = useSession();
   const memberProfile = useQuery(api.memberProfiles.getMemberProfile);
@@ -114,7 +114,7 @@ export function SettingsForm() {
   // Redirect if not authenticated
   useEffect(() => {
     if (!sessionPending && !session?.user) {
-      router.push("/login");
+      router.push("/signup?reason=integrations");
     }
   }, [session, sessionPending, router]);
 
@@ -408,7 +408,7 @@ export function SettingsForm() {
   return (
     <div className="px-4 py-6 max-w-3xl mx-auto">
       <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100 mb-6">
-        Settings
+        Integrations
       </h1>
 
       <form onSubmit={handleSave} className="space-y-6">
@@ -638,14 +638,14 @@ export function SettingsForm() {
       </section>
 
       {isCalendarModalOpen && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4"
-          onClick={() => setIsCalendarModalOpen(false)}
-        >
-          <div
-            className="w-full max-w-sm rounded-2xl bg-white dark:bg-zinc-900 p-6 shadow-xl"
-            onClick={(e) => e.stopPropagation()}
-          >
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
+          <button
+            type="button"
+            aria-label="Close calendar modal"
+            onClick={() => setIsCalendarModalOpen(false)}
+            className="absolute inset-0 bg-black/40"
+          />
+          <div className="relative w-full max-w-sm rounded-2xl bg-white dark:bg-zinc-900 p-6 shadow-xl">
             <div>
               <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
                 📅 Add iCal subscription
