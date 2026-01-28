@@ -11,6 +11,7 @@
   "dependencies": {
     "@convex-dev/better-auth": "^0.10.10",
     "@vercel/analytics": "^1.6.1",
+    "@vercel/blob": "^2.0.1",
     "better-auth": "^1.4.9",
     "cheerio": "^1.1.2",
     "convex": "^1.31.6",
