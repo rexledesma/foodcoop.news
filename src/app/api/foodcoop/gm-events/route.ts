@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import * as cheerio from "cheerio";
 import type { FoodcoopEvent } from "@/lib/types";
 
+const GM_SOURCE_URL = "https://www.foodcoop.com/";
 const GM_AGENDA_URL = "https://www.foodcoop.com/gmagenda/";
 const TIMEZONE = "America/New_York";
 
@@ -11,31 +12,46 @@ let cacheTime = 0;
 const CACHE_DURATION = 5 * 60 * 1000;
 
 function parseGMDateTime(text: string): Date | null {
-  // Match patterns like "Tuesday, January 27, 2026 7:00 p.m." or "January 27, 2026, 7:00 pm"
-  // The format may or may not have commas in various places
+  // Match patterns like:
+  // "Tuesday, January 27, 2026 7:00 p.m."
+  // "January 27, 2026, 7:00 pm"
+  // "Tue. Feb. 24th 2026 7:00 pm"
   const dateMatch = text.match(
-    /(\w+day)?,?\s*(\w+)\s+(\d{1,2}),?\s+(\d{4})\s+(\d{1,2}):(\d{2})\s*(p\.?m\.?|a\.?m\.?)/i
+    /(?:\b(?:Mon|Tue|Tues|Wed|Thu|Thur|Fri|Sat|Sun)\.?|\w+day)?,?\s*(\w+)\.?\s+(\d{1,2})(?:st|nd|rd|th)?,?\s+(\d{4})\s*(\d{1,2}):(\d{2})\s*(p\.?m\.?|a\.?m\.?)/i
   );
 
   if (!dateMatch) return null;
 
-  const [, , monthStr, dayStr, yearStr, hourStr, minuteStr, ampm] = dateMatch;
+  const [, monthStr, dayStr, yearStr, hourStr, minuteStr, ampm] = dateMatch;
   const months: Record<string, number> = {
     january: 0,
+    jan: 0,
     february: 1,
+    feb: 1,
     march: 2,
+    mar: 2,
     april: 3,
+    apr: 3,
     may: 4,
     june: 5,
+    jun: 5,
     july: 6,
+    jul: 6,
     august: 7,
+    aug: 7,
     september: 8,
+    sept: 8,
+    sep: 8,
     october: 9,
+    oct: 9,
     november: 10,
+    nov: 10,
     december: 11,
+    dec: 11,
   };
 
-  const month = months[monthStr.toLowerCase()];
+  const monthKey = monthStr.toLowerCase().replace(".", "");
+  const month = months[monthKey];
   if (month === undefined) return null;
 
   let hour = parseInt(hourStr, 10);
@@ -68,7 +84,7 @@ function parseGMDateTime(text: string): Date | null {
 }
 
 async function fetchGMEvents(): Promise<FoodcoopEvent[]> {
-  const response = await fetch(GM_AGENDA_URL);
+  const response = await fetch(GM_SOURCE_URL);
 
   if (!response.ok) {
     throw new Error(`GM Agenda page error: ${response.status}`);
@@ -80,24 +96,24 @@ async function fetchGMEvents(): Promise<FoodcoopEvent[]> {
   const events: FoodcoopEvent[] = [];
   const now = new Date();
 
-  // Look for the h1 which contains the meeting title (e.g., "January 27 General Meeting Agenda")
-  const h1 = $("h1").first();
-  if (!h1.length) {
+  const gmHeading = $("h1, h2, h3, h4")
+    .filter((_, el) =>
+      $(el).text().trim().toLowerCase().includes("psfc general meeting")
+    )
+    .first();
+
+  const sectionText = gmHeading.length
+    ? `${gmHeading.text()} ${gmHeading.nextUntil("h1, h2, h3, h4").text()}`
+    : "";
+
+  if (!sectionText) {
     return events;
   }
 
-  const title = h1.text().trim();
+  const title = "PSFC General Meeting";
 
-  // Make sure this is a General Meeting page
-  if (!title.toLowerCase().includes("general meeting")) {
-    return events;
-  }
-
-  // Get all the text content from the page body
-  const bodyText = $("body").text();
-
-  // Parse the date/time from body text
-  const eventDate = parseGMDateTime(bodyText);
+  // Parse the date/time from the General Meeting section
+  const eventDate = parseGMDateTime(sectionText);
   if (!eventDate) {
     return events;
   }
@@ -112,19 +128,9 @@ async function fetchGMEvents(): Promise<FoodcoopEvent[]> {
   let venueAddress: string | undefined;
 
   // Look for location pattern like "Picnic House, Prospect Park, 95 Prospect Park West..."
-  const locationMatch = bodyText.match(
-    /(Picnic House[^.]*(?:Street|St\.|Avenue|Ave\.))/i
-  );
+  const locationMatch = sectionText.match(/(Prospect Park Picnic House|Picnic House)/i);
   if (locationMatch) {
-    const locationText = locationMatch[1].trim();
-    // Split into venue name and address
-    const parts = locationText.split(",").map((p) => p.trim());
-    if (parts.length >= 2) {
-      venueName = parts.slice(0, 2).join(", "); // "Picnic House, Prospect Park"
-      venueAddress = parts.slice(2).join(", "); // Address portion
-    } else {
-      venueName = locationText;
-    }
+    venueName = locationMatch[1].trim();
   }
 
   // Generate stable ID based on date
