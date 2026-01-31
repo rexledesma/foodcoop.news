@@ -1,25 +1,19 @@
 "use client";
 
 /* eslint-disable @next/next/no-img-element */
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import type {
   FeedPost,
   GazetteArticle,
   FoodCoopAnnouncement,
   FoodCoopCooksArticle,
   EventbriteEvent,
-  FoodcoopEvent,
 } from "@/lib/types";
-
-type FeedItem =
-  | { type: "gazette"; data: GazetteArticle; date: Date }
-  | { type: "bluesky"; data: FeedPost; date: Date }
-  | { type: "foodcoop"; data: FoodCoopAnnouncement; date: Date }
-  | { type: "foodcoopcooks"; data: FoodCoopCooksArticle; date: Date }
-  | { type: "foodcoopcooks-events"; data: EventbriteEvent; date: Date }
-  | { type: "wordsprouts-events"; data: EventbriteEvent; date: Date }
-  | { type: "concert-series-events"; data: EventbriteEvent; date: Date }
-  | { type: "gm-events"; data: FoodcoopEvent; date: Date };
+import {
+  getFeedItemKey,
+  useDiscoverFeedContext,
+  type FeedItem,
+} from "@/lib/discover-feed-context";
 
 type FilterType =
   | "latest"
@@ -41,29 +35,6 @@ const FILTER_OPTIONS: { value: FilterType; label: string }[] = [
   { value: "wordsprouts", label: "Wordsprouts" },
   { value: "concert-series", label: "Concerts" },
 ];
-
-const COOP_BLUESKY_HANDLE = "foodcoop.bsky.social";
-
-function getItemKey(item: FeedItem) {
-  if (item.type === "gazette") return `gazette-${item.data.id}`;
-  if (item.type === "foodcoop") return `foodcoop-${item.data.id}`;
-  if (item.type === "foodcoopcooks") return `foodcoopcooks-${item.data.id}`;
-  if (item.type === "foodcoopcooks-events") {
-    return `foodcoopcooks-event-${item.data.id}`;
-  }
-  if (item.type === "wordsprouts-events") {
-    return `wordsprouts-event-${item.data.id}`;
-  }
-  if (item.type === "concert-series-events") {
-    return `concert-series-event-${item.data.id}`;
-  }
-  if (item.type === "gm-events") {
-    return `gm-event-${item.data.id}`;
-  }
-  return item.data.repostedBy
-    ? `bluesky-${item.data.id}-repost-${item.data.repostedBy.handle}`
-    : `bluesky-${item.data.id}`;
-}
 
 function formatRelativeTime(date: Date): string {
   const now = new Date();
@@ -502,15 +473,9 @@ function BlueskyCard({ post }: { post: FeedPost; date: Date }) {
 }
 
 export function DiscoverFeed() {
-  const [items, setItems] = useState<FeedItem[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
   const [filter, setFilter] = useState<FilterType>("latest");
-  const [pendingSources, setPendingSources] = useState(0);
-
-  const hasItemsRef = useRef(false);
-  const hasSuccessRef = useRef(false);
-  const finalizedRef = useRef(false);
+  const { items, loading, error, pendingSources, fetchFeeds } =
+    useDiscoverFeedContext();
 
   const isEventItem = (item: FeedItem) =>
     item.type === "foodcoopcooks-events" ||
@@ -548,185 +513,6 @@ export function DiscoverFeed() {
     filter === "upcoming"
       ? [...filteredItems].sort((a, b) => a.date.getTime() - b.date.getTime())
       : filteredItems;
-
-  const fetchFeeds = useCallback(async () => {
-    try {
-      setLoading(true);
-      setError("");
-      hasItemsRef.current = false;
-      hasSuccessRef.current = false;
-      finalizedRef.current = false;
-      setItems([]);
-
-      const fortyFiveDaysAgo = new Date();
-      fortyFiveDaysAgo.setDate(fortyFiveDaysAgo.getDate() - 45);
-
-      const fortyFiveDaysAhead = new Date();
-      fortyFiveDaysAhead.setDate(fortyFiveDaysAhead.getDate() + 45);
-
-      const sortAndPrune = (list: FeedItem[]) =>
-        [...list]
-          .sort((a, b) => b.date.getTime() - a.date.getTime())
-          .filter(
-            (item) =>
-              item.date >= fortyFiveDaysAgo && item.date <= fortyFiveDaysAhead,
-          );
-
-      const appendItems = (newItems: FeedItem[]) => {
-        setItems((prev) => {
-          if (newItems.length === 0) return sortAndPrune(prev);
-          const seen = new Set(prev.map(getItemKey));
-            const filtered = newItems.filter(
-              (item) =>
-                item.date >= fortyFiveDaysAgo &&
-                item.date <= fortyFiveDaysAhead &&
-                !seen.has(getItemKey(item)),
-            );
-          if (filtered.length === 0) return sortAndPrune(prev);
-          const merged = [...prev, ...filtered];
-          if (!hasItemsRef.current && merged.length > 0) {
-            hasItemsRef.current = true;
-            setLoading(false);
-          }
-          return sortAndPrune(merged);
-        });
-      };
-
-      const sources = [
-        {
-          key: "gazette",
-          url: "/api/gazette",
-          map: (data: { articles: GazetteArticle[] }) =>
-            data.articles.map((article) => ({
-              type: "gazette" as const,
-              data: article,
-              date: new Date(article.pubDate),
-            })),
-        },
-        {
-          key: "bluesky",
-          url: "/api/feed",
-          map: (data: { posts: FeedPost[] }) =>
-            data.posts
-              .filter((post) => {
-                if (!post.repostedBy) return true;
-                if (post.repostedBy.handle !== COOP_BLUESKY_HANDLE) return false;
-                return post.author.handle !== COOP_BLUESKY_HANDLE;
-              })
-              .map((post) => ({
-                type: "bluesky" as const,
-                data: post,
-                date: new Date(post.createdAt),
-              })),
-        },
-        {
-          key: "foodcoop",
-          url: "/api/foodcoop",
-          map: (data: { articles: FoodCoopAnnouncement[] }) =>
-            data.articles.map((announcement) => ({
-              type: "foodcoop" as const,
-              data: announcement,
-              date: new Date(announcement.pubDate),
-            })),
-        },
-        {
-          key: "foodcoopcooks",
-          url: "/api/foodcoopcooks",
-          map: (data: { articles: FoodCoopCooksArticle[] }) =>
-            data.articles.map((article) => ({
-              type: "foodcoopcooks" as const,
-              data: article,
-              date: new Date(article.pubDate),
-            })),
-        },
-        {
-          key: "foodcoopcooks-events",
-          url: "/api/foodcoopcooks/events",
-          map: (data: { events: EventbriteEvent[] }) =>
-            data.events.map((event) => ({
-              type: "foodcoopcooks-events" as const,
-              data: event,
-              date: new Date(event.startUtc),
-            })),
-        },
-        {
-          key: "wordsprouts-events",
-          url: "/api/wordsprouts/events",
-          map: (data: { events: EventbriteEvent[] }) =>
-            data.events.map((event) => ({
-              type: "wordsprouts-events" as const,
-              data: event,
-              date: new Date(event.startUtc),
-            })),
-        },
-        {
-          key: "concert-series-events",
-          url: "/api/concert-series/events",
-          map: (data: { events: EventbriteEvent[] }) =>
-            data.events.map((event) => ({
-              type: "concert-series-events" as const,
-              data: event,
-              date: new Date(event.startUtc),
-            })),
-        },
-        {
-          key: "gm-events",
-          url: "/api/foodcoop/gm-events",
-          map: (data: { events: FoodcoopEvent[] }) =>
-            data.events.map((event) => ({
-              type: "gm-events" as const,
-              data: event,
-              date: new Date(event.startUtc),
-            })),
-        },
-      ];
-
-      setPendingSources(sources.length);
-
-      const finalize = () => {
-        if (finalizedRef.current) return;
-        finalizedRef.current = true;
-        setItems((prev) => {
-          return sortAndPrune(prev);
-        });
-        if (!hasSuccessRef.current) {
-          setError("Failed to load feed");
-        }
-        setLoading(false);
-      };
-
-      for (const source of sources) {
-        fetch(source.url)
-          .then(async (response) => {
-            if (!response.ok) return;
-            hasSuccessRef.current = true;
-            const data = await response.json();
-            appendItems(source.map(data));
-          })
-          .catch(() => {
-            // Ignore per-source errors; show overall error if all fail.
-          })
-          .finally(() => {
-            setItems((prev) => sortAndPrune(prev));
-            setPendingSources((prev) => {
-              const next = Math.max(0, prev - 1);
-              if (next === 0) finalize();
-              return next;
-            });
-          });
-      }
-    } catch {
-      setError("Failed to load feed");
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    const loadTimeout = window.setTimeout(() => {
-      fetchFeeds();
-    }, 0);
-    return () => window.clearTimeout(loadTimeout);
-  }, [fetchFeeds]);
 
   if (loading && items.length === 0) {
     return (
@@ -811,28 +597,28 @@ export function DiscoverFeed() {
         {displayedItems.map((item) => {
           if (item.type === "gazette") {
             return (
-              <div key={getItemKey(item)} className="feed-item-enter">
+              <div key={getFeedItemKey(item)} className="feed-item-enter">
                 <GazetteCard article={item.data} date={item.date} />
               </div>
             );
           }
           if (item.type === "foodcoop") {
             return (
-              <div key={getItemKey(item)} className="feed-item-enter">
+              <div key={getFeedItemKey(item)} className="feed-item-enter">
                 <FoodCoopCard article={item.data} date={item.date} />
               </div>
             );
           }
           if (item.type === "foodcoopcooks") {
             return (
-              <div key={getItemKey(item)} className="feed-item-enter">
+              <div key={getFeedItemKey(item)} className="feed-item-enter">
                 <FoodCoopCooksCard article={item.data} date={item.date} />
               </div>
             );
           }
           if (item.type === "foodcoopcooks-events") {
             return (
-              <div key={getItemKey(item)} className="feed-item-enter">
+              <div key={getFeedItemKey(item)} className="feed-item-enter">
                 <EventbriteEventCard
                   event={item.data}
                   label="Cooking"
@@ -843,7 +629,7 @@ export function DiscoverFeed() {
           }
           if (item.type === "wordsprouts-events") {
             return (
-              <div key={getItemKey(item)} className="feed-item-enter">
+              <div key={getFeedItemKey(item)} className="feed-item-enter">
                 <EventbriteEventCard
                   event={item.data}
                   label="Wordsprouts"
@@ -854,7 +640,7 @@ export function DiscoverFeed() {
           }
           if (item.type === "concert-series-events") {
             return (
-              <div key={getItemKey(item)} className="feed-item-enter">
+              <div key={getFeedItemKey(item)} className="feed-item-enter">
                 <EventbriteEventCard
                   event={item.data}
                   label="Concerts"
@@ -865,7 +651,7 @@ export function DiscoverFeed() {
           }
           if (item.type === "gm-events") {
             return (
-              <div key={getItemKey(item)} className="feed-item-enter">
+              <div key={getFeedItemKey(item)} className="feed-item-enter">
                 <EventbriteEventCard
                   event={item.data}
                   label="General Meeting"
@@ -875,7 +661,7 @@ export function DiscoverFeed() {
             );
           }
           return (
-            <div key={getItemKey(item)} className="feed-item-enter">
+            <div key={getFeedItemKey(item)} className="feed-item-enter">
               <BlueskyCard post={item.data} date={item.date} />
             </div>
           );
