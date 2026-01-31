@@ -9,23 +9,7 @@ const ProduceAnalytics = dynamic(
 );
 
 export function ProducePageClient() {
-  const { data, isLoading, error } = useProduceDataContext();
-
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <div className="text-zinc-500 dark:text-zinc-400">Loading produce data...</div>
-      </div>
-    );
+    const { data, isLoading, error } = useProduceDataContext();
+  
+    return <ProduceAnalytics data={data} isLoading={isLoading} error={error} />;
   }
-
-  if (error) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <div className="text-red-500">{error}</div>
-      </div>
-    );
-  }
-
-  return <ProduceAnalytics data={data} />;
-}

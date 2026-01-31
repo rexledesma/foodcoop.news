@@ -14,6 +14,8 @@ type SortDirection = "asc" | "desc";
 
 interface ProduceAnalyticsProps {
   data: ProduceRow[];
+  isLoading?: boolean;
+  error?: string | null;
 }
 
 type QuickFilter = "drops" | "increases" | null;
@@ -21,9 +23,13 @@ type QuickFilter = "drops" | "increases" | null;
 const PRICE_COL_CLASS =
   "w-[var(--price-col)] min-w-[var(--price-col)] max-w-[var(--price-col)] md:w-24 md:min-w-0 md:max-w-none";
 const NAME_COL_CLASS =
-  "w-[var(--name-col)] min-w-[var(--name-col)] max-w-[var(--name-col)] md:w-1/2 md:min-w-0 md:max-w-none";
+  "w-[var(--name-col)] min-w-[var(--name-col)] max-w-[var(--name-col)] md:w-2/5 md:min-w-0 md:max-w-none";
 
-export function ProduceAnalytics({ data }: ProduceAnalyticsProps) {
+export function ProduceAnalytics({
+  data,
+  isLoading = false,
+  error = null,
+}: ProduceAnalyticsProps) {
   const [search, setSearch] = useState("");
   const [sortField, setSortField] = useState<SortField>("name");
   const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
@@ -101,6 +107,12 @@ export function ProduceAnalytics({ data }: ProduceAnalyticsProps) {
     return result;
   }, [data, search, sortField, sortDirection]);
 
+  const skeletonRows = useMemo(
+    () =>
+      Array.from({ length: 8 }, (_, index) => `skeleton-${index}`),
+    [],
+  );
+
   const handleSort = (field: SortField) => {
     let newDirection: SortDirection;
     if (sortField === field) {
@@ -172,9 +184,21 @@ export function ProduceAnalytics({ data }: ProduceAnalyticsProps) {
         </button>
       </div>
 
+      {error && !isLoading && (
+        <div className="mb-4 text-sm text-red-600 dark:text-red-400">{error}</div>
+      )}
+
       {/* Table */}
       <div className="overflow-x-auto snap-x snap-mandatory md:snap-none scroll-pl-[var(--name-col)] md:scroll-pl-0 [--name-col:10rem] [--price-col:calc((100dvw-2rem-var(--name-col))/2)]">
-        <table className="text-sm table-fixed">
+        <table className="text-sm table-fixed w-full min-w-full">
+          <colgroup>
+            <col className={NAME_COL_CLASS} />
+            <col className={PRICE_COL_CLASS} />
+            <col className={PRICE_COL_CLASS} />
+            <col className={PRICE_COL_CLASS} />
+            <col className={`${PRICE_COL_CLASS} md:w-20`} />
+            <col className={`${PRICE_COL_CLASS} md:w-20`} />
+          </colgroup>
           <thead>
             <tr className="border-b border-zinc-200 dark:border-zinc-800">
               <SortHeader
@@ -234,61 +258,108 @@ export function ProduceAnalytics({ data }: ProduceAnalyticsProps) {
             </tr>
           </thead>
           <tbody>
-            {filteredAndSorted.map((row) => (
-              <tr
-                key={row.raw_name}
-                className="border-b border-zinc-100 dark:border-zinc-800/50 hover:bg-zinc-50 dark:hover:bg-zinc-800/50"
-              >
-                <td className={`py-3 pr-4 h-24 ${NAME_COL_CLASS} md:w-auto sticky left-0 z-10 bg-white dark:bg-zinc-900 border-r border-zinc-200 dark:border-zinc-700 md:border-r-0 box-border`}>
-                  <div className="font-medium text-zinc-900 dark:text-zinc-100">
-                    {row.name}
-                  </div>
-                  <div className="text-xs text-zinc-500 dark:text-zinc-400 h-4">
-                    {row.is_organic && (
-                      <span className="text-green-600 dark:text-green-400">
-                        Organic
+            {isLoading
+              ? skeletonRows.map((rowId) => <SkeletonRow key={rowId} />)
+              : filteredAndSorted.map((row) => (
+                  <tr
+                    key={row.raw_name}
+                    className="border-b border-zinc-100 dark:border-zinc-800/50 hover:bg-zinc-50 dark:hover:bg-zinc-800/50"
+                  >
+                    <td
+                      className={`py-3 pr-4 h-24 ${NAME_COL_CLASS} md:w-auto sticky left-0 z-10 bg-white dark:bg-zinc-900 border-r border-zinc-200 dark:border-zinc-700 md:border-r-0 box-border`}
+                    >
+                      <div className="font-medium text-zinc-900 dark:text-zinc-100">
+                        {row.name}
+                      </div>
+                      <div className="text-xs text-zinc-500 dark:text-zinc-400 h-4">
+                        {row.is_organic && (
+                          <span className="text-green-600 dark:text-green-400">
+                            Organic
+                          </span>
+                        )}
+                        {row.is_organic && row.is_local && " · "}
+                        {row.is_local && (
+                          <span className="text-blue-600 dark:text-blue-400">
+                            Local
+                          </span>
+                        )}
+                      </div>
+                    </td>
+                    <td
+                      className={`py-3 px-2 font-mono text-zinc-900 dark:text-zinc-100 snap-start ${PRICE_COL_CLASS} box-border`}
+                    >
+                      ${row.price.toFixed(2)}
+                      <span className="text-xs text-zinc-500 dark:text-zinc-400 ml-1">
+                        /{row.unit}
                       </span>
-                    )}
-                    {row.is_organic && row.is_local && " · "}
-                    {row.is_local && (
-                      <span className="text-blue-600 dark:text-blue-400">
-                        Local
-                      </span>
-                    )}
-                  </div>
-                </td>
-                <td className={`py-3 px-2 font-mono text-zinc-900 dark:text-zinc-100 snap-start ${PRICE_COL_CLASS} box-border`}>
-                  ${row.price.toFixed(2)}
-                  <span className="text-xs text-zinc-500 dark:text-zinc-400 ml-1">
-                    /{row.unit}
-                  </span>
-                </td>
-                <AbsoluteChangeCell
-                  current={row.price}
-                  previous={row.prev_day_price}
-                />
-                <PercentChangeCell
-                  current={row.price}
-                  previous={row.prev_day_price}
-                />
-                <PercentChangeCell
-                  current={row.price}
-                  previous={row.prev_week_price}
-                />
-                <PercentChangeCell
-                  current={row.price}
-                  previous={row.prev_month_price}
-                />
-              </tr>
-            ))}
+                    </td>
+                    <AbsoluteChangeCell
+                      current={row.price}
+                      previous={row.prev_day_price}
+                    />
+                    <PercentChangeCell
+                      current={row.price}
+                      previous={row.prev_day_price}
+                    />
+                    <PercentChangeCell
+                      current={row.price}
+                      previous={row.prev_week_price}
+                    />
+                    <PercentChangeCell
+                      current={row.price}
+                      previous={row.prev_month_price}
+                    />
+                  </tr>
+                ))}
           </tbody>
         </table>
       </div>
 
-      <div className="mt-4 text-sm text-zinc-500 dark:text-zinc-400">
-        Showing {filteredAndSorted.length} of {data.length} items
-      </div>
+      {!isLoading && (
+        <div className="mt-4 text-sm text-zinc-500 dark:text-zinc-400">
+          Showing {filteredAndSorted.length} of {data.length} items
+        </div>
+      )}
     </div>
+  );
+}
+
+function SkeletonRow() {
+  return (
+    <tr className="border-b border-zinc-100 dark:border-zinc-800/50">
+      <td
+        className={`py-3 pr-4 h-24 ${NAME_COL_CLASS} md:w-auto sticky left-0 z-10 bg-white dark:bg-zinc-900 border-r border-zinc-200 dark:border-zinc-700 md:border-r-0 box-border`}
+      >
+        <div className="h-full flex items-center">
+          <div className="h-4 w-full rounded feed-shimmer" />
+        </div>
+      </td>
+      <td className={`py-3 px-2 snap-start ${PRICE_COL_CLASS} box-border`}>
+        <div className="h-full flex items-center">
+          <div className="h-4 w-full rounded feed-shimmer" />
+        </div>
+      </td>
+      <td className={`py-3 px-2 snap-start ${PRICE_COL_CLASS} box-border`}>
+        <div className="h-full flex items-center">
+          <div className="h-4 w-full rounded feed-shimmer" />
+        </div>
+      </td>
+      <td className={`py-3 px-2 snap-start ${PRICE_COL_CLASS} box-border`}>
+        <div className="h-full flex items-center">
+          <div className="h-4 w-full rounded feed-shimmer" />
+        </div>
+      </td>
+      <td className={`py-3 px-2 snap-start ${PRICE_COL_CLASS} box-border`}>
+        <div className="h-full flex items-center">
+          <div className="h-4 w-full rounded feed-shimmer" />
+        </div>
+      </td>
+      <td className={`py-3 px-2 snap-start ${PRICE_COL_CLASS} box-border`}>
+        <div className="h-full flex items-center">
+          <div className="h-4 w-full rounded feed-shimmer" />
+        </div>
+      </td>
+    </tr>
   );
 }
 
