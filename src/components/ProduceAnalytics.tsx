@@ -128,7 +128,7 @@ export function ProduceAnalytics({ data }: ProduceAnalyticsProps) {
       setSortDirection("asc");
     } else {
       setQuickFilter(filter);
-      setSortField("day_change_pct");
+      setSortField("day_change");
       setSortDirection(filter === "drops" ? "asc" : "desc");
     }
   };
@@ -149,6 +149,7 @@ export function ProduceAnalytics({ data }: ProduceAnalyticsProps) {
       {/* Quick Filters */}
       <div className="flex gap-2 mb-4">
         <button
+          type="button"
           onClick={() => handleQuickFilter("drops")}
           className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
             quickFilter === "drops"
@@ -159,6 +160,7 @@ export function ProduceAnalytics({ data }: ProduceAnalyticsProps) {
           Price Drops
         </button>
         <button
+          type="button"
           onClick={() => handleQuickFilter("increases")}
           className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
             quickFilter === "increases"
