@@ -3,6 +3,22 @@
     {
       "path": "/api/cron/scrape-produce",
       "schedule": "0 12 * * *"
+    },
+    {
+      "path": "/api/cron/scrape-produce-10am",
+      "schedule": "0 15 * * *"
+    },
+    {
+      "path": "/api/cron/scrape-produce-12pm",
+      "schedule": "0 17 * * *"
+    },
+    {
+      "path": "/api/cron/scrape-produce-5pm",
+      "schedule": "0 22 * * *"
+    },
+    {
+      "path": "/api/cron/scrape-produce-10pm",
+      "schedule": "0 3 * * *"
     }
   ]
 }
