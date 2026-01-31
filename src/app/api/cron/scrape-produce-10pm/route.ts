@@ -1,1 +1,1 @@
-export { GET } from "@/app/api/cron/scrape-produce/route";
+export { GET } from '@/app/api/cron/scrape-produce/route';

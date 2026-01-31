@@ -1,4 +1,4 @@
-export type ProduceUnit = "pound" | "each" | "bunch";
+export type ProduceUnit = 'pound' | 'each' | 'bunch';
 
 export interface ProduceItem {
   id: string; // e.g., "2025-01-29-apple-honeycrisp"

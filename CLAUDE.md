@@ -46,6 +46,7 @@ This is a Next.js 16 App Router application for Park Slope Food Coop members, us
 ### Environment Variables
 
 Required environment variables (set in `.env.local` and Convex dashboard):
+
 - `NEXT_PUBLIC_CONVEX_URL` - Convex deployment URL
 - `NEXT_PUBLIC_CONVEX_SITE_URL` - Convex HTTP actions URL
 - `SITE_URL` - Production site URL for auth callbacks

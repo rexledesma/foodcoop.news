@@ -1,28 +1,28 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import Link from "next/link";
-import { useConvex } from "convex/react";
-import { signIn } from "@/lib/auth-client";
-import { api } from "../../convex/_generated/api";
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import Link from 'next/link';
+import { useConvex } from 'convex/react';
+import { signIn } from '@/lib/auth-client';
+import { api } from '../../convex/_generated/api';
 
 export function LoginForm() {
   const router = useRouter();
   const convex = useConvex();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [step, setStep] = useState<"email" | "password">("email");
+  const [step, setStep] = useState<'email' | 'password'>('email');
   const [checkingEmail, setCheckingEmail] = useState(false);
 
   const handleEmailSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError("");
+    setError('');
 
     if (!email) {
-      setError("Please enter your email");
+      setError('Please enter your email');
       return;
     }
 
@@ -32,12 +32,12 @@ export function LoginForm() {
       const result = await convex.query(api.auth.checkEmailExists, { email });
 
       if (result.exists) {
-        setStep("password");
+        setStep('password');
       } else {
         router.push(`/signup?email=${encodeURIComponent(email)}`);
       }
     } catch {
-      setError("Failed to check email. Please try again.");
+      setError('Failed to check email. Please try again.');
     } finally {
       setCheckingEmail(false);
     }
@@ -45,7 +45,7 @@ export function LoginForm() {
 
   const handlePasswordSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError("");
+    setError('');
     setLoading(true);
 
     try {
@@ -55,34 +55,32 @@ export function LoginForm() {
       });
 
       if (result.error) {
-        setError(result.error.message || "Failed to sign in");
+        setError(result.error.message || 'Failed to sign in');
         setLoading(false);
         return;
       }
 
-      router.push("/discover");
+      router.push('/discover');
     } catch {
-      setError("An unexpected error occurred");
+      setError('An unexpected error occurred');
       setLoading(false);
     }
   };
 
   const handleBack = () => {
-    setStep("email");
-    setPassword("");
-    setError("");
+    setStep('email');
+    setPassword('');
+    setError('');
   };
 
   return (
-    <div className="px-4 py-6 max-w-3xl mx-auto">
-      <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100 mb-6">
-        Sign In
-      </h1>
+    <div className="mx-auto max-w-3xl px-4 py-6">
+      <h1 className="mb-6 text-2xl font-bold text-zinc-900 dark:text-zinc-100">Sign In</h1>
 
-      {step === "email" ? (
-        <form onSubmit={handleEmailSubmit} className="space-y-4 max-w-sm mx-auto">
+      {step === 'email' ? (
+        <form onSubmit={handleEmailSubmit} className="mx-auto max-w-sm space-y-4">
           {error && (
-            <div className="p-3 text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 rounded-lg">
+            <div className="rounded-lg bg-red-50 p-3 text-sm text-red-600 dark:bg-red-900/20 dark:text-red-400">
               {error}
             </div>
           )}
@@ -90,7 +88,7 @@ export function LoginForm() {
           <div>
             <label
               htmlFor="email"
-              className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1"
+              className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300"
             >
               Email
             </label>
@@ -101,7 +99,7 @@ export function LoginForm() {
               onChange={(e) => setEmail(e.target.value)}
               required
               autoFocus
-              className="w-full px-3 py-2 border border-zinc-300 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400"
+              className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-zinc-900 focus:ring-2 focus:ring-green-500 focus:outline-none dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100 dark:focus:ring-green-400"
               placeholder="you@example.com"
             />
           </div>
@@ -109,21 +107,21 @@ export function LoginForm() {
           <button
             type="submit"
             disabled={checkingEmail}
-            className="w-full py-2 px-4 bg-green-600 hover:bg-green-700 disabled:bg-green-400 text-white font-medium rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 dark:focus:ring-offset-zinc-900"
+            className="w-full rounded-lg bg-green-600 px-4 py-2 font-medium text-white transition-colors hover:bg-green-700 focus:ring-2 focus:ring-green-500 focus:ring-offset-2 focus:outline-none disabled:bg-green-400 dark:focus:ring-offset-zinc-900"
           >
-            {checkingEmail ? "Checking..." : "Continue"}
+            {checkingEmail ? 'Checking...' : 'Continue'}
           </button>
         </form>
       ) : (
-        <form onSubmit={handlePasswordSubmit} className="space-y-4 max-w-sm mx-auto">
+        <form onSubmit={handlePasswordSubmit} className="mx-auto max-w-sm space-y-4">
           {error && (
-            <div className="p-3 text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 rounded-lg">
+            <div className="rounded-lg bg-red-50 p-3 text-sm text-red-600 dark:bg-red-900/20 dark:text-red-400">
               {error}
             </div>
           )}
 
           <div>
-            <div className="flex items-center justify-between mb-1">
+            <div className="mb-1 flex items-center justify-between">
               <label
                 htmlFor="email-display"
                 className="block text-sm font-medium text-zinc-700 dark:text-zinc-300"
@@ -133,12 +131,12 @@ export function LoginForm() {
               <button
                 type="button"
                 onClick={handleBack}
-                className="text-sm text-green-600 dark:text-green-400 hover:underline"
+                className="text-sm text-green-600 hover:underline dark:text-green-400"
               >
                 Change
               </button>
             </div>
-            <div className="w-full px-3 py-2 border border-zinc-200 dark:border-zinc-800 rounded-lg bg-zinc-50 dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400">
+            <div className="w-full rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2 text-zinc-600 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400">
               {email}
             </div>
           </div>
@@ -146,7 +144,7 @@ export function LoginForm() {
           <div>
             <label
               htmlFor="password"
-              className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1"
+              className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300"
             >
               Password
             </label>
@@ -157,7 +155,7 @@ export function LoginForm() {
               onChange={(e) => setPassword(e.target.value)}
               required
               autoFocus
-              className="w-full px-3 py-2 border border-zinc-300 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400"
+              className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-zinc-900 focus:ring-2 focus:ring-green-500 focus:outline-none dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100 dark:focus:ring-green-400"
               placeholder="Enter your password"
             />
           </div>
@@ -165,19 +163,16 @@ export function LoginForm() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-2 px-4 bg-green-600 hover:bg-green-700 disabled:bg-green-400 text-white font-medium rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 dark:focus:ring-offset-zinc-900"
+            className="w-full rounded-lg bg-green-600 px-4 py-2 font-medium text-white transition-colors hover:bg-green-700 focus:ring-2 focus:ring-green-500 focus:ring-offset-2 focus:outline-none disabled:bg-green-400 dark:focus:ring-offset-zinc-900"
           >
-            {loading ? "Signing in..." : "Sign In"}
+            {loading ? 'Signing in...' : 'Sign In'}
           </button>
         </form>
       )}
 
-      <p className="mt-4 text-sm text-zinc-600 dark:text-zinc-400 max-w-sm mx-auto text-center">
-        First time here?{" "}
-        <Link
-          href="/signup"
-          className="text-green-600 dark:text-green-400 hover:underline"
-        >
+      <p className="mx-auto mt-4 max-w-sm text-center text-sm text-zinc-600 dark:text-zinc-400">
+        First time here?{' '}
+        <Link href="/signup" className="text-green-600 hover:underline dark:text-green-400">
           Create account
         </Link>
       </p>

@@ -1,9 +1,9 @@
-@import "tailwindcss";
+@import 'tailwindcss';
 
-@source "*.{tsx,ts}";
-@source "../components/*.tsx";
-@source "../lib/*.ts";
-@source "./**/*.tsx";
+@source '*.{tsx,ts}';
+@source '../components/*.tsx';
+@source '../lib/*.ts';
+@source './**/*.tsx';
 
 :root {
   --background: #ffffff;
@@ -94,16 +94,11 @@ html {
 }
 
 .feed-shimmer::after {
-  content: "";
+  content: '';
   position: absolute;
   inset: 0;
   transform: translateX(-100%);
-  background: linear-gradient(
-    90deg,
-    transparent,
-    rgba(255, 255, 255, 0.7),
-    transparent
-  );
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.7), transparent);
   animation: feedShimmer 1.2s ease-in-out infinite;
 }
 
@@ -112,12 +107,7 @@ html {
     background: #27272a;
   }
   .feed-shimmer::after {
-    background: linear-gradient(
-      90deg,
-      transparent,
-      rgba(255, 255, 255, 0.12),
-      transparent
-    );
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.12), transparent);
   }
 }
 

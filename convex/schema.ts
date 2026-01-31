@@ -1,5 +1,5 @@
-import { defineSchema, defineTable } from "convex/server";
-import { v } from "convex/values";
+import { defineSchema, defineTable } from 'convex/server';
+import { v } from 'convex/values';
 
 export default defineSchema({
   memberProfiles: defineTable({
@@ -12,7 +12,7 @@ export default defineSchema({
     createdAt: v.number(),
     updatedAt: v.number(),
   })
-    .index("by_userId", ["userId"])
-    .index("by_memberId", ["memberId"])
-    .index("by_calendarId", ["calendarId"]),
+    .index('by_userId', ['userId'])
+    .index('by_memberId', ['memberId'])
+    .index('by_calendarId', ['calendarId']),
 });

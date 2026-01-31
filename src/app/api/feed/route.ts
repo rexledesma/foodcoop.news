@@ -1,8 +1,8 @@
-import { NextResponse } from "next/server";
-import type { FeedPost } from "@/lib/types";
+import { NextResponse } from 'next/server';
+import type { FeedPost } from '@/lib/types';
 
-const BLUESKY_HANDLE = "foodcoop.bsky.social";
-const BLUESKY_API = "https://public.api.bsky.app/xrpc/app.bsky.feed.getAuthorFeed";
+const BLUESKY_HANDLE = 'foodcoop.bsky.social';
+const BLUESKY_API = 'https://public.api.bsky.app/xrpc/app.bsky.feed.getAuthorFeed';
 
 // Cache feed data for 5 minutes
 let cachedFeed: FeedPost[] | null = null;
@@ -47,15 +47,12 @@ function extractImages(embed?: BlueskyEmbed): BlueskyImage[] | undefined {
   if (!embed) return undefined;
 
   // Direct images embed
-  if (embed.$type === "app.bsky.embed.images#view" && embed.images) {
+  if (embed.$type === 'app.bsky.embed.images#view' && embed.images) {
     return embed.images;
   }
 
   // Record with media (quote post with images)
-  if (
-    embed.$type === "app.bsky.embed.recordWithMedia#view" &&
-    embed.media?.images
-  ) {
+  if (embed.$type === 'app.bsky.embed.recordWithMedia#view' && embed.media?.images) {
     return embed.media.images;
   }
 
@@ -78,17 +75,15 @@ function extractQuotedPost(embed?: BlueskyEmbed): QuotedPost | undefined {
   if (!embed) return undefined;
 
   // Direct record embed (quote post without media)
-  if (embed.$type === "app.bsky.embed.record#view" && embed.record) {
+  if (embed.$type === 'app.bsky.embed.record#view' && embed.record) {
     // For this type, record is BlueskyEmbedRecord directly
     const record = embed.record as BlueskyEmbedRecord;
     // Only handle view records, not blocked/notFound/etc
-    if (record.$type !== "app.bsky.embed.record#viewRecord") {
+    if (record.$type !== 'app.bsky.embed.record#viewRecord') {
       return undefined;
     }
     // Extract images from the quoted post's embeds if any
-    const quotedImages = record.embeds?.[0]
-      ? extractImages(record.embeds[0])
-      : undefined;
+    const quotedImages = record.embeds?.[0] ? extractImages(record.embeds[0]) : undefined;
 
     return {
       uri: record.uri,
@@ -105,15 +100,13 @@ function extractQuotedPost(embed?: BlueskyEmbed): QuotedPost | undefined {
 
   // Record with media (quote post with images on the quoting post)
   // For this type, the actual record is nested: embed.record.record
-  if (embed.$type === "app.bsky.embed.recordWithMedia#view" && embed.record) {
+  if (embed.$type === 'app.bsky.embed.recordWithMedia#view' && embed.record) {
     const wrapper = embed.record as { record: BlueskyEmbedRecord };
     const record = wrapper.record;
-    if (!record || record.$type !== "app.bsky.embed.record#viewRecord") {
+    if (!record || record.$type !== 'app.bsky.embed.record#viewRecord') {
       return undefined;
     }
-    const quotedImages = record.embeds?.[0]
-      ? extractImages(record.embeds[0])
-      : undefined;
+    const quotedImages = record.embeds?.[0] ? extractImages(record.embeds[0]) : undefined;
 
     return {
       uri: record.uri,
@@ -150,7 +143,7 @@ interface BlueskyPost {
 }
 
 interface BlueskyRepostReason {
-  $type: "app.bsky.feed.defs#reasonRepost";
+  $type: 'app.bsky.feed.defs#reasonRepost';
   by: {
     did: string;
     handle: string;
@@ -195,20 +188,17 @@ async function fetchBlueskyFeed(): Promise<FeedPost[]> {
           createdAt: item.reply.parent.record.createdAt,
           author: {
             handle: item.reply.parent.author.handle,
-            displayName:
-              item.reply.parent.author.displayName ||
-              item.reply.parent.author.handle,
+            displayName: item.reply.parent.author.displayName || item.reply.parent.author.handle,
             avatar: item.reply.parent.author.avatar,
           },
         }
       : undefined;
 
     const repostedBy =
-      item.reason?.$type === "app.bsky.feed.defs#reasonRepost"
+      item.reason?.$type === 'app.bsky.feed.defs#reasonRepost'
         ? {
             handle: item.reason.by.handle,
-            displayName:
-              item.reason.by.displayName || item.reason.by.handle,
+            displayName: item.reason.by.displayName || item.reason.by.handle,
             avatar: item.reason.by.avatar,
           }
         : undefined;
@@ -248,10 +238,7 @@ export async function GET() {
       lastUpdated: new Date(cacheTime).toISOString(),
     });
   } catch (error) {
-    console.error("Feed API error:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch feed data" },
-      { status: 500 }
-    );
+    console.error('Feed API error:', error);
+    return NextResponse.json({ error: 'Failed to fetch feed data' }, { status: 500 });
   }
 }

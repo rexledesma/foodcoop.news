@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import { createContext, useContext } from "react";
-import type { ProduceRow } from "@/lib/use-produce-data";
+import { createContext, useContext } from 'react';
+import type { ProduceRow } from '@/lib/use-produce-data';
 
 export interface ProduceDataState {
   data: ProduceRow[];
@@ -14,7 +14,7 @@ const ProduceDataContext = createContext<ProduceDataState | null>(null);
 export function useProduceDataContext(): ProduceDataState {
   const context = useContext(ProduceDataContext);
   if (!context) {
-    throw new Error("useProduceDataContext must be used within ProduceDataProvider");
+    throw new Error('useProduceDataContext must be used within ProduceDataProvider');
   }
   return context;
 }

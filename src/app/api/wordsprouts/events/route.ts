@@ -1,7 +1,7 @@
-import { NextResponse } from "next/server";
-import type { EventbriteEvent } from "@/lib/types";
+import { NextResponse } from 'next/server';
+import type { EventbriteEvent } from '@/lib/types';
 
-const EVENTBRITE_ORGANIZER_ID = "31080353121";
+const EVENTBRITE_ORGANIZER_ID = '31080353121';
 const EVENTBRITE_API_URL = `https://www.eventbriteapi.com/v3/organizers/${EVENTBRITE_ORGANIZER_ID}/events/`;
 const WORDSPROUTS_QUERY = /wordsprouts/i;
 
@@ -47,19 +47,19 @@ function formatVenueAddress(address?: EventbriteVenueAddress): string | undefine
     address.region,
     address.postal_code,
   ].filter(Boolean);
-  return parts.length > 0 ? parts.join(", ") : undefined;
+  return parts.length > 0 ? parts.join(', ') : undefined;
 }
 
 async function fetchWordsproutsEvents(): Promise<EventbriteEvent[]> {
   const apiKey = process.env.EVENTBRITE_API_KEY;
   if (!apiKey) {
-    throw new Error("Missing EVENTBRITE_API_KEY");
+    throw new Error('Missing EVENTBRITE_API_KEY');
   }
 
   const url = new URL(EVENTBRITE_API_URL);
-  url.searchParams.set("status", "live");
-  url.searchParams.set("order_by", "start_asc");
-  url.searchParams.set("expand", "logo,venue");
+  url.searchParams.set('status', 'live');
+  url.searchParams.set('order_by', 'start_asc');
+  url.searchParams.set('expand', 'logo,venue');
 
   const response = await fetch(url.toString(), {
     headers: {
@@ -81,10 +81,10 @@ async function fetchWordsproutsEvents(): Promise<EventbriteEvent[]> {
       const eventTime = new Date(event.start.utc).getTime();
       return eventTime >= now && eventTime <= fortyFiveDaysAhead;
     })
-    .filter((event) => WORDSPROUTS_QUERY.test(event.name?.text || ""))
+    .filter((event) => WORDSPROUTS_QUERY.test(event.name?.text || ''))
     .map((event) => ({
       id: event.id,
-      title: event.name?.text || "Wordsprouts Event",
+      title: event.name?.text || 'Wordsprouts Event',
       description: event.description?.text || undefined,
       url: event.url,
       startUtc: event.start.utc,
@@ -109,10 +109,7 @@ export async function GET() {
       lastUpdated: new Date(cacheTime).toISOString(),
     });
   } catch (error) {
-    console.error("Wordsprouts Eventbrite API error:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch Wordsprouts events" },
-      { status: 500 }
-    );
+    console.error('Wordsprouts Eventbrite API error:', error);
+    return NextResponse.json({ error: 'Failed to fetch Wordsprouts events' }, { status: 500 });
   }
 }

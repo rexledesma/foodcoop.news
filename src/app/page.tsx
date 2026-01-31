@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import { useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { useSession } from "@/lib/auth-client";
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { useSession } from '@/lib/auth-client';
 
 export default function Home() {
   const router = useRouter();
@@ -10,12 +10,12 @@ export default function Home() {
 
   useEffect(() => {
     if (!isPending) {
-      router.replace("/discover");
+      router.replace('/discover');
     }
   }, [isPending, router]);
 
   return (
-    <div className="min-h-screen flex items-center justify-center">
+    <div className="flex min-h-screen items-center justify-center">
       <div className="animate-pulse text-zinc-400">Loading...</div>
     </div>
   );

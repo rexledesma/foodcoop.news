@@ -1,7 +1,7 @@
-import { Integrations } from "@/components/Integrations";
+import { Integrations } from '@/components/Integrations';
 
 export const metadata = {
-  title: "Integrations",
+  title: 'Integrations',
 };
 
 export default function IntegrationsPage() {

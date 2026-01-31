@@ -1,14 +1,14 @@
-import { NextResponse } from "next/server";
-import { list, put } from "@vercel/blob";
-import { parseProduceHtml } from "@/lib/produce-parser";
-import { generateParquetBuffer } from "@/lib/parquet-generator";
-import type { ProduceItem } from "@/lib/produce-types";
+import { NextResponse } from 'next/server';
+import { list, put } from '@vercel/blob';
+import { parseProduceHtml } from '@/lib/produce-parser';
+import { generateParquetBuffer } from '@/lib/parquet-generator';
+import type { ProduceItem } from '@/lib/produce-types';
 
 // https://vercel.com/docs/cron-jobs/manage-cron-jobs#securing-cron-jobs
 export async function GET(request: Request) {
-  const authHeader = request.headers.get("authorization");
+  const authHeader = request.headers.get('authorization');
   if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
   try {
@@ -18,7 +18,7 @@ export async function GET(request: Request) {
 
     for (let attempt = 0; attempt < maxRetries; attempt++) {
       try {
-        const response = await fetch("https://www.foodcoop.com/produce");
+        const response = await fetch('https://www.foodcoop.com/produce');
         if (!response.ok) {
           lastError = new Error(`HTTP ${response.status}`);
           continue;
@@ -31,22 +31,19 @@ export async function GET(request: Request) {
     }
 
     if (!html) {
-      console.error("Failed to fetch produce page after retries:", lastError);
-      return NextResponse.json(
-        { error: "Failed to fetch produce page" },
-        { status: 502 }
-      );
+      console.error('Failed to fetch produce page after retries:', lastError);
+      return NextResponse.json({ error: 'Failed to fetch produce page' }, { status: 502 });
     }
 
-    const date = new Date().toLocaleDateString("en-CA", {
-      timeZone: "America/New_York",
+    const date = new Date().toLocaleDateString('en-CA', {
+      timeZone: 'America/New_York',
     }); // "YYYY-MM-DD"
     const month = date.slice(0, 7); // "YYYY-MM"
 
     // Store HTML snapshot
     const htmlBlob = await put(`produce/${date}.html`, html, {
-      contentType: "text/html",
-      access: "public",
+      contentType: 'text/html',
+      access: 'public',
       allowOverwrite: true,
       token: process.env.VERCEL_BLOB_READ_WRITE_TOKEN,
     });
@@ -61,11 +58,8 @@ export async function GET(request: Request) {
       parquet: parquetResult,
     });
   } catch (error) {
-    console.error("Scrape produce error:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    );
+    console.error('Scrape produce error:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
 
@@ -101,8 +95,8 @@ async function regenerateMonthParquet(month: string): Promise<{
   // Generate and upload Parquet
   const buffer = await generateParquetBuffer(allItems);
   const parquetBlob = await put(`produce-data/${month}.parquet`, buffer, {
-    contentType: "application/octet-stream",
-    access: "public",
+    contentType: 'application/octet-stream',
+    access: 'public',
     allowOverwrite: true,
     token: process.env.VERCEL_BLOB_READ_WRITE_TOKEN,
   });

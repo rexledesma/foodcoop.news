@@ -1,0 +1,8 @@
+node_modules
+.next
+out
+build
+dist
+.turbo
+convex/_generated
+pnpm-lock.yaml

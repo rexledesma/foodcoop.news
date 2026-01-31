@@ -1,6 +1,6 @@
-import { v } from "convex/values";
-import { mutation, query } from "./_generated/server";
-import { authComponent } from "./auth";
+import { v } from 'convex/values';
+import { mutation, query } from './_generated/server';
+import { authComponent } from './auth';
 
 export const createMemberProfile = mutation({
   args: {
@@ -11,13 +11,13 @@ export const createMemberProfile = mutation({
   handler: async (ctx, args) => {
     const user = await authComponent.getAuthUser(ctx);
     if (!user) {
-      throw new Error("Not authenticated");
+      throw new Error('Not authenticated');
     }
 
     // Check if profile already exists - return existing ID (idempotent)
     const existing = await ctx.db
-      .query("memberProfiles")
-      .withIndex("by_userId", (q) => q.eq("userId", user._id))
+      .query('memberProfiles')
+      .withIndex('by_userId', (q) => q.eq('userId', user._id))
       .first();
 
     if (existing) {
@@ -25,7 +25,7 @@ export const createMemberProfile = mutation({
     }
 
     const now = Date.now();
-    return await ctx.db.insert("memberProfiles", {
+    return await ctx.db.insert('memberProfiles', {
       userId: user._id,
       memberId: args.memberId,
       memberName: args.memberName,
@@ -47,16 +47,16 @@ export const updateMemberProfile = mutation({
   handler: async (ctx, args) => {
     const user = await authComponent.getAuthUser(ctx);
     if (!user) {
-      throw new Error("Not authenticated");
+      throw new Error('Not authenticated');
     }
 
     const profile = await ctx.db
-      .query("memberProfiles")
-      .withIndex("by_userId", (q) => q.eq("userId", user._id))
+      .query('memberProfiles')
+      .withIndex('by_userId', (q) => q.eq('userId', user._id))
       .first();
 
     if (!profile) {
-      throw new Error("Member profile not found");
+      throw new Error('Member profile not found');
     }
 
     const updates: Partial<{
@@ -89,8 +89,8 @@ export const getProfileByCalendarId = query({
   },
   handler: async (ctx, args) => {
     return await ctx.db
-      .query("memberProfiles")
-      .withIndex("by_calendarId", (q) => q.eq("calendarId", args.calendarId))
+      .query('memberProfiles')
+      .withIndex('by_calendarId', (q) => q.eq('calendarId', args.calendarId))
       .first();
   },
 });
@@ -105,8 +105,8 @@ export const getMemberProfile = query({
       }
 
       return await ctx.db
-        .query("memberProfiles")
-        .withIndex("by_userId", (q) => q.eq("userId", user._id))
+        .query('memberProfiles')
+        .withIndex('by_userId', (q) => q.eq('userId', user._id))
         .first();
     } catch {
       // User is not authenticated
@@ -114,4 +114,3 @@ export const getMemberProfile = query({
     }
   },
 });
-

@@ -1,6 +1,6 @@
-"use client";
+'use client';
 
-import { ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type {
   FeedPost,
   GazetteArticle,
@@ -8,24 +8,20 @@ import type {
   FoodCoopCooksArticle,
   EventbriteEvent,
   FoodcoopEvent,
-} from "@/lib/types";
+} from '@/lib/types';
 import {
   DiscoverFeedContext,
   getFeedItemKey,
   type FeedItem,
   type DiscoverFeedState,
-} from "@/lib/discover-feed-context";
+} from '@/lib/discover-feed-context';
 
-const COOP_BLUESKY_HANDLE = "foodcoop.bsky.social";
+const COOP_BLUESKY_HANDLE = 'foodcoop.bsky.social';
 
-export function DiscoverFeedProvider({
-  children,
-}: {
-  children: ReactNode;
-}) {
+export function DiscoverFeedProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<FeedItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const [error, setError] = useState('');
   const [pendingSources, setPendingSources] = useState(0);
   const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
 
@@ -38,7 +34,7 @@ export function DiscoverFeedProvider({
 
     try {
       setLoading(true);
-      setError("");
+      setError('');
       hasItemsRef.current = false;
       hasSuccessRef.current = false;
       finalizedRef.current = false;
@@ -53,10 +49,7 @@ export function DiscoverFeedProvider({
       const sortAndPrune = (list: FeedItem[]) =>
         [...list]
           .sort((a, b) => b.date.getTime() - a.date.getTime())
-          .filter(
-            (item) =>
-              item.date >= fortyFiveDaysAgo && item.date <= fortyFiveDaysAhead,
-          );
+          .filter((item) => item.date >= fortyFiveDaysAgo && item.date <= fortyFiveDaysAhead);
 
       const appendItems = (newItems: FeedItem[]) => {
         setItems((prev) => {
@@ -80,18 +73,18 @@ export function DiscoverFeedProvider({
 
       const sources = [
         {
-          key: "gazette",
-          url: "/api/gazette",
+          key: 'gazette',
+          url: '/api/gazette',
           map: (data: { articles: GazetteArticle[] }) =>
             data.articles.map((article) => ({
-              type: "gazette" as const,
+              type: 'gazette' as const,
               data: article,
               date: new Date(article.pubDate),
             })),
         },
         {
-          key: "bluesky",
-          url: "/api/feed",
+          key: 'bluesky',
+          url: '/api/feed',
           map: (data: { posts: FeedPost[] }) =>
             data.posts
               .filter((post) => {
@@ -100,67 +93,67 @@ export function DiscoverFeedProvider({
                 return post.author.handle !== COOP_BLUESKY_HANDLE;
               })
               .map((post) => ({
-                type: "bluesky" as const,
+                type: 'bluesky' as const,
                 data: post,
                 date: new Date(post.createdAt),
               })),
         },
         {
-          key: "foodcoop",
-          url: "/api/foodcoop",
+          key: 'foodcoop',
+          url: '/api/foodcoop',
           map: (data: { articles: FoodCoopAnnouncement[] }) =>
             data.articles.map((announcement) => ({
-              type: "foodcoop" as const,
+              type: 'foodcoop' as const,
               data: announcement,
               date: new Date(announcement.pubDate),
             })),
         },
         {
-          key: "foodcoopcooks",
-          url: "/api/foodcoopcooks",
+          key: 'foodcoopcooks',
+          url: '/api/foodcoopcooks',
           map: (data: { articles: FoodCoopCooksArticle[] }) =>
             data.articles.map((article) => ({
-              type: "foodcoopcooks" as const,
+              type: 'foodcoopcooks' as const,
               data: article,
               date: new Date(article.pubDate),
             })),
         },
         {
-          key: "foodcoopcooks-events",
-          url: "/api/foodcoopcooks/events",
+          key: 'foodcoopcooks-events',
+          url: '/api/foodcoopcooks/events',
           map: (data: { events: EventbriteEvent[] }) =>
             data.events.map((event) => ({
-              type: "foodcoopcooks-events" as const,
+              type: 'foodcoopcooks-events' as const,
               data: event,
               date: new Date(event.startUtc),
             })),
         },
         {
-          key: "wordsprouts-events",
-          url: "/api/wordsprouts/events",
+          key: 'wordsprouts-events',
+          url: '/api/wordsprouts/events',
           map: (data: { events: EventbriteEvent[] }) =>
             data.events.map((event) => ({
-              type: "wordsprouts-events" as const,
+              type: 'wordsprouts-events' as const,
               data: event,
               date: new Date(event.startUtc),
             })),
         },
         {
-          key: "concert-series-events",
-          url: "/api/concert-series/events",
+          key: 'concert-series-events',
+          url: '/api/concert-series/events',
           map: (data: { events: EventbriteEvent[] }) =>
             data.events.map((event) => ({
-              type: "concert-series-events" as const,
+              type: 'concert-series-events' as const,
               data: event,
               date: new Date(event.startUtc),
             })),
         },
         {
-          key: "gm-events",
-          url: "/api/foodcoop/gm-events",
+          key: 'gm-events',
+          url: '/api/foodcoop/gm-events',
           map: (data: { events: FoodcoopEvent[] }) =>
             data.events.map((event) => ({
-              type: "gm-events" as const,
+              type: 'gm-events' as const,
               data: event,
               date: new Date(event.startUtc),
             })),
@@ -174,7 +167,7 @@ export function DiscoverFeedProvider({
         finalizedRef.current = true;
         setItems((prev) => sortAndPrune(prev));
         if (!hasSuccessRef.current) {
-          setError("Failed to load feed");
+          setError('Failed to load feed');
         }
         setLoading(false);
       };
@@ -200,7 +193,7 @@ export function DiscoverFeedProvider({
           });
       }
     } catch {
-      setError("Failed to load feed");
+      setError('Failed to load feed');
       setLoading(false);
     }
   }, []);
@@ -225,9 +218,5 @@ export function DiscoverFeedProvider({
     [items, loading, error, pendingSources, hasLoadedOnce, fetchFeeds],
   );
 
-  return (
-    <DiscoverFeedContext.Provider value={value}>
-      {children}
-    </DiscoverFeedContext.Provider>
-  );
+  return <DiscoverFeedContext.Provider value={value}>{children}</DiscoverFeedContext.Provider>;
 }

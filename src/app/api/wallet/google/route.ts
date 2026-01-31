@@ -1,20 +1,17 @@
-import { NextResponse } from "next/server";
-import { fetchAuthQuery } from "@/lib/auth";
-import { api } from "../../../../../convex/_generated/api";
-import { generateGoogleWalletURL } from "@/lib/google-wallet";
+import { NextResponse } from 'next/server';
+import { fetchAuthQuery } from '@/lib/auth';
+import { api } from '../../../../../convex/_generated/api';
+import { generateGoogleWalletURL } from '@/lib/google-wallet';
 
-export const runtime = "nodejs";
+export const runtime = 'nodejs';
 
 export async function GET() {
   try {
-    const profile = await fetchAuthQuery(
-      api.memberProfiles.getMemberProfile,
-      {},
-    );
+    const profile = await fetchAuthQuery(api.memberProfiles.getMemberProfile, {});
 
     if (!profile) {
       return NextResponse.json(
-        { error: "Not authenticated or profile not found" },
+        { error: 'Not authenticated or profile not found' },
         { status: 401 },
       );
     }
@@ -28,10 +25,7 @@ export async function GET() {
 
     return NextResponse.json({ url });
   } catch (error) {
-    console.error("Google Wallet pass generation error:", error);
-    return NextResponse.json(
-      { error: "Failed to generate pass" },
-      { status: 500 },
-    );
+    console.error('Google Wallet pass generation error:', error);
+    return NextResponse.json({ error: 'Failed to generate pass' }, { status: 500 });
   }
 }

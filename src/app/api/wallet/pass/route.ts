@@ -1,9 +1,9 @@
-import { NextResponse } from "next/server";
-import { fetchAuthQuery } from "@/lib/auth";
-import { api } from "../../../../../convex/_generated/api";
-import { generatePKPass } from "@/lib/apple-pass";
+import { NextResponse } from 'next/server';
+import { fetchAuthQuery } from '@/lib/auth';
+import { api } from '../../../../../convex/_generated/api';
+import { generatePKPass } from '@/lib/apple-pass';
 
-export const runtime = "nodejs";
+export const runtime = 'nodejs';
 
 export async function GET() {
   try {
@@ -11,8 +11,8 @@ export async function GET() {
 
     if (!profile) {
       return NextResponse.json(
-        { error: "Not authenticated or profile not found" },
-        { status: 401 }
+        { error: 'Not authenticated or profile not found' },
+        { status: 401 },
       );
     }
 
@@ -24,15 +24,12 @@ export async function GET() {
 
     return new NextResponse(new Uint8Array(passBuffer), {
       headers: {
-        "Content-Type": "application/vnd.apple.pkpass",
-        "Content-Disposition": 'attachment; filename="psfc-member-card.pkpass"',
+        'Content-Type': 'application/vnd.apple.pkpass',
+        'Content-Disposition': 'attachment; filename="psfc-member-card.pkpass"',
       },
     });
   } catch (error) {
-    console.error("Wallet pass generation error:", error);
-    return NextResponse.json(
-      { error: "Failed to generate pass" },
-      { status: 500 }
-    );
+    console.error('Wallet pass generation error:', error);
+    return NextResponse.json({ error: 'Failed to generate pass' }, { status: 500 });
   }
 }

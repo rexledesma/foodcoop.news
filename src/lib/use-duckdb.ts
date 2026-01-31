@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import { useEffect, useState, useCallback, useRef } from "react";
-import * as duckdb from "@duckdb/duckdb-wasm";
+import { useEffect, useState, useCallback, useRef } from 'react';
+import * as duckdb from '@duckdb/duckdb-wasm';
 
 interface UseDuckDBResult {
   isReady: boolean;
@@ -29,7 +29,7 @@ export function useDuckDB(): UseDuckDBResult {
 
         const worker_url = URL.createObjectURL(
           new Blob([`importScripts("${bundle.mainWorker}");`], {
-            type: "text/javascript",
+            type: 'text/javascript',
           }),
         );
 
@@ -52,7 +52,7 @@ export function useDuckDB(): UseDuckDBResult {
         setIsReady(true);
         setIsLoading(false);
       } catch (err) {
-        console.error("[DuckDB] Error:", err);
+        console.error('[DuckDB] Error:', err);
         if (!cancelled) {
           setError(err instanceof Error ? err : new Error(String(err)));
           setIsLoading(false);
@@ -69,37 +69,26 @@ export function useDuckDB(): UseDuckDBResult {
     };
   }, []);
 
-  const query = useCallback(
-    async <T = Record<string, unknown>>(sql: string): Promise<T[]> => {
-      if (!connRef.current) {
-        throw new Error("DuckDB not initialized");
-      }
+  const query = useCallback(async <T = Record<string, unknown>>(sql: string): Promise<T[]> => {
+    if (!connRef.current) {
+      throw new Error('DuckDB not initialized');
+    }
 
-      const result = await connRef.current.query(sql);
-      return result.toArray().map((row) => row.toJSON() as T);
-    },
-    [],
-  );
+    const result = await connRef.current.query(sql);
+    return result.toArray().map((row) => row.toJSON() as T);
+  }, []);
 
-  const loadParquet = useCallback(
-    async (url: string, tableName: string): Promise<void> => {
-      if (!dbRef.current || !connRef.current) {
-        throw new Error("DuckDB not initialized");
-      }
+  const loadParquet = useCallback(async (url: string, tableName: string): Promise<void> => {
+    if (!dbRef.current || !connRef.current) {
+      throw new Error('DuckDB not initialized');
+    }
 
-      await dbRef.current.registerFileURL(
-        tableName,
-        url,
-        duckdb.DuckDBDataProtocol.HTTP,
-        false,
-      );
-      await connRef.current.query(`
+    await dbRef.current.registerFileURL(tableName, url, duckdb.DuckDBDataProtocol.HTTP, false);
+    await connRef.current.query(`
         CREATE OR REPLACE TABLE ${tableName} AS
         SELECT * FROM parquet_scan('${tableName}')
       `);
-    },
-    [],
-  );
+  }, []);
 
   return { isReady, isLoading, error, query, loadParquet };
 }

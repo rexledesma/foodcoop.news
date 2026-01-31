@@ -1,22 +1,15 @@
-import * as cheerio from "cheerio";
-import type {
-  ProduceItem,
-  ProduceUnit,
-  ParsedProducePage,
-} from "./produce-types";
+import * as cheerio from 'cheerio';
+import type { ProduceItem, ProduceUnit, ParsedProducePage } from './produce-types';
 
-export function parseProduceHtml(
-  html: string,
-  date: string,
-): ParsedProducePage {
+export function parseProduceHtml(html: string, date: string): ParsedProducePage {
   const $ = cheerio.load(html);
   const items: ProduceItem[] = [];
 
-  $("table.produce tbody tr").each((_, row) => {
-    const tds = $(row).find("td");
+  $('table.produce tbody tr').each((_, row) => {
+    const tds = $(row).find('td');
     if (tds.length < 4) return;
 
-    const nameCell = $(tds[0]).find("div").first().text().trim();
+    const nameCell = $(tds[0]).find('div').first().text().trim();
     const priceCell = $(tds[1]).text().trim();
     const attrsCell = $(tds[2]).text().trim();
     const originCell = $(tds[3]).text().trim();
@@ -52,8 +45,8 @@ export function parseProduceHtml(
 function generateId(date: string, name: string): string {
   const slug = name
     .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-|-$/g, "");
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '');
   return `${date}-${slug}`;
 }
 
@@ -61,24 +54,24 @@ export function parseProductName(rawName: string): string {
   let name = rawName.trim();
 
   // Strip PLU code (4-5 digit number at end)
-  name = name.replace(/\s+\d{4,5}\s*$/, "");
+  name = name.replace(/\s+\d{4,5}\s*$/, '');
 
   // Remove trailing attributes (organic, ipm, etc.)
   name = name
-    .replace(/\s+(organic|ipm|hydroponic)\s*$/i, "")
-    .replace(/\s+(organic|ipm|hydroponic)\s*$/i, ""); // Run twice for combos
+    .replace(/\s+(organic|ipm|hydroponic)\s*$/i, '')
+    .replace(/\s+(organic|ipm|hydroponic)\s*$/i, ''); // Run twice for combos
 
   // Normalize hyphen spacing: "Apple- honeycrisp" -> "Apple - Honeycrisp"
-  name = name.replace(/-\s*/g, " - ").replace(/\s+/g, " ").trim();
+  name = name.replace(/-\s*/g, ' - ').replace(/\s+/g, ' ').trim();
 
   // Title case
   name = name
-    .split(" ")
+    .split(' ')
     .map((word) => {
-      if (word === "-") return word;
+      if (word === '-') return word;
       return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
     })
-    .join(" ");
+    .join(' ');
 
   return name;
 }
@@ -90,12 +83,12 @@ export function parsePrice(priceStr: string): {
   const match = priceStr.match(/\$?([\d.]+)/);
   const price = match ? parseFloat(match[1]) : 0;
 
-  let unit: ProduceUnit = "each";
+  let unit: ProduceUnit = 'each';
   const lower = priceStr.toLowerCase();
-  if (lower.includes("pound") || lower.includes("lb")) {
-    unit = "pound";
-  } else if (lower.includes("bunch")) {
-    unit = "bunch";
+  if (lower.includes('pound') || lower.includes('lb')) {
+    unit = 'pound';
+  } else if (lower.includes('bunch')) {
+    unit = 'bunch';
   }
 
   return { price, unit };
@@ -113,16 +106,14 @@ export function parseAttributes(
   const combined = `${attrsCell} ${rawName}`.toLowerCase();
 
   return {
-    isOrganic: combined.includes("organic"),
-    isIpm:
-      combined.includes("integrated pest management") ||
-      combined.includes(" ipm"),
-    isWaxed: combined.includes("waxed"),
-    isHydroponic: combined.includes("hydroponic"),
+    isOrganic: combined.includes('organic'),
+    isIpm: combined.includes('integrated pest management') || combined.includes(' ipm'),
+    isWaxed: combined.includes('waxed'),
+    isHydroponic: combined.includes('hydroponic'),
   };
 }
 
 export function parseOriginIsLocal(originStr: string): boolean {
   const lower = originStr.toLowerCase();
-  return lower.includes("locally grown") || lower.includes("500 miles");
+  return lower.includes('locally grown') || lower.includes('500 miles');
 }

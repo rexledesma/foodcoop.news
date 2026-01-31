@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import { useEffect, useState } from "react";
-import { useDuckDB } from "@/lib/use-duckdb";
+import { useEffect, useState } from 'react';
+import { useDuckDB } from '@/lib/use-duckdb';
 
 export interface ProduceRow {
   raw_name: string;
@@ -32,13 +32,7 @@ interface UseProduceDataResult {
 }
 
 export function useProduceData(): UseProduceDataResult {
-  const {
-    isReady,
-    isLoading: dbLoading,
-    error: dbError,
-    query,
-    loadParquet,
-  } = useDuckDB();
+  const { isReady, isLoading: dbLoading, error: dbError, query, loadParquet } = useDuckDB();
   const [data, setData] = useState<ProduceRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -52,27 +46,23 @@ export function useProduceData(): UseProduceDataResult {
         setError(null);
 
         // Fetch metadata to get Parquet URLs
-        const metaRes = await fetch("/api/produce/metadata");
-        if (!metaRes.ok) throw new Error("Failed to fetch metadata");
+        const metaRes = await fetch('/api/produce/metadata');
+        if (!metaRes.ok) throw new Error('Failed to fetch metadata');
         const meta: ProduceMetadata = await metaRes.json();
 
         if (meta.months.length === 0) {
-          setError("No produce data available");
+          setError('No produce data available');
           return;
         }
 
         // Load all available months
         for (const { url, month } of meta.months) {
-          await loadParquet(url, `produce_${month.replace("-", "_")}`);
+          await loadParquet(url, `produce_${month.replace('-', '_')}`);
         }
 
         // Create unified view
-        const tableNames = meta.months.map(
-          (m) => `produce_${m.month.replace("-", "_")}`,
-        );
-        const unionQuery = tableNames
-          .map((t) => `SELECT * FROM ${t}`)
-          .join(" UNION ALL ");
+        const tableNames = meta.months.map((m) => `produce_${m.month.replace('-', '_')}`);
+        const unionQuery = tableNames.map((t) => `SELECT * FROM ${t}`).join(' UNION ALL ');
         await query(`CREATE OR REPLACE TABLE produce AS ${unionQuery}`);
 
         // Query with price comparisons (using raw_name as key to distinguish organic vs conventional)
@@ -124,7 +114,7 @@ export function useProduceData(): UseProduceDataResult {
 
         setData(results);
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Failed to load data");
+        setError(err instanceof Error ? err.message : 'Failed to load data');
       } finally {
         setLoading(false);
       }

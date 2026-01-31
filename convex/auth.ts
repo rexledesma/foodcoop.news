@@ -1,12 +1,12 @@
-import { createClient, type GenericCtx } from "@convex-dev/better-auth";
-import { convex } from "@convex-dev/better-auth/plugins";
-import { v } from "convex/values";
-import type { GenericActionCtx } from "convex/server";
-import { components, internal } from "./_generated/api";
-import { DataModel } from "./_generated/dataModel";
-import { internalMutation, query } from "./_generated/server";
-import { betterAuth } from "better-auth/minimal";
-import authConfig from "./auth.config";
+import { createClient, type GenericCtx } from '@convex-dev/better-auth';
+import { convex } from '@convex-dev/better-auth/plugins';
+import { v } from 'convex/values';
+import type { GenericActionCtx } from 'convex/server';
+import { components, internal } from './_generated/api';
+import { DataModel } from './_generated/dataModel';
+import { internalMutation, query } from './_generated/server';
+import { betterAuth } from 'better-auth/minimal';
+import authConfig from './auth.config';
 
 const siteUrl = process.env.SITE_URL!;
 export const authComponent = createClient<DataModel>(components.betterAuth);
@@ -21,8 +21,8 @@ export const createMemberProfileForUser = internalMutation({
   handler: async (ctx, args) => {
     // Check if profile already exists (idempotent)
     const existing = await ctx.db
-      .query("memberProfiles")
-      .withIndex("by_userId", (q) => q.eq("userId", args.userId))
+      .query('memberProfiles')
+      .withIndex('by_userId', (q) => q.eq('userId', args.userId))
       .first();
 
     if (existing) {
@@ -30,9 +30,9 @@ export const createMemberProfileForUser = internalMutation({
     }
 
     const now = Date.now();
-    return await ctx.db.insert("memberProfiles", {
+    return await ctx.db.insert('memberProfiles', {
       userId: args.userId,
-      memberId: args.memberId ?? "",
+      memberId: args.memberId ?? '',
       memberName: args.memberName,
       passSerialNumber: crypto.randomUUID(),
       calendarId: crypto.randomUUID(),
@@ -56,8 +56,7 @@ export const createAuth = (ctx: GenericCtx<DataModel>) => {
       requireEmailVerification: false,
     },
     user: {
-      additionalFields: {
-      },
+      additionalFields: {},
     },
     databaseHooks: {
       user: {
@@ -65,14 +64,11 @@ export const createAuth = (ctx: GenericCtx<DataModel>) => {
           after: async (user) => {
             // Auto-create member profile when user signs up
             // Call internal mutation to create member profile
-            await actionCtx.runMutation(
-              internal.auth.createMemberProfileForUser,
-              {
-                userId: user.id,
-                memberId: (user as { memberId?: string }).memberId ?? "",
-                memberName: user.name,
-              }
-            );
+            await actionCtx.runMutation(internal.auth.createMemberProfileForUser, {
+              userId: user.id,
+              memberId: (user as { memberId?: string }).memberId ?? '',
+              memberName: user.name,
+            });
           },
         },
       },
@@ -89,13 +85,10 @@ export const getCurrentUser = query({
 export const checkEmailExists = query({
   args: { email: v.string() },
   handler: async (ctx, args) => {
-    const result = await ctx.runQuery(
-      components.betterAuth.adapter.findOne,
-      {
-        model: "user",
-        where: [{ field: "email", operator: "eq", value: args.email }],
-      }
-    );
+    const result = await ctx.runQuery(components.betterAuth.adapter.findOne, {
+      model: 'user',
+      where: [{ field: 'email', operator: 'eq', value: args.email }],
+    });
     return { exists: result !== null };
   },
 });

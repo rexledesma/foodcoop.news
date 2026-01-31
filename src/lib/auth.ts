@@ -1,4 +1,4 @@
-import { convexBetterAuthNextJs } from "@convex-dev/better-auth/nextjs";
+import { convexBetterAuthNextJs } from '@convex-dev/better-auth/nextjs';
 
 export const {
   handler,

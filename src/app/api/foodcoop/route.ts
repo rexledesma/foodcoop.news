@@ -1,8 +1,8 @@
-import { NextResponse } from "next/server";
-import { decode } from "html-entities";
-import type { FoodCoopAnnouncement } from "@/lib/types";
+import { NextResponse } from 'next/server';
+import { decode } from 'html-entities';
+import type { FoodCoopAnnouncement } from '@/lib/types';
 
-const FOODCOOP_RSS_URL = "https://www.foodcoop.com/feed/";
+const FOODCOOP_RSS_URL = 'https://www.foodcoop.com/feed/';
 
 // Cache feed data for 5 minutes
 let cachedArticles: FoodCoopAnnouncement[] | null = null;
@@ -12,13 +12,13 @@ const CACHE_DURATION = 5 * 60 * 1000;
 function extractTextContent(xml: string, tagName: string): string {
   const regex = new RegExp(
     `<${tagName}[^>]*><!\\[CDATA\\[([\\s\\S]*?)\\]\\]></${tagName}>|<${tagName}[^>]*>([^<]*)</${tagName}>`,
-    "i"
+    'i',
   );
   const match = xml.match(regex);
   if (match) {
-    return (match[1] || match[2] || "").trim();
+    return (match[1] || match[2] || '').trim();
   }
-  return "";
+  return '';
 }
 
 async function fetchTwitterImage(url: string): Promise<string | undefined> {
@@ -29,22 +29,14 @@ async function fetchTwitterImage(url: string): Promise<string | undefined> {
     const html = await response.text();
     // Look for twitter:image or og:image meta tag
     const match =
-      html.match(
-        /<meta[^>]+name=["']twitter:image["'][^>]+content=["']([^"']+)["']/i
-      ) ||
-      html.match(
-        /<meta[^>]+content=["']([^"']+)["'][^>]+name=["']twitter:image["']/i
-      ) ||
-      html.match(
-        /<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)["']/i
-      ) ||
-      html.match(
-        /<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:image["']/i
-      );
+      html.match(/<meta[^>]+name=["']twitter:image["'][^>]+content=["']([^"']+)["']/i) ||
+      html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+name=["']twitter:image["']/i) ||
+      html.match(/<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)["']/i) ||
+      html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:image["']/i);
 
     if (match) {
       // Decode HTML entities in URL
-      return match[1].replace(/&#038;/g, "&").replace(/&amp;/g, "&");
+      return match[1].replace(/&#038;/g, '&').replace(/&amp;/g, '&');
     }
     return undefined;
   } catch {
@@ -77,19 +69,17 @@ async function fetchFoodCoopFeed(): Promise<FoodCoopAnnouncement[]> {
   while ((match = itemRegex.exec(xml)) !== null) {
     const itemXml = match[1];
 
-    const title = decode(extractTextContent(itemXml, "title"));
-    const rawDescription = extractTextContent(itemXml, "description");
+    const title = decode(extractTextContent(itemXml, 'title'));
+    const rawDescription = extractTextContent(itemXml, 'description');
     // Strip HTML tags and decode entities from description
-    const description = decode(rawDescription.replace(/<[^>]*>/g, "")).trim();
-    const link = extractTextContent(itemXml, "link");
-    const pubDate = extractTextContent(itemXml, "pubDate");
-    const guid = extractTextContent(itemXml, "guid");
+    const description = decode(rawDescription.replace(/<[^>]*>/g, '')).trim();
+    const link = extractTextContent(itemXml, 'link');
+    const pubDate = extractTextContent(itemXml, 'pubDate');
+    const guid = extractTextContent(itemXml, 'guid');
 
     // Extract post ID from guid (e.g., "https://www.foodcoop.com/?p=12345")
     const postIdMatch = guid.match(/[?&]p=(\d+)/);
-    const id = postIdMatch
-      ? postIdMatch[1]
-      : Buffer.from(link).toString("base64").slice(0, 20);
+    const id = postIdMatch ? postIdMatch[1] : Buffer.from(link).toString('base64').slice(0, 20);
 
     parsedItems.push({
       id,
@@ -101,9 +91,7 @@ async function fetchFoodCoopFeed(): Promise<FoodCoopAnnouncement[]> {
   }
 
   // Fetch twitter:image for all articles in parallel
-  const images = await Promise.all(
-    parsedItems.map((item) => fetchTwitterImage(item.link))
-  );
+  const images = await Promise.all(parsedItems.map((item) => fetchTwitterImage(item.link)));
 
   // Combine parsed items with images
   return parsedItems.map((item, index) => ({
@@ -130,10 +118,7 @@ export async function GET() {
       lastUpdated: new Date(cacheTime).toISOString(),
     });
   } catch (error) {
-    console.error("Food Coop API error:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch Food Coop articles" },
-      { status: 500 }
-    );
+    console.error('Food Coop API error:', error);
+    return NextResponse.json({ error: 'Failed to fetch Food Coop articles' }, { status: 500 });
   }
 }

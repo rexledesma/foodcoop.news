@@ -1,8 +1,8 @@
-import { Suspense } from "react";
-import { SignUpForm } from "@/components/SignUpForm";
+import { Suspense } from 'react';
+import { SignUpForm } from '@/components/SignUpForm';
 
 export const metadata = {
-  title: "Sign Up",
+  title: 'Sign Up',
 };
 
 export default function SignUpPage() {

@@ -1,10 +1,10 @@
-import { NextResponse } from "next/server";
-import * as cheerio from "cheerio";
-import type { FoodcoopEvent } from "@/lib/types";
+import { NextResponse } from 'next/server';
+import * as cheerio from 'cheerio';
+import type { FoodcoopEvent } from '@/lib/types';
 
-const GM_SOURCE_URL = "https://www.foodcoop.com/";
-const GM_AGENDA_URL = "https://www.foodcoop.com/gmagenda/";
-const TIMEZONE = "America/New_York";
+const GM_SOURCE_URL = 'https://www.foodcoop.com/';
+const GM_AGENDA_URL = 'https://www.foodcoop.com/gmagenda/';
+const TIMEZONE = 'America/New_York';
 
 // Cache event data for 5 minutes
 let cachedEvents: FoodcoopEvent[] | null = null;
@@ -17,7 +17,7 @@ function parseGMDateTime(text: string): Date | null {
   // "January 27, 2026, 7:00 pm"
   // "Tue. Feb. 24th 2026 7:00 pm"
   const dateMatch = text.match(
-    /(?:\b(?:Mon|Tue|Tues|Wed|Thu|Thur|Fri|Sat|Sun)\.?|\w+day)?,?\s*(\w+)\.?\s+(\d{1,2})(?:st|nd|rd|th)?,?\s+(\d{4})\s*(\d{1,2}):(\d{2})\s*(p\.?m\.?|a\.?m\.?)/i
+    /(?:\b(?:Mon|Tue|Tues|Wed|Thu|Thur|Fri|Sat|Sun)\.?|\w+day)?,?\s*(\w+)\.?\s+(\d{1,2})(?:st|nd|rd|th)?,?\s+(\d{4})\s*(\d{1,2}):(\d{2})\s*(p\.?m\.?|a\.?m\.?)/i,
   );
 
   if (!dateMatch) return null;
@@ -50,7 +50,7 @@ function parseGMDateTime(text: string): Date | null {
     dec: 11,
   };
 
-  const monthKey = monthStr.toLowerCase().replace(".", "");
+  const monthKey = monthStr.toLowerCase().replace('.', '');
   const month = months[monthKey];
   if (month === undefined) return null;
 
@@ -60,19 +60,19 @@ function parseGMDateTime(text: string): Date | null {
   const year = parseInt(yearStr, 10);
 
   // Convert to 24-hour format
-  const isPM = ampm.toLowerCase().startsWith("p");
+  const isPM = ampm.toLowerCase().startsWith('p');
   if (isPM && hour !== 12) hour += 12;
   if (!isPM && hour === 12) hour = 0;
 
   // Get the UTC offset for America/New_York on this specific date
   // This ensures correct handling regardless of server timezone (UTC on Cloudflare, local on dev)
   const refDate = new Date(Date.UTC(year, month, day, 12, 0, 0));
-  const formatter = new Intl.DateTimeFormat("en-US", {
+  const formatter = new Intl.DateTimeFormat('en-US', {
     timeZone: TIMEZONE,
-    timeZoneName: "shortOffset",
+    timeZoneName: 'shortOffset',
   });
   const parts = formatter.formatToParts(refDate);
-  const tzPart = parts.find((p) => p.type === "timeZoneName");
+  const tzPart = parts.find((p) => p.type === 'timeZoneName');
   // tzPart.value will be like "GMT-5" or "GMT-4"
   const offsetMatch = tzPart?.value.match(/GMT([+-]\d+)/);
   const offsetHours = offsetMatch ? parseInt(offsetMatch[1], 10) : -5;
@@ -96,21 +96,19 @@ async function fetchGMEvents(): Promise<FoodcoopEvent[]> {
   const events: FoodcoopEvent[] = [];
   const now = new Date();
 
-  const gmHeading = $("h1, h2, h3, h4")
-    .filter((_, el) =>
-      $(el).text().trim().toLowerCase().includes("psfc general meeting")
-    )
+  const gmHeading = $('h1, h2, h3, h4')
+    .filter((_, el) => $(el).text().trim().toLowerCase().includes('psfc general meeting'))
     .first();
 
   const sectionText = gmHeading.length
-    ? `${gmHeading.text()} ${gmHeading.nextUntil("h1, h2, h3, h4").text()}`
-    : "";
+    ? `${gmHeading.text()} ${gmHeading.nextUntil('h1, h2, h3, h4').text()}`
+    : '';
 
   if (!sectionText) {
     return events;
   }
 
-  const title = "PSFC General Meeting";
+  const title = 'PSFC General Meeting';
 
   // Parse the date/time from the General Meeting section
   const eventDate = parseGMDateTime(sectionText);
@@ -166,10 +164,7 @@ export async function GET() {
       lastUpdated: new Date(cacheTime).toISOString(),
     });
   } catch (error) {
-    console.error("GM Events API error:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch GM events" },
-      { status: 500 }
-    );
+    console.error('GM Events API error:', error);
+    return NextResponse.json({ error: 'Failed to fetch GM events' }, { status: 500 });
   }
 }

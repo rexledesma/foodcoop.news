@@ -1,23 +1,23 @@
-import { ParquetSchema, ParquetWriter } from "@dsnp/parquetjs";
-import { randomUUID } from "crypto";
-import { readFile, unlink } from "fs/promises";
-import { tmpdir } from "os";
-import { join } from "path";
-import type { ProduceItem } from "./produce-types";
+import { ParquetSchema, ParquetWriter } from '@dsnp/parquetjs';
+import { randomUUID } from 'crypto';
+import { readFile, unlink } from 'fs/promises';
+import { tmpdir } from 'os';
+import { join } from 'path';
+import type { ProduceItem } from './produce-types';
 
 const PRODUCE_SCHEMA = new ParquetSchema({
-  id: { type: "UTF8" },
-  date: { type: "UTF8" }, // ISO date string
-  name: { type: "UTF8" },
-  raw_name: { type: "UTF8" },
-  price: { type: "DOUBLE" },
-  unit: { type: "UTF8" },
-  is_organic: { type: "BOOLEAN" },
-  is_ipm: { type: "BOOLEAN" },
-  is_waxed: { type: "BOOLEAN" },
-  is_local: { type: "BOOLEAN" },
-  is_hydroponic: { type: "BOOLEAN" },
-  origin: { type: "UTF8" },
+  id: { type: 'UTF8' },
+  date: { type: 'UTF8' }, // ISO date string
+  name: { type: 'UTF8' },
+  raw_name: { type: 'UTF8' },
+  price: { type: 'DOUBLE' },
+  unit: { type: 'UTF8' },
+  is_organic: { type: 'BOOLEAN' },
+  is_ipm: { type: 'BOOLEAN' },
+  is_waxed: { type: 'BOOLEAN' },
+  is_local: { type: 'BOOLEAN' },
+  is_hydroponic: { type: 'BOOLEAN' },
+  origin: { type: 'UTF8' },
 });
 
 interface ParquetRow {
@@ -55,9 +55,7 @@ function toParquetRow(item: ProduceItem): ParquetRow {
 /**
  * Generate a Parquet file buffer from produce items
  */
-export async function generateParquetBuffer(
-  items: ProduceItem[],
-): Promise<Buffer> {
+export async function generateParquetBuffer(items: ProduceItem[]): Promise<Buffer> {
   const tempPath = join(tmpdir(), `produce-${randomUUID()}.parquet`);
 
   try {
