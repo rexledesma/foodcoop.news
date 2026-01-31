@@ -28,7 +28,7 @@ export function parseProduceHtml(
     const attrs = parseAttributes(attrsCell, nameCell);
     const isLocal = parseOriginIsLocal(originCell);
 
-    const id = generateId(date, name);
+    const id = generateId(date, nameCell);
 
     items.push({
       id,

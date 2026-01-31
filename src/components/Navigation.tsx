@@ -9,6 +9,7 @@ import { useSession, signOut } from "@/lib/auth-client";
 
 const navItems = [
   { href: "/discover", label: "Discover", icon: "compass" },
+  { href: "/produce", label: "Produce", icon: "produce" },
   {
     href: "/integrations",
     label: "Integrations",
@@ -54,6 +55,8 @@ function NavIcon({ icon }: { icon: string }) {
   switch (icon) {
     case "compass":
       return <span className="text-xl md:text-lg">🧭</span>;
+    case "produce":
+      return <span className="text-xl md:text-lg">🥬</span>;
     case "carrot":
       return <span className="text-xl md:text-lg">🥕</span>;
     case "gear":
