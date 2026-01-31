@@ -22,6 +22,8 @@ type QuickFilter = "drops" | "increases" | null;
 
 const PRICE_COL_CLASS =
   "w-[var(--price-col)] min-w-[var(--price-col)] max-w-[var(--price-col)] md:w-24 md:min-w-0 md:max-w-none";
+const PRIMARY_PRICE_COL_CLASS =
+  "w-[var(--price-col)] min-w-[var(--price-col)] max-w-[var(--price-col)] md:w-28 md:min-w-0 md:max-w-none";
 const NAME_COL_CLASS =
   "w-[var(--name-col)] min-w-[var(--name-col)] max-w-[var(--name-col)] md:w-2/5 md:min-w-0 md:max-w-none";
 
@@ -193,7 +195,7 @@ export function ProduceAnalytics({
         <table className="text-sm table-fixed w-full min-w-full">
           <colgroup>
             <col className={NAME_COL_CLASS} />
-            <col className={PRICE_COL_CLASS} />
+            <col className={PRIMARY_PRICE_COL_CLASS} />
             <col className={PRICE_COL_CLASS} />
             <col className={PRICE_COL_CLASS} />
             <col className={`${PRICE_COL_CLASS} md:w-20`} />
@@ -215,7 +217,7 @@ export function ProduceAnalytics({
                 current={sortField}
                 direction={sortDirection}
                 onClick={handleSort}
-                className={`${PRICE_COL_CLASS} snap-start`}
+                className={`${PRIMARY_PRICE_COL_CLASS} snap-start`}
               >
                 Price
               </SortHeader>
@@ -286,7 +288,7 @@ export function ProduceAnalytics({
                       </div>
                     </td>
                     <td
-                      className={`py-3 px-2 font-mono text-zinc-900 dark:text-zinc-100 snap-start ${PRICE_COL_CLASS} box-border`}
+                      className={`py-3 px-2 font-mono text-zinc-900 dark:text-zinc-100 snap-start ${PRIMARY_PRICE_COL_CLASS} box-border`}
                     >
                       ${row.price.toFixed(2)}
                       <span className="text-xs text-zinc-500 dark:text-zinc-400 ml-1">
@@ -334,7 +336,7 @@ function SkeletonRow() {
           <div className="h-4 w-full rounded feed-shimmer" />
         </div>
       </td>
-      <td className={`py-3 px-2 snap-start ${PRICE_COL_CLASS} box-border`}>
+      <td className={`py-3 px-2 snap-start ${PRIMARY_PRICE_COL_CLASS} box-border`}>
         <div className="h-full flex items-center">
           <div className="h-4 w-full rounded feed-shimmer" />
         </div>
