@@ -6,7 +6,17 @@
         "hooks": [
           {
             "type": "command",
-            "command": "pnpm lint && pnpm exec tsc --noEmit && pnpm build",
+            "command": "pnpm format",
+            "timeout": 120
+          },
+          {
+            "type": "command",
+            "command": "pnpm lint",
+            "timeout": 120
+          },
+          {
+            "type": "command",
+            "command": "pnpm exec tsc --noEmit",
             "timeout": 120
           }
         ]
