@@ -5,6 +5,7 @@ import "./globals.css";
 import { Navigation } from "@/components/Navigation";
 import { Footer } from "@/components/Footer";
 import { ConvexClientProvider } from "@/components/ConvexClientProvider";
+import { ProduceDataProvider } from "@/components/ProduceDataProvider";
 
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
@@ -72,15 +73,17 @@ export default function RootLayout({
         className={`${geistMono.variable} ${firaSans.variable} antialiased bg-zinc-50 dark:bg-zinc-950`}
       >
         <ConvexClientProvider>
-          <div
-            className="fixed top-0 left-0 right-0 h-32 bg-gradient-to-b from-[#0693e3]/10 via-[#00d084]/10 to-transparent pointer-events-none z-30"
-            aria-hidden="true"
-          />
-          <div className="flex flex-col min-h-screen">
-            <main className="pt-16 md:pt-14">{children}</main>
-            <Footer />
-          </div>
-          <Navigation />
+          <ProduceDataProvider>
+            <div
+              className="fixed top-0 left-0 right-0 h-32 bg-gradient-to-b from-[#0693e3]/10 via-[#00d084]/10 to-transparent pointer-events-none z-30"
+              aria-hidden="true"
+            />
+            <div className="flex flex-col min-h-screen">
+              <main className="pt-16 md:pt-14">{children}</main>
+              <Footer />
+            </div>
+            <Navigation />
+          </ProduceDataProvider>
         </ConvexClientProvider>
         <Analytics />
       </body>

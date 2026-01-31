@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useProduceData } from "@/lib/use-produce-data";
+import { useProduceDataContext } from "@/lib/produce-data-context";
 
 const ProduceAnalytics = dynamic(
   () => import("@/components/ProduceAnalytics").then((mod) => mod.ProduceAnalytics),
@@ -9,7 +9,7 @@ const ProduceAnalytics = dynamic(
 );
 
 export function ProducePageClient() {
-  const { data, isLoading, error } = useProduceData();
+  const { data, isLoading, error } = useProduceDataContext();
 
   if (isLoading) {
     return (
