@@ -167,7 +167,7 @@ export function ProduceAnalytics({ data }: ProduceAnalyticsProps) {
 
       {/* Table */}
       <div className="overflow-x-auto">
-        <table className="text-sm table-fixed min-w-120">
+        <table className="text-sm table-fixed min-w-[600px]">
           <thead>
             <tr className="border-b border-zinc-200 dark:border-zinc-800">
               <SortHeader
@@ -175,7 +175,7 @@ export function ProduceAnalytics({ data }: ProduceAnalyticsProps) {
                 current={sortField}
                 direction={sortDirection}
                 onClick={handleSort}
-                className="w-1/2"
+                className="w-2/3 md:w-1/2"
               >
                 Name
               </SortHeader>
@@ -184,7 +184,7 @@ export function ProduceAnalytics({ data }: ProduceAnalyticsProps) {
                 current={sortField}
                 direction={sortDirection}
                 onClick={handleSort}
-                className="text-right w-24"
+                className="w-24"
               >
                 Price
               </SortHeader>
@@ -193,7 +193,7 @@ export function ProduceAnalytics({ data }: ProduceAnalyticsProps) {
                 current={sortField}
                 direction={sortDirection}
                 onClick={handleSort}
-                className="text-right w-24"
+                className="w-24"
               >
                 Change
               </SortHeader>
@@ -202,7 +202,7 @@ export function ProduceAnalytics({ data }: ProduceAnalyticsProps) {
                 current={sortField}
                 direction={sortDirection}
                 onClick={handleSort}
-                className="text-right w-24"
+                className="w-24"
               >
                 Change %
               </SortHeader>
@@ -211,7 +211,7 @@ export function ProduceAnalytics({ data }: ProduceAnalyticsProps) {
                 current={sortField}
                 direction={sortDirection}
                 onClick={handleSort}
-                className="text-right w-20"
+                className="w-20"
               >
                 Week
               </SortHeader>
@@ -220,7 +220,7 @@ export function ProduceAnalytics({ data }: ProduceAnalyticsProps) {
                 current={sortField}
                 direction={sortDirection}
                 onClick={handleSort}
-                className="text-right w-20"
+                className="w-20"
               >
                 Month
               </SortHeader>
@@ -232,11 +232,11 @@ export function ProduceAnalytics({ data }: ProduceAnalyticsProps) {
                 key={row.raw_name}
                 className="border-b border-zinc-100 dark:border-zinc-800/50 hover:bg-zinc-50 dark:hover:bg-zinc-800/50"
               >
-                <td className="py-3 pr-4">
+                <td className="py-3 pr-4 h-24">
                   <div className="font-medium text-zinc-900 dark:text-zinc-100">
                     {row.name}
                   </div>
-                  <div className="text-xs text-zinc-500 dark:text-zinc-400">
+                  <div className="text-xs text-zinc-500 dark:text-zinc-400 h-4">
                     {row.is_organic && (
                       <span className="text-green-600 dark:text-green-400">
                         Organic
@@ -250,7 +250,7 @@ export function ProduceAnalytics({ data }: ProduceAnalyticsProps) {
                     )}
                   </div>
                 </td>
-                <td className="py-3 px-2 text-right font-mono text-zinc-900 dark:text-zinc-100">
+                <td className="py-3 px-2 font-mono text-zinc-900 dark:text-zinc-100">
                   ${row.price.toFixed(2)}
                   <span className="text-xs text-zinc-500 dark:text-zinc-400 ml-1">
                     /{row.unit}
@@ -303,7 +303,7 @@ function SortHeader({
   const isActive = field === current;
   return (
     <th
-      className={`py-3 px-2 font-medium text-zinc-600 dark:text-zinc-400 cursor-pointer hover:text-zinc-900 dark:hover:text-zinc-200 select-none whitespace-nowrap ${className}`}
+      className={`py-3 px-2 font-medium text-zinc-600 dark:text-zinc-400 cursor-pointer hover:text-zinc-900 dark:hover:text-zinc-200 select-none whitespace-nowrap text-left ${className}`}
       onClick={() => onClick(field)}
     >
       {children}
@@ -322,7 +322,7 @@ function AbsoluteChangeCell({
   previous: number | null;
 }) {
   if (previous === null) {
-    return <td className="py-3 px-2 text-right text-zinc-400">—</td>;
+    return <td className="py-3 px-2 text-zinc-400">—</td>;
   }
 
   const change = current - previous;
@@ -335,12 +335,11 @@ function AbsoluteChangeCell({
       ? "text-green-600 dark:text-green-400"
       : "text-zinc-500";
 
-  const sign = isPositive ? "+$" : isNegative ? "-$" : "$";
+  const sign = isPositive ? "+" : isNegative ? "-" : "\u2007";
 
   return (
-    <td className={`py-3 px-2 text-right font-mono ${colorClass}`}>
-      {sign}
-      {Math.abs(change).toFixed(2)}
+    <td className={`py-3 px-2 font-mono ${colorClass}`}>
+      {sign}${Math.abs(change).toFixed(2)}
     </td>
   );
 }
@@ -353,7 +352,7 @@ function PercentChangeCell({
   previous: number | null;
 }) {
   if (previous === null) {
-    return <td className="py-3 px-2 text-right text-zinc-400">—</td>;
+    return <td className="py-3 px-2 text-zinc-400">—</td>;
   }
 
   const change = current - previous;
@@ -368,10 +367,11 @@ function PercentChangeCell({
       ? "text-green-600 dark:text-green-400"
       : "text-zinc-500";
 
+  const sign = isPositive ? "+" : isNegative ? "-" : "\u2007";
+
   return (
-    <td className={`py-3 px-2 text-right font-mono ${colorClass}`}>
-      {isPositive && "+"}
-      {pctChange.toFixed(1)}%
+    <td className={`py-3 px-2 font-mono ${colorClass}`}>
+      {sign}{Math.abs(pctChange).toFixed(1)}%
     </td>
   );
 }
