@@ -553,7 +553,7 @@ export function Integrations() {
             disabled={isSaving}
             className="px-4 py-1.5 text-sm bg-green-600 hover:bg-green-700 disabled:bg-green-400 disabled:opacity-60 text-white font-medium rounded-lg transition-colors"
           >
-            {isSaving ? "Saving..." : "Save Changes"}
+            {isSaving ? "Saving..." : "Save"}
           </button>
           <button
             type="button"
@@ -586,7 +586,7 @@ export function Integrations() {
 
       <section className="mt-10">
         <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
-          Third Party Accounts
+          Calendar
         </h2>
         <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
           Link your account to your calendar to view your prospective shifts.
