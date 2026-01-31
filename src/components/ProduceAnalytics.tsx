@@ -10,7 +10,7 @@ type SortField =
   | 'day_change_pct'
   | 'week_change'
   | 'month_change';
-type SortDirection = 'asc' | 'desc';
+type SortDirection = 'asc' | 'desc' | null;
 
 interface ProduceAnalyticsProps {
   data: ProduceRow[];
@@ -29,7 +29,7 @@ const NAME_COL_CLASS =
 
 export function ProduceAnalytics({ data, isLoading = false, error = null }: ProduceAnalyticsProps) {
   const [search, setSearch] = useState('');
-  const [sortField, setSortField] = useState<SortField>('name');
+  const [sortField, setSortField] = useState<SortField | null>('name');
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
   const [quickFilter, setQuickFilter] = useState<QuickFilter>(null);
 
@@ -45,6 +45,10 @@ export function ProduceAnalytics({ data, isLoading = false, error = null }: Prod
     }
 
     // Sort
+    if (!sortField || !sortDirection) {
+      return result;
+    }
+
     result = [...result].sort((a, b) => {
       let aVal: number | string;
       let bVal: number | string;
@@ -95,18 +99,23 @@ export function ProduceAnalytics({ data, isLoading = false, error = null }: Prod
   );
 
   const handleSort = (field: SortField) => {
-    let newDirection: SortDirection;
+    let newField: SortField | null = field;
+    let newDirection: SortDirection = 'asc';
+
     if (sortField === field) {
-      newDirection = sortDirection === 'asc' ? 'desc' : 'asc';
-    } else {
-      newDirection = 'asc';
+      if (sortDirection === 'asc') {
+        newDirection = 'desc';
+      } else if (sortDirection === 'desc') {
+        newField = null;
+        newDirection = null;
+      }
     }
 
-    setSortField(field);
+    setSortField(newField);
     setSortDirection(newDirection);
 
     // Sync pills with sort state for change columns
-    if (field === 'name' || field === 'price') {
+    if (!newField || !newDirection || newField === 'name' || newField === 'price') {
       setQuickFilter(null);
     } else {
       setQuickFilter(newDirection === 'asc' ? 'drops' : 'increases');
@@ -335,13 +344,13 @@ function SortHeader({
   children,
 }: {
   field: SortField;
-  current: SortField;
+  current: SortField | null;
   direction: SortDirection;
   onClick: (field: SortField) => void;
   className?: string;
   children: React.ReactNode;
 }) {
-  const isActive = field === current;
+  const isActive = field === current && direction !== null;
   return (
     <th
       className={`box-border cursor-pointer px-2 py-3 text-left font-medium whitespace-nowrap text-zinc-600 select-none hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-200 ${className}`}
@@ -349,7 +358,7 @@ function SortHeader({
     >
       {children}
       <span className={`ml-1 inline-block w-3 ${isActive ? '' : 'invisible'}`}>
-        {direction === 'asc' ? '↑' : '↓'}
+        {direction === 'asc' ? '↑' : direction === 'desc' ? '↓' : ''}
       </span>
     </th>
   );
