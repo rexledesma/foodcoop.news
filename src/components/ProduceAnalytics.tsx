@@ -399,9 +399,10 @@ function PercentChangeCell({ current, previous }: { current: number; previous: n
 
   const change = current - previous;
   const pctChange = (change / previous) * 100;
+  const roundedPct = Math.round(pctChange * 10) / 10;
 
-  const isPositive = change > 0;
-  const isNegative = change < 0;
+  const isPositive = roundedPct > 0;
+  const isNegative = roundedPct < 0;
 
   const colorClass = isPositive
     ? 'text-red-600 dark:text-red-400'
@@ -414,7 +415,7 @@ function PercentChangeCell({ current, previous }: { current: number; previous: n
   return (
     <td className={`${baseClass} font-mono ${colorClass}`}>
       {sign}
-      {Math.abs(pctChange).toFixed(1)}%
+      {Math.abs(roundedPct).toFixed(1)}%
     </td>
   );
 }
