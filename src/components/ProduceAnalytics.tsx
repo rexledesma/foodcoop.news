@@ -98,6 +98,8 @@ export function ProduceAnalytics({ data, isLoading = false, error = null }: Prod
     [],
   );
 
+  const getDisplayName = (name: string) => (name.endsWith(' -') ? name.slice(0, -2) : name);
+
   const handleSort = (field: SortField) => {
     let newField: SortField | null = field;
     let newDirection: SortDirection = 'asc';
@@ -258,7 +260,9 @@ export function ProduceAnalytics({ data, isLoading = false, error = null }: Prod
                     <td
                       className={`h-24 py-3 pr-4 ${NAME_COL_CLASS} sticky left-0 z-10 box-border border-r border-zinc-200 bg-white md:w-auto md:border-r-0 dark:border-zinc-700 dark:bg-zinc-900`}
                     >
-                      <div className="font-medium text-zinc-900 dark:text-zinc-100">{row.name}</div>
+                      <div className="font-medium text-zinc-900 dark:text-zinc-100">
+                        {getDisplayName(row.name)}
+                      </div>
                       <div className="h-4 text-xs text-zinc-500 dark:text-zinc-400">
                         {row.is_organic && (
                           <span className="text-green-600 dark:text-green-400">Organic</span>
