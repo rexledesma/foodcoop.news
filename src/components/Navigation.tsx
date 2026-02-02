@@ -134,20 +134,19 @@ export function Navigation() {
 
         <div className="relative flex items-center gap-2" ref={dropdownRef}>
           {timeDisplay && (
-            <div className="group relative">
-              <div className="cursor-default text-sm text-zinc-500 dark:text-zinc-400">
-                <span>
-                  {timeDisplay.status === 'open' && '✨'}
-                  {timeDisplay.status === 'closing-soon' && '⏳'}
-                  {timeDisplay.status === 'closed' && '🔒'}
-                </span>{' '}
-                <span>{timeDisplay.time}</span>
-              </div>
-              <div className="pointer-events-none absolute top-full left-1/2 mt-2 -translate-x-1/2 rounded-lg bg-zinc-800 px-3 py-1.5 text-xs whitespace-nowrap text-white opacity-0 transition-opacity group-hover:opacity-100 dark:bg-zinc-700">
-                {timeDisplay.status === 'open' && 'The Coop is open'}
-                {timeDisplay.status === 'closing-soon' && 'The Coop closes soon'}
-                {timeDisplay.status === 'closed' && 'The Coop is closed'}
-              </div>
+            <div className="cursor-default text-sm text-zinc-500 dark:text-zinc-400">
+              <span>
+                {timeDisplay.status === 'open' && '✨'}
+                {timeDisplay.status === 'closing-soon' && '⏳'}
+                {timeDisplay.status === 'closed' && '🔒'}
+              </span>{' '}
+              <span>
+                {timeDisplay.status === 'open' && 'Open'}
+                {timeDisplay.status === 'closing-soon' && 'Closing Soon'}
+                {timeDisplay.status === 'closed' && 'Closed'}
+              </span>{' '}
+              <span className="text-zinc-400 dark:text-zinc-500">·</span>{' '}
+              <span>{timeDisplay.time}</span>
             </div>
           )}
           {isPending ? (
