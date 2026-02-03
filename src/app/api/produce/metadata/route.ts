@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { list } from '@vercel/blob';
+import { head, list } from '@vercel/blob';
 import { unstable_cache } from 'next/cache';
 
 function getNewYorkDate(date: Date) {
@@ -15,6 +15,14 @@ function getCacheKeyDate() {
     nowNy.setDate(nowNy.getDate() - 1);
   }
   return nowNy.toLocaleDateString('en-CA');
+}
+
+function getCurrentMonth() {
+  return new Date()
+    .toLocaleDateString('en-CA', {
+      timeZone: 'America/New_York',
+    })
+    .slice(0, 7);
 }
 
 function getSecondsUntilNext8am() {
@@ -35,11 +43,7 @@ async function loadProduceMetadata() {
     token: process.env.VERCEL_BLOB_READ_WRITE_TOKEN,
   });
 
-  const currentMonth = new Date()
-    .toLocaleDateString('en-CA', {
-      timeZone: 'America/New_York',
-    })
-    .slice(0, 7);
+  const currentMonth = getCurrentMonth();
 
   const months = blobs
     .filter((blob) => blob.pathname.endsWith('.parquet'))
@@ -64,7 +68,30 @@ async function loadProduceMetadata() {
 export async function GET() {
   try {
     const cacheKey = getCacheKeyDate();
-    const cached = unstable_cache(loadProduceMetadata, ['produce-metadata', cacheKey]);
+    const currentMonth = getCurrentMonth();
+    const currentMonthPathname = `produce-data/${currentMonth}.parquet`;
+    let currentMonthVersion = 'unknown';
+
+    try {
+      const { blobs } = await list({
+        prefix: currentMonthPathname,
+        token: process.env.VERCEL_BLOB_READ_WRITE_TOKEN,
+      });
+      const currentMonthBlob = blobs.find((blob) => blob.pathname === currentMonthPathname);
+
+      if (currentMonthBlob) {
+        const currentMonthHead = await head(currentMonthBlob.url);
+        currentMonthVersion = currentMonthHead.uploadedAt.toISOString();
+      }
+    } catch (error) {
+      console.warn('Produce metadata: failed to read current month blob head', error);
+    }
+
+    const cached = unstable_cache(loadProduceMetadata, [
+      'produce-metadata',
+      cacheKey,
+      currentMonthVersion,
+    ]);
     const data = await cached();
     const secondsUntilNext8am = getSecondsUntilNext8am();
 
