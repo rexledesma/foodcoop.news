@@ -19,6 +19,8 @@ export interface ProduceRow {
   first_seen_date: string | null;
   origin: string;
   unit: string;
+  is_unavailable: boolean;
+  unavailable_since_date: string | null;
 }
 
 interface ProduceMetadata {
@@ -80,6 +82,34 @@ export function useProduceData(): UseProduceDataResult {
             FROM produce, latest_date
             WHERE date::DATE = max_date
           ),
+          last_seen AS (
+            SELECT raw_name, MAX(date::DATE) as last_seen_date
+            FROM produce
+            GROUP BY raw_name
+          ),
+          unavailable_recent AS (
+            SELECT l.raw_name, l.last_seen_date
+            FROM last_seen l, latest_date
+            WHERE l.last_seen_date < max_date
+              AND l.last_seen_date >= max_date - INTERVAL '30 days'
+          ),
+          last_seen_rows AS (
+            SELECT
+              p.raw_name,
+              p.name,
+              p.price,
+              p.is_organic,
+              p.is_ipm,
+              p.is_waxed,
+              p.is_local,
+              p.is_hydroponic,
+              p.origin,
+              p.unit,
+              u.last_seen_date
+            FROM produce p
+            JOIN unavailable_recent u
+              ON p.raw_name = u.raw_name AND p.date::DATE = u.last_seen_date
+          ),
           prev_day AS (
             SELECT raw_name, price as prev_day_price
             FROM produce, latest_date
@@ -109,30 +139,73 @@ export function useProduceData(): UseProduceDataResult {
             FROM produce, latest_date
             WHERE date_trunc('month', date::DATE) = date_trunc('month', max_date)
             GROUP BY raw_name
+          ),
+          current_with_new AS (
+            SELECT
+              c.raw_name,
+              c.name,
+              c.price,
+              c.is_organic,
+              c.is_ipm,
+              c.is_waxed,
+              c.is_local,
+              c.is_hydroponic,
+              CASE WHEN pm.raw_name IS NULL THEN true ELSE false END as is_new,
+              CASE WHEN pm.raw_name IS NULL THEN fa.first_seen_date::VARCHAR ELSE NULL END as first_seen_date,
+              c.origin,
+              c.unit,
+              false as is_unavailable,
+              NULL::VARCHAR as unavailable_since_date
+            FROM current_prices c
+            LEFT JOIN prev_month_items pm ON c.raw_name = pm.raw_name
+            LEFT JOIN first_appearance fa ON c.raw_name = fa.raw_name
+          ),
+          unavailable_rows AS (
+            SELECT
+              r.raw_name,
+              r.name,
+              r.price,
+              r.is_organic,
+              r.is_ipm,
+              r.is_waxed,
+              r.is_local,
+              r.is_hydroponic,
+              false as is_new,
+              NULL::VARCHAR as first_seen_date,
+              r.origin,
+              r.unit,
+              true as is_unavailable,
+              r.last_seen_date::VARCHAR as unavailable_since_date
+            FROM last_seen_rows r
+          ),
+          base_rows AS (
+            SELECT * FROM current_with_new
+            UNION ALL
+            SELECT * FROM unavailable_rows
           )
           SELECT
-            c.raw_name,
-            c.name,
-            c.price,
-            c.is_organic,
-            c.is_ipm,
-            c.is_waxed,
-            c.is_local,
-            c.is_hydroponic,
-            CASE WHEN pm.raw_name IS NULL THEN true ELSE false END as is_new,
-            CASE WHEN pm.raw_name IS NULL THEN fa.first_seen_date::VARCHAR ELSE NULL END as first_seen_date,
-            c.origin,
-            c.unit,
+            b.raw_name,
+            b.name,
+            b.price,
+            b.is_organic,
+            b.is_ipm,
+            b.is_waxed,
+            b.is_local,
+            b.is_hydroponic,
+            b.is_new,
+            b.first_seen_date,
+            b.origin,
+            b.unit,
             d.prev_day_price,
             w.prev_week_price,
-            m.prev_month_price
-          FROM current_prices c
-          LEFT JOIN prev_day d ON c.raw_name = d.raw_name
-          LEFT JOIN prev_week w ON c.raw_name = w.raw_name
-          LEFT JOIN prev_month m ON c.raw_name = m.raw_name
-          LEFT JOIN prev_month_items pm ON c.raw_name = pm.raw_name
-          LEFT JOIN first_appearance fa ON c.raw_name = fa.raw_name
-          ORDER BY c.name
+            m.prev_month_price,
+            b.is_unavailable,
+            b.unavailable_since_date
+          FROM base_rows b
+          LEFT JOIN prev_day d ON b.raw_name = d.raw_name
+          LEFT JOIN prev_week w ON b.raw_name = w.raw_name
+          LEFT JOIN prev_month m ON b.raw_name = m.raw_name
+          ORDER BY b.name
         `);
 
         setData(results);

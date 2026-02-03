@@ -22,6 +22,7 @@ type QuickFilter =
   | 'drops'
   | 'increases'
   | 'new'
+  | 'recently_unavailable'
   | 'hydroponic'
   | 'ipm'
   | 'local'
@@ -56,6 +57,8 @@ export function ProduceAnalytics({ data, isLoading = false, error = null }: Prod
     // Filter by quick filter
     if (quickFilter === 'new') {
       result = result.filter((row) => row.is_new);
+    } else if (quickFilter === 'recently_unavailable') {
+      result = result.filter((row) => row.is_unavailable);
     } else if (quickFilter === 'hydroponic') {
       result = result.filter((row) => row.is_hydroponic);
     } else if (quickFilter === 'ipm') {
@@ -218,6 +221,17 @@ export function ProduceAnalytics({ data, isLoading = false, error = null }: Prod
           </button>
           <button
             type="button"
+            onClick={() => handleQuickFilter('recently_unavailable')}
+            className={`rounded-full px-3 py-1.5 text-sm font-medium whitespace-nowrap transition-colors ${
+              quickFilter === 'recently_unavailable'
+                ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-700'
+            }`}
+          >
+            Out of Stock
+          </button>
+          <button
+            type="button"
             onClick={() => handleQuickFilter('hydroponic')}
             className={`rounded-full px-3 py-1.5 text-sm font-medium whitespace-nowrap transition-colors ${
               quickFilter === 'hydroponic'
@@ -362,41 +376,60 @@ export function ProduceAnalytics({ data, isLoading = false, error = null }: Prod
                         {row.raw_name}
                       </div>
                       <div className="text-xs text-zinc-500 dark:text-zinc-400">
-                        {row.is_new && (
-                          <span className="rounded bg-[rgb(255,246,220)] px-1 text-[#3F7540]">
-                            New Arrival
-                            {row.first_seen_date && ` - ${formatArrivalDate(row.first_seen_date)}`}
-                          </span>
-                        )}
-                        {row.is_new &&
-                          (row.is_organic ||
-                            row.is_ipm ||
-                            row.is_local ||
-                            row.is_hydroponic ||
-                            row.is_waxed) &&
-                          ' · '}
-                        {[
-                          row.is_hydroponic && <span key="hydroponic">Hydroponic</span>,
-                          row.is_ipm && <span key="ipm">IPM</span>,
-                          row.is_local && (
-                            <span key="local" className="text-blue-600 dark:text-blue-400">
-                              Local
-                            </span>
-                          ),
-                          row.is_organic && (
-                            <span key="organic" className="text-green-600 dark:text-green-400">
-                              Organic
-                            </span>
-                          ),
-                          row.is_waxed && <span key="waxed">Waxed</span>,
-                        ]
-                          .filter(Boolean)
-                          .map((el, i, arr) => (
-                            <span key={i}>
-                              {el}
-                              {i < arr.length - 1 && ' · '}
-                            </span>
-                          ))}
+                        {(() => {
+                          const attributeElements = [
+                            row.is_hydroponic && {
+                              key: 'hydroponic',
+                              node: <span>Hydroponic</span>,
+                            },
+                            row.is_ipm && {
+                              key: 'ipm',
+                              node: <span>IPM</span>,
+                            },
+                            row.is_local && {
+                              key: 'local',
+                              node: <span className="text-blue-600 dark:text-blue-400">Local</span>,
+                            },
+                            row.is_organic && {
+                              key: 'organic',
+                              node: (
+                                <span className="text-green-600 dark:text-green-400">Organic</span>
+                              ),
+                            },
+                            row.is_waxed && {
+                              key: 'waxed',
+                              node: <span>Waxed</span>,
+                            },
+                          ].filter(Boolean) as { key: string; node: React.ReactNode }[];
+                          const hasAttributes = attributeElements.length > 0;
+                          const showUnavailable = row.is_unavailable && row.unavailable_since_date;
+                          const showNew = row.is_new;
+
+                          return (
+                            <>
+                              {showUnavailable && (
+                                <span className="rounded bg-red-100 px-1 text-red-700 dark:bg-red-900/30 dark:text-red-400">
+                                  Last seen {formatShortDate(row.unavailable_since_date!)}
+                                </span>
+                              )}
+                              {showUnavailable && showNew && ' · '}
+                              {showNew && (
+                                <span className="rounded bg-[rgb(255,246,220)] px-1 text-[#3F7540]">
+                                  First seen
+                                  {row.first_seen_date &&
+                                    ` ${formatShortDate(row.first_seen_date)}`}
+                                </span>
+                              )}
+                              {(showUnavailable || showNew) && hasAttributes && ' · '}
+                              {attributeElements.map((item, index) => (
+                                <span key={item.key}>
+                                  {item.node}
+                                  {index < attributeElements.length - 1 && ' · '}
+                                </span>
+                              ))}
+                            </>
+                          );
+                        })()}
                       </div>
                     </td>
                     <td
@@ -565,7 +598,7 @@ function PercentChangeCell({ current, previous }: { current: number; previous: n
   );
 }
 
-function formatArrivalDate(isoDate: string): string {
+function formatShortDate(isoDate: string): string {
   const date = new Date(isoDate + 'T00:00:00');
   return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
