@@ -365,6 +365,7 @@ export function ProduceAnalytics({ data, isLoading = false, error = null }: Prod
                         {row.is_new && (
                           <span className="rounded bg-[rgb(255,246,220)] px-1 text-[#3F7540]">
                             New Arrival
+                            {row.first_seen_date && ` - ${formatArrivalDate(row.first_seen_date)}`}
                           </span>
                         )}
                         {row.is_new &&
@@ -562,4 +563,9 @@ function PercentChangeCell({ current, previous }: { current: number; previous: n
       {Math.abs(roundedPct).toFixed(1)}%
     </td>
   );
+}
+
+function formatArrivalDate(isoDate: string): string {
+  const date = new Date(isoDate + 'T00:00:00');
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }

@@ -16,6 +16,7 @@ export interface ProduceRow {
   is_local: boolean;
   is_hydroponic: boolean;
   is_new: boolean;
+  first_seen_date: string | null;
   origin: string;
   unit: string;
 }
@@ -102,6 +103,12 @@ export function useProduceData(): UseProduceDataResult {
             SELECT DISTINCT raw_name
             FROM produce, latest_date
             WHERE date_trunc('month', date::DATE) = date_trunc('month', max_date) - INTERVAL '1 month'
+          ),
+          first_appearance AS (
+            SELECT raw_name, MIN(date::DATE) as first_seen_date
+            FROM produce, latest_date
+            WHERE date_trunc('month', date::DATE) = date_trunc('month', max_date)
+            GROUP BY raw_name
           )
           SELECT
             c.raw_name,
@@ -113,6 +120,7 @@ export function useProduceData(): UseProduceDataResult {
             c.is_local,
             c.is_hydroponic,
             CASE WHEN pm.raw_name IS NULL THEN true ELSE false END as is_new,
+            CASE WHEN pm.raw_name IS NULL THEN fa.first_seen_date::VARCHAR ELSE NULL END as first_seen_date,
             c.origin,
             c.unit,
             d.prev_day_price,
@@ -123,6 +131,7 @@ export function useProduceData(): UseProduceDataResult {
           LEFT JOIN prev_week w ON c.raw_name = w.raw_name
           LEFT JOIN prev_month m ON c.raw_name = m.raw_name
           LEFT JOIN prev_month_items pm ON c.raw_name = pm.raw_name
+          LEFT JOIN first_appearance fa ON c.raw_name = fa.raw_name
           ORDER BY c.name
         `);
 
