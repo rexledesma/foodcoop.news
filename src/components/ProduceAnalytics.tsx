@@ -183,7 +183,7 @@ export function ProduceAnalytics({ data, isLoading = false, error = null }: Prod
 
       {/* Quick Filters */}
       <div className="mb-4 flex flex-col gap-3">
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <button
             type="button"
             onClick={() => handleQuickFilter('drops')}
@@ -206,8 +206,6 @@ export function ProduceAnalytics({ data, isLoading = false, error = null }: Prod
           >
             Price Increases
           </button>
-        </div>
-        <div className="flex flex-wrap gap-2">
           <button
             type="button"
             onClick={() => handleQuickFilter('new')}
@@ -230,6 +228,8 @@ export function ProduceAnalytics({ data, isLoading = false, error = null }: Prod
           >
             Out of Stock
           </button>
+        </div>
+        <div className="flex flex-wrap gap-2">
           <button
             type="button"
             onClick={() => handleQuickFilter('hydroponic')}
