@@ -1,4 +1,7 @@
 {
+  "permissions": {
+    "allow": ["Bash(pnpm check)"]
+  },
   "hooks": {
     "PostToolUse": [
       {
@@ -6,17 +9,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "pnpm format",
-            "timeout": 120
-          },
-          {
-            "type": "command",
-            "command": "pnpm lint",
-            "timeout": 120
-          },
-          {
-            "type": "command",
-            "command": "pnpm exec tsc --noEmit",
+            "command": "pnpm check || exit 2",
             "timeout": 120
           }
         ]

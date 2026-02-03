@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "format": "prettier . --write",
-    "format:check": "prettier . --check"
+    "format:check": "prettier . --check",
+    "check": "pnpm lint && pnpm format && pnpm exec tsc --noEmit"
   },
   "dependencies": {
     "@convex-dev/better-auth": "^0.10.10",
