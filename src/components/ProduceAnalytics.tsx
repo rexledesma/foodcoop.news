@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type { ProduceRow } from '@/lib/use-produce-data';
 
 type SortField =
@@ -21,6 +21,7 @@ interface ProduceAnalyticsProps {
 }
 
 type QuickFilter =
+  | 'favorites'
   | 'drops'
   | 'increases'
   | 'new'
@@ -44,6 +45,21 @@ export function ProduceAnalytics({ data, isLoading = false, error = null }: Prod
   const [sortField, setSortField] = useState<SortField | null>('name');
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
   const [quickFilter, setQuickFilter] = useState<QuickFilter>(null);
+  const [favorites, setFavorites] = useState<Set<string>>(() => {
+    if (typeof window === 'undefined') return new Set();
+    const stored = localStorage.getItem('produce-favorites');
+    if (!stored) return new Set();
+    try {
+      const parsed = JSON.parse(stored) as string[];
+      return new Set(parsed);
+    } catch {
+      return new Set();
+    }
+  });
+
+  useEffect(() => {
+    localStorage.setItem('produce-favorites', JSON.stringify(Array.from(favorites)));
+  }, [favorites]);
 
   const filteredAndSorted = useMemo(() => {
     let result = data;
@@ -57,7 +73,9 @@ export function ProduceAnalytics({ data, isLoading = false, error = null }: Prod
     }
 
     // Filter by quick filter
-    if (quickFilter === 'new') {
+    if (quickFilter === 'favorites') {
+      result = result.filter((row) => favorites.has(row.raw_name));
+    } else if (quickFilter === 'new') {
       result = result.filter((row) => row.is_new);
     } else if (quickFilter === 'recently_unavailable') {
       result = result.filter((row) => row.is_unavailable);
@@ -128,7 +146,7 @@ export function ProduceAnalytics({ data, isLoading = false, error = null }: Prod
     });
 
     return result;
-  }, [data, search, sortField, sortDirection, quickFilter]);
+  }, [data, search, sortField, sortDirection, quickFilter, favorites]);
 
   const skeletonRows = useMemo(
     () => Array.from({ length: 8 }, (_, index) => `skeleton-${index}`),
@@ -170,6 +188,9 @@ export function ProduceAnalytics({ data, isLoading = false, error = null }: Prod
       if (filter === 'drops' || filter === 'increases') {
         setSortField('day_change');
         setSortDirection(filter === 'drops' ? 'asc' : 'desc');
+      } else if (filter === 'favorites') {
+        setSortField('name');
+        setSortDirection('asc');
       } else if (filter === 'new') {
         setSortField('first_seen');
         setSortDirection('desc');
@@ -200,6 +221,17 @@ export function ProduceAnalytics({ data, isLoading = false, error = null }: Prod
       {/* Quick Filters */}
       <div className="mb-4 flex flex-col gap-3">
         <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={() => handleQuickFilter('favorites')}
+            className={`rounded-full px-3 py-1.5 text-sm font-medium whitespace-nowrap transition-colors ${
+              quickFilter === 'favorites'
+                ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300'
+                : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-700'
+            }`}
+          >
+            Favorites
+          </button>
           <button
             type="button"
             onClick={() => handleQuickFilter('drops')}
@@ -388,64 +420,98 @@ export function ProduceAnalytics({ data, isLoading = false, error = null }: Prod
                     <td
                       className={`h-24 py-3 pr-4 ${NAME_COL_CLASS} sticky left-0 z-10 box-border border-r border-zinc-200 bg-white md:w-auto md:border-r-0 dark:border-zinc-700 dark:bg-zinc-900`}
                     >
-                      <div className="font-medium text-zinc-900 dark:text-zinc-100">
-                        {row.raw_name}
-                      </div>
-                      <div className="text-xs text-zinc-500 dark:text-zinc-400">
-                        {(() => {
-                          const attributeElements = [
-                            row.is_hydroponic && {
-                              key: 'hydroponic',
-                              node: <span>Hydroponic</span>,
-                            },
-                            row.is_ipm && {
-                              key: 'ipm',
-                              node: <span>IPM</span>,
-                            },
-                            row.is_local && {
-                              key: 'local',
-                              node: <span className="text-blue-600 dark:text-blue-400">Local</span>,
-                            },
-                            row.is_organic && {
-                              key: 'organic',
-                              node: (
-                                <span className="text-green-600 dark:text-green-400">Organic</span>
-                              ),
-                            },
-                            row.is_waxed && {
-                              key: 'waxed',
-                              node: <span>Waxed</span>,
-                            },
-                          ].filter(Boolean) as { key: string; node: React.ReactNode }[];
-                          const hasAttributes = attributeElements.length > 0;
-                          const showUnavailable = row.is_unavailable && row.unavailable_since_date;
-                          const showNew = row.is_new;
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          aria-pressed={favorites.has(row.raw_name)}
+                          aria-label={`${
+                            favorites.has(row.raw_name) ? 'Remove from' : 'Add to'
+                          } favorites for ${row.raw_name}`}
+                          onClick={() =>
+                            setFavorites((previous) => {
+                              const next = new Set(previous);
+                              if (next.has(row.raw_name)) {
+                                next.delete(row.raw_name);
+                              } else {
+                                next.add(row.raw_name);
+                              }
+                              return next;
+                            })
+                          }
+                          className={`flex h-5 w-5 shrink-0 items-center justify-center rounded border text-[0.7rem] font-bold transition-colors ${
+                            favorites.has(row.raw_name)
+                              ? 'border-amber-400 bg-amber-100 text-amber-700 dark:border-amber-400/60 dark:bg-amber-900/40 dark:text-amber-300'
+                              : 'border-zinc-300 text-zinc-500 hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-400 dark:hover:bg-zinc-800'
+                          }`}
+                        >
+                          {favorites.has(row.raw_name) ? '⭐' : '+'}
+                        </button>
+                        <div className="min-w-0">
+                          <div className="font-medium text-zinc-900 dark:text-zinc-100">
+                            {row.raw_name}
+                          </div>
+                          <div className="text-xs text-zinc-500 dark:text-zinc-400">
+                            {(() => {
+                              const attributeElements = [
+                                row.is_hydroponic && {
+                                  key: 'hydroponic',
+                                  node: <span>Hydroponic</span>,
+                                },
+                                row.is_ipm && {
+                                  key: 'ipm',
+                                  node: <span>IPM</span>,
+                                },
+                                row.is_local && {
+                                  key: 'local',
+                                  node: (
+                                    <span className="text-blue-600 dark:text-blue-400">Local</span>
+                                  ),
+                                },
+                                row.is_organic && {
+                                  key: 'organic',
+                                  node: (
+                                    <span className="text-green-600 dark:text-green-400">
+                                      Organic
+                                    </span>
+                                  ),
+                                },
+                                row.is_waxed && {
+                                  key: 'waxed',
+                                  node: <span>Waxed</span>,
+                                },
+                              ].filter(Boolean) as { key: string; node: React.ReactNode }[];
+                              const hasAttributes = attributeElements.length > 0;
+                              const showUnavailable =
+                                row.is_unavailable && row.unavailable_since_date;
+                              const showNew = row.is_new;
 
-                          return (
-                            <>
-                              {showUnavailable && (
-                                <span className="rounded bg-red-100 px-1 text-red-700 dark:bg-red-900/30 dark:text-red-400">
-                                  Last seen {formatShortDate(row.unavailable_since_date!)}
-                                </span>
-                              )}
-                              {showUnavailable && showNew && ' · '}
-                              {showNew && (
-                                <span className="rounded bg-[rgb(255,246,220)] px-1 text-[#3F7540]">
-                                  First seen
-                                  {row.first_seen_date &&
-                                    ` ${formatShortDate(row.first_seen_date)}`}
-                                </span>
-                              )}
-                              {(showUnavailable || showNew) && hasAttributes && ' · '}
-                              {attributeElements.map((item, index) => (
-                                <span key={item.key}>
-                                  {item.node}
-                                  {index < attributeElements.length - 1 && ' · '}
-                                </span>
-                              ))}
-                            </>
-                          );
-                        })()}
+                              return (
+                                <>
+                                  {showUnavailable && (
+                                    <span className="rounded bg-red-100 px-1 text-red-700 dark:bg-red-900/30 dark:text-red-400">
+                                      Last seen {formatShortDate(row.unavailable_since_date!)}
+                                    </span>
+                                  )}
+                                  {showUnavailable && showNew && ' · '}
+                                  {showNew && (
+                                    <span className="rounded bg-[rgb(255,246,220)] px-1 text-[#3F7540]">
+                                      First seen
+                                      {row.first_seen_date &&
+                                        ` ${formatShortDate(row.first_seen_date)}`}
+                                    </span>
+                                  )}
+                                  {(showUnavailable || showNew) && hasAttributes && ' · '}
+                                  {attributeElements.map((item, index) => (
+                                    <span key={item.key}>
+                                      {item.node}
+                                      {index < attributeElements.length - 1 && ' · '}
+                                    </span>
+                                  ))}
+                                </>
+                              );
+                            })()}
+                          </div>
+                        </div>
                       </div>
                     </td>
                     <td
@@ -496,7 +562,8 @@ function SkeletonRow() {
       <td
         className={`h-24 py-3 pr-4 ${NAME_COL_CLASS} sticky left-0 z-10 box-border border-r border-zinc-200 bg-white md:w-auto md:border-r-0 dark:border-zinc-700 dark:bg-zinc-900`}
       >
-        <div className="flex h-full items-center">
+        <div className="flex h-full items-center gap-2">
+          <div className="feed-shimmer h-5 w-5 rounded" />
           <div className="feed-shimmer h-4 w-full rounded" />
         </div>
       </td>
