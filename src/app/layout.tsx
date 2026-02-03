@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import { Geist_Mono, Fira_Sans } from 'next/font/google';
 import { Analytics } from '@vercel/analytics/react';
+import { SpeedInsights } from '@vercel/speed-insights/next';
 import './globals.css';
 import { Navigation } from '@/components/Navigation';
 import { Footer } from '@/components/Footer';
@@ -89,6 +90,7 @@ export default function RootLayout({
           </ProduceDataProvider>
         </ConvexClientProvider>
         <Analytics />
+        <SpeedInsights />
       </body>
     </html>
   );
