@@ -18,7 +18,16 @@ interface ProduceAnalyticsProps {
   error?: string | null;
 }
 
-type QuickFilter = 'drops' | 'increases' | 'new' | null;
+type QuickFilter =
+  | 'drops'
+  | 'increases'
+  | 'new'
+  | 'hydroponic'
+  | 'ipm'
+  | 'local'
+  | 'organic'
+  | 'waxed'
+  | null;
 
 const PRICE_COL_CLASS =
   'w-[var(--price-col)] min-w-[var(--price-col)] max-w-[var(--price-col)] md:w-24 md:min-w-0 md:max-w-none';
@@ -47,6 +56,16 @@ export function ProduceAnalytics({ data, isLoading = false, error = null }: Prod
     // Filter by quick filter
     if (quickFilter === 'new') {
       result = result.filter((row) => row.is_new);
+    } else if (quickFilter === 'hydroponic') {
+      result = result.filter((row) => row.is_hydroponic);
+    } else if (quickFilter === 'ipm') {
+      result = result.filter((row) => row.is_ipm);
+    } else if (quickFilter === 'local') {
+      result = result.filter((row) => row.is_local);
+    } else if (quickFilter === 'organic') {
+      result = result.filter((row) => row.is_organic);
+    } else if (quickFilter === 'waxed') {
+      result = result.filter((row) => row.is_waxed);
     }
 
     // Sort
@@ -135,13 +154,13 @@ export function ProduceAnalytics({ data, isLoading = false, error = null }: Prod
       setSortDirection('asc');
     } else {
       setQuickFilter(filter);
-      if (filter === 'new') {
-        // "New" filter keeps default name sort
-        setSortField('name');
-        setSortDirection('asc');
-      } else {
+      if (filter === 'drops' || filter === 'increases') {
         setSortField('day_change');
         setSortDirection(filter === 'drops' ? 'asc' : 'desc');
+      } else {
+        // Attribute filters keep default name sort
+        setSortField('name');
+        setSortDirection('asc');
       }
     }
   };
@@ -165,7 +184,7 @@ export function ProduceAnalytics({ data, isLoading = false, error = null }: Prod
           <button
             type="button"
             onClick={() => handleQuickFilter('drops')}
-            className={`rounded-full px-4 py-2 text-sm font-medium transition-colors ${
+            className={`rounded-full px-3 py-1.5 text-sm font-medium whitespace-nowrap transition-colors ${
               quickFilter === 'drops'
                 ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
                 : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-700'
@@ -176,7 +195,7 @@ export function ProduceAnalytics({ data, isLoading = false, error = null }: Prod
           <button
             type="button"
             onClick={() => handleQuickFilter('increases')}
-            className={`rounded-full px-4 py-2 text-sm font-medium transition-colors ${
+            className={`rounded-full px-3 py-1.5 text-sm font-medium whitespace-nowrap transition-colors ${
               quickFilter === 'increases'
                 ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
                 : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-700'
@@ -185,17 +204,72 @@ export function ProduceAnalytics({ data, isLoading = false, error = null }: Prod
             Price Increases
           </button>
         </div>
-        <div>
+        <div className="flex flex-wrap gap-2">
           <button
             type="button"
             onClick={() => handleQuickFilter('new')}
-            className={`rounded-full px-4 py-2 text-sm font-medium transition-colors ${
+            className={`rounded-full px-3 py-1.5 text-sm font-medium whitespace-nowrap transition-colors ${
               quickFilter === 'new'
                 ? 'bg-[rgb(255,246,220)] text-[#3F7540]'
                 : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-700'
             }`}
           >
             New Arrivals
+          </button>
+          <button
+            type="button"
+            onClick={() => handleQuickFilter('hydroponic')}
+            className={`rounded-full px-3 py-1.5 text-sm font-medium whitespace-nowrap transition-colors ${
+              quickFilter === 'hydroponic'
+                ? 'bg-zinc-200 text-zinc-800 dark:bg-zinc-700 dark:text-zinc-200'
+                : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-700'
+            }`}
+          >
+            Hydroponic
+          </button>
+          <button
+            type="button"
+            onClick={() => handleQuickFilter('ipm')}
+            className={`rounded-full px-3 py-1.5 text-sm font-medium whitespace-nowrap transition-colors ${
+              quickFilter === 'ipm'
+                ? 'bg-zinc-200 text-zinc-800 dark:bg-zinc-700 dark:text-zinc-200'
+                : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-700'
+            }`}
+          >
+            IPM
+          </button>
+          <button
+            type="button"
+            onClick={() => handleQuickFilter('local')}
+            className={`rounded-full px-3 py-1.5 text-sm font-medium whitespace-nowrap transition-colors ${
+              quickFilter === 'local'
+                ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
+                : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-700'
+            }`}
+          >
+            Local
+          </button>
+          <button
+            type="button"
+            onClick={() => handleQuickFilter('organic')}
+            className={`rounded-full px-3 py-1.5 text-sm font-medium whitespace-nowrap transition-colors ${
+              quickFilter === 'organic'
+                ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+                : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-700'
+            }`}
+          >
+            Organic
+          </button>
+          <button
+            type="button"
+            onClick={() => handleQuickFilter('waxed')}
+            className={`rounded-full px-3 py-1.5 text-sm font-medium whitespace-nowrap transition-colors ${
+              quickFilter === 'waxed'
+                ? 'bg-zinc-200 text-zinc-800 dark:bg-zinc-700 dark:text-zinc-200'
+                : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-700'
+            }`}
+          >
+            Waxed
           </button>
         </div>
       </div>
@@ -287,20 +361,41 @@ export function ProduceAnalytics({ data, isLoading = false, error = null }: Prod
                       <div className="font-medium text-zinc-900 dark:text-zinc-100">
                         {row.raw_name}
                       </div>
-                      <div className="h-4 text-xs text-zinc-500 dark:text-zinc-400">
+                      <div className="text-xs text-zinc-500 dark:text-zinc-400">
                         {row.is_new && (
                           <span className="rounded bg-[rgb(255,246,220)] px-1 text-[#3F7540]">
                             New Arrival
                           </span>
                         )}
-                        {row.is_new && (row.is_organic || row.is_local) && ' · '}
-                        {row.is_organic && (
-                          <span className="text-green-600 dark:text-green-400">Organic</span>
-                        )}
-                        {row.is_organic && row.is_local && ' · '}
-                        {row.is_local && (
-                          <span className="text-blue-600 dark:text-blue-400">Local</span>
-                        )}
+                        {row.is_new &&
+                          (row.is_organic ||
+                            row.is_ipm ||
+                            row.is_local ||
+                            row.is_hydroponic ||
+                            row.is_waxed) &&
+                          ' · '}
+                        {[
+                          row.is_hydroponic && <span key="hydroponic">Hydroponic</span>,
+                          row.is_ipm && <span key="ipm">IPM</span>,
+                          row.is_local && (
+                            <span key="local" className="text-blue-600 dark:text-blue-400">
+                              Local
+                            </span>
+                          ),
+                          row.is_organic && (
+                            <span key="organic" className="text-green-600 dark:text-green-400">
+                              Organic
+                            </span>
+                          ),
+                          row.is_waxed && <span key="waxed">Waxed</span>,
+                        ]
+                          .filter(Boolean)
+                          .map((el, i, arr) => (
+                            <span key={i}>
+                              {el}
+                              {i < arr.length - 1 && ' · '}
+                            </span>
+                          ))}
                       </div>
                     </td>
                     <td

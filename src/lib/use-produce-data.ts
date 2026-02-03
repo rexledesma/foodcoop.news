@@ -11,7 +11,10 @@ export interface ProduceRow {
   prev_week_price: number | null;
   prev_month_price: number | null;
   is_organic: boolean;
+  is_ipm: boolean;
+  is_waxed: boolean;
   is_local: boolean;
+  is_hydroponic: boolean;
   is_new: boolean;
   origin: string;
   unit: string;
@@ -72,7 +75,7 @@ export function useProduceData(): UseProduceDataResult {
             SELECT MAX(date::DATE) as max_date FROM produce
           ),
           current_prices AS (
-            SELECT raw_name, name, price, is_organic, is_local, origin, unit
+            SELECT raw_name, name, price, is_organic, is_ipm, is_waxed, is_local, is_hydroponic, origin, unit
             FROM produce, latest_date
             WHERE date::DATE = max_date
           ),
@@ -105,7 +108,10 @@ export function useProduceData(): UseProduceDataResult {
             c.name,
             c.price,
             c.is_organic,
+            c.is_ipm,
+            c.is_waxed,
             c.is_local,
+            c.is_hydroponic,
             CASE WHEN pm.raw_name IS NULL THEN true ELSE false END as is_new,
             c.origin,
             c.unit,
