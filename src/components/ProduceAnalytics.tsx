@@ -401,10 +401,25 @@ export function ProduceAnalytics({ data, isLoading = false, error = null }: Prod
                     <td
                       className={`snap-start px-2 py-3 font-mono text-zinc-900 dark:text-zinc-100 ${PRIMARY_PRICE_COL_CLASS} box-border`}
                     >
-                      ${row.price.toFixed(2)}
-                      <span className="ml-1 text-xs text-zinc-500 dark:text-zinc-400">
-                        /{row.unit}
-                      </span>
+                      <div>
+                        <span
+                          className={`font-bold ${
+                            row.prev_day_price !== null && row.price < row.prev_day_price
+                              ? 'text-green-600 dark:text-green-400'
+                              : row.prev_day_price !== null && row.price > row.prev_day_price
+                                ? 'text-red-600 dark:text-red-400'
+                                : ''
+                          }`}
+                        >
+                          ${row.price.toFixed(2)}
+                        </span>
+                        {row.prev_day_price !== null && row.prev_day_price !== row.price && (
+                          <sup className="ml-1 text-[0.65em] text-zinc-400 line-through dark:text-zinc-500">
+                            ${row.prev_day_price.toFixed(2)}
+                          </sup>
+                        )}
+                      </div>
+                      <div className="text-xs text-zinc-500 dark:text-zinc-400">/{row.unit}</div>
                     </td>
                     <AbsoluteChangeCell current={row.price} previous={row.prev_day_price} />
                     <PercentChangeCell current={row.price} previous={row.prev_day_price} />
