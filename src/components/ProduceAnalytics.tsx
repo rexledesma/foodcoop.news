@@ -316,7 +316,7 @@ export function ProduceAnalytics({ data, isLoading = false, error = null }: Prod
                 onClick={handleSort}
                 className={`${PRICE_COL_CLASS} snap-start`}
               >
-                Change
+                Day Δ
               </SortHeader>
               <SortHeader
                 field="day_change_pct"
@@ -325,7 +325,7 @@ export function ProduceAnalytics({ data, isLoading = false, error = null }: Prod
                 onClick={handleSort}
                 className={`${PRICE_COL_CLASS} snap-start`}
               >
-                Change %
+                Day %
               </SortHeader>
               <SortHeader
                 field="week_change"
@@ -334,7 +334,7 @@ export function ProduceAnalytics({ data, isLoading = false, error = null }: Prod
                 onClick={handleSort}
                 className={`${PRICE_COL_CLASS} snap-start md:w-20`}
               >
-                Week
+                Week %
               </SortHeader>
               <SortHeader
                 field="month_change"
@@ -343,7 +343,7 @@ export function ProduceAnalytics({ data, isLoading = false, error = null }: Prod
                 onClick={handleSort}
                 className={`${PRICE_COL_CLASS} snap-start md:w-20`}
               >
-                Month
+                Month %
               </SortHeader>
             </tr>
           </thead>
