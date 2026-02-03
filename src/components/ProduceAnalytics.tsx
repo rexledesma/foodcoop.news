@@ -9,7 +9,9 @@ type SortField =
   | 'day_change'
   | 'day_change_pct'
   | 'week_change'
-  | 'month_change';
+  | 'month_change'
+  | 'first_seen'
+  | 'last_seen';
 type SortDirection = 'asc' | 'desc' | null;
 
 interface ProduceAnalyticsProps {
@@ -105,6 +107,14 @@ export function ProduceAnalytics({ data, isLoading = false, error = null }: Prod
           aVal = a.prev_month_price ? (a.price - a.prev_month_price) / a.prev_month_price : 0;
           bVal = b.prev_month_price ? (b.price - b.prev_month_price) / b.prev_month_price : 0;
           break;
+        case 'first_seen':
+          aVal = a.first_seen_date ?? '';
+          bVal = b.first_seen_date ?? '';
+          break;
+        case 'last_seen':
+          aVal = a.unavailable_since_date ?? '';
+          bVal = b.unavailable_since_date ?? '';
+          break;
         default:
           return 0;
       }
@@ -160,6 +170,12 @@ export function ProduceAnalytics({ data, isLoading = false, error = null }: Prod
       if (filter === 'drops' || filter === 'increases') {
         setSortField('day_change');
         setSortDirection(filter === 'drops' ? 'asc' : 'desc');
+      } else if (filter === 'new') {
+        setSortField('first_seen');
+        setSortDirection('desc');
+      } else if (filter === 'recently_unavailable') {
+        setSortField('last_seen');
+        setSortDirection('desc');
       } else {
         // Attribute filters keep default name sort
         setSortField('name');
