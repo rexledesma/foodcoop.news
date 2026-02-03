@@ -12,6 +12,7 @@ export interface ProduceRow {
   prev_month_price: number | null;
   is_organic: boolean;
   is_local: boolean;
+  is_new: boolean;
   origin: string;
   unit: string;
 }
@@ -93,6 +94,11 @@ export function useProduceData(): UseProduceDataResult {
             FROM produce, latest_date
             WHERE date::DATE BETWEEN max_date - INTERVAL '30 days' AND max_date - INTERVAL '1 day'
             GROUP BY raw_name
+          ),
+          prev_month_items AS (
+            SELECT DISTINCT raw_name
+            FROM produce, latest_date
+            WHERE date_trunc('month', date::DATE) = date_trunc('month', max_date) - INTERVAL '1 month'
           )
           SELECT
             c.raw_name,
@@ -100,6 +106,7 @@ export function useProduceData(): UseProduceDataResult {
             c.price,
             c.is_organic,
             c.is_local,
+            CASE WHEN pm.raw_name IS NULL THEN true ELSE false END as is_new,
             c.origin,
             c.unit,
             d.prev_day_price,
@@ -109,6 +116,7 @@ export function useProduceData(): UseProduceDataResult {
           LEFT JOIN prev_day d ON c.raw_name = d.raw_name
           LEFT JOIN prev_week w ON c.raw_name = w.raw_name
           LEFT JOIN prev_month m ON c.raw_name = m.raw_name
+          LEFT JOIN prev_month_items pm ON c.raw_name = pm.raw_name
           ORDER BY c.name
         `);
 

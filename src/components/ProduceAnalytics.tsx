@@ -18,7 +18,7 @@ interface ProduceAnalyticsProps {
   error?: string | null;
 }
 
-type QuickFilter = 'drops' | 'increases' | null;
+type QuickFilter = 'drops' | 'increases' | 'new' | null;
 
 const PRICE_COL_CLASS =
   'w-[var(--price-col)] min-w-[var(--price-col)] max-w-[var(--price-col)] md:w-24 md:min-w-0 md:max-w-none';
@@ -42,6 +42,11 @@ export function ProduceAnalytics({ data, isLoading = false, error = null }: Prod
       result = result.filter(
         (row) => row.name.toLowerCase().includes(lower) || row.origin.toLowerCase().includes(lower),
       );
+    }
+
+    // Filter by quick filter
+    if (quickFilter === 'new') {
+      result = result.filter((row) => row.is_new);
     }
 
     // Sort
@@ -91,7 +96,7 @@ export function ProduceAnalytics({ data, isLoading = false, error = null }: Prod
     });
 
     return result;
-  }, [data, search, sortField, sortDirection]);
+  }, [data, search, sortField, sortDirection, quickFilter]);
 
   const skeletonRows = useMemo(
     () => Array.from({ length: 8 }, (_, index) => `skeleton-${index}`),
@@ -132,8 +137,14 @@ export function ProduceAnalytics({ data, isLoading = false, error = null }: Prod
       setSortDirection('asc');
     } else {
       setQuickFilter(filter);
-      setSortField('day_change');
-      setSortDirection(filter === 'drops' ? 'asc' : 'desc');
+      if (filter === 'new') {
+        // "New" filter keeps default name sort
+        setSortField('name');
+        setSortDirection('asc');
+      } else {
+        setSortField('day_change');
+        setSortDirection(filter === 'drops' ? 'asc' : 'desc');
+      }
     }
   };
 
@@ -151,29 +162,44 @@ export function ProduceAnalytics({ data, isLoading = false, error = null }: Prod
       </div>
 
       {/* Quick Filters */}
-      <div className="mb-4 flex gap-2">
-        <button
-          type="button"
-          onClick={() => handleQuickFilter('drops')}
-          className={`rounded-full px-4 py-2 text-sm font-medium transition-colors ${
-            quickFilter === 'drops'
-              ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
-              : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-700'
-          }`}
-        >
-          Price Drops
-        </button>
-        <button
-          type="button"
-          onClick={() => handleQuickFilter('increases')}
-          className={`rounded-full px-4 py-2 text-sm font-medium transition-colors ${
-            quickFilter === 'increases'
-              ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
-              : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-700'
-          }`}
-        >
-          Price Increases
-        </button>
+      <div className="mb-4 flex flex-col gap-3">
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={() => handleQuickFilter('drops')}
+            className={`rounded-full px-4 py-2 text-sm font-medium transition-colors ${
+              quickFilter === 'drops'
+                ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+                : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-700'
+            }`}
+          >
+            Price Drops
+          </button>
+          <button
+            type="button"
+            onClick={() => handleQuickFilter('increases')}
+            className={`rounded-full px-4 py-2 text-sm font-medium transition-colors ${
+              quickFilter === 'increases'
+                ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-700'
+            }`}
+          >
+            Price Increases
+          </button>
+        </div>
+        <div>
+          <button
+            type="button"
+            onClick={() => handleQuickFilter('new')}
+            className={`rounded-full px-4 py-2 text-sm font-medium transition-colors ${
+              quickFilter === 'new'
+                ? 'bg-[rgb(255,246,220)] text-[#3F7540]'
+                : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-700'
+            }`}
+          >
+            New Arrivals
+          </button>
+        </div>
       </div>
 
       {error && !isLoading && (
@@ -264,6 +290,12 @@ export function ProduceAnalytics({ data, isLoading = false, error = null }: Prod
                         {getDisplayName(row.name)}
                       </div>
                       <div className="h-4 text-xs text-zinc-500 dark:text-zinc-400">
+                        {row.is_new && (
+                          <span className="rounded bg-[rgb(255,246,220)] px-1 text-[#3F7540]">
+                            New Arrival
+                          </span>
+                        )}
+                        {row.is_new && (row.is_organic || row.is_local) && ' · '}
                         {row.is_organic && (
                           <span className="text-green-600 dark:text-green-400">Organic</span>
                         )}
