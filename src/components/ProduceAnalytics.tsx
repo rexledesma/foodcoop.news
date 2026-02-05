@@ -125,12 +125,14 @@ export function ProduceAnalytics({
           bVal = b.prev_day_price ? (b.price - b.prev_day_price) / b.prev_day_price : 0;
           break;
         case 'week_change':
-          aVal = a.prev_week_price ? (a.price - a.prev_week_price) / a.prev_week_price : 0;
-          bVal = b.prev_week_price ? (b.price - b.prev_week_price) / b.prev_week_price : 0;
+          aVal = a.prev_week_price !== null ? (a.price - a.prev_week_price) / a.prev_week_price : 0;
+          bVal = b.prev_week_price !== null ? (b.price - b.prev_week_price) / b.prev_week_price : 0;
           break;
         case 'month_change':
-          aVal = a.prev_month_price ? (a.price - a.prev_month_price) / a.prev_month_price : 0;
-          bVal = b.prev_month_price ? (b.price - b.prev_month_price) / b.prev_month_price : 0;
+          aVal =
+            a.prev_month_price !== null ? (a.price - a.prev_month_price) / a.prev_month_price : 0;
+          bVal =
+            b.prev_month_price !== null ? (b.price - b.prev_month_price) / b.prev_month_price : 0;
           break;
         case 'first_seen':
           aVal = a.first_seen_date ?? '';

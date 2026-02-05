@@ -86,6 +86,12 @@ export function useProduceData(): UseProduceDataResult {
           WITH latest_date AS (
             SELECT MAX(date::DATE) as max_date FROM produce
           ),
+          targets AS (
+            SELECT
+              (max_date - INTERVAL '7 days')::DATE as target_week,
+              (max_date - INTERVAL '30 days')::DATE as target_month
+            FROM latest_date
+          ),
           current_prices AS (
             SELECT name, name, price, is_organic, is_ipm, is_waxed, is_local, is_hydroponic, origin, unit
             FROM produce, latest_date
@@ -127,16 +133,34 @@ export function useProduceData(): UseProduceDataResult {
             )
           ),
           prev_week AS (
-            SELECT name, AVG(price) as prev_week_price
-            FROM produce, latest_date
-            WHERE date::DATE BETWEEN max_date - INTERVAL '7 days' AND max_date - INTERVAL '1 day'
-            GROUP BY name
+            SELECT name, price as prev_week_price
+            FROM (
+              SELECT
+                p.name,
+                p.price,
+                p.date::DATE as date,
+                ROW_NUMBER() OVER (
+                  PARTITION BY p.name
+                  ORDER BY ABS(p.date::DATE - t.target_week), p.date::DATE ASC
+                ) as rn
+              FROM produce p, targets t
+            )
+            WHERE rn = 1
           ),
           prev_month AS (
-            SELECT name, AVG(price) as prev_month_price
-            FROM produce, latest_date
-            WHERE date::DATE BETWEEN max_date - INTERVAL '30 days' AND max_date - INTERVAL '1 day'
-            GROUP BY name
+            SELECT name, price as prev_month_price
+            FROM (
+              SELECT
+                p.name,
+                p.price,
+                p.date::DATE as date,
+                ROW_NUMBER() OVER (
+                  PARTITION BY p.name
+                  ORDER BY ABS(p.date::DATE - t.target_month), p.date::DATE ASC
+                ) as rn
+              FROM produce p, targets t
+            )
+            WHERE rn = 1
           ),
           prev_month_items AS (
             SELECT DISTINCT name
