@@ -1,7 +1,7 @@
 'use client';
 
 /* eslint-disable @next/next/no-img-element */
-import { useState } from 'react';
+import { useMemo, useState, useSyncExternalStore } from 'react';
 import Link from 'next/link';
 import type {
   FeedPost,
@@ -48,6 +48,37 @@ function formatRelativeTime(date: Date): string {
   if (diffHours < 24) return `${diffHours}h ago`;
   if (diffDays < 7) return `${diffDays}d ago`;
   return date.toLocaleDateString();
+}
+
+function parseFavorites(stored: string): Set<string> {
+  if (!stored) return new Set();
+  try {
+    const parsed = JSON.parse(stored) as string[];
+    return new Set(parsed);
+  } catch {
+    return new Set();
+  }
+}
+
+function subscribeToFavorites(callback: () => void) {
+  if (typeof window === 'undefined') return () => {};
+  const handleStorage = (event: StorageEvent) => {
+    if (event.key === 'produce-favorites') {
+      callback();
+    }
+  };
+  const handleFavorites = () => callback();
+  window.addEventListener('storage', handleStorage);
+  window.addEventListener('produce-favorites', handleFavorites);
+  return () => {
+    window.removeEventListener('storage', handleStorage);
+    window.removeEventListener('produce-favorites', handleFavorites);
+  };
+}
+
+function getFavoritesSnapshot(): string {
+  if (typeof window === 'undefined') return '[]';
+  return localStorage.getItem('produce-favorites') ?? '[]';
 }
 
 function formatEventDateTime(startUtc: string, timezone: string): string {
@@ -445,7 +476,15 @@ function BlueskyCard({ post }: { post: FeedPost; date: Date }) {
   );
 }
 
-function ProduceCard({ update, date }: { update: ProduceEvent; date: Date }) {
+function ProduceCard({
+  update,
+  date,
+  favorites,
+}: {
+  update: ProduceEvent;
+  date: Date;
+  favorites: Set<string>;
+}) {
   const formattedDate = formatRelativeTime(date);
 
   return (
@@ -485,7 +524,12 @@ function ProduceCard({ update, date }: { update: ProduceEvent; date: Date }) {
                     key={item.name}
                     className="inline-flex items-center gap-1 rounded-full bg-green-100 px-2 py-0.5 text-xs text-green-700 dark:bg-green-900/30 dark:text-green-300"
                   >
-                    {item.name}
+                    {favorites.has(item.name) && (
+                      <span className="grid h-4 w-4 place-items-center rounded-full bg-amber-100 text-[12px] leading-none text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">
+                        ⭐
+                      </span>
+                    )}
+                    <span className={favorites.has(item.name) ? 'font-bold' : ''}>{item.name}</span>
                   </span>
                 ))}
               </div>
@@ -499,7 +543,12 @@ function ProduceCard({ update, date }: { update: ProduceEvent; date: Date }) {
                     key={item.name}
                     className="inline-flex items-center gap-1 rounded-full bg-red-100 px-2 py-0.5 text-xs text-red-700 dark:bg-red-900/30 dark:text-red-300"
                   >
-                    {item.name}
+                    {favorites.has(item.name) && (
+                      <span className="grid h-4 w-4 place-items-center rounded-full bg-amber-100 text-[12px] leading-none text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">
+                        ⭐
+                      </span>
+                    )}
+                    <span className={favorites.has(item.name) ? 'font-bold' : ''}>{item.name}</span>
                   </span>
                 ))}
               </div>
@@ -513,6 +562,12 @@ function ProduceCard({ update, date }: { update: ProduceEvent; date: Date }) {
 
 export function DiscoverFeed() {
   const [filter, setFilter] = useState<FilterType>('latest');
+  const favoritesSnapshot = useSyncExternalStore(
+    subscribeToFavorites,
+    getFavoritesSnapshot,
+    () => '[]',
+  );
+  const favorites = useMemo(() => parseFavorites(favoritesSnapshot), [favoritesSnapshot]);
   const { items, loading, error, pendingSources, fetchFeeds } = useDiscoverFeedContext();
 
   const isEventItem = (item: FeedItem) =>
@@ -682,7 +737,7 @@ export function DiscoverFeed() {
           if (item.type === 'produce') {
             return (
               <div key={getFeedItemKey(item)} className="feed-item-enter">
-                <ProduceCard update={item.data} date={item.date} />
+                <ProduceCard update={item.data} date={item.date} favorites={favorites} />
               </div>
             );
           }

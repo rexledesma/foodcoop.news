@@ -59,6 +59,7 @@ export function ProduceAnalytics({ data, isLoading = false, error = null }: Prod
 
   useEffect(() => {
     localStorage.setItem('produce-favorites', JSON.stringify(Array.from(favorites)));
+    window.dispatchEvent(new Event('produce-favorites'));
   }, [favorites]);
 
   const filteredAndSorted = useMemo(() => {
@@ -438,7 +439,7 @@ export function ProduceAnalytics({ data, isLoading = false, error = null }: Prod
                               return next;
                             })
                           }
-                          className={`flex h-5 w-5 shrink-0 items-center justify-center rounded border text-[0.7rem] font-bold transition-colors ${
+                          className={`flex h-5 w-5 shrink-0 items-center justify-center rounded border text-[12px] font-bold transition-colors ${
                             favorites.has(row.name)
                               ? 'border-amber-400 bg-amber-100 text-amber-700 dark:border-amber-400/60 dark:bg-amber-900/40 dark:text-amber-300'
                               : 'border-zinc-300 text-zinc-500 hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-400 dark:hover:bg-zinc-800'
@@ -447,8 +448,20 @@ export function ProduceAnalytics({ data, isLoading = false, error = null }: Prod
                           {favorites.has(row.name) ? '⭐' : '+'}
                         </button>
                         <div className="min-w-0">
-                          <div className="font-medium text-zinc-900 dark:text-zinc-100">
-                            {row.name}
+                          <div
+                            className={`text-zinc-900 dark:text-zinc-100 ${
+                              favorites.has(row.name) ? 'font-bold' : 'font-medium'
+                            }`}
+                          >
+                            <span
+                              className={
+                                favorites.has(row.name)
+                                  ? 'rounded bg-amber-100 px-1 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300'
+                                  : ''
+                              }
+                            >
+                              {row.name}
+                            </span>
                           </div>
                           <div className="text-xs text-zinc-500 dark:text-zinc-400">
                             {(() => {
