@@ -210,13 +210,25 @@ export function ProduceAnalytics({ data, isLoading = false, error = null }: Prod
     <div>
       {/* Search */}
       <div className="mb-4">
-        <input
-          type="text"
-          placeholder="Search produce..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="w-full max-w-md rounded-lg border border-zinc-300 bg-white px-4 py-2 text-zinc-900 placeholder-zinc-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
-        />
+        <div className="relative w-full max-w-md">
+          <input
+            type="text"
+            placeholder="Search produce..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full rounded-lg border border-zinc-300 bg-white px-4 py-2 pr-10 text-zinc-900 placeholder-zinc-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
+          />
+          {search ? (
+            <button
+              type="button"
+              onClick={() => setSearch('')}
+              aria-label="Clear search"
+              className="absolute top-1/2 right-3 -translate-y-1/2 rounded-full p-1 text-sm text-zinc-500 transition hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200"
+            >
+              ✕
+            </button>
+          ) : null}
+        </div>
       </div>
 
       {/* Quick Filters */}
