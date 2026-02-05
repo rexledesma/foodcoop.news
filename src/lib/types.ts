@@ -99,3 +99,14 @@ export interface FoodcoopEvent {
   venueAddress?: string;
   image?: string;
 }
+
+export interface ProduceEventItem {
+  raw_name: string;
+}
+
+export interface ProduceEvent {
+  id: string;
+  date: string;
+  newArrivals: ProduceEventItem[];
+  outOfStock: ProduceEventItem[];
+}

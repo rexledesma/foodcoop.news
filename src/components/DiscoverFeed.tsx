@@ -2,12 +2,14 @@
 
 /* eslint-disable @next/next/no-img-element */
 import { useState } from 'react';
+import Link from 'next/link';
 import type {
   FeedPost,
   GazetteArticle,
   FoodCoopAnnouncement,
   FoodCoopCooksArticle,
   EventbriteEvent,
+  ProduceEvent,
 } from '@/lib/types';
 import { getFeedItemKey, useDiscoverFeedContext, type FeedItem } from '@/lib/discover-feed-context';
 
@@ -19,12 +21,14 @@ type FilterType =
   | 'foodcoopcooks'
   | 'wordsprouts'
   | 'concert-series'
-  | 'upcoming';
+  | 'upcoming'
+  | 'produce';
 
 const FILTER_OPTIONS: { value: FilterType; label: string }[] = [
   { value: 'latest', label: 'Latest' },
   { value: 'upcoming', label: 'Upcoming' },
   { value: 'foodcoop', label: 'Announcements' },
+  { value: 'produce', label: 'Produce' },
   { value: 'gazette', label: "Linewaiters' Gazette" },
   { value: 'bluesky', label: 'Bluesky' },
   { value: 'foodcoopcooks', label: 'Cooking' },
@@ -441,6 +445,72 @@ function BlueskyCard({ post }: { post: FeedPost; date: Date }) {
   );
 }
 
+function ProduceCard({ update, date }: { update: ProduceEvent; date: Date }) {
+  const formattedDate = formatRelativeTime(date);
+
+  return (
+    <Link
+      href="/produce"
+      className="block rounded-xl border border-zinc-200 bg-white p-4 transition-colors hover:border-green-300 dark:border-zinc-700 dark:bg-zinc-800 dark:hover:border-green-700"
+    >
+      <div className="flex items-start gap-3">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-green-100 text-xl dark:bg-green-900/30">
+          🥬
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="font-semibold text-zinc-900 dark:text-zinc-100">Produce</span>
+            <span className="shrink-0 text-sm text-zinc-400 dark:text-zinc-500">
+              {formattedDate}
+            </span>
+          </div>
+          <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
+            {update.newArrivals.length > 0 && (
+              <span className="text-green-600 dark:text-green-400">
+                {update.newArrivals.length} new arrival{update.newArrivals.length !== 1 ? 's' : ''}
+              </span>
+            )}
+            {update.newArrivals.length > 0 && update.outOfStock.length > 0 && ' · '}
+            {update.outOfStock.length > 0 && (
+              <span className="text-red-600 dark:text-red-400">
+                {update.outOfStock.length} out of stock
+              </span>
+            )}
+          </p>
+          {update.newArrivals.length > 0 && (
+            <div className="mt-3">
+              <div className="flex flex-wrap gap-1.5">
+                {update.newArrivals.map((item) => (
+                  <span
+                    key={item.raw_name}
+                    className="inline-flex items-center gap-1 rounded-full bg-green-100 px-2 py-0.5 text-xs text-green-700 dark:bg-green-900/30 dark:text-green-300"
+                  >
+                    {item.raw_name}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+          {update.outOfStock.length > 0 && (
+            <div className="mt-3">
+              <div className="flex flex-wrap gap-1.5">
+                {update.outOfStock.map((item) => (
+                  <span
+                    key={item.raw_name}
+                    className="inline-flex items-center gap-1 rounded-full bg-red-100 px-2 py-0.5 text-xs text-red-700 dark:bg-red-900/30 dark:text-red-300"
+                  >
+                    {item.raw_name}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </Link>
+  );
+}
+
 export function DiscoverFeed() {
   const [filter, setFilter] = useState<FilterType>('latest');
   const { items, loading, error, pendingSources, fetchFeeds } = useDiscoverFeedContext();
@@ -471,6 +541,9 @@ export function DiscoverFeed() {
     }
     if (filter === 'foodcoop') {
       return item.type === 'foodcoop' || item.type === 'gm-events';
+    }
+    if (filter === 'produce') {
+      return item.type === 'produce';
     }
     return item.type === filter;
   });
@@ -603,6 +676,13 @@ export function DiscoverFeed() {
             return (
               <div key={getFeedItemKey(item)} className="feed-item-enter">
                 <EventbriteEventCard event={item.data} label="General Meeting" emoji="🗳️" />
+              </div>
+            );
+          }
+          if (item.type === 'produce') {
+            return (
+              <div key={getFeedItemKey(item)} className="feed-item-enter">
+                <ProduceCard update={item.data} date={item.date} />
               </div>
             );
           }

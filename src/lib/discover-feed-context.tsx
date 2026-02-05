@@ -8,6 +8,7 @@ import type {
   FoodCoopCooksArticle,
   EventbriteEvent,
   FoodcoopEvent,
+  ProduceEvent,
 } from '@/lib/types';
 
 export type FeedItem =
@@ -18,7 +19,8 @@ export type FeedItem =
   | { type: 'foodcoopcooks-events'; data: EventbriteEvent; date: Date }
   | { type: 'wordsprouts-events'; data: EventbriteEvent; date: Date }
   | { type: 'concert-series-events'; data: EventbriteEvent; date: Date }
-  | { type: 'gm-events'; data: FoodcoopEvent; date: Date };
+  | { type: 'gm-events'; data: FoodcoopEvent; date: Date }
+  | { type: 'produce'; data: ProduceEvent; date: Date };
 
 export function getFeedItemKey(item: FeedItem) {
   if (item.type === 'gazette') return `gazette-${item.data.id}`;
@@ -35,6 +37,9 @@ export function getFeedItemKey(item: FeedItem) {
   }
   if (item.type === 'gm-events') {
     return `gm-event-${item.data.id}`;
+  }
+  if (item.type === 'produce') {
+    return `produce-${item.data.id}`;
   }
   return item.data.repostedBy
     ? `bluesky-${item.data.id}-repost-${item.data.repostedBy.handle}`

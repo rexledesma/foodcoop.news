@@ -15,6 +15,8 @@ import {
   type FeedItem,
   type DiscoverFeedState,
 } from '@/lib/discover-feed-context';
+import { useProduceDataContext } from '@/lib/produce-data-context';
+import { produceRowsToFeedItems } from '@/lib/produce-feed-utils';
 
 const COOP_BLUESKY_HANDLE = 'foodcoop.bsky.social';
 
@@ -28,6 +30,8 @@ export function DiscoverFeedProvider({ children }: { children: ReactNode }) {
   const hasItemsRef = useRef(false);
   const hasSuccessRef = useRef(false);
   const finalizedRef = useRef(false);
+
+  const { data: produceData } = useProduceDataContext();
 
   const fetchFeeds = useCallback(() => {
     setHasLoadedOnce(true);
@@ -206,16 +210,42 @@ export function DiscoverFeedProvider({ children }: { children: ReactNode }) {
     return () => window.clearTimeout(loadTimeout);
   }, [fetchFeeds, hasLoadedOnce]);
 
+  // Combine feed items with produce data
+  const combinedItems = useMemo(() => {
+    if (produceData.length === 0) return items;
+
+    const fortyFiveDaysAgo = new Date();
+    fortyFiveDaysAgo.setDate(fortyFiveDaysAgo.getDate() - 45);
+
+    const fortyFiveDaysAhead = new Date();
+    fortyFiveDaysAhead.setDate(fortyFiveDaysAhead.getDate() + 45);
+
+    const produceItems = produceRowsToFeedItems(produceData);
+    const seen = new Set(items.map(getFeedItemKey));
+
+    const filtered = produceItems.filter(
+      (item) =>
+        item.date >= fortyFiveDaysAgo &&
+        item.date <= fortyFiveDaysAhead &&
+        !seen.has(getFeedItemKey(item)),
+    );
+
+    if (filtered.length === 0) return items;
+
+    const merged = [...items, ...filtered];
+    return merged.sort((a, b) => b.date.getTime() - a.date.getTime());
+  }, [items, produceData]);
+
   const value = useMemo<DiscoverFeedState>(
     () => ({
-      items,
+      items: combinedItems,
       loading,
       error,
       pendingSources,
       hasLoadedOnce,
       fetchFeeds,
     }),
-    [items, loading, error, pendingSources, hasLoadedOnce, fetchFeeds],
+    [combinedItems, loading, error, pendingSources, hasLoadedOnce, fetchFeeds],
   );
 
   return <DiscoverFeedContext.Provider value={value}>{children}</DiscoverFeedContext.Provider>;
