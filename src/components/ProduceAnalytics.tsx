@@ -74,7 +74,7 @@ export function ProduceAnalytics({ data, isLoading = false, error = null }: Prod
 
     // Filter by quick filter
     if (quickFilter === 'favorites') {
-      result = result.filter((row) => favorites.has(row.raw_name));
+      result = result.filter((row) => favorites.has(row.name));
     } else if (quickFilter === 'new') {
       result = result.filter((row) => row.is_new);
     } else if (quickFilter === 'recently_unavailable') {
@@ -414,7 +414,7 @@ export function ProduceAnalytics({ data, isLoading = false, error = null }: Prod
               ? skeletonRows.map((rowId) => <SkeletonRow key={rowId} />)
               : filteredAndSorted.map((row) => (
                   <tr
-                    key={row.raw_name}
+                    key={row.name}
                     className="border-b border-zinc-100 hover:bg-zinc-50 dark:border-zinc-800/50 dark:hover:bg-zinc-800/50"
                   >
                     <td
@@ -423,32 +423,32 @@ export function ProduceAnalytics({ data, isLoading = false, error = null }: Prod
                       <div className="flex items-center gap-2">
                         <button
                           type="button"
-                          aria-pressed={favorites.has(row.raw_name)}
+                          aria-pressed={favorites.has(row.name)}
                           aria-label={`${
-                            favorites.has(row.raw_name) ? 'Remove from' : 'Add to'
-                          } favorites for ${row.raw_name}`}
+                            favorites.has(row.name) ? 'Remove from' : 'Add to'
+                          } favorites for ${row.name}`}
                           onClick={() =>
                             setFavorites((previous) => {
                               const next = new Set(previous);
-                              if (next.has(row.raw_name)) {
-                                next.delete(row.raw_name);
+                              if (next.has(row.name)) {
+                                next.delete(row.name);
                               } else {
-                                next.add(row.raw_name);
+                                next.add(row.name);
                               }
                               return next;
                             })
                           }
                           className={`flex h-5 w-5 shrink-0 items-center justify-center rounded border text-[0.7rem] font-bold transition-colors ${
-                            favorites.has(row.raw_name)
+                            favorites.has(row.name)
                               ? 'border-amber-400 bg-amber-100 text-amber-700 dark:border-amber-400/60 dark:bg-amber-900/40 dark:text-amber-300'
                               : 'border-zinc-300 text-zinc-500 hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-400 dark:hover:bg-zinc-800'
                           }`}
                         >
-                          {favorites.has(row.raw_name) ? '⭐' : '+'}
+                          {favorites.has(row.name) ? '⭐' : '+'}
                         </button>
                         <div className="min-w-0">
                           <div className="font-medium text-zinc-900 dark:text-zinc-100">
-                            {row.raw_name}
+                            {row.name}
                           </div>
                           <div className="text-xs text-zinc-500 dark:text-zinc-400">
                             {(() => {

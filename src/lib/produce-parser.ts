@@ -16,7 +16,6 @@ export function parseProduceHtml(html: string, date: string): ParsedProducePage 
 
     if (!nameCell || !priceCell) return;
 
-    const name = parseProductName(nameCell);
     const { price, unit } = parsePrice(priceCell);
     const attrs = parseAttributes(attrsCell, nameCell);
     const isLocal = parseOriginIsLocal(originCell);
@@ -26,8 +25,7 @@ export function parseProduceHtml(html: string, date: string): ParsedProducePage 
     items.push({
       id,
       date,
-      name,
-      rawName: nameCell,
+      name: nameCell,
       price,
       unit,
       isOrganic: attrs.isOrganic,
@@ -48,32 +46,6 @@ function generateId(date: string, name: string): string {
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-|-$/g, '');
   return `${date}-${slug}`;
-}
-
-export function parseProductName(rawName: string): string {
-  let name = rawName.trim();
-
-  // Strip PLU code (4-5 digit number at end)
-  name = name.replace(/\s+\d{4,5}\s*$/, '');
-
-  // Remove trailing attributes (organic, ipm, etc.)
-  name = name
-    .replace(/\s+(organic|ipm|hydroponic)\s*$/i, '')
-    .replace(/\s+(organic|ipm|hydroponic)\s*$/i, ''); // Run twice for combos
-
-  // Normalize hyphen spacing: "Apple- honeycrisp" -> "Apple - Honeycrisp"
-  name = name.replace(/-\s*/g, ' - ').replace(/\s+/g, ' ').trim();
-
-  // Title case
-  name = name
-    .split(' ')
-    .map((word) => {
-      if (word === '-') return word;
-      return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
-    })
-    .join(' ');
-
-  return name;
 }
 
 export function parsePrice(priceStr: string): {

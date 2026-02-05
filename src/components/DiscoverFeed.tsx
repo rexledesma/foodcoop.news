@@ -482,10 +482,10 @@ function ProduceCard({ update, date }: { update: ProduceEvent; date: Date }) {
               <div className="flex flex-wrap gap-1.5">
                 {update.newArrivals.map((item) => (
                   <span
-                    key={item.raw_name}
+                    key={item.name}
                     className="inline-flex items-center gap-1 rounded-full bg-green-100 px-2 py-0.5 text-xs text-green-700 dark:bg-green-900/30 dark:text-green-300"
                   >
-                    {item.raw_name}
+                    {item.name}
                   </span>
                 ))}
               </div>
@@ -496,10 +496,10 @@ function ProduceCard({ update, date }: { update: ProduceEvent; date: Date }) {
               <div className="flex flex-wrap gap-1.5">
                 {update.outOfStock.map((item) => (
                   <span
-                    key={item.raw_name}
+                    key={item.name}
                     className="inline-flex items-center gap-1 rounded-full bg-red-100 px-2 py-0.5 text-xs text-red-700 dark:bg-red-900/30 dark:text-red-300"
                   >
-                    {item.raw_name}
+                    {item.name}
                   </span>
                 ))}
               </div>

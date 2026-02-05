@@ -9,7 +9,6 @@ const PRODUCE_SCHEMA = new ParquetSchema({
   id: { type: 'UTF8' },
   date: { type: 'UTF8' }, // ISO date string
   name: { type: 'UTF8' },
-  raw_name: { type: 'UTF8' },
   price: { type: 'DOUBLE' },
   unit: { type: 'UTF8' },
   is_organic: { type: 'BOOLEAN' },
@@ -24,7 +23,6 @@ interface ParquetRow {
   id: string;
   date: string;
   name: string;
-  raw_name: string;
   price: number;
   unit: string;
   is_organic: boolean;
@@ -40,7 +38,6 @@ function toParquetRow(item: ProduceItem): ParquetRow {
     id: item.id,
     date: item.date,
     name: item.name,
-    raw_name: item.rawName,
     price: item.price,
     unit: item.unit,
     is_organic: item.isOrganic,

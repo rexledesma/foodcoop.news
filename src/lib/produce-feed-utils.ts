@@ -4,7 +4,7 @@ import type { FeedItem } from '@/lib/discover-feed-context';
 
 function toProduceEventItem(row: ProduceRow): ProduceEventItem {
   return {
-    raw_name: row.raw_name,
+    name: row.name,
   };
 }
 
@@ -39,9 +39,9 @@ export function produceRowsToFeedItems(rows: ProduceRow[]): FeedItem[] {
     const arrivals = arrivalsByDate.get(dateStr) || [];
     const unavailable = outOfStockByDate.get(dateStr) || [];
 
-    // Sort alphabetically by raw_name
-    arrivals.sort((a, b) => a.raw_name.localeCompare(b.raw_name));
-    unavailable.sort((a, b) => a.raw_name.localeCompare(b.raw_name));
+    // Sort alphabetically by name
+    arrivals.sort((a, b) => a.name.localeCompare(b.name));
+    unavailable.sort((a, b) => a.name.localeCompare(b.name));
 
     const produceEvent: ProduceEvent = {
       id: dateStr,

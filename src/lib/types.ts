@@ -101,7 +101,7 @@ export interface FoodcoopEvent {
 }
 
 export interface ProduceEventItem {
-  raw_name: string;
+  name: string;
 }
 
 export interface ProduceEvent {
