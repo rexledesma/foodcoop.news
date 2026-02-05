@@ -737,18 +737,75 @@ function Sparkline({ points }: { points?: ProduceHistoryPoint[] }) {
     return { x, y };
   });
 
-  const path = normalized
-    .map((point, index) => `${index === 0 ? 'M' : 'L'} ${point.x.toFixed(2)} ${point.y.toFixed(2)}`)
-    .join(' ');
-
-  const first = values[0];
-  const last = values[values.length - 1];
-  const trendClass =
-    last > first ? 'stroke-red-500' : last < first ? 'stroke-green-500' : 'stroke-zinc-400';
-
   const firstPoint = normalized[0];
   const lastPoint = normalized[normalized.length - 1];
   const prevPoint = normalized.length > 1 ? normalized[normalized.length - 2] : null;
+  const baselineY = firstPoint?.y ?? height / 2 + padding;
+
+  const lineSegments: { d: string; above: boolean }[] = [];
+  const areaSegments: { d: string; above: boolean }[] = [];
+  const side = (point: { y: number }) => (point.y === baselineY ? 0 : point.y < baselineY ? 1 : -1);
+  const formatPoint = (point: { x: number; y: number }) =>
+    `${point.x.toFixed(2)} ${point.y.toFixed(2)}`;
+
+  if (normalized.length > 1) {
+    let currentPoints: { x: number; y: number }[] = [];
+    let currentAbove: boolean | null = null;
+
+    const pushAreaSegment = () => {
+      if (currentAbove === null || currentPoints.length < 2) return;
+      const start = currentPoints[0];
+      const end = currentPoints[currentPoints.length - 1];
+      const line = currentPoints.map((point) => `L ${formatPoint(point)}`).join(' ');
+      const d = `M ${start.x.toFixed(2)} ${baselineY.toFixed(2)} ${line} L ${end.x.toFixed(2)} ${baselineY.toFixed(2)} Z`;
+      areaSegments.push({ d, above: currentAbove });
+    };
+
+    const pushLineSegment = () => {
+      if (currentAbove === null || currentPoints.length < 2) return;
+      const line = currentPoints.map(
+        (point, index) => `${index === 0 ? 'M' : 'L'} ${formatPoint(point)}`,
+      );
+      lineSegments.push({ d: line.join(' '), above: currentAbove });
+    };
+
+    for (let i = 1; i < normalized.length; i += 1) {
+      const prev = normalized[i - 1];
+      const curr = normalized[i];
+      const prevSide = side(prev);
+      const currSide = side(curr);
+
+      if (prevSide === 0 && currSide === 0) {
+        continue;
+      }
+
+      const segmentSide = prevSide !== 0 ? prevSide : currSide;
+      if (currentAbove === null) {
+        currentAbove = segmentSide > 0;
+      }
+      if (currentPoints.length === 0) {
+        currentPoints.push(prev);
+      }
+
+      if (prevSide * currSide === -1) {
+        const t = (baselineY - prev.y) / (curr.y - prev.y);
+        const intersection = {
+          x: prev.x + t * (curr.x - prev.x),
+          y: baselineY,
+        };
+        currentPoints.push(intersection);
+        pushAreaSegment();
+        pushLineSegment();
+        currentPoints = [intersection, curr];
+        currentAbove = currSide > 0;
+      } else {
+        currentPoints.push(curr);
+      }
+    }
+
+    pushAreaSegment();
+    pushLineSegment();
+  }
 
   return (
     <svg
@@ -757,13 +814,24 @@ function Sparkline({ points }: { points?: ProduceHistoryPoint[] }) {
       preserveAspectRatio="xMidYMid meet"
       aria-hidden="true"
     >
-      <path
-        d={path}
-        className={`${trendClass} fill-none`}
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
+      {areaSegments.map((segment, index) => (
+        <path
+          key={`${segment.above ? 'above' : 'below'}-${index}`}
+          d={segment.d}
+          className={segment.above ? 'fill-red-500/20' : 'fill-green-500/20'}
+        />
+      ))}
+      {lineSegments.map((segment, index) => (
+        <path
+          key={`${segment.above ? 'line-above' : 'line-below'}-${index}`}
+          d={segment.d}
+          className={segment.above ? 'stroke-red-500' : 'stroke-green-500'}
+          fill="none"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      ))}
       {firstPoint && (
         <line
           x1={padding}
@@ -780,7 +848,13 @@ function Sparkline({ points }: { points?: ProduceHistoryPoint[] }) {
           cx={prevPoint.x}
           cy={prevPoint.y}
           r="2.25"
-          className={`${trendClass} fill-white`}
+          className={
+            prevPoint.y < baselineY
+              ? 'fill-white stroke-red-500'
+              : prevPoint.y > baselineY
+                ? 'fill-white stroke-green-500'
+                : 'fill-white stroke-zinc-400'
+          }
           strokeWidth="1.5"
         />
       )}
@@ -789,7 +863,13 @@ function Sparkline({ points }: { points?: ProduceHistoryPoint[] }) {
           cx={lastPoint.x}
           cy={lastPoint.y}
           r="2.75"
-          className={`${trendClass} fill-current`}
+          className={
+            lastPoint.y < baselineY
+              ? 'fill-red-500'
+              : lastPoint.y > baselineY
+                ? 'fill-green-500'
+                : 'fill-zinc-400'
+          }
           strokeWidth="0"
         />
       )}
