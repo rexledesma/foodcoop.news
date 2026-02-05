@@ -22,6 +22,14 @@ export interface ProduceRow {
   unavailable_since_date: string | null;
 }
 
+export interface ProduceHistoryPoint {
+  name: string;
+  date: string;
+  price: number;
+}
+
+export type ProduceHistoryMap = Map<string, ProduceHistoryPoint[]>;
+
 interface ProduceMetadata {
   months: {
     month: string;
@@ -33,6 +41,7 @@ interface ProduceMetadata {
 
 interface UseProduceDataResult {
   data: ProduceRow[];
+  history: ProduceHistoryMap;
   isLoading: boolean;
   error: string | null;
 }
@@ -40,6 +49,7 @@ interface UseProduceDataResult {
 export function useProduceData(): UseProduceDataResult {
   const { isReady, isLoading: dbLoading, error: dbError, query, loadParquet } = useDuckDB();
   const [data, setData] = useState<ProduceRow[]>([]);
+  const [history, setHistory] = useState<ProduceHistoryMap>(new Map());
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -208,6 +218,24 @@ export function useProduceData(): UseProduceDataResult {
         `);
 
         setData(results);
+
+        const historyRows = await query<ProduceHistoryPoint>(`
+          WITH latest_date AS (
+            SELECT MAX(date::DATE) as max_date FROM produce
+          )
+          SELECT name, date::DATE as date, price
+          FROM produce, latest_date
+          WHERE date::DATE BETWEEN max_date - INTERVAL '30 days' AND max_date
+          ORDER BY name, date::DATE
+        `);
+
+        const historyMap = new Map<string, ProduceHistoryPoint[]>();
+        for (const row of historyRows) {
+          const existing = historyMap.get(row.name) ?? [];
+          existing.push(row);
+          historyMap.set(row.name, existing);
+        }
+        setHistory(historyMap);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to load data');
       } finally {
@@ -221,5 +249,5 @@ export function useProduceData(): UseProduceDataResult {
   const isLoading = dbLoading || loading;
   const combinedError = dbError?.message || error;
 
-  return { data, isLoading, error: combinedError };
+  return { data, history, isLoading, error: combinedError };
 }

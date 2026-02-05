@@ -9,7 +9,7 @@ const ProduceAnalytics = dynamic(
 );
 
 export function ProducePageClient() {
-  const { data, isLoading, error } = useProduceDataContext();
+  const { data, history, isLoading, error } = useProduceDataContext();
 
-  return <ProduceAnalytics data={data} isLoading={isLoading} error={error} />;
+  return <ProduceAnalytics data={data} history={history} isLoading={isLoading} error={error} />;
 }

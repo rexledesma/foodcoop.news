@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import type { ProduceRow } from '@/lib/use-produce-data';
+import type { ProduceHistoryMap, ProduceHistoryPoint, ProduceRow } from '@/lib/use-produce-data';
 
 type SortField =
   | 'name'
@@ -16,6 +16,7 @@ type SortDirection = 'asc' | 'desc' | null;
 
 interface ProduceAnalyticsProps {
   data: ProduceRow[];
+  history: ProduceHistoryMap;
   isLoading?: boolean;
   error?: string | null;
 }
@@ -40,7 +41,12 @@ const PRIMARY_PRICE_COL_CLASS =
 const NAME_COL_CLASS =
   'w-[var(--name-col)] min-w-[var(--name-col)] max-w-[var(--name-col)] md:w-2/5 md:min-w-0 md:max-w-none';
 
-export function ProduceAnalytics({ data, isLoading = false, error = null }: ProduceAnalyticsProps) {
+export function ProduceAnalytics({
+  data,
+  history,
+  isLoading = false,
+  error = null,
+}: ProduceAnalyticsProps) {
   const [search, setSearch] = useState('');
   const [sortField, setSortField] = useState<SortField | null>('name');
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
@@ -561,6 +567,9 @@ export function ProduceAnalytics({ data, isLoading = false, error = null }: Prod
                         )}
                       </div>
                       <div className="text-xs text-zinc-500 dark:text-zinc-400">/{row.unit}</div>
+                      <div className="mt-1">
+                        <Sparkline points={history.get(row.name)} />
+                      </div>
                     </td>
                     <AbsoluteChangeCell current={row.price} previous={row.prev_day_price} />
                     <PercentChangeCell current={row.price} previous={row.prev_day_price} />
@@ -703,6 +712,51 @@ function PercentChangeCell({ current, previous }: { current: number; previous: n
       {sign}
       {Math.abs(roundedPct).toFixed(1)}%
     </td>
+  );
+}
+
+function Sparkline({ points }: { points?: ProduceHistoryPoint[] }) {
+  if (!points || points.length === 0) {
+    return <div className="h-4 text-[10px] text-zinc-400">—</div>;
+  }
+
+  const width = 100;
+  const height = 24;
+  const values = points.map((point) => point.price);
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  const range = max - min;
+
+  const normalized = points.map((point, index) => {
+    const x = points.length === 1 ? width / 2 : (index / (points.length - 1)) * width;
+    const y = range === 0 ? height / 2 : height - ((point.price - min) / range) * height;
+    return { x, y };
+  });
+
+  const path = normalized
+    .map((point, index) => `${index === 0 ? 'M' : 'L'} ${point.x.toFixed(2)} ${point.y.toFixed(2)}`)
+    .join(' ');
+
+  const first = values[0];
+  const last = values[values.length - 1];
+  const trendClass =
+    last > first ? 'stroke-red-500' : last < first ? 'stroke-green-500' : 'stroke-zinc-400';
+
+  return (
+    <svg
+      viewBox={`0 0 ${width} ${height}`}
+      className="h-4 w-full"
+      preserveAspectRatio="none"
+      aria-hidden="true"
+    >
+      <path
+        d={path}
+        className={`${trendClass} fill-none`}
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
   );
 }
 

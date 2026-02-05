@@ -1,10 +1,11 @@
 'use client';
 
 import { createContext, useContext } from 'react';
-import type { ProduceRow } from '@/lib/use-produce-data';
+import type { ProduceHistoryMap, ProduceRow } from '@/lib/use-produce-data';
 
 export interface ProduceDataState {
   data: ProduceRow[];
+  history: ProduceHistoryMap;
   isLoading: boolean;
   error: string | null;
 }
