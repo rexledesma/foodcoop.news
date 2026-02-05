@@ -724,14 +724,16 @@ function Sparkline({ points }: { points?: ProduceHistoryPoint[] }) {
 
   const width = 100;
   const height = 24;
+  const padding = 3;
   const values = points.map((point) => point.price);
   const min = Math.min(...values);
   const max = Math.max(...values);
   const range = max - min;
 
   const normalized = points.map((point, index) => {
-    const x = points.length === 1 ? width / 2 : (index / (points.length - 1)) * width;
-    const y = range === 0 ? height / 2 : height - ((point.price - min) / range) * height;
+    const x = (points.length === 1 ? width / 2 : (index / (points.length - 1)) * width) + padding;
+    const y =
+      (range === 0 ? height / 2 : height - ((point.price - min) / range) * height) + padding;
     return { x, y };
   });
 
@@ -744,11 +746,15 @@ function Sparkline({ points }: { points?: ProduceHistoryPoint[] }) {
   const trendClass =
     last > first ? 'stroke-red-500' : last < first ? 'stroke-green-500' : 'stroke-zinc-400';
 
+  const firstPoint = normalized[0];
+  const lastPoint = normalized[normalized.length - 1];
+  const prevPoint = normalized.length > 1 ? normalized[normalized.length - 2] : null;
+
   return (
     <svg
-      viewBox={`0 0 ${width} ${height}`}
-      className="h-4 w-full"
-      preserveAspectRatio="none"
+      viewBox={`0 0 ${width + padding * 2} ${height + padding * 2}`}
+      className="h-6 w-full"
+      preserveAspectRatio="xMidYMid meet"
       aria-hidden="true"
     >
       <path
@@ -758,6 +764,35 @@ function Sparkline({ points }: { points?: ProduceHistoryPoint[] }) {
         strokeLinecap="round"
         strokeLinejoin="round"
       />
+      {firstPoint && (
+        <line
+          x1={padding}
+          x2={width + padding}
+          y1={firstPoint.y}
+          y2={firstPoint.y}
+          className="stroke-black"
+          strokeWidth="1"
+          strokeDasharray="3 3"
+        />
+      )}
+      {prevPoint && (
+        <circle
+          cx={prevPoint.x}
+          cy={prevPoint.y}
+          r="2.25"
+          className={`${trendClass} fill-white`}
+          strokeWidth="1.5"
+        />
+      )}
+      {lastPoint && (
+        <circle
+          cx={lastPoint.x}
+          cy={lastPoint.y}
+          r="2.75"
+          className={`${trendClass} fill-current`}
+          strokeWidth="0"
+        />
+      )}
     </svg>
   );
 }
