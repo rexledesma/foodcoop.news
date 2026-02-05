@@ -590,7 +590,7 @@ export function DiscoverFeed() {
   return (
     <div className="space-y-4">
       <div className="space-y-3">
-        <div className="flex gap-2 overflow-x-auto">
+        <div className="flex flex-wrap gap-2">
           {FILTER_OPTIONS.filter((option) => ['latest', 'upcoming'].includes(option.value)).map(
             (option) => (
               <button
@@ -608,7 +608,7 @@ export function DiscoverFeed() {
             ),
           )}
         </div>
-        <div className="flex gap-2 overflow-x-auto pb-2">
+        <div className="flex flex-wrap gap-2">
           {FILTER_OPTIONS.filter((option) => !['latest', 'upcoming'].includes(option.value)).map(
             (option) => (
               <button
