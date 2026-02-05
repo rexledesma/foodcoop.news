@@ -1,5 +1,5 @@
 import * as cheerio from 'cheerio';
-import type { ProduceItem, ProduceUnit, ParsedProducePage } from './produce-types';
+import type { ProduceItem, ProduceUnit, ParsedProducePage } from './types';
 
 export function parseProduceHtml(html: string, date: string): ParsedProducePage {
   const $ = cheerio.load(html);

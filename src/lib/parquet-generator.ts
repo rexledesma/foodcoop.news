@@ -3,7 +3,7 @@ import { randomUUID } from 'crypto';
 import { readFile, unlink } from 'fs/promises';
 import { tmpdir } from 'os';
 import { join } from 'path';
-import type { ProduceItem } from './produce-types';
+import type { ProduceItem } from './types';
 
 const PRODUCE_SCHEMA = new ParquetSchema({
   id: { type: 'UTF8' },

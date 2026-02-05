@@ -1,7 +1,7 @@
 import { list, put } from '@vercel/blob';
 import { parseProduceHtml } from '@/lib/produce-parser';
 import { generateParquetBuffer } from '@/lib/parquet-generator';
-import type { ProduceItem } from '@/lib/produce-types';
+import type { ProduceItem } from '@/lib/types';
 
 export async function regenerateMonthParquet(month: string): Promise<{
   url: string;
