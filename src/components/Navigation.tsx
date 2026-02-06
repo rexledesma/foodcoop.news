@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useQuery } from 'convex/react';
@@ -16,40 +16,6 @@ const navItems = [
     icon: 'gear',
   },
 ];
-
-type CoopStatus = 'open' | 'closing-soon' | 'closed';
-
-function getCoopStatus(date: Date): CoopStatus {
-  // Get current time in EST/EDT
-  const estOptions = { timeZone: 'America/New_York' };
-  const estString = date.toLocaleString('en-US', estOptions);
-  const estDate = new Date(estString);
-
-  const dayOfWeek = estDate.getDay(); // 0 = Sunday, 1 = Monday, etc.
-  const hour = estDate.getHours();
-
-  // Sunday: 8am - 8pm, closing soon at 7pm
-  if (dayOfWeek === 0) {
-    if (hour >= 19 && hour < 20) return 'closing-soon';
-    if (hour >= 8 && hour < 20) return 'open';
-    return 'closed';
-  }
-
-  // Monday - Saturday: 8am - 9pm, closing soon at 8pm
-  if (hour >= 20 && hour < 21) return 'closing-soon';
-  if (hour >= 8 && hour < 21) return 'open';
-  return 'closed';
-}
-
-function formatTimeEST(date: Date): string {
-  return date.toLocaleTimeString('en-US', {
-    timeZone: 'America/New_York',
-    hour: 'numeric',
-    minute: '2-digit',
-    hour12: true,
-    timeZoneName: 'short',
-  });
-}
 
 function NavIcon({ icon }: { icon: string }) {
   switch (icon) {
@@ -72,26 +38,6 @@ export function Navigation() {
   const memberProfile = useQuery(api.memberProfiles.getMemberProfile);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
-  const [timeDisplay, setTimeDisplay] = useState<{
-    time: string;
-    status: CoopStatus;
-  } | null>(null);
-
-  // Update time display every second
-  useEffect(() => {
-    function updateTime() {
-      const now = new Date();
-      setTimeDisplay({
-        time: formatTimeEST(now),
-        status: getCoopStatus(now),
-      });
-    }
-
-    updateTime(); // Initial update
-    const interval = setInterval(updateTime, 1000); // Update every second for smooth transitions
-
-    return () => clearInterval(interval);
-  }, []);
 
   const handleSignOut = async () => {
     await signOut();
@@ -126,29 +72,13 @@ export function Navigation() {
                 }`}
               >
                 <NavIcon icon={item.icon} />
-                <span className="hidden text-sm font-medium md:inline">{item.label}</span>
+                <span className="text-sm font-medium">{item.label}</span>
               </Link>
             );
           })}
         </div>
 
         <div className="relative flex items-center gap-2" ref={dropdownRef}>
-          {timeDisplay && (
-            <div className="cursor-default text-sm text-zinc-500 dark:text-zinc-400">
-              <span>
-                {timeDisplay.status === 'open' && '✨'}
-                {timeDisplay.status === 'closing-soon' && '⏳'}
-                {timeDisplay.status === 'closed' && '🔒'}
-              </span>{' '}
-              <span>
-                {timeDisplay.status === 'open' && 'Open'}
-                {timeDisplay.status === 'closing-soon' && 'Closing Soon'}
-                {timeDisplay.status === 'closed' && 'Closed'}
-              </span>{' '}
-              <span className="text-zinc-400 dark:text-zinc-500">·</span>{' '}
-              <span>{timeDisplay.time}</span>
-            </div>
-          )}
           {isPending ? (
             <div className="h-8 w-8 md:h-auto md:w-auto md:px-4 md:py-2" />
           ) : session?.user ? (
