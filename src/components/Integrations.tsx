@@ -486,224 +486,230 @@ export function Integrations() {
   }
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-6">
-      <h1 className="mb-6 text-2xl font-bold text-zinc-900 dark:text-zinc-100">Integrations</h1>
+    <div>
+      <div className="sticky top-24 z-20 bg-white md:top-14 dark:bg-zinc-900">
+        <h1 className="mx-auto max-w-3xl px-4 pt-6 pb-6 text-2xl font-bold text-zinc-900 dark:text-zinc-100">
+          Integrations
+        </h1>
+      </div>
 
-      {!session?.user && !sessionPending && (
-        <div className="mb-6 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-          <Link
-            href="/signup?reason=integrations"
-            className="font-semibold underline underline-offset-4"
-          >
-            Create an account
-          </Link>{' '}
-          to save changes, add wallet passes, and subscribe to the shift calendar.
-        </div>
-      )}
+      <div className="mx-auto max-w-3xl px-4 pb-6">
+        {!session?.user && !sessionPending && (
+          <div className="mb-6 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+            <Link
+              href="/signup?reason=integrations"
+              className="font-semibold underline underline-offset-4"
+            >
+              Create an account
+            </Link>{' '}
+            to save changes, add wallet passes, and subscribe to the shift calendar.
+          </div>
+        )}
 
-      <form onSubmit={handleSave} className="space-y-6">
-        <section className="space-y-4">
-          <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">Profile</h2>
-          <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
-            Edit your unofficial member card.
-          </p>
-          <AppleWalletCard
-            memberName={fullName}
-            memberId={memberId}
-            onMemberNameChange={setFullName}
-            onMemberIdChange={(value) => setMemberId(value.replace(/\D/g, ''))}
-          />
-        </section>
+        <form onSubmit={handleSave} className="space-y-6">
+          <section className="space-y-4">
+            <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">Profile</h2>
+            <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
+              Edit your unofficial member card.
+            </p>
+            <AppleWalletCard
+              memberName={fullName}
+              memberId={memberId}
+              onMemberNameChange={setFullName}
+              onMemberIdChange={(value) => setMemberId(value.replace(/\D/g, ''))}
+            />
+          </section>
 
-        <div className="flex gap-2">
-          <button
-            type="submit"
-            disabled={isSaving}
-            className="rounded-lg bg-green-600 px-4 py-1.5 text-sm font-medium text-white transition-colors hover:bg-green-700 disabled:bg-green-400 disabled:opacity-60"
-          >
-            {isSaving ? 'Saving...' : 'Save'}
-          </button>
-          <button
-            type="button"
-            onClick={handleAddToWallet}
-            disabled={isGeneratingPass || !memberId || !fullName}
-            className="transition-opacity hover:opacity-80 disabled:opacity-40"
-          >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/apple-wallet.svg" alt="Add to Apple Wallet" className="h-[34px]" />
-          </button>
-          <button
-            type="button"
-            onClick={handleAddToGoogleWallet}
-            disabled={isGeneratingGooglePass || !memberId || !fullName}
-            className="transition-opacity hover:opacity-80 disabled:opacity-40"
-          >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/google-wallet.svg" alt="Add to Google Wallet" className="h-[34px]" />
-          </button>
-        </div>
-      </form>
-
-      <section className="mt-10">
-        <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">Calendar</h2>
-        <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
-          Link your account to your calendar to view your prospective shifts.
-        </p>
-
-        <div className="mt-6 rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-700 dark:bg-zinc-900">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <h3 className="text-base font-semibold text-zinc-900 dark:text-zinc-100">
-                Shift Calendar Syncing
-              </h3>
-              <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
-                Sync the shift calendar with your Google, Outlook, or Apple calendar.
-              </p>
-            </div>
+          <div className="flex gap-2">
+            <button
+              type="submit"
+              disabled={isSaving}
+              className="rounded-lg bg-green-600 px-4 py-1.5 text-sm font-medium text-white transition-colors hover:bg-green-700 disabled:bg-green-400 disabled:opacity-60"
+            >
+              {isSaving ? 'Saving...' : 'Save'}
+            </button>
             <button
               type="button"
-              onClick={handleOpenCalendarModal}
-              className="rounded-xl bg-green-600 px-4 py-2 font-medium text-white transition-colors hover:bg-green-700"
+              onClick={handleAddToWallet}
+              disabled={isGeneratingPass || !memberId || !fullName}
+              className="transition-opacity hover:opacity-80 disabled:opacity-40"
             >
-              Add iCal subscription
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/apple-wallet.svg" alt="Add to Apple Wallet" className="h-[34px]" />
+            </button>
+            <button
+              type="button"
+              onClick={handleAddToGoogleWallet}
+              disabled={isGeneratingGooglePass || !memberId || !fullName}
+              className="transition-opacity hover:opacity-80 disabled:opacity-40"
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/google-wallet.svg" alt="Add to Google Wallet" className="h-[34px]" />
             </button>
           </div>
+        </form>
 
-          <div className="mt-6 space-y-3">
-            <div className="space-y-1">
-              <h3 className="text-base font-semibold text-zinc-900 dark:text-zinc-100">
-                Selected Shifts
-              </h3>
-              <p className="text-sm text-zinc-600 dark:text-zinc-400">
-                Filter the shift calendar for your preferred shifts.
-              </p>
+        <section className="mt-10">
+          <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">Calendar</h2>
+          <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
+            Link your account to your calendar to view your prospective shifts.
+          </p>
+
+          <div className="mt-6 rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-700 dark:bg-zinc-900">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <h3 className="text-base font-semibold text-zinc-900 dark:text-zinc-100">
+                  Shift Calendar Syncing
+                </h3>
+                <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
+                  Sync the shift calendar with your Google, Outlook, or Apple calendar.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={handleOpenCalendarModal}
+                className="rounded-xl bg-green-600 px-4 py-2 font-medium text-white transition-colors hover:bg-green-700"
+              >
+                Add iCal subscription
+              </button>
             </div>
-            <div className="relative">
-              <input
-                type="text"
-                value={jobSearch}
-                onChange={(event) => {
-                  setJobSearch(event.target.value);
-                  setIsJobDropdownOpen(true);
-                }}
-                onFocus={() => setIsJobDropdownOpen(true)}
-                onBlur={() => {
-                  window.setTimeout(() => setIsJobDropdownOpen(false), 150);
-                }}
-                onKeyDown={(event: React.KeyboardEvent<HTMLInputElement>) => {
-                  if (event.key === 'ArrowDown') {
-                    event.preventDefault();
-                    setIsJobDropdownOpen(true);
-                    if (filteredJobOptions.length === 0) {
-                      return;
-                    }
-                    setHighlightedJobIndex((previous) =>
-                      previous < filteredJobOptions.length - 1 ? previous + 1 : 0,
-                    );
-                    return;
-                  }
 
-                  if (event.key === 'ArrowUp') {
-                    event.preventDefault();
+            <div className="mt-6 space-y-3">
+              <div className="space-y-1">
+                <h3 className="text-base font-semibold text-zinc-900 dark:text-zinc-100">
+                  Selected Shifts
+                </h3>
+                <p className="text-sm text-zinc-600 dark:text-zinc-400">
+                  Filter the shift calendar for your preferred shifts.
+                </p>
+              </div>
+              <div className="relative">
+                <input
+                  type="text"
+                  value={jobSearch}
+                  onChange={(event) => {
+                    setJobSearch(event.target.value);
                     setIsJobDropdownOpen(true);
-                    if (filteredJobOptions.length === 0) {
-                      return;
-                    }
-                    setHighlightedJobIndex((previous) =>
-                      previous > 0 ? previous - 1 : filteredJobOptions.length - 1,
-                    );
-                    return;
-                  }
-
-                  if (event.key === 'Enter') {
-                    if (!isJobDropdownOpen) {
+                  }}
+                  onFocus={() => setIsJobDropdownOpen(true)}
+                  onBlur={() => {
+                    window.setTimeout(() => setIsJobDropdownOpen(false), 150);
+                  }}
+                  onKeyDown={(event: React.KeyboardEvent<HTMLInputElement>) => {
+                    if (event.key === 'ArrowDown') {
+                      event.preventDefault();
                       setIsJobDropdownOpen(true);
+                      if (filteredJobOptions.length === 0) {
+                        return;
+                      }
+                      setHighlightedJobIndex((previous) =>
+                        previous < filteredJobOptions.length - 1 ? previous + 1 : 0,
+                      );
                       return;
                     }
-                    if (filteredJobOptions.length === 0) {
-                      return;
-                    }
-                    event.preventDefault();
-                    const job = filteredJobOptions[Math.max(highlightedJobIndex, 0)];
-                    if (job) {
-                      toggleJob(job);
-                    }
-                    return;
-                  }
 
-                  if (event.key === 'Escape') {
-                    setIsJobDropdownOpen(false);
-                  }
-                }}
-                placeholder="Search jobs"
-                className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 shadow-sm focus:ring-2 focus:ring-green-500 focus:outline-none dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100 dark:focus:ring-green-400"
-              />
-              {isJobDropdownOpen && (
-                <div className="absolute z-10 mt-2 w-full rounded-xl border border-zinc-200 bg-white shadow-lg dark:border-zinc-700 dark:bg-zinc-900">
-                  <div className="max-h-48 overflow-y-auto">
-                    {filteredJobOptions.length > 0 ? (
-                      filteredJobOptions.map((job, index) => {
-                        const isSelected = selectedJobs.includes(job);
-                        const isHighlighted = index === highlightedJobIndex;
-                        return (
-                          <button
-                            key={job}
-                            ref={(element) => {
-                              jobOptionRefs.current[job] = element;
-                            }}
-                            type="button"
-                            onClick={() => toggleJob(job)}
-                            onMouseEnter={() => setHighlightedJobIndex(index)}
-                            className={`flex w-full items-center justify-between px-3 py-2 text-left text-sm transition-colors ${
-                              isSelected
-                                ? 'bg-green-50 text-green-700 dark:bg-green-500/20 dark:text-green-200'
-                                : 'text-zinc-700 hover:bg-zinc-100 dark:text-zinc-200 dark:hover:bg-zinc-800'
-                            } ${
-                              isHighlighted && !isSelected ? 'bg-zinc-100 dark:bg-zinc-800' : ''
-                            }`}
-                          >
-                            <span>{job}</span>
-                            {isSelected && <span className="text-xs">Selected</span>}
-                          </button>
-                        );
-                      })
-                    ) : (
-                      <div className="px-3 py-2 text-sm text-zinc-500 dark:text-zinc-400">
-                        No matching jobs.
-                      </div>
-                    )}
+                    if (event.key === 'ArrowUp') {
+                      event.preventDefault();
+                      setIsJobDropdownOpen(true);
+                      if (filteredJobOptions.length === 0) {
+                        return;
+                      }
+                      setHighlightedJobIndex((previous) =>
+                        previous > 0 ? previous - 1 : filteredJobOptions.length - 1,
+                      );
+                      return;
+                    }
+
+                    if (event.key === 'Enter') {
+                      if (!isJobDropdownOpen) {
+                        setIsJobDropdownOpen(true);
+                        return;
+                      }
+                      if (filteredJobOptions.length === 0) {
+                        return;
+                      }
+                      event.preventDefault();
+                      const job = filteredJobOptions[Math.max(highlightedJobIndex, 0)];
+                      if (job) {
+                        toggleJob(job);
+                      }
+                      return;
+                    }
+
+                    if (event.key === 'Escape') {
+                      setIsJobDropdownOpen(false);
+                    }
+                  }}
+                  placeholder="Search jobs"
+                  className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 shadow-sm focus:ring-2 focus:ring-green-500 focus:outline-none dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100 dark:focus:ring-green-400"
+                />
+                {isJobDropdownOpen && (
+                  <div className="absolute z-10 mt-2 w-full rounded-xl border border-zinc-200 bg-white shadow-lg dark:border-zinc-700 dark:bg-zinc-900">
+                    <div className="max-h-48 overflow-y-auto">
+                      {filteredJobOptions.length > 0 ? (
+                        filteredJobOptions.map((job, index) => {
+                          const isSelected = selectedJobs.includes(job);
+                          const isHighlighted = index === highlightedJobIndex;
+                          return (
+                            <button
+                              key={job}
+                              ref={(element) => {
+                                jobOptionRefs.current[job] = element;
+                              }}
+                              type="button"
+                              onClick={() => toggleJob(job)}
+                              onMouseEnter={() => setHighlightedJobIndex(index)}
+                              className={`flex w-full items-center justify-between px-3 py-2 text-left text-sm transition-colors ${
+                                isSelected
+                                  ? 'bg-green-50 text-green-700 dark:bg-green-500/20 dark:text-green-200'
+                                  : 'text-zinc-700 hover:bg-zinc-100 dark:text-zinc-200 dark:hover:bg-zinc-800'
+                              } ${
+                                isHighlighted && !isSelected ? 'bg-zinc-100 dark:bg-zinc-800' : ''
+                              }`}
+                            >
+                              <span>{job}</span>
+                              {isSelected && <span className="text-xs">Selected</span>}
+                            </button>
+                          );
+                        })
+                      ) : (
+                        <div className="px-3 py-2 text-sm text-zinc-500 dark:text-zinc-400">
+                          No matching jobs.
+                        </div>
+                      )}
+                    </div>
                   </div>
-                </div>
-              )}
-            </div>
+                )}
+              </div>
 
-            <div className="flex flex-wrap gap-2">
-              {selectedJobs.length > 0 ? (
-                selectedJobs.map((job) => (
-                  <span
-                    key={job}
-                    className="group inline-flex items-center gap-2 rounded-full bg-zinc-100 px-3 py-1 text-xs font-medium text-zinc-700 transition-colors hover:bg-red-50 hover:text-red-700 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-red-500/20 dark:hover:text-red-200"
-                  >
-                    {job}
-                    <button
-                      type="button"
-                      onClick={() => removeJob(job)}
-                      className="text-xs font-semibold text-zinc-400 transition-colors group-hover:text-red-600 dark:text-zinc-400 dark:group-hover:text-red-200"
-                      aria-label={`Remove ${job}`}
+              <div className="flex flex-wrap gap-2">
+                {selectedJobs.length > 0 ? (
+                  selectedJobs.map((job) => (
+                    <span
+                      key={job}
+                      className="group inline-flex items-center gap-2 rounded-full bg-zinc-100 px-3 py-1 text-xs font-medium text-zinc-700 transition-colors hover:bg-red-50 hover:text-red-700 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-red-500/20 dark:hover:text-red-200"
                     >
-                      ×
-                    </button>
+                      {job}
+                      <button
+                        type="button"
+                        onClick={() => removeJob(job)}
+                        className="text-xs font-semibold text-zinc-400 transition-colors group-hover:text-red-600 dark:text-zinc-400 dark:group-hover:text-red-200"
+                        aria-label={`Remove ${job}`}
+                      >
+                        ×
+                      </button>
+                    </span>
+                  ))
+                ) : (
+                  <span className="text-sm text-zinc-500 dark:text-zinc-400">
+                    All shifts included.
                   </span>
-                ))
-              ) : (
-                <span className="text-sm text-zinc-500 dark:text-zinc-400">
-                  All shifts included.
-                </span>
-              )}
+                )}
+              </div>
             </div>
           </div>
-        </div>
-      </section>
+        </section>
+      </div>
 
       {isCalendarModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
