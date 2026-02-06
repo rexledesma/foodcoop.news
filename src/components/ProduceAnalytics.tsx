@@ -580,30 +580,34 @@ function MetricsCell({ row, period }: { row: ProduceRow; period: TimePeriod }) {
   const sign = isPositive ? '+' : isNegative ? '-' : '\u2007';
 
   return (
-    <td className={`p-2 ${DATA_COL_CLASS} box-border text-xs`}>
-      <div className="flex items-baseline gap-2">
-        <span className="w-12 shrink-0 text-zinc-500 dark:text-zinc-400">% Diff</span>
-        <span className={`font-mono ${colorClass}`}>
+    <td className={`p-2 ${DATA_COL_CLASS} box-border text-xs tabular-nums`}>
+      <div className="flex items-baseline gap-2 rounded bg-transparent px-1">
+        <span className="w-10 shrink-0 text-zinc-500 dark:text-zinc-400">% Diff</span>
+        <span className={`w-20 text-right font-mono ${colorClass}`}>
           {sign}
           {Math.abs(roundedPct).toFixed(1)}%
         </span>
       </div>
-      <div className="flex items-baseline gap-2">
-        <span className="w-12 shrink-0 text-zinc-500 dark:text-zinc-400">$ Diff</span>
-        <span className={`font-mono ${colorClass}`}>
+      <div className="flex items-baseline gap-2 rounded bg-transparent px-1">
+        <span className="w-10 shrink-0 text-zinc-500 dark:text-zinc-400">$ Diff</span>
+        <span className={`w-20 text-right font-mono ${colorClass}`}>
           {sign}${Math.abs(change).toFixed(2)}
         </span>
       </div>
-      <div className="flex items-baseline gap-2">
-        <span className="w-12 shrink-0 text-zinc-500 dark:text-zinc-400">High</span>
-        <span className="font-mono text-zinc-900 dark:text-zinc-100">
-          {high !== null ? `\u2007$${high.toFixed(2)}` : '\u2007—'}
+      <div
+        className={`flex items-baseline gap-2 rounded px-1 ${high !== null && row.price === high && row.price !== low ? 'bg-red-100 text-zinc-900 dark:bg-red-900/40 dark:text-zinc-100' : 'bg-transparent text-zinc-500'}`}
+      >
+        <span className="w-10 shrink-0">High</span>
+        <span className="w-20 text-right font-mono">
+          {high !== null ? `$${high.toFixed(2)}` : '—'}
         </span>
       </div>
-      <div className="flex items-baseline gap-2">
-        <span className="w-12 shrink-0 text-zinc-500 dark:text-zinc-400">Low</span>
-        <span className="font-mono text-zinc-900 dark:text-zinc-100">
-          {low !== null ? `\u2007$${low.toFixed(2)}` : '\u2007—'}
+      <div
+        className={`flex items-baseline gap-2 rounded px-1 ${low !== null && row.price === low ? 'bg-green-100 text-zinc-900 dark:bg-green-900/40 dark:text-zinc-100' : 'bg-transparent text-zinc-500'}`}
+      >
+        <span className="w-10 shrink-0">Low</span>
+        <span className="w-20 text-right font-mono">
+          {low !== null ? `$${low.toFixed(2)}` : '—'}
         </span>
       </div>
     </td>
