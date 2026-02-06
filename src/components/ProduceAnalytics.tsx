@@ -578,7 +578,11 @@ export function ProduceAnalytics({
                       </div>
                       <div className="text-xs text-zinc-500 dark:text-zinc-400">/{row.unit}</div>
                       <div className="mt-1">
-                        <Sparkline points={history.get(row.name)} dateRange={dateRange} />
+                        <Sparkline
+                          points={history.get(row.name)}
+                          dateRange={dateRange}
+                          timePeriod={timePeriod}
+                        />
                       </div>
                     </td>
                     <MetricsCell row={row} period={timePeriod} />
@@ -712,9 +716,11 @@ type PositionY = 'above' | 'baseline' | 'below';
 function Sparkline({
   points,
   dateRange,
+  timePeriod,
 }: {
   points?: ProduceHistoryPoint[];
   dateRange: ProduceDateRange | null;
+  timePeriod: TimePeriod;
 }) {
   if (!points || points.length === 0) {
     return <div className="h-4 text-[10px] text-zinc-400">—</div>;
@@ -746,8 +752,37 @@ function Sparkline({
 
   const firstPoint = normalized[0];
   const lastPoint = normalized[normalized.length - 1];
-  const prevPoint = normalized.length > 1 ? normalized[normalized.length - 2] : null;
   const baselineY = firstPoint?.y ?? height / 2 + padding;
+
+  // Compute period start boundary
+  const periodStartMs =
+    timePeriod === '1D'
+      ? endMs - 1 * 24 * 60 * 60 * 1000
+      : timePeriod === '1W'
+        ? endMs - 7 * 24 * 60 * 60 * 1000
+        : startMs;
+  const periodStartX =
+    (totalMs === 0 ? width / 2 : ((periodStartMs - startMs) / totalMs) * width) + padding;
+
+  // Find the period start data point
+  const periodStartPoint = (() => {
+    if (normalized.length < 2) return null;
+    if (timePeriod === '1D') return normalized[normalized.length - 2];
+    if (timePeriod === '1M') return normalized[0];
+    // 1W: find closest point to periodStartMs
+    let closest = normalized[0];
+    let closestDist = Infinity;
+    for (const point of points) {
+      const pointMs = new Date(point.date + 'T00:00:00').getTime();
+      const dist = Math.abs(pointMs - periodStartMs);
+      const normPoint = normalized[points.indexOf(point)];
+      if (dist < closestDist) {
+        closestDist = dist;
+        closest = normPoint;
+      }
+    }
+    return closest;
+  })();
 
   const lineSegments: { d: string; position: PositionY }[] = [];
   const areaSegments: { d: string; position: PositionY }[] = [];
@@ -868,17 +903,26 @@ function Sparkline({
           strokeDasharray="3 3"
         />
       )}
-      {prevPoint && (
+      {timePeriod !== '1M' && (
+        <rect
+          x={padding}
+          y={0}
+          width={Math.max(0, periodStartX - padding)}
+          height={height + padding * 2}
+          className="fill-white/60 dark:fill-zinc-900/60"
+        />
+      )}
+      {periodStartPoint && (
         <circle
-          cx={prevPoint.x}
-          cy={prevPoint.y}
+          cx={periodStartPoint.x}
+          cy={periodStartPoint.y}
           r="2.25"
           className={
             {
               above: 'fill-white stroke-red-500',
               below: 'fill-white stroke-green-500',
               baseline: 'fill-white stroke-zinc-400',
-            }[positionY(prevPoint)]
+            }[positionY(periodStartPoint)]
           }
           strokeWidth="1.5"
         />
