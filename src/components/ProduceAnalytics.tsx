@@ -33,9 +33,8 @@ type QuickFilter =
   | 'waxed'
   | null;
 
-const NAME_COL_CLASS =
-  'w-[var(--name-col)] min-w-[var(--name-col)] max-w-[var(--name-col)] md:w-2/5 md:min-w-0 md:max-w-none';
-const DATA_COL_CLASS = 'md:w-auto md:min-w-0 md:max-w-none';
+const NAME_COL_CLASS = 'w-1/3 min-w-[33.333%] max-w-[33.333%] md:w-2/5 md:min-w-0 md:max-w-none';
+const DATA_COL_CLASS = 'w-1/3 min-w-[33.333%] max-w-[33.333%] md:w-auto md:min-w-0 md:max-w-none';
 
 const TIME_PERIODS: TimePeriod[] = ['1D', '1W', '1M'];
 const PERIOD_LABELS: Record<TimePeriod, string> = { '1D': 'Day', '1W': 'Week', '1M': 'Month' };
@@ -440,34 +439,38 @@ export function ProduceAnalytics({
                     className="border-b border-zinc-100 hover:bg-zinc-50 dark:border-zinc-800/50 dark:hover:bg-zinc-800/50"
                   >
                     <td
-                      className={`h-24 py-3 pr-4 ${NAME_COL_CLASS} sticky left-0 z-10 box-border border-r border-zinc-200 bg-white md:w-auto md:border-r-0 dark:border-zinc-700 dark:bg-zinc-900`}
+                      className={`${NAME_COL_CLASS} sticky left-0 z-10 box-border border-r border-zinc-200 bg-white p-0 md:w-auto md:border-r-0 dark:border-zinc-700 dark:bg-zinc-900`}
                     >
-                      <div className="flex items-center gap-2">
-                        <button
-                          type="button"
-                          aria-pressed={favorites.has(row.name)}
-                          aria-label={`${
-                            favorites.has(row.name) ? 'Remove from' : 'Add to'
-                          } favorites for ${row.name}`}
-                          onClick={() =>
-                            setFavorites((previous) => {
-                              const next = new Set(previous);
-                              if (next.has(row.name)) {
-                                next.delete(row.name);
-                              } else {
-                                next.add(row.name);
-                              }
-                              return next;
-                            })
-                          }
-                          className={`flex h-5 w-5 shrink-0 items-center justify-center rounded border text-[12px] font-bold transition-colors ${
-                            favorites.has(row.name)
-                              ? 'border-amber-400 bg-amber-100 text-amber-700 dark:border-amber-400/60 dark:bg-amber-900/40 dark:text-amber-300'
-                              : 'border-zinc-300 text-zinc-500 hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-400 dark:hover:bg-zinc-800'
-                          }`}
-                        >
-                          {favorites.has(row.name) ? '⭐' : '+'}
-                        </button>
+                      <button
+                        type="button"
+                        aria-pressed={favorites.has(row.name)}
+                        aria-label={`${
+                          favorites.has(row.name) ? 'Remove from' : 'Add to'
+                        } favorites for ${row.name}`}
+                        onClick={() =>
+                          setFavorites((previous) => {
+                            const next = new Set(previous);
+                            if (next.has(row.name)) {
+                              next.delete(row.name);
+                            } else {
+                              next.add(row.name);
+                            }
+                            return next;
+                          })
+                        }
+                        className="h-full w-full cursor-pointer px-2 py-3 text-left"
+                      >
+                        <div>
+                          <span
+                            className={`inline-flex h-4 w-4 items-center justify-center rounded-full text-[10px] font-bold ${
+                              favorites.has(row.name)
+                                ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300'
+                                : 'bg-zinc-200 text-zinc-500 dark:bg-zinc-700 dark:text-zinc-400'
+                            }`}
+                          >
+                            {favorites.has(row.name) ? '⭐' : '+'}
+                          </span>
+                        </div>
                         <div className="min-w-0">
                           <div
                             className={`text-zinc-900 dark:text-zinc-100 ${
@@ -557,7 +560,7 @@ export function ProduceAnalytics({
                             })()}
                           </div>
                         </div>
-                      </div>
+                      </button>
                     </td>
                     <td
                       className={`px-2 py-3 font-mono text-zinc-900 dark:text-zinc-100 ${DATA_COL_CLASS} box-border`}
@@ -669,11 +672,11 @@ function SkeletonRow() {
   return (
     <tr className="border-b border-zinc-100 dark:border-zinc-800/50">
       <td
-        className={`h-24 py-3 pr-4 ${NAME_COL_CLASS} sticky left-0 z-10 box-border border-r border-zinc-200 bg-white md:w-auto md:border-r-0 dark:border-zinc-700 dark:bg-zinc-900`}
+        className={`px-2 py-3 ${NAME_COL_CLASS} sticky left-0 z-10 box-border border-r border-zinc-200 bg-white md:w-auto md:border-r-0 dark:border-zinc-700 dark:bg-zinc-900`}
       >
-        <div className="flex h-full items-center gap-2">
-          <div className="feed-shimmer h-5 w-5 rounded" />
+        <div className="space-y-1">
           <div className="feed-shimmer h-4 w-full rounded" />
+          <div className="feed-shimmer h-3 w-2/3 rounded" />
         </div>
       </td>
       <td className={`px-2 py-3 ${DATA_COL_CLASS} box-border`}>
