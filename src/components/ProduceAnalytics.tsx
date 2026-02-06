@@ -20,18 +20,7 @@ interface ProduceAnalyticsProps {
   error?: string | null;
 }
 
-type QuickFilter =
-  | 'favorites'
-  | 'drops'
-  | 'increases'
-  | 'new'
-  | 'recently_unavailable'
-  | 'hydroponic'
-  | 'ipm'
-  | 'local'
-  | 'organic'
-  | 'waxed'
-  | null;
+type QuickFilter = 'favorites' | 'drops' | 'increases' | 'new' | 'recently_unavailable' | null;
 
 const NAME_COL_CLASS = 'w-1/3 min-w-[33.333%] max-w-[33.333%] md:w-2/5 md:min-w-0 md:max-w-none';
 const DATA_COL_CLASS = 'w-1/3 min-w-[33.333%] max-w-[33.333%] md:w-auto md:min-w-0 md:max-w-none';
@@ -109,16 +98,6 @@ export function ProduceAnalytics({
       result = result.filter((row) => row.is_new);
     } else if (quickFilter === 'recently_unavailable') {
       result = result.filter((row) => row.is_unavailable);
-    } else if (quickFilter === 'hydroponic') {
-      result = result.filter((row) => row.is_hydroponic);
-    } else if (quickFilter === 'ipm') {
-      result = result.filter((row) => row.is_ipm);
-    } else if (quickFilter === 'local') {
-      result = result.filter((row) => row.is_local);
-    } else if (quickFilter === 'organic') {
-      result = result.filter((row) => row.is_organic);
-    } else if (quickFilter === 'waxed') {
-      result = result.filter((row) => row.is_waxed);
     }
 
     // Sort
@@ -218,10 +197,6 @@ export function ProduceAnalytics({
       } else if (filter === 'recently_unavailable') {
         setSortField('last_seen');
         setSortDirection('desc');
-      } else {
-        // Attribute filters keep default name sort
-        setSortField('name');
-        setSortDirection('asc');
       }
     }
   };
@@ -315,63 +290,6 @@ export function ProduceAnalytics({
               }`}
             >
               Out of Stock
-            </button>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            <button
-              type="button"
-              onClick={() => handleQuickFilter('hydroponic')}
-              className={`rounded-full px-3 py-1.5 text-sm font-medium whitespace-nowrap transition-colors ${
-                quickFilter === 'hydroponic'
-                  ? 'bg-zinc-200 text-zinc-800 dark:bg-zinc-700 dark:text-zinc-200'
-                  : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-700'
-              }`}
-            >
-              Hydroponic
-            </button>
-            <button
-              type="button"
-              onClick={() => handleQuickFilter('ipm')}
-              className={`rounded-full px-3 py-1.5 text-sm font-medium whitespace-nowrap transition-colors ${
-                quickFilter === 'ipm'
-                  ? 'bg-zinc-200 text-zinc-800 dark:bg-zinc-700 dark:text-zinc-200'
-                  : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-700'
-              }`}
-            >
-              IPM
-            </button>
-            <button
-              type="button"
-              onClick={() => handleQuickFilter('local')}
-              className={`rounded-full px-3 py-1.5 text-sm font-medium whitespace-nowrap transition-colors ${
-                quickFilter === 'local'
-                  ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
-                  : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-700'
-              }`}
-            >
-              Local
-            </button>
-            <button
-              type="button"
-              onClick={() => handleQuickFilter('organic')}
-              className={`rounded-full px-3 py-1.5 text-sm font-medium whitespace-nowrap transition-colors ${
-                quickFilter === 'organic'
-                  ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
-                  : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-700'
-              }`}
-            >
-              Organic
-            </button>
-            <button
-              type="button"
-              onClick={() => handleQuickFilter('waxed')}
-              className={`rounded-full px-3 py-1.5 text-sm font-medium whitespace-nowrap transition-colors ${
-                quickFilter === 'waxed'
-                  ? 'bg-zinc-200 text-zinc-800 dark:bg-zinc-700 dark:text-zinc-200'
-                  : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-700'
-              }`}
-            >
-              Waxed
             </button>
           </div>
         </div>
