@@ -41,7 +41,8 @@ export function Navigation() {
   const { data: session, isPending } = useSession();
   const memberProfile = useQuery(api.memberProfiles.getMemberProfile);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
+  const desktopDropdownRef = useRef<HTMLDivElement>(null);
+  const mobileDropdownRef = useRef<HTMLDivElement>(null);
 
   const handleSignOut = async () => {
     await signOut();
@@ -51,7 +52,10 @@ export function Navigation() {
   // Close dropdown when clicking outside
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+      const target = event.target as Node;
+      const inDesktop = desktopDropdownRef.current?.contains(target);
+      const inMobile = mobileDropdownRef.current?.contains(target);
+      if (!inDesktop && !inMobile) {
         setIsDropdownOpen(false);
       }
     }
@@ -80,6 +84,7 @@ export function Navigation() {
               </Link>
             );
           })}
+          {/* About + Account/Sign In: hidden on mobile, shown inline on desktop */}
           <Link
             href={aboutItem.href}
             className={`hidden flex-row items-center justify-center gap-2 rounded-lg px-2 py-2 transition-colors md:flex md:px-4 ${
@@ -91,24 +96,93 @@ export function Navigation() {
             <NavIcon icon={aboutItem.icon} />
             <span className="text-sm font-medium">{aboutItem.label}</span>
           </Link>
+          {!isPending && (
+            <div className="relative hidden md:block" ref={desktopDropdownRef}>
+              {session?.user ? (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                    className={`flex flex-row items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
+                      isDropdownOpen
+                        ? 'text-black dark:text-white'
+                        : 'text-zinc-500 hover:text-black dark:text-zinc-400 dark:hover:text-white'
+                    }`}
+                  >
+                    <NavIcon icon="carrot" />
+                    <span>Account</span>
+                  </button>
+                  {isDropdownOpen && (
+                    <div className="absolute top-full left-0 z-50 mt-2 w-64 overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-lg dark:border-zinc-700 dark:bg-zinc-800">
+                      <div className="border-b border-zinc-200 p-4 dark:border-zinc-700">
+                        <p className="font-medium text-zinc-900 dark:text-zinc-100">
+                          {memberProfile?.memberName || session.user.name}
+                        </p>
+                        {memberProfile?.memberId && (
+                          <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
+                            Member ID: <span className="font-mono">{memberProfile.memberId}</span>
+                          </p>
+                        )}
+                        <p className="mt-1 truncate text-sm text-zinc-500 dark:text-zinc-400">
+                          {session.user.email}
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={handleSignOut}
+                        className="w-full px-4 py-3 text-left text-sm text-zinc-700 transition-colors hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-700"
+                      >
+                        Sign Out
+                      </button>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <Link
+                  href="/login"
+                  className={`flex flex-row items-center justify-center gap-2 rounded-lg px-4 py-2 transition-colors ${
+                    pathname === '/login'
+                      ? 'text-black dark:text-white'
+                      : 'text-zinc-500 hover:text-black dark:text-zinc-400 dark:hover:text-white'
+                  }`}
+                >
+                  <NavIcon icon="carrot" />
+                  <span className="text-sm font-medium">Sign In</span>
+                </Link>
+              )}
+            </div>
+          )}
         </div>
-
-        <div className="relative flex items-center gap-2" ref={dropdownRef}>
-          {isPending ? (
-            <div className="h-8 w-8 md:h-auto md:w-auto md:px-4 md:py-2" />
-          ) : session?.user ? (
-            <>
+      </div>
+      <div className="mx-auto -ml-2 flex max-w-3xl items-center px-4 pb-2 md:hidden">
+        <Link
+          href={aboutItem.href}
+          className={`inline-flex flex-row items-center justify-center gap-2 rounded-lg px-2 py-1 transition-colors ${
+            pathname === aboutItem.href
+              ? 'text-black dark:text-white'
+              : 'text-zinc-500 hover:text-black dark:text-zinc-400 dark:hover:text-white'
+          }`}
+        >
+          <NavIcon icon={aboutItem.icon} />
+          <span className="text-sm font-medium">{aboutItem.label}</span>
+        </Link>
+        {!isPending &&
+          (session?.user ? (
+            <div className="relative" ref={mobileDropdownRef}>
               <button
                 type="button"
                 onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                className="inline-flex items-center gap-1.5 rounded-full px-2 py-2 text-sm font-medium text-zinc-700 transition-colors hover:text-zinc-900 dark:text-zinc-300 dark:hover:text-zinc-100"
+                className={`flex flex-row items-center justify-center gap-2 rounded-lg px-2 py-1 text-sm font-medium transition-colors ${
+                  isDropdownOpen
+                    ? 'text-black dark:text-white'
+                    : 'text-zinc-500 hover:text-black dark:text-zinc-400 dark:hover:text-white'
+                }`}
               >
-                <span className="text-xl">🥕</span>
-                <span className="hidden sm:inline">Account</span>
+                <NavIcon icon="carrot" />
+                <span>Account</span>
               </button>
-
               {isDropdownOpen && (
-                <div className="absolute top-full right-0 z-50 mt-2 w-64 overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-lg dark:border-zinc-700 dark:bg-zinc-800">
+                <div className="absolute top-full left-0 z-50 mt-2 w-64 overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-lg dark:border-zinc-700 dark:bg-zinc-800">
                   <div className="border-b border-zinc-200 p-4 dark:border-zinc-700">
                     <p className="font-medium text-zinc-900 dark:text-zinc-100">
                       {memberProfile?.memberName || session.user.name}
@@ -131,34 +205,20 @@ export function Navigation() {
                   </button>
                 </div>
               )}
-            </>
+            </div>
           ) : (
             <Link
               href="/login"
-              className={`flex flex-row items-center justify-center gap-2 rounded-lg px-2 py-2 transition-colors md:px-4 ${
+              className={`flex flex-row items-center justify-center gap-2 rounded-lg px-2 py-1 transition-colors ${
                 pathname === '/login'
                   ? 'text-black dark:text-white'
                   : 'text-zinc-500 hover:text-black dark:text-zinc-400 dark:hover:text-white'
               }`}
             >
               <NavIcon icon="carrot" />
-              <span className="hidden text-sm font-medium md:inline">Sign In</span>
+              <span className="text-sm font-medium">Sign In</span>
             </Link>
-          )}
-        </div>
-      </div>
-      <div className="mx-auto max-w-3xl px-4 pb-2 md:hidden">
-        <Link
-          href={aboutItem.href}
-          className={`-ml-2 inline-flex flex-row items-center justify-center gap-2 rounded-lg px-2 py-1 transition-colors ${
-            pathname === aboutItem.href
-              ? 'text-black dark:text-white'
-              : 'text-zinc-500 hover:text-black dark:text-zinc-400 dark:hover:text-white'
-          }`}
-        >
-          <NavIcon icon={aboutItem.icon} />
-          <span className="text-sm font-medium">{aboutItem.label}</span>
-        </Link>
+          ))}
       </div>
     </nav>
   );
