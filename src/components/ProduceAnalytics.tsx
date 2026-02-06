@@ -421,15 +421,12 @@ export function ProduceAnalytics({
                         </span>
                       </div>
                       <div className="min-w-0">
-                        <div
-                          className={`text-zinc-900 dark:text-zinc-100 ${
-                            favorites.has(row.name) ? 'font-bold' : 'font-medium'
-                          }`}
-                        >
+                        <div className="font-medium text-zinc-900 dark:text-zinc-100">
                           <span
                             className={[
+                              'rounded px-1',
                               favorites.has(row.name) &&
-                                'rounded bg-amber-100 px-1 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300',
+                                'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300',
                               row.is_unavailable && 'line-through',
                             ]
                               .filter(Boolean)
