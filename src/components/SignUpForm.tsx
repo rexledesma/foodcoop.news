@@ -11,7 +11,6 @@ export function SignUpForm() {
   const [email, setEmail] = useState(searchParams.get('email') ?? '');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [name, setName] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const reason = searchParams.get('reason');
@@ -37,7 +36,7 @@ export function SignUpForm() {
       const result = await signUp.email({
         email,
         password,
-        name,
+        name: '',
       });
 
       if (result.error) {
@@ -74,24 +73,6 @@ export function SignUpForm() {
             {error}
           </div>
         )}
-
-        <div>
-          <label
-            htmlFor="name"
-            className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300"
-          >
-            Name
-          </label>
-          <input
-            id="name"
-            type="text"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            required
-            className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-zinc-900 focus:ring-2 focus:ring-green-500 focus:outline-none dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100 dark:focus:ring-green-400"
-            placeholder="Your name"
-          />
-        </div>
 
         <div>
           <label
