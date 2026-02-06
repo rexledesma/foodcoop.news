@@ -228,177 +228,174 @@ export function ProduceAnalytics({
 
   return (
     <div>
-      {/* Search */}
-      <div className="mb-4">
-        <div className="relative w-full max-w-md">
-          <input
-            type="text"
-            placeholder="Search produce..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full rounded-lg border border-zinc-300 bg-white px-4 py-2 pr-10 text-zinc-900 placeholder-zinc-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
-          />
-          {search ? (
+      {/* Sticky controls + table header */}
+      <div className="sticky top-[144px] z-20 bg-white md:top-[136px] dark:bg-zinc-900">
+        {/* Search */}
+        <div className="mb-4">
+          <div className="relative w-full max-w-md">
+            <input
+              type="text"
+              placeholder="Search produce..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full rounded-lg border border-zinc-300 bg-white px-4 py-2 pr-10 text-zinc-900 placeholder-zinc-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
+            />
+            {search ? (
+              <button
+                type="button"
+                onClick={() => setSearch('')}
+                aria-label="Clear search"
+                className="absolute top-1/2 right-3 -translate-y-1/2 rounded-full p-1 text-sm text-zinc-500 transition hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200"
+              >
+                ✕
+              </button>
+            ) : null}
+          </div>
+        </div>
+
+        {/* Quick Filters */}
+        <div className="mb-4 flex flex-col gap-3">
+          <div className="flex flex-wrap gap-2">
             <button
               type="button"
-              onClick={() => setSearch('')}
-              aria-label="Clear search"
-              className="absolute top-1/2 right-3 -translate-y-1/2 rounded-full p-1 text-sm text-zinc-500 transition hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200"
+              onClick={() => handleQuickFilter('favorites')}
+              className={`rounded-full px-3 py-1.5 text-sm font-medium whitespace-nowrap transition-colors ${
+                quickFilter === 'favorites'
+                  ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300'
+                  : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-700'
+              }`}
             >
-              ✕
+              Favorites
             </button>
-          ) : null}
+            <button
+              type="button"
+              onClick={() => handleQuickFilter('drops')}
+              className={`rounded-full px-3 py-1.5 text-sm font-medium whitespace-nowrap transition-colors ${
+                quickFilter === 'drops'
+                  ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+                  : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-700'
+              }`}
+            >
+              Price Drops
+            </button>
+            <button
+              type="button"
+              onClick={() => handleQuickFilter('increases')}
+              className={`rounded-full px-3 py-1.5 text-sm font-medium whitespace-nowrap transition-colors ${
+                quickFilter === 'increases'
+                  ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                  : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-700'
+              }`}
+            >
+              Price Increases
+            </button>
+            <button
+              type="button"
+              onClick={() => handleQuickFilter('new')}
+              className={`rounded-full px-3 py-1.5 text-sm font-medium whitespace-nowrap transition-colors ${
+                quickFilter === 'new'
+                  ? 'bg-[rgb(255,246,220)] text-[#3F7540]'
+                  : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-700'
+              }`}
+            >
+              New Arrivals
+            </button>
+            <button
+              type="button"
+              onClick={() => handleQuickFilter('recently_unavailable')}
+              className={`rounded-full px-3 py-1.5 text-sm font-medium whitespace-nowrap transition-colors ${
+                quickFilter === 'recently_unavailable'
+                  ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                  : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-700'
+              }`}
+            >
+              Out of Stock
+            </button>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => handleQuickFilter('hydroponic')}
+              className={`rounded-full px-3 py-1.5 text-sm font-medium whitespace-nowrap transition-colors ${
+                quickFilter === 'hydroponic'
+                  ? 'bg-zinc-200 text-zinc-800 dark:bg-zinc-700 dark:text-zinc-200'
+                  : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-700'
+              }`}
+            >
+              Hydroponic
+            </button>
+            <button
+              type="button"
+              onClick={() => handleQuickFilter('ipm')}
+              className={`rounded-full px-3 py-1.5 text-sm font-medium whitespace-nowrap transition-colors ${
+                quickFilter === 'ipm'
+                  ? 'bg-zinc-200 text-zinc-800 dark:bg-zinc-700 dark:text-zinc-200'
+                  : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-700'
+              }`}
+            >
+              IPM
+            </button>
+            <button
+              type="button"
+              onClick={() => handleQuickFilter('local')}
+              className={`rounded-full px-3 py-1.5 text-sm font-medium whitespace-nowrap transition-colors ${
+                quickFilter === 'local'
+                  ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
+                  : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-700'
+              }`}
+            >
+              Local
+            </button>
+            <button
+              type="button"
+              onClick={() => handleQuickFilter('organic')}
+              className={`rounded-full px-3 py-1.5 text-sm font-medium whitespace-nowrap transition-colors ${
+                quickFilter === 'organic'
+                  ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+                  : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-700'
+              }`}
+            >
+              Organic
+            </button>
+            <button
+              type="button"
+              onClick={() => handleQuickFilter('waxed')}
+              className={`rounded-full px-3 py-1.5 text-sm font-medium whitespace-nowrap transition-colors ${
+                quickFilter === 'waxed'
+                  ? 'bg-zinc-200 text-zinc-800 dark:bg-zinc-700 dark:text-zinc-200'
+                  : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-700'
+              }`}
+            >
+              Waxed
+            </button>
+          </div>
         </div>
-      </div>
 
-      {/* Quick Filters */}
-      <div className="mb-4 flex flex-col gap-3">
-        <div className="flex flex-wrap gap-2">
-          <button
-            type="button"
-            onClick={() => handleQuickFilter('favorites')}
-            className={`rounded-full px-3 py-1.5 text-sm font-medium whitespace-nowrap transition-colors ${
-              quickFilter === 'favorites'
-                ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300'
-                : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-700'
-            }`}
-          >
-            Favorites
-          </button>
-          <button
-            type="button"
-            onClick={() => handleQuickFilter('drops')}
-            className={`rounded-full px-3 py-1.5 text-sm font-medium whitespace-nowrap transition-colors ${
-              quickFilter === 'drops'
-                ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
-                : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-700'
-            }`}
-          >
-            Price Drops
-          </button>
-          <button
-            type="button"
-            onClick={() => handleQuickFilter('increases')}
-            className={`rounded-full px-3 py-1.5 text-sm font-medium whitespace-nowrap transition-colors ${
-              quickFilter === 'increases'
-                ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
-                : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-700'
-            }`}
-          >
-            Price Increases
-          </button>
-          <button
-            type="button"
-            onClick={() => handleQuickFilter('new')}
-            className={`rounded-full px-3 py-1.5 text-sm font-medium whitespace-nowrap transition-colors ${
-              quickFilter === 'new'
-                ? 'bg-[rgb(255,246,220)] text-[#3F7540]'
-                : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-700'
-            }`}
-          >
-            New Arrivals
-          </button>
-          <button
-            type="button"
-            onClick={() => handleQuickFilter('recently_unavailable')}
-            className={`rounded-full px-3 py-1.5 text-sm font-medium whitespace-nowrap transition-colors ${
-              quickFilter === 'recently_unavailable'
-                ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
-                : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-700'
-            }`}
-          >
-            Out of Stock
-          </button>
+        {/* Time Period Pills */}
+        <div className="mb-4 flex gap-1">
+          {TIME_PERIODS.map((period) => (
+            <button
+              key={period}
+              type="button"
+              onClick={() => setTimePeriod(period)}
+              className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+                timePeriod === period
+                  ? 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900'
+                  : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-700'
+              }`}
+            >
+              {PERIOD_LABELS[period]}
+            </button>
+          ))}
         </div>
-        <div className="flex flex-wrap gap-2">
-          <button
-            type="button"
-            onClick={() => handleQuickFilter('hydroponic')}
-            className={`rounded-full px-3 py-1.5 text-sm font-medium whitespace-nowrap transition-colors ${
-              quickFilter === 'hydroponic'
-                ? 'bg-zinc-200 text-zinc-800 dark:bg-zinc-700 dark:text-zinc-200'
-                : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-700'
-            }`}
-          >
-            Hydroponic
-          </button>
-          <button
-            type="button"
-            onClick={() => handleQuickFilter('ipm')}
-            className={`rounded-full px-3 py-1.5 text-sm font-medium whitespace-nowrap transition-colors ${
-              quickFilter === 'ipm'
-                ? 'bg-zinc-200 text-zinc-800 dark:bg-zinc-700 dark:text-zinc-200'
-                : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-700'
-            }`}
-          >
-            IPM
-          </button>
-          <button
-            type="button"
-            onClick={() => handleQuickFilter('local')}
-            className={`rounded-full px-3 py-1.5 text-sm font-medium whitespace-nowrap transition-colors ${
-              quickFilter === 'local'
-                ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
-                : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-700'
-            }`}
-          >
-            Local
-          </button>
-          <button
-            type="button"
-            onClick={() => handleQuickFilter('organic')}
-            className={`rounded-full px-3 py-1.5 text-sm font-medium whitespace-nowrap transition-colors ${
-              quickFilter === 'organic'
-                ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
-                : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-700'
-            }`}
-          >
-            Organic
-          </button>
-          <button
-            type="button"
-            onClick={() => handleQuickFilter('waxed')}
-            className={`rounded-full px-3 py-1.5 text-sm font-medium whitespace-nowrap transition-colors ${
-              quickFilter === 'waxed'
-                ? 'bg-zinc-200 text-zinc-800 dark:bg-zinc-700 dark:text-zinc-200'
-                : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-700'
-            }`}
-          >
-            Waxed
-          </button>
-        </div>
-      </div>
 
-      {/* Time Period Pills */}
-      <div className="mb-4 flex gap-1">
-        {TIME_PERIODS.map((period) => (
-          <button
-            key={period}
-            type="button"
-            onClick={() => setTimePeriod(period)}
-            className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
-              timePeriod === period
-                ? 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900'
-                : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-700'
-            }`}
-          >
-            {PERIOD_LABELS[period]}
-          </button>
-        ))}
-      </div>
+        {error && !isLoading && (
+          <div className="mb-4 text-sm text-red-600 dark:text-red-400">{error}</div>
+        )}
 
-      {error && !isLoading && (
-        <div className="mb-4 text-sm text-red-600 dark:text-red-400">{error}</div>
-      )}
-
-      {/* Table */}
-      <div className="overflow-x-auto">
+        {/* Header table */}
         <table className="w-full min-w-full table-fixed text-sm">
-          <colgroup>
-            <col className={NAME_COL_CLASS} />
-            <col className={DATA_COL_CLASS} />
-            <col className={DATA_COL_CLASS} />
-          </colgroup>
+          <Colgroup />
           <thead>
             <tr className="border-b border-zinc-200 dark:border-zinc-800">
               <SortHeader
@@ -430,181 +427,186 @@ export function ProduceAnalytics({
               </SortHeader>
             </tr>
           </thead>
-          <tbody>
-            {isLoading
-              ? skeletonRows.map((rowId) => <SkeletonRow key={rowId} />)
-              : filteredAndSorted.map((row) => (
-                  <tr
-                    key={row.name}
-                    className="border-b border-zinc-100 hover:bg-zinc-50 dark:border-zinc-800/50 dark:hover:bg-zinc-800/50"
-                  >
-                    <td
-                      className={`${NAME_COL_CLASS} sticky left-0 z-10 box-border border-r border-zinc-200 bg-white p-0 md:w-auto md:border-r-0 dark:border-zinc-700 dark:bg-zinc-900`}
-                    >
-                      <button
-                        type="button"
-                        aria-pressed={favorites.has(row.name)}
-                        aria-label={`${
-                          favorites.has(row.name) ? 'Remove from' : 'Add to'
-                        } favorites for ${row.name}`}
-                        onClick={() =>
-                          setFavorites((previous) => {
-                            const next = new Set(previous);
-                            if (next.has(row.name)) {
-                              next.delete(row.name);
-                            } else {
-                              next.add(row.name);
-                            }
-                            return next;
-                          })
-                        }
-                        className="h-full w-full cursor-pointer p-2 text-left"
-                      >
-                        <div>
-                          <span
-                            className={`inline-flex h-4 w-4 items-center justify-center rounded-full text-[10px] font-bold ${
-                              favorites.has(row.name)
-                                ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300'
-                                : 'bg-zinc-200 text-zinc-500 dark:bg-zinc-700 dark:text-zinc-400'
-                            }`}
-                          >
-                            {favorites.has(row.name) ? '⭐' : '+'}
-                          </span>
-                        </div>
-                        <div className="min-w-0">
-                          <div
-                            className={`text-zinc-900 dark:text-zinc-100 ${
-                              favorites.has(row.name) ? 'font-bold' : 'font-medium'
-                            }`}
-                          >
-                            <span
-                              className={[
-                                favorites.has(row.name) &&
-                                  'rounded bg-amber-100 px-1 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300',
-                                row.is_unavailable && 'line-through',
-                              ]
-                                .filter(Boolean)
-                                .join(' ')}
-                            >
-                              {row.name}
-                            </span>
-                          </div>
-                          <div className="text-xs text-zinc-500 dark:text-zinc-400">
-                            {(() => {
-                              const attributeElements = [
-                                row.is_hydroponic && {
-                                  key: 'hydroponic',
-                                  node: <span>Hydroponic</span>,
-                                },
-                                row.is_ipm && {
-                                  key: 'ipm',
-                                  node: <span>IPM</span>,
-                                },
-                                row.is_local && {
-                                  key: 'local',
-                                  node: (
-                                    <span className="text-blue-600 dark:text-blue-400">Local</span>
-                                  ),
-                                },
-                                row.is_organic && {
-                                  key: 'organic',
-                                  node: (
-                                    <span className="text-green-600 dark:text-green-400">
-                                      Organic
-                                    </span>
-                                  ),
-                                },
-                                row.is_waxed && {
-                                  key: 'waxed',
-                                  node: <span>Waxed</span>,
-                                },
-                              ].filter(Boolean) as { key: string; node: React.ReactNode }[];
-                              const hasAttributes = attributeElements.length > 0;
-                              const showUnavailable =
-                                row.is_unavailable && row.unavailable_since_date;
-                              const showNew = row.is_new;
-
-                              return (
-                                <>
-                                  {showUnavailable && (
-                                    <span className="rounded bg-red-100 px-1 text-red-700 dark:bg-red-900/30 dark:text-red-400">
-                                      <span className="inline-block">Last seen</span>{' '}
-                                      <span className="inline-block">
-                                        {formatShortDate(row.unavailable_since_date!)}
-                                      </span>
-                                    </span>
-                                  )}
-                                  {showUnavailable && showNew && ' · '}
-                                  {showNew && (
-                                    <span className="rounded bg-[rgb(255,246,220)] px-1 text-[#3F7540]">
-                                      <span className="inline-block">First seen</span>
-                                      {row.first_seen_date && (
-                                        <>
-                                          {' '}
-                                          <span className="inline-block">
-                                            {formatShortDate(row.first_seen_date)}
-                                          </span>
-                                        </>
-                                      )}
-                                    </span>
-                                  )}
-                                  {(showUnavailable || showNew) && hasAttributes && ' · '}
-                                  {attributeElements.map((item, index) => (
-                                    <span key={item.key}>
-                                      {item.node}
-                                      {index < attributeElements.length - 1 && ' · '}
-                                    </span>
-                                  ))}
-                                </>
-                              );
-                            })()}
-                          </div>
-                        </div>
-                      </button>
-                    </td>
-                    <td
-                      className={`p-2 font-mono text-zinc-900 dark:text-zinc-100 ${DATA_COL_CLASS} box-border`}
-                    >
-                      <div>
-                        {(() => {
-                          const { prev } = getPeriodData(row, timePeriod);
-                          return (
-                            <>
-                              <span
-                                className={`font-bold ${
-                                  prev !== null && row.price < prev
-                                    ? 'text-green-600 dark:text-green-400'
-                                    : prev !== null && row.price > prev
-                                      ? 'text-red-600 dark:text-red-400'
-                                      : ''
-                                }`}
-                              >
-                                ${row.price.toFixed(2)}
-                              </span>
-                              {prev !== null && prev !== row.price && (
-                                <sup className="ml-1 text-[0.65em] text-zinc-400 line-through dark:text-zinc-500">
-                                  ${prev.toFixed(2)}
-                                </sup>
-                              )}
-                            </>
-                          );
-                        })()}
-                      </div>
-                      <div className="text-xs text-zinc-500 dark:text-zinc-400">/{row.unit}</div>
-                      <div className="mt-1">
-                        <Sparkline
-                          points={history.get(row.name)}
-                          dateRange={dateRange}
-                          timePeriod={timePeriod}
-                        />
-                      </div>
-                    </td>
-                    <MetricsCell row={row} period={timePeriod} />
-                  </tr>
-                ))}
-          </tbody>
         </table>
       </div>
+
+      {/* Body table */}
+      <table className="w-full min-w-full table-fixed text-sm">
+        <Colgroup />
+        <tbody>
+          {isLoading
+            ? skeletonRows.map((rowId) => <SkeletonRow key={rowId} />)
+            : filteredAndSorted.map((row) => (
+                <tr
+                  key={row.name}
+                  className="border-b border-zinc-100 hover:bg-zinc-50 dark:border-zinc-800/50 dark:hover:bg-zinc-800/50"
+                >
+                  <td
+                    className={`${NAME_COL_CLASS} sticky left-0 z-10 box-border border-r border-zinc-200 bg-white p-0 md:w-auto md:border-r-0 dark:border-zinc-700 dark:bg-zinc-900`}
+                  >
+                    <button
+                      type="button"
+                      aria-pressed={favorites.has(row.name)}
+                      aria-label={`${
+                        favorites.has(row.name) ? 'Remove from' : 'Add to'
+                      } favorites for ${row.name}`}
+                      onClick={() =>
+                        setFavorites((previous) => {
+                          const next = new Set(previous);
+                          if (next.has(row.name)) {
+                            next.delete(row.name);
+                          } else {
+                            next.add(row.name);
+                          }
+                          return next;
+                        })
+                      }
+                      className="h-full w-full cursor-pointer p-2 text-left"
+                    >
+                      <div>
+                        <span
+                          className={`inline-flex h-4 w-4 items-center justify-center rounded-full text-[10px] font-bold ${
+                            favorites.has(row.name)
+                              ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300'
+                              : 'bg-zinc-200 text-zinc-500 dark:bg-zinc-700 dark:text-zinc-400'
+                          }`}
+                        >
+                          {favorites.has(row.name) ? '⭐' : '+'}
+                        </span>
+                      </div>
+                      <div className="min-w-0">
+                        <div
+                          className={`text-zinc-900 dark:text-zinc-100 ${
+                            favorites.has(row.name) ? 'font-bold' : 'font-medium'
+                          }`}
+                        >
+                          <span
+                            className={[
+                              favorites.has(row.name) &&
+                                'rounded bg-amber-100 px-1 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300',
+                              row.is_unavailable && 'line-through',
+                            ]
+                              .filter(Boolean)
+                              .join(' ')}
+                          >
+                            {row.name}
+                          </span>
+                        </div>
+                        <div className="text-xs text-zinc-500 dark:text-zinc-400">
+                          {(() => {
+                            const attributeElements = [
+                              row.is_hydroponic && {
+                                key: 'hydroponic',
+                                node: <span>Hydroponic</span>,
+                              },
+                              row.is_ipm && {
+                                key: 'ipm',
+                                node: <span>IPM</span>,
+                              },
+                              row.is_local && {
+                                key: 'local',
+                                node: (
+                                  <span className="text-blue-600 dark:text-blue-400">Local</span>
+                                ),
+                              },
+                              row.is_organic && {
+                                key: 'organic',
+                                node: (
+                                  <span className="text-green-600 dark:text-green-400">
+                                    Organic
+                                  </span>
+                                ),
+                              },
+                              row.is_waxed && {
+                                key: 'waxed',
+                                node: <span>Waxed</span>,
+                              },
+                            ].filter(Boolean) as { key: string; node: React.ReactNode }[];
+                            const hasAttributes = attributeElements.length > 0;
+                            const showUnavailable =
+                              row.is_unavailable && row.unavailable_since_date;
+                            const showNew = row.is_new;
+
+                            return (
+                              <>
+                                {showUnavailable && (
+                                  <span className="rounded bg-red-100 px-1 text-red-700 dark:bg-red-900/30 dark:text-red-400">
+                                    <span className="inline-block">Last seen</span>{' '}
+                                    <span className="inline-block">
+                                      {formatShortDate(row.unavailable_since_date!)}
+                                    </span>
+                                  </span>
+                                )}
+                                {showUnavailable && showNew && ' · '}
+                                {showNew && (
+                                  <span className="rounded bg-[rgb(255,246,220)] px-1 text-[#3F7540]">
+                                    <span className="inline-block">First seen</span>
+                                    {row.first_seen_date && (
+                                      <>
+                                        {' '}
+                                        <span className="inline-block">
+                                          {formatShortDate(row.first_seen_date)}
+                                        </span>
+                                      </>
+                                    )}
+                                  </span>
+                                )}
+                                {(showUnavailable || showNew) && hasAttributes && ' · '}
+                                {attributeElements.map((item, index) => (
+                                  <span key={item.key}>
+                                    {item.node}
+                                    {index < attributeElements.length - 1 && ' · '}
+                                  </span>
+                                ))}
+                              </>
+                            );
+                          })()}
+                        </div>
+                      </div>
+                    </button>
+                  </td>
+                  <td
+                    className={`p-2 font-mono text-zinc-900 dark:text-zinc-100 ${DATA_COL_CLASS} box-border`}
+                  >
+                    <div>
+                      {(() => {
+                        const { prev } = getPeriodData(row, timePeriod);
+                        return (
+                          <>
+                            <span
+                              className={`font-bold ${
+                                prev !== null && row.price < prev
+                                  ? 'text-green-600 dark:text-green-400'
+                                  : prev !== null && row.price > prev
+                                    ? 'text-red-600 dark:text-red-400'
+                                    : ''
+                              }`}
+                            >
+                              ${row.price.toFixed(2)}
+                            </span>
+                            {prev !== null && prev !== row.price && (
+                              <sup className="ml-1 text-[0.65em] text-zinc-400 line-through dark:text-zinc-500">
+                                ${prev.toFixed(2)}
+                              </sup>
+                            )}
+                          </>
+                        );
+                      })()}
+                    </div>
+                    <div className="text-xs text-zinc-500 dark:text-zinc-400">/{row.unit}</div>
+                    <div className="mt-1">
+                      <Sparkline
+                        points={history.get(row.name)}
+                        dateRange={dateRange}
+                        timePeriod={timePeriod}
+                      />
+                    </div>
+                  </td>
+                  <MetricsCell row={row} period={timePeriod} />
+                </tr>
+              ))}
+        </tbody>
+      </table>
 
       {!isLoading && (
         <div className="mt-4 text-sm text-zinc-500 dark:text-zinc-400">
@@ -693,6 +695,16 @@ function SkeletonRow() {
         </div>
       </td>
     </tr>
+  );
+}
+
+function Colgroup() {
+  return (
+    <colgroup>
+      <col className={NAME_COL_CLASS} />
+      <col className={DATA_COL_CLASS} />
+      <col className={DATA_COL_CLASS} />
+    </colgroup>
   );
 }
 
