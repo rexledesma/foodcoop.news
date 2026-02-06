@@ -643,8 +643,8 @@ export function DiscoverFeed() {
   }
 
   return (
-    <div className="space-y-4">
-      <div className="space-y-3">
+    <div>
+      <div className="sticky top-[144px] z-20 bg-white pb-4 md:top-[136px] dark:bg-zinc-900">
         <div className="flex flex-wrap gap-2">
           {FILTER_OPTIONS.filter((option) => ['latest', 'upcoming'].includes(option.value)).map(
             (option) => (
@@ -663,7 +663,7 @@ export function DiscoverFeed() {
             ),
           )}
         </div>
-        <div className="flex flex-wrap gap-2">
+        <div className="mt-2 flex flex-wrap gap-2">
           {FILTER_OPTIONS.filter((option) => !['latest', 'upcoming'].includes(option.value)).map(
             (option) => (
               <button
@@ -680,6 +680,9 @@ export function DiscoverFeed() {
               </button>
             ),
           )}
+        </div>
+        <div className="p-2 text-sm text-zinc-500 dark:text-zinc-400">
+          Showing {displayedItems.length} of {items.length} items
         </div>
       </div>
 
