@@ -257,7 +257,7 @@ export function ProduceAnalytics({
       {/* Sticky controls + table header */}
       <div
         ref={controlsRef}
-        className={`sticky top-24 z-20 bg-white transition-[opacity,transform] duration-200 ease-out motion-reduce:transition-none md:top-14 dark:bg-zinc-900 ${
+        className={`sticky top-24 z-20 bg-white transition-[opacity,transform] duration-300 ease-in-out motion-reduce:transition-none md:top-14 dark:bg-zinc-900 ${
           stickyVisible
             ? 'translate-y-0 opacity-100'
             : 'pointer-events-none -translate-y-2 opacity-0'
@@ -416,7 +416,7 @@ export function ProduceAnalytics({
 
       {/* Body table */}
       <div
-        className="transition-transform duration-200 ease-out motion-reduce:transition-none"
+        className="transition-transform duration-300 ease-in-out motion-reduce:transition-none"
         style={{
           transform: stickyVisible ? 'translateY(0px)' : `translateY(-${controlsHeight}px)`,
         }}
