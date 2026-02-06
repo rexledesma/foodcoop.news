@@ -58,11 +58,27 @@ export function ProduceAnalytics({
   isLoading = false,
   error = null,
 }: ProduceAnalyticsProps) {
+  const [initialFilters] = useState(() => {
+    const firstVisit = {
+      quickFilter: 'drops' as QuickFilter,
+      timePeriod: '1D' as TimePeriod,
+      sortField: 'change' as SortField | null,
+      sortDirection: 'asc' as SortDirection,
+    };
+    if (typeof window === 'undefined') return firstVisit;
+    try {
+      const stored = localStorage.getItem('produce-filters');
+      if (!stored) return firstVisit;
+      return JSON.parse(stored) as typeof firstVisit;
+    } catch {
+      return firstVisit;
+    }
+  });
   const [search, setSearch] = useState('');
-  const [sortField, setSortField] = useState<SortField | null>('name');
-  const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
-  const [quickFilter, setQuickFilter] = useState<QuickFilter>(null);
-  const [timePeriod, setTimePeriod] = useState<TimePeriod>('1M');
+  const [sortField, setSortField] = useState<SortField | null>(initialFilters.sortField);
+  const [sortDirection, setSortDirection] = useState<SortDirection>(initialFilters.sortDirection);
+  const [quickFilter, setQuickFilter] = useState<QuickFilter>(initialFilters.quickFilter);
+  const [timePeriod, setTimePeriod] = useState<TimePeriod>(initialFilters.timePeriod);
   const [favorites, setFavorites] = useState<Set<string>>(() => {
     if (typeof window === 'undefined') return new Set();
     const stored = localStorage.getItem('produce-favorites');
@@ -74,6 +90,13 @@ export function ProduceAnalytics({
       return new Set();
     }
   });
+
+  useEffect(() => {
+    localStorage.setItem(
+      'produce-filters',
+      JSON.stringify({ quickFilter, timePeriod, sortField, sortDirection }),
+    );
+  }, [quickFilter, timePeriod, sortField, sortDirection]);
 
   useEffect(() => {
     localStorage.setItem('produce-favorites', JSON.stringify(Array.from(favorites)));
