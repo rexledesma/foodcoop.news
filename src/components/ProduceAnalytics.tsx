@@ -251,6 +251,11 @@ export function ProduceAnalytics({
               </button>
             ) : null}
           </div>
+          {!isLoading && (
+            <div className="p-2 text-sm text-zinc-500 dark:text-zinc-400">
+              Showing {filteredAndSorted.length} of {data.length} items
+            </div>
+          )}
         </div>
 
         {/* Quick Filters */}
@@ -607,12 +612,6 @@ export function ProduceAnalytics({
               ))}
         </tbody>
       </table>
-
-      {!isLoading && (
-        <div className="mt-4 text-sm text-zinc-500 dark:text-zinc-400">
-          Showing {filteredAndSorted.length} of {data.length} items
-        </div>
-      )}
     </div>
   );
 }
