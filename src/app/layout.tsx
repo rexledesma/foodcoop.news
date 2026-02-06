@@ -4,7 +4,7 @@ import { Analytics } from '@vercel/analytics/react';
 import { SpeedInsights } from '@vercel/speed-insights/next';
 import './globals.css';
 import { Navigation } from '@/components/Navigation';
-import { Footer } from '@/components/Footer';
+
 import { ConvexClientProvider } from '@/components/ConvexClientProvider';
 import { ProduceDataProvider } from '@/components/ProduceDataProvider';
 import { DiscoverFeedProvider } from '@/components/DiscoverFeedProvider';
@@ -78,8 +78,7 @@ export default function RootLayout({
           <ProduceDataProvider>
             <DiscoverFeedProvider>
               <div className="flex min-h-screen flex-col">
-                <main className="pt-16 md:pt-14">{children}</main>
-                <Footer />
+                <main className="pt-24 md:pt-14">{children}</main>
               </div>
               <Navigation />
             </DiscoverFeedProvider>

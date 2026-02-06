@@ -227,7 +227,7 @@ export function ProduceAnalytics({
   return (
     <div>
       {/* Sticky controls + table header */}
-      <div className="sticky top-[144px] z-20 bg-white md:top-[136px] dark:bg-zinc-900">
+      <div className="sticky top-[176px] z-20 bg-white md:top-[136px] dark:bg-zinc-900">
         {/* Search */}
         <div className="mb-4">
           <div className="relative w-full max-w-md">

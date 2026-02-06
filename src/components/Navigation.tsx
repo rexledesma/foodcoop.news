@@ -17,6 +17,8 @@ const navItems = [
   },
 ];
 
+const aboutItem = { href: '/about', label: 'About', icon: 'info' };
+
 function NavIcon({ icon }: { icon: string }) {
   switch (icon) {
     case 'compass':
@@ -27,6 +29,8 @@ function NavIcon({ icon }: { icon: string }) {
       return <span className="text-xl md:text-lg">🥕</span>;
     case 'gear':
       return <span className="text-xl md:text-lg">⚙️</span>;
+    case 'info':
+      return <span className="text-xl md:text-lg">ℹ️</span>;
     default:
       return null;
   }
@@ -76,6 +80,17 @@ export function Navigation() {
               </Link>
             );
           })}
+          <Link
+            href={aboutItem.href}
+            className={`hidden flex-row items-center justify-center gap-2 rounded-lg px-2 py-2 transition-colors md:flex md:px-4 ${
+              pathname === aboutItem.href
+                ? 'text-black dark:text-white'
+                : 'text-zinc-500 hover:text-black dark:text-zinc-400 dark:hover:text-white'
+            }`}
+          >
+            <NavIcon icon={aboutItem.icon} />
+            <span className="text-sm font-medium">{aboutItem.label}</span>
+          </Link>
         </div>
 
         <div className="relative flex items-center gap-2" ref={dropdownRef}>
@@ -131,6 +146,19 @@ export function Navigation() {
             </Link>
           )}
         </div>
+      </div>
+      <div className="mx-auto max-w-3xl px-4 pb-2 md:hidden">
+        <Link
+          href={aboutItem.href}
+          className={`-ml-2 inline-flex flex-row items-center justify-center gap-2 rounded-lg px-2 py-1 transition-colors ${
+            pathname === aboutItem.href
+              ? 'text-black dark:text-white'
+              : 'text-zinc-500 hover:text-black dark:text-zinc-400 dark:hover:text-white'
+          }`}
+        >
+          <NavIcon icon={aboutItem.icon} />
+          <span className="text-sm font-medium">{aboutItem.label}</span>
+        </Link>
       </div>
     </nav>
   );

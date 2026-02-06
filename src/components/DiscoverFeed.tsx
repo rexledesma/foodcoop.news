@@ -644,7 +644,7 @@ export function DiscoverFeed() {
 
   return (
     <div>
-      <div className="sticky top-[144px] z-20 bg-white pb-4 md:top-[136px] dark:bg-zinc-900">
+      <div className="sticky top-[176px] z-20 bg-white pb-4 md:top-[136px] dark:bg-zinc-900">
         <div className="flex flex-wrap gap-2">
           {FILTER_OPTIONS.filter((option) => ['latest', 'upcoming'].includes(option.value)).map(
             (option) => (

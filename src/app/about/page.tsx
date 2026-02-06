@@ -39,7 +39,16 @@ export default function AboutPage() {
           <li>Sync your favorite available work shifts to Google, Outlook, or Apple Calendar</li>
         </ul>
         <p>
-          This is a project by{' '}
+          This is an{' '}
+          <Link
+            href="https://github.com/rexledesma/foodcoop.news"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline transition-colors hover:text-zinc-900 dark:hover:text-zinc-100"
+          >
+            open-source project
+          </Link>{' '}
+          by{' '}
           <Link
             href="https://rexledesma.com"
             target="_blank"
