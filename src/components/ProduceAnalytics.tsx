@@ -458,7 +458,7 @@ export function ProduceAnalytics({
                             return next;
                           })
                         }
-                        className="h-full w-full cursor-pointer px-2 py-3 text-left"
+                        className="h-full w-full cursor-pointer p-2 text-left"
                       >
                         <div>
                           <span
@@ -563,7 +563,7 @@ export function ProduceAnalytics({
                       </button>
                     </td>
                     <td
-                      className={`px-2 py-3 font-mono text-zinc-900 dark:text-zinc-100 ${DATA_COL_CLASS} box-border`}
+                      className={`p-2 font-mono text-zinc-900 dark:text-zinc-100 ${DATA_COL_CLASS} box-border`}
                     >
                       <div>
                         {(() => {
@@ -619,7 +619,7 @@ function MetricsCell({ row, period }: { row: ProduceRow; period: TimePeriod }) {
   const { prev, high, low } = getPeriodData(row, period);
 
   if (prev === null) {
-    return <td className={`px-2 py-3 ${DATA_COL_CLASS} box-border text-zinc-400`}>—</td>;
+    return <td className={`p-2 ${DATA_COL_CLASS} box-border text-zinc-400`}>—</td>;
   }
 
   const change = row.price - prev;
@@ -638,28 +638,28 @@ function MetricsCell({ row, period }: { row: ProduceRow; period: TimePeriod }) {
   const sign = isPositive ? '+' : isNegative ? '-' : '\u2007';
 
   return (
-    <td className={`px-2 py-3 ${DATA_COL_CLASS} box-border text-xs`}>
-      <div className="flex items-baseline gap-1.5">
-        <span className="w-14 shrink-0 text-zinc-500 dark:text-zinc-400">% Diff</span>
+    <td className={`p-2 ${DATA_COL_CLASS} box-border text-xs`}>
+      <div className="flex items-baseline gap-2">
+        <span className="w-12 shrink-0 text-zinc-500 dark:text-zinc-400">% Diff</span>
         <span className={`font-mono ${colorClass}`}>
           {sign}
           {Math.abs(roundedPct).toFixed(1)}%
         </span>
       </div>
-      <div className="flex items-baseline gap-1.5">
-        <span className="w-14 shrink-0 text-zinc-500 dark:text-zinc-400">$ Diff</span>
+      <div className="flex items-baseline gap-2">
+        <span className="w-12 shrink-0 text-zinc-500 dark:text-zinc-400">$ Diff</span>
         <span className={`font-mono ${colorClass}`}>
           {sign}${Math.abs(change).toFixed(2)}
         </span>
       </div>
-      <div className="flex items-baseline gap-1.5">
-        <span className="w-14 shrink-0 text-zinc-500 dark:text-zinc-400">High</span>
+      <div className="flex items-baseline gap-2">
+        <span className="w-12 shrink-0 text-zinc-500 dark:text-zinc-400">High</span>
         <span className="font-mono text-zinc-900 dark:text-zinc-100">
           {high !== null ? `\u2007$${high.toFixed(2)}` : '\u2007—'}
         </span>
       </div>
-      <div className="flex items-baseline gap-1.5">
-        <span className="w-14 shrink-0 text-zinc-500 dark:text-zinc-400">Low</span>
+      <div className="flex items-baseline gap-2">
+        <span className="w-12 shrink-0 text-zinc-500 dark:text-zinc-400">Low</span>
         <span className="font-mono text-zinc-900 dark:text-zinc-100">
           {low !== null ? `\u2007$${low.toFixed(2)}` : '\u2007—'}
         </span>
