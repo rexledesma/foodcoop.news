@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { put } from '@vercel/blob';
+import { revalidateTag } from 'next/cache';
 import { regenerateMonthParquet } from '@/lib/produce-parquet-utils';
 
 // https://vercel.com/docs/cron-jobs/manage-cron-jobs#securing-cron-jobs
@@ -48,6 +49,8 @@ export async function GET(request: Request) {
 
     // Regenerate Parquet for the current month
     const parquetResult = await regenerateMonthParquet(month);
+
+    revalidateTag('produce-metadata', { expire: 0 });
 
     return NextResponse.json({
       success: true,

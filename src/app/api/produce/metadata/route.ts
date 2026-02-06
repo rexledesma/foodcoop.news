@@ -1,21 +1,6 @@
 import { NextResponse } from 'next/server';
-import { head, list } from '@vercel/blob';
+import { list } from '@vercel/blob';
 import { unstable_cache } from 'next/cache';
-
-function getNewYorkDate(date: Date) {
-  const nyString = date.toLocaleString('en-US', {
-    timeZone: 'America/New_York',
-  });
-  return new Date(nyString);
-}
-
-function getCacheKeyDate() {
-  const nowNy = getNewYorkDate(new Date());
-  if (nowNy.getHours() < 8) {
-    nowNy.setDate(nowNy.getDate() - 1);
-  }
-  return nowNy.toLocaleDateString('en-CA');
-}
 
 function getCurrentMonth() {
   return new Date()
@@ -23,18 +8,6 @@ function getCurrentMonth() {
       timeZone: 'America/New_York',
     })
     .slice(0, 7);
-}
-
-function getSecondsUntilNext8am() {
-  const nowNy = getNewYorkDate(new Date());
-  const nextNy = new Date(nowNy);
-
-  if (nowNy.getHours() >= 8) {
-    nextNy.setDate(nextNy.getDate() + 1);
-  }
-
-  nextNy.setHours(8, 0, 0, 0);
-  return Math.max(0, Math.round((nextNy.getTime() - nowNy.getTime()) / 1000));
 }
 
 async function loadProduceMetadata() {
@@ -67,37 +40,15 @@ async function loadProduceMetadata() {
 
 export async function GET() {
   try {
-    const cacheKey = getCacheKeyDate();
-    const currentMonth = getCurrentMonth();
-    const currentMonthPathname = `produce-data/${currentMonth}.parquet`;
-    let currentMonthVersion = 'unknown';
-
-    try {
-      const { blobs } = await list({
-        prefix: currentMonthPathname,
-        token: process.env.VERCEL_BLOB_READ_WRITE_TOKEN,
-      });
-      const currentMonthBlob = blobs.find((blob) => blob.pathname === currentMonthPathname);
-
-      if (currentMonthBlob) {
-        const currentMonthHead = await head(currentMonthBlob.url);
-        currentMonthVersion = currentMonthHead.uploadedAt.toISOString();
-      }
-    } catch (error) {
-      console.warn('Produce metadata: failed to read current month blob head', error);
-    }
-
-    const cached = unstable_cache(loadProduceMetadata, [
-      'produce-metadata',
-      cacheKey,
-      currentMonthVersion,
-    ]);
+    const cached = unstable_cache(loadProduceMetadata, ['produce-metadata'], {
+      revalidate: 86400,
+      tags: ['produce-metadata'],
+    });
     const data = await cached();
-    const secondsUntilNext8am = getSecondsUntilNext8am();
 
     return NextResponse.json(data, {
       headers: {
-        'Cache-Control': `public, max-age=${secondsUntilNext8am}, s-maxage=${secondsUntilNext8am}, stale-while-revalidate=86400`,
+        'Cache-Control': 'public, max-age=86400, s-maxage=86400, stale-while-revalidate=86400',
       },
     });
   } catch (error) {

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { list } from '@vercel/blob';
+import { revalidateTag } from 'next/cache';
 import { regenerateMonthParquet } from '@/lib/produce-parquet-utils';
 
 // POST /api/cron/backfill-produce
@@ -39,6 +40,8 @@ export async function POST(request: Request) {
       const result = await regenerateMonthParquet(month);
       results.push({ month, ...result });
     }
+
+    revalidateTag('produce-metadata', { expire: 0 });
 
     const totalItems = results.reduce((sum, r) => sum + r.itemCount, 0);
 
