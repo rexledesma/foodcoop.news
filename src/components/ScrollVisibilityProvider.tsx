@@ -16,9 +16,20 @@ export function ScrollVisibilityProvider({ children }: { children: ReactNode }) 
   const pathname = usePathname();
   const isTrackedRoute = pathname ? TRACKED_ROUTES.has(pathname) : false;
   const [showSticky, setShowSticky] = useState(true);
+  const [forceSticky, setForceSticky] = useState(false);
   const lastScrollY = useRef(0);
   const showStickyRef = useRef(true);
   const rafId = useRef<number | null>(null);
+
+  useEffect(() => {
+    const handleForceSticky = (event: Event) => {
+      if (!(event instanceof CustomEvent)) return;
+      setForceSticky(Boolean(event.detail));
+    };
+
+    window.addEventListener('force-sticky', handleForceSticky as EventListener);
+    return () => window.removeEventListener('force-sticky', handleForceSticky as EventListener);
+  }, []);
 
   useEffect(() => {
     const routeIsTracked = pathname ? TRACKED_ROUTES.has(pathname) : false;
@@ -84,8 +95,8 @@ export function ScrollVisibilityProvider({ children }: { children: ReactNode }) 
   }, [pathname]);
 
   const value = useMemo(
-    () => ({ showSticky: isTrackedRoute ? showSticky : true }),
-    [isTrackedRoute, showSticky],
+    () => ({ showSticky: isTrackedRoute ? showSticky || forceSticky : true }),
+    [isTrackedRoute, showSticky, forceSticky],
   );
 
   return (

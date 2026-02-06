@@ -80,6 +80,7 @@ export function ProduceAnalytics({
   const [sortDirection, setSortDirection] = useState<SortDirection>(initialFilters.sortDirection);
   const [quickFilter, setQuickFilter] = useState<QuickFilter>(initialFilters.quickFilter);
   const [timePeriod, setTimePeriod] = useState<TimePeriod>(initialFilters.timePeriod);
+  const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [favorites, setFavorites] = useState<Set<string>>(() => {
     if (typeof window === 'undefined') return new Set();
     const stored = localStorage.getItem('produce-favorites');
@@ -122,6 +123,13 @@ export function ProduceAnalytics({
     observer.observe(element);
     return () => observer.disconnect();
   }, []);
+
+  const stickyVisible = showSticky || isSearchFocused;
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    window.dispatchEvent(new CustomEvent('force-sticky', { detail: isSearchFocused }));
+  }, [isSearchFocused]);
 
   const filteredAndSorted = useMemo(() => {
     let result = data;
@@ -250,7 +258,9 @@ export function ProduceAnalytics({
       <div
         ref={controlsRef}
         className={`sticky top-24 z-20 bg-white transition-[opacity,transform] duration-200 ease-out motion-reduce:transition-none md:top-14 dark:bg-zinc-900 ${
-          showSticky ? 'translate-y-0 opacity-100' : 'pointer-events-none -translate-y-2 opacity-0'
+          stickyVisible
+            ? 'translate-y-0 opacity-100'
+            : 'pointer-events-none -translate-y-2 opacity-0'
         }`}
       >
         <h1 className="py-6 text-2xl font-bold text-zinc-900 dark:text-zinc-100">Produce</h1>
@@ -262,6 +272,8 @@ export function ProduceAnalytics({
               placeholder="Search produce..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
+              onFocus={() => setIsSearchFocused(true)}
+              onBlur={() => setIsSearchFocused(false)}
               className="w-full rounded-lg border border-zinc-300 bg-white px-4 py-2 pr-10 text-zinc-900 placeholder-zinc-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
             />
             {search ? (
@@ -406,7 +418,7 @@ export function ProduceAnalytics({
       <div
         className="transition-transform duration-200 ease-out motion-reduce:transition-none"
         style={{
-          transform: showSticky ? 'translateY(0px)' : `translateY(-${controlsHeight}px)`,
+          transform: stickyVisible ? 'translateY(0px)' : `translateY(-${controlsHeight}px)`,
         }}
       >
         <table className="w-full min-w-full table-fixed text-sm">
