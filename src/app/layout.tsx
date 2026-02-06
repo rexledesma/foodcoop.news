@@ -77,10 +77,6 @@ export default function RootLayout({
         <ConvexClientProvider>
           <ProduceDataProvider>
             <DiscoverFeedProvider>
-              <div
-                className="pointer-events-none fixed top-0 right-0 left-0 z-30 h-32 bg-gradient-to-b from-[#0693e3]/10 via-[#00d084]/10 to-transparent"
-                aria-hidden="true"
-              />
               <div className="flex min-h-screen flex-col">
                 <main className="pt-16 md:pt-14">{children}</main>
                 <Footer />

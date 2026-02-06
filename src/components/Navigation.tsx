@@ -56,7 +56,7 @@ export function Navigation() {
   }, []);
 
   return (
-    <nav className="safe-area-pt fixed top-0 right-0 left-0 z-40 bg-white/15 backdrop-blur-md dark:bg-zinc-900/15">
+    <nav className="safe-area-pt fixed top-0 right-0 left-0 z-40 bg-gradient-to-b from-[#e6f3fc] via-[#e6f9f0] to-white dark:from-[#1a2437] dark:via-[#162b24] dark:to-zinc-900">
       <div className="mx-auto flex h-16 max-w-3xl items-center justify-between px-4 md:h-14 md:gap-2">
         <div className="-ml-2 flex items-center justify-start md:-ml-4 md:justify-center md:gap-2">
           {navItems.map((item) => {
