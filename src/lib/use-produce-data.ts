@@ -9,6 +9,12 @@ export interface ProduceRow {
   prev_day_price: number | null;
   prev_week_price: number | null;
   prev_month_price: number | null;
+  day_high: number | null;
+  day_low: number | null;
+  week_high: number | null;
+  week_low: number | null;
+  month_high: number | null;
+  month_low: number | null;
   is_organic: boolean;
   is_ipm: boolean;
   is_waxed: boolean;
@@ -222,6 +228,27 @@ export function useProduceData(): UseProduceDataResult {
             SELECT * FROM current_with_new
             UNION ALL
             SELECT * FROM unavailable_rows
+          ),
+          prev_day_date AS (
+            SELECT MAX(date::DATE) as prev_date FROM produce, latest_date WHERE date::DATE < max_date
+          ),
+          day_high_low AS (
+            SELECT name, MAX(price) as day_high, MIN(price) as day_low
+            FROM produce, prev_day_date, latest_date
+            WHERE date::DATE >= prev_date AND date::DATE <= max_date
+            GROUP BY name
+          ),
+          week_high_low AS (
+            SELECT name, MAX(price) as week_high, MIN(price) as week_low
+            FROM produce, latest_date
+            WHERE date::DATE >= max_date - INTERVAL '7 days'
+            GROUP BY name
+          ),
+          month_high_low AS (
+            SELECT name, MAX(price) as month_high, MIN(price) as month_low
+            FROM produce, latest_date
+            WHERE date::DATE >= max_date - INTERVAL '30 days'
+            GROUP BY name
           )
           SELECT
             b.name,
@@ -239,12 +266,21 @@ export function useProduceData(): UseProduceDataResult {
             d.prev_day_price,
             w.prev_week_price,
             m.prev_month_price,
+            dhl.day_high,
+            dhl.day_low,
+            whl.week_high,
+            whl.week_low,
+            mhl.month_high,
+            mhl.month_low,
             b.is_unavailable,
             b.unavailable_since_date
           FROM base_rows b
           LEFT JOIN prev_day d ON b.name = d.name
           LEFT JOIN prev_week w ON b.name = w.name
           LEFT JOIN prev_month m ON b.name = m.name
+          LEFT JOIN day_high_low dhl ON b.name = dhl.name
+          LEFT JOIN week_high_low whl ON b.name = whl.name
+          LEFT JOIN month_high_low mhl ON b.name = mhl.name
           ORDER BY b.name
         `);
 
@@ -273,7 +309,7 @@ export function useProduceData(): UseProduceDataResult {
         if (maxDate) {
           const endDate = new Date(maxDate + 'T00:00:00');
           const startDate = new Date(endDate);
-          startDate.setDate(startDate.getDate() - 29);
+          startDate.setDate(startDate.getDate() - 30);
           const startStr = startDate.toISOString().slice(0, 10);
           setDateRange({ start: startStr, end: maxDate });
         }

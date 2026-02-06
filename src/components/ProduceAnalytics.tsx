@@ -8,15 +8,8 @@ import type {
   ProduceRow,
 } from '@/lib/use-produce-data';
 
-type SortField =
-  | 'name'
-  | 'price'
-  | 'day_change'
-  | 'day_change_pct'
-  | 'week_change'
-  | 'month_change'
-  | 'first_seen'
-  | 'last_seen';
+type TimePeriod = '1D' | '1W' | '1M';
+type SortField = 'name' | 'price' | 'change' | 'first_seen' | 'last_seen';
 type SortDirection = 'asc' | 'desc' | null;
 
 interface ProduceAnalyticsProps {
@@ -40,12 +33,35 @@ type QuickFilter =
   | 'waxed'
   | null;
 
-const PRICE_COL_CLASS =
-  'w-[var(--price-col)] min-w-[var(--price-col)] max-w-[var(--price-col)] md:w-24 md:min-w-0 md:max-w-none';
-const PRIMARY_PRICE_COL_CLASS =
-  'w-[var(--price-col)] min-w-[var(--price-col)] max-w-[var(--price-col)] md:w-28 md:min-w-0 md:max-w-none';
 const NAME_COL_CLASS =
   'w-[var(--name-col)] min-w-[var(--name-col)] max-w-[var(--name-col)] md:w-2/5 md:min-w-0 md:max-w-none';
+const DATA_COL_CLASS = 'md:w-auto md:min-w-0 md:max-w-none';
+
+const TIME_PERIODS: TimePeriod[] = ['1D', '1W', '1M'];
+const PERIOD_LABELS: Record<TimePeriod, string> = { '1D': 'Day', '1W': 'Week', '1M': 'Month' };
+
+function getPeriodData(row: ProduceRow, period: TimePeriod) {
+  switch (period) {
+    case '1D':
+      return {
+        prev: row.prev_day_price,
+        high: row.day_high,
+        low: row.day_low,
+      };
+    case '1W':
+      return {
+        prev: row.prev_week_price,
+        high: row.week_high,
+        low: row.week_low,
+      };
+    case '1M':
+      return {
+        prev: row.prev_month_price,
+        high: row.month_high,
+        low: row.month_low,
+      };
+  }
+}
 
 export function ProduceAnalytics({
   data,
@@ -58,6 +74,7 @@ export function ProduceAnalytics({
   const [sortField, setSortField] = useState<SortField | null>('name');
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
   const [quickFilter, setQuickFilter] = useState<QuickFilter>(null);
+  const [timePeriod, setTimePeriod] = useState<TimePeriod>('1M');
   const [favorites, setFavorites] = useState<Set<string>>(() => {
     if (typeof window === 'undefined') return new Set();
     const stored = localStorage.getItem('produce-favorites');
@@ -123,24 +140,13 @@ export function ProduceAnalytics({
           aVal = a.price;
           bVal = b.price;
           break;
-        case 'day_change':
-          aVal = a.prev_day_price ? a.price - a.prev_day_price : 0;
-          bVal = b.prev_day_price ? b.price - b.prev_day_price : 0;
+        case 'change': {
+          const aPeriod = getPeriodData(a, timePeriod);
+          const bPeriod = getPeriodData(b, timePeriod);
+          aVal = aPeriod.prev !== null ? (a.price - aPeriod.prev) / aPeriod.prev : 0;
+          bVal = bPeriod.prev !== null ? (b.price - bPeriod.prev) / bPeriod.prev : 0;
           break;
-        case 'day_change_pct':
-          aVal = a.prev_day_price ? (a.price - a.prev_day_price) / a.prev_day_price : 0;
-          bVal = b.prev_day_price ? (b.price - b.prev_day_price) / b.prev_day_price : 0;
-          break;
-        case 'week_change':
-          aVal = a.prev_week_price !== null ? (a.price - a.prev_week_price) / a.prev_week_price : 0;
-          bVal = b.prev_week_price !== null ? (b.price - b.prev_week_price) / b.prev_week_price : 0;
-          break;
-        case 'month_change':
-          aVal =
-            a.prev_month_price !== null ? (a.price - a.prev_month_price) / a.prev_month_price : 0;
-          bVal =
-            b.prev_month_price !== null ? (b.price - b.prev_month_price) / b.prev_month_price : 0;
-          break;
+        }
         case 'first_seen':
           aVal = a.first_seen_date ?? '';
           bVal = b.first_seen_date ?? '';
@@ -162,7 +168,7 @@ export function ProduceAnalytics({
     });
 
     return result;
-  }, [data, search, sortField, sortDirection, quickFilter, favorites]);
+  }, [data, search, sortField, sortDirection, quickFilter, favorites, timePeriod]);
 
   const skeletonRows = useMemo(
     () => Array.from({ length: 8 }, (_, index) => `skeleton-${index}`),
@@ -185,10 +191,10 @@ export function ProduceAnalytics({
     setSortField(newField);
     setSortDirection(newDirection);
 
-    // Sync pills with sort state for change columns
+    // Sync pills with sort state for change column
     if (!newField || !newDirection || newField === 'name' || newField === 'price') {
       setQuickFilter(null);
-    } else {
+    } else if (newField === 'change') {
       setQuickFilter(newDirection === 'asc' ? 'drops' : 'increases');
     }
   };
@@ -202,7 +208,7 @@ export function ProduceAnalytics({
     } else {
       setQuickFilter(filter);
       if (filter === 'drops' || filter === 'increases') {
-        setSortField('day_change');
+        setSortField('change');
         setSortDirection(filter === 'drops' ? 'asc' : 'desc');
       } else if (filter === 'favorites') {
         setSortField('name');
@@ -364,20 +370,35 @@ export function ProduceAnalytics({
         </div>
       </div>
 
+      {/* Time Period Pills */}
+      <div className="mb-4 flex gap-1">
+        {TIME_PERIODS.map((period) => (
+          <button
+            key={period}
+            type="button"
+            onClick={() => setTimePeriod(period)}
+            className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+              timePeriod === period
+                ? 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900'
+                : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-700'
+            }`}
+          >
+            {period}
+          </button>
+        ))}
+      </div>
+
       {error && !isLoading && (
         <div className="mb-4 text-sm text-red-600 dark:text-red-400">{error}</div>
       )}
 
       {/* Table */}
-      <div className="snap-x snap-mandatory scroll-pl-[var(--name-col)] overflow-x-auto [--name-col:10rem] [--price-col:calc((100dvw-2rem-var(--name-col))/2)] md:snap-none md:scroll-pl-0">
+      <div className="overflow-x-auto">
         <table className="w-full min-w-full table-fixed text-sm">
           <colgroup>
             <col className={NAME_COL_CLASS} />
-            <col className={PRIMARY_PRICE_COL_CLASS} />
-            <col className={PRICE_COL_CLASS} />
-            <col className={PRICE_COL_CLASS} />
-            <col className={`${PRICE_COL_CLASS} md:w-20`} />
-            <col className={`${PRICE_COL_CLASS} md:w-20`} />
+            <col className={DATA_COL_CLASS} />
+            <col className={DATA_COL_CLASS} />
           </colgroup>
           <thead>
             <tr className="border-b border-zinc-200 dark:border-zinc-800">
@@ -395,45 +416,18 @@ export function ProduceAnalytics({
                 current={sortField}
                 direction={sortDirection}
                 onClick={handleSort}
-                className={`${PRIMARY_PRICE_COL_CLASS} snap-start`}
+                className={DATA_COL_CLASS}
               >
                 Price
               </SortHeader>
               <SortHeader
-                field="day_change"
+                field="change"
                 current={sortField}
                 direction={sortDirection}
                 onClick={handleSort}
-                className={`${PRICE_COL_CLASS} snap-start`}
+                className={DATA_COL_CLASS}
               >
-                Day Δ
-              </SortHeader>
-              <SortHeader
-                field="day_change_pct"
-                current={sortField}
-                direction={sortDirection}
-                onClick={handleSort}
-                className={`${PRICE_COL_CLASS} snap-start`}
-              >
-                Day %
-              </SortHeader>
-              <SortHeader
-                field="week_change"
-                current={sortField}
-                direction={sortDirection}
-                onClick={handleSort}
-                className={`${PRICE_COL_CLASS} snap-start md:w-20`}
-              >
-                Week %
-              </SortHeader>
-              <SortHeader
-                field="month_change"
-                current={sortField}
-                direction={sortDirection}
-                onClick={handleSort}
-                className={`${PRICE_COL_CLASS} snap-start md:w-20`}
-              >
-                Month %
+                {PERIOD_LABELS[timePeriod]}
               </SortHeader>
             </tr>
           </thead>
@@ -555,35 +549,39 @@ export function ProduceAnalytics({
                       </div>
                     </td>
                     <td
-                      className={`snap-start px-2 py-3 font-mono text-zinc-900 dark:text-zinc-100 ${PRIMARY_PRICE_COL_CLASS} box-border`}
+                      className={`px-2 py-3 font-mono text-zinc-900 dark:text-zinc-100 ${DATA_COL_CLASS} box-border`}
                     >
                       <div>
-                        <span
-                          className={`font-bold ${
-                            row.prev_day_price !== null && row.price < row.prev_day_price
-                              ? 'text-green-600 dark:text-green-400'
-                              : row.prev_day_price !== null && row.price > row.prev_day_price
-                                ? 'text-red-600 dark:text-red-400'
-                                : ''
-                          }`}
-                        >
-                          ${row.price.toFixed(2)}
-                        </span>
-                        {row.prev_day_price !== null && row.prev_day_price !== row.price && (
-                          <sup className="ml-1 text-[0.65em] text-zinc-400 line-through dark:text-zinc-500">
-                            ${row.prev_day_price.toFixed(2)}
-                          </sup>
-                        )}
+                        {(() => {
+                          const { prev } = getPeriodData(row, timePeriod);
+                          return (
+                            <>
+                              <span
+                                className={`font-bold ${
+                                  prev !== null && row.price < prev
+                                    ? 'text-green-600 dark:text-green-400'
+                                    : prev !== null && row.price > prev
+                                      ? 'text-red-600 dark:text-red-400'
+                                      : ''
+                                }`}
+                              >
+                                ${row.price.toFixed(2)}
+                              </span>
+                              {prev !== null && prev !== row.price && (
+                                <sup className="ml-1 text-[0.65em] text-zinc-400 line-through dark:text-zinc-500">
+                                  ${prev.toFixed(2)}
+                                </sup>
+                              )}
+                            </>
+                          );
+                        })()}
                       </div>
                       <div className="text-xs text-zinc-500 dark:text-zinc-400">/{row.unit}</div>
                       <div className="mt-1">
                         <Sparkline points={history.get(row.name)} dateRange={dateRange} />
                       </div>
                     </td>
-                    <AbsoluteChangeCell current={row.price} previous={row.prev_day_price} />
-                    <PercentChangeCell current={row.price} previous={row.prev_day_price} />
-                    <PercentChangeCell current={row.price} previous={row.prev_week_price} />
-                    <PercentChangeCell current={row.price} previous={row.prev_month_price} />
+                    <MetricsCell row={row} period={timePeriod} />
                   </tr>
                 ))}
           </tbody>
@@ -599,6 +597,59 @@ export function ProduceAnalytics({
   );
 }
 
+function MetricsCell({ row, period }: { row: ProduceRow; period: TimePeriod }) {
+  const { prev, high, low } = getPeriodData(row, period);
+
+  if (prev === null) {
+    return <td className={`px-2 py-3 ${DATA_COL_CLASS} box-border text-zinc-400`}>—</td>;
+  }
+
+  const change = row.price - prev;
+  const pctChange = (change / prev) * 100;
+  const roundedPct = Math.round(pctChange * 10) / 10;
+
+  const isPositive = change > 0;
+  const isNegative = change < 0;
+
+  const colorClass = isPositive
+    ? 'text-red-600 dark:text-red-400'
+    : isNegative
+      ? 'text-green-600 dark:text-green-400'
+      : 'text-zinc-500';
+
+  const sign = isPositive ? '+' : isNegative ? '-' : '\u2007';
+
+  return (
+    <td className={`px-2 py-3 ${DATA_COL_CLASS} box-border text-xs`}>
+      <div className="flex items-baseline gap-1.5">
+        <span className="w-8 shrink-0 text-zinc-500 dark:text-zinc-400">{period} %</span>
+        <span className={`font-mono ${colorClass}`}>
+          {sign}
+          {Math.abs(roundedPct).toFixed(1)}%
+        </span>
+      </div>
+      <div className="flex items-baseline gap-1.5">
+        <span className="w-8 shrink-0 text-zinc-500 dark:text-zinc-400">{period} &#916;</span>
+        <span className={`font-mono ${colorClass}`}>
+          {sign}${Math.abs(change).toFixed(2)}
+        </span>
+      </div>
+      <div className="flex items-baseline gap-1.5">
+        <span className="w-8 shrink-0 text-zinc-500 dark:text-zinc-400">{period} H</span>
+        <span className="font-mono text-zinc-900 dark:text-zinc-100">
+          {high !== null ? `\u2007$${high.toFixed(2)}` : '\u2007—'}
+        </span>
+      </div>
+      <div className="flex items-baseline gap-1.5">
+        <span className="w-8 shrink-0 text-zinc-500 dark:text-zinc-400">{period} L</span>
+        <span className="font-mono text-zinc-900 dark:text-zinc-100">
+          {low !== null ? `\u2007$${low.toFixed(2)}` : '\u2007—'}
+        </span>
+      </div>
+    </td>
+  );
+}
+
 function SkeletonRow() {
   return (
     <tr className="border-b border-zinc-100 dark:border-zinc-800/50">
@@ -610,29 +661,17 @@ function SkeletonRow() {
           <div className="feed-shimmer h-4 w-full rounded" />
         </div>
       </td>
-      <td className={`snap-start px-2 py-3 ${PRIMARY_PRICE_COL_CLASS} box-border`}>
+      <td className={`px-2 py-3 ${DATA_COL_CLASS} box-border`}>
         <div className="flex h-full items-center">
           <div className="feed-shimmer h-4 w-full rounded" />
         </div>
       </td>
-      <td className={`snap-start px-2 py-3 ${PRICE_COL_CLASS} box-border`}>
-        <div className="flex h-full items-center">
-          <div className="feed-shimmer h-4 w-full rounded" />
-        </div>
-      </td>
-      <td className={`snap-start px-2 py-3 ${PRICE_COL_CLASS} box-border`}>
-        <div className="flex h-full items-center">
-          <div className="feed-shimmer h-4 w-full rounded" />
-        </div>
-      </td>
-      <td className={`snap-start px-2 py-3 ${PRICE_COL_CLASS} box-border`}>
-        <div className="flex h-full items-center">
-          <div className="feed-shimmer h-4 w-full rounded" />
-        </div>
-      </td>
-      <td className={`snap-start px-2 py-3 ${PRICE_COL_CLASS} box-border`}>
-        <div className="flex h-full items-center">
-          <div className="feed-shimmer h-4 w-full rounded" />
+      <td className={`px-2 py-3 ${DATA_COL_CLASS} box-border`}>
+        <div className="space-y-1">
+          <div className="feed-shimmer h-3 w-20 rounded" />
+          <div className="feed-shimmer h-3 w-16 rounded" />
+          <div className="feed-shimmer h-3 w-18 rounded" />
+          <div className="feed-shimmer h-3 w-18 rounded" />
         </div>
       </td>
     </tr>
@@ -665,62 +704,6 @@ function SortHeader({
         {direction === 'asc' ? '↑' : direction === 'desc' ? '↓' : ''}
       </span>
     </th>
-  );
-}
-
-function AbsoluteChangeCell({ current, previous }: { current: number; previous: number | null }) {
-  const baseClass = `py-3 px-2 snap-start ${PRICE_COL_CLASS} box-border`;
-
-  if (previous === null) {
-    return <td className={`${baseClass} text-zinc-400`}>—</td>;
-  }
-
-  const change = current - previous;
-  const isPositive = change > 0;
-  const isNegative = change < 0;
-
-  const colorClass = isPositive
-    ? 'text-red-600 dark:text-red-400'
-    : isNegative
-      ? 'text-green-600 dark:text-green-400'
-      : 'text-zinc-500';
-
-  const sign = isPositive ? '+' : isNegative ? '-' : '\u2007';
-
-  return (
-    <td className={`${baseClass} font-mono ${colorClass}`}>
-      {sign}${Math.abs(change).toFixed(2)}
-    </td>
-  );
-}
-
-function PercentChangeCell({ current, previous }: { current: number; previous: number | null }) {
-  const baseClass = `py-3 px-2 snap-start ${PRICE_COL_CLASS} box-border`;
-
-  if (previous === null) {
-    return <td className={`${baseClass} text-zinc-400`}>—</td>;
-  }
-
-  const change = current - previous;
-  const pctChange = (change / previous) * 100;
-  const roundedPct = Math.round(pctChange * 10) / 10;
-
-  const isPositive = roundedPct > 0;
-  const isNegative = roundedPct < 0;
-
-  const colorClass = isPositive
-    ? 'text-red-600 dark:text-red-400'
-    : isNegative
-      ? 'text-green-600 dark:text-green-400'
-      : 'text-zinc-500';
-
-  const sign = isPositive ? '+' : isNegative ? '-' : '\u2007';
-
-  return (
-    <td className={`${baseClass} font-mono ${colorClass}`}>
-      {sign}
-      {Math.abs(roundedPct).toFixed(1)}%
-    </td>
   );
 }
 
