@@ -525,15 +525,24 @@ export function ProduceAnalytics({
                                 <>
                                   {showUnavailable && (
                                     <span className="rounded bg-red-100 px-1 text-red-700 dark:bg-red-900/30 dark:text-red-400">
-                                      Last seen {formatShortDate(row.unavailable_since_date!)}
+                                      <span className="inline-block">Last seen</span>{' '}
+                                      <span className="inline-block">
+                                        {formatShortDate(row.unavailable_since_date!)}
+                                      </span>
                                     </span>
                                   )}
                                   {showUnavailable && showNew && ' · '}
                                   {showNew && (
                                     <span className="rounded bg-[rgb(255,246,220)] px-1 text-[#3F7540]">
-                                      First seen
-                                      {row.first_seen_date &&
-                                        ` ${formatShortDate(row.first_seen_date)}`}
+                                      <span className="inline-block">First seen</span>
+                                      {row.first_seen_date && (
+                                        <>
+                                          {' '}
+                                          <span className="inline-block">
+                                            {formatShortDate(row.first_seen_date)}
+                                          </span>
+                                        </>
+                                      )}
                                     </span>
                                   )}
                                   {(showUnavailable || showNew) && hasAttributes && ' · '}
