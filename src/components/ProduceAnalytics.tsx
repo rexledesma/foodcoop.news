@@ -94,7 +94,6 @@ export function ProduceAnalytics({
   });
   const { showSticky } = useScrollVisibility();
   const controlsRef = useRef<HTMLDivElement>(null);
-  const [controlsHeight, setControlsHeight] = useState(0);
 
   useEffect(() => {
     localStorage.setItem(
@@ -108,6 +107,13 @@ export function ProduceAnalytics({
     window.dispatchEvent(new Event('produce-favorites'));
   }, [favorites]);
 
+  const stickyVisible = showSticky || isSearchFocused;
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    window.dispatchEvent(new CustomEvent('force-sticky', { detail: isSearchFocused }));
+  }, [isSearchFocused]);
+
   useEffect(() => {
     const element = controlsRef.current;
     if (!element || typeof ResizeObserver === 'undefined') {
@@ -115,7 +121,7 @@ export function ProduceAnalytics({
     }
 
     const updateHeight = () => {
-      setControlsHeight(element.offsetHeight);
+      window.dispatchEvent(new CustomEvent('sticky-threshold', { detail: element.offsetHeight }));
     };
 
     updateHeight();
@@ -123,13 +129,6 @@ export function ProduceAnalytics({
     observer.observe(element);
     return () => observer.disconnect();
   }, []);
-
-  const stickyVisible = showSticky || isSearchFocused;
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    window.dispatchEvent(new CustomEvent('force-sticky', { detail: isSearchFocused }));
-  }, [isSearchFocused]);
 
   const filteredAndSorted = useMemo(() => {
     let result = data;
@@ -257,10 +256,8 @@ export function ProduceAnalytics({
       {/* Sticky controls + table header */}
       <div
         ref={controlsRef}
-        className={`sticky top-24 z-20 bg-white transition-[opacity,transform] duration-300 ease-in-out motion-reduce:transition-none md:top-14 dark:bg-zinc-900 ${
-          stickyVisible
-            ? 'translate-y-0 opacity-100'
-            : 'pointer-events-none -translate-y-2 opacity-0'
+        className={`sticky top-24 z-20 bg-white transition-opacity duration-300 ease-in-out motion-reduce:transition-none md:top-14 dark:bg-zinc-900 ${
+          stickyVisible ? 'opacity-100' : 'pointer-events-none opacity-0'
         }`}
       >
         <h1 className="py-6 text-2xl font-bold text-zinc-900 dark:text-zinc-100">Produce</h1>
@@ -415,12 +412,7 @@ export function ProduceAnalytics({
       </div>
 
       {/* Body table */}
-      <div
-        className="transition-transform duration-300 ease-in-out motion-reduce:transition-none"
-        style={{
-          transform: stickyVisible ? 'translateY(0px)' : `translateY(-${controlsHeight}px)`,
-        }}
-      >
+      <div className="transition-opacity duration-300 ease-in-out motion-reduce:transition-none">
         <table className="w-full min-w-full table-fixed text-sm">
           <Colgroup />
           <tbody>

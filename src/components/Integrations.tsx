@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef, CSSProperties } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useQuery, useMutation } from 'convex/react';
@@ -156,7 +156,6 @@ export function Integrations() {
   const [isGeneratingPass, setIsGeneratingPass] = useState(false);
   const [isGeneratingGooglePass, setIsGeneratingGooglePass] = useState(false);
   const headerRef = useRef<HTMLDivElement>(null);
-  const [headerHeight, setHeaderHeight] = useState(0);
 
   // Initialize form with profile data
   useEffect(() => {
@@ -208,7 +207,7 @@ export function Integrations() {
     }
 
     const updateHeight = () => {
-      setHeaderHeight(element.offsetHeight);
+      window.dispatchEvent(new CustomEvent('sticky-threshold', { detail: element.offsetHeight }));
     };
 
     updateHeight();
@@ -506,17 +505,11 @@ export function Integrations() {
   }
 
   return (
-    <div
-      style={
-        {
-          '--header-offset': `${headerHeight}px`,
-        } as CSSProperties
-      }
-    >
+    <div>
       <div
         ref={headerRef}
-        className={`sticky top-24 z-20 bg-white transition-[opacity,transform] duration-300 ease-in-out motion-reduce:transition-none md:top-14 dark:bg-zinc-900 ${
-          showSticky ? 'translate-y-0 opacity-100' : 'pointer-events-none -translate-y-2 opacity-0'
+        className={`sticky top-24 z-20 bg-white transition-opacity duration-300 ease-in-out motion-reduce:transition-none md:top-14 dark:bg-zinc-900 ${
+          showSticky ? 'opacity-100' : 'pointer-events-none opacity-0'
         }`}
       >
         <h1 className="mx-auto max-w-3xl px-4 pt-6 pb-6 text-2xl font-bold text-zinc-900 dark:text-zinc-100">
@@ -524,14 +517,7 @@ export function Integrations() {
         </h1>
       </div>
 
-      <div
-        className="mx-auto max-w-3xl px-4 pb-6 transition-transform duration-300 ease-in-out motion-reduce:transition-none"
-        style={{
-          transform: showSticky
-            ? 'translateY(0px)'
-            : 'translateY(calc(-1 * (var(--nav-offset) + var(--header-offset))))',
-        }}
-      >
+      <div className="mx-auto max-w-3xl px-4 pb-6">
         {!session?.user && !sessionPending && (
           <div className="mb-6 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
             <Link

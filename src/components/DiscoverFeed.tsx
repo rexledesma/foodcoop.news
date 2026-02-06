@@ -565,7 +565,6 @@ export function DiscoverFeed() {
   const [filter, setFilter] = useState<FilterType>('latest');
   const { showSticky } = useScrollVisibility();
   const filtersRef = useRef<HTMLDivElement>(null);
-  const [filtersHeight, setFiltersHeight] = useState(0);
   const favoritesSnapshot = useSyncExternalStore(
     subscribeToFavorites,
     getFavoritesSnapshot,
@@ -619,7 +618,7 @@ export function DiscoverFeed() {
     }
 
     const updateHeight = () => {
-      setFiltersHeight(element.offsetHeight);
+      window.dispatchEvent(new CustomEvent('sticky-threshold', { detail: element.offsetHeight }));
     };
 
     updateHeight();
@@ -635,8 +634,8 @@ export function DiscoverFeed() {
     <div>
       <div
         ref={filtersRef}
-        className={`sticky top-24 z-20 bg-white transition-[opacity,transform] duration-300 ease-in-out motion-reduce:transition-none md:top-14 dark:bg-zinc-900 ${
-          showSticky ? 'translate-y-0 opacity-100' : 'pointer-events-none -translate-y-2 opacity-0'
+        className={`sticky top-24 z-20 bg-white transition-opacity duration-300 ease-in-out motion-reduce:transition-none md:top-14 dark:bg-zinc-900 ${
+          showSticky ? 'opacity-100' : 'pointer-events-none opacity-0'
         }`}
       >
         <h1 className="py-6 text-2xl font-bold text-zinc-900 dark:text-zinc-100">Discover</h1>
@@ -701,12 +700,7 @@ export function DiscoverFeed() {
         </div>
       </div>
 
-      <div
-        className="transition-transform duration-300 ease-in-out motion-reduce:transition-none"
-        style={{
-          transform: showSticky ? 'translateY(0px)' : `translateY(-${filtersHeight}px)`,
-        }}
-      >
+      <div className="transition-opacity duration-300 ease-in-out motion-reduce:transition-none">
         {isInitialLoading ? (
           <div className="grid gap-4">
             <FeedItemSkeleton />

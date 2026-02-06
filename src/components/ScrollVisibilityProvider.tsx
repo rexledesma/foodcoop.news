@@ -17,6 +17,7 @@ export function ScrollVisibilityProvider({ children }: { children: ReactNode }) 
   const isTrackedRoute = pathname ? TRACKED_ROUTES.has(pathname) : false;
   const [showSticky, setShowSticky] = useState(true);
   const [forceSticky, setForceSticky] = useState(false);
+  const stickyThresholdRef = useRef(0);
   const lastScrollY = useRef(0);
   const showStickyRef = useRef(true);
   const rafId = useRef<number | null>(null);
@@ -32,12 +33,25 @@ export function ScrollVisibilityProvider({ children }: { children: ReactNode }) 
   }, []);
 
   useEffect(() => {
+    const handleStickyThreshold = (event: Event) => {
+      if (!(event instanceof CustomEvent)) return;
+      const nextThreshold = Number(event.detail);
+      stickyThresholdRef.current = Number.isFinite(nextThreshold) ? Math.max(0, nextThreshold) : 0;
+    };
+
+    window.addEventListener('sticky-threshold', handleStickyThreshold as EventListener);
+    return () =>
+      window.removeEventListener('sticky-threshold', handleStickyThreshold as EventListener);
+  }, []);
+
+  useEffect(() => {
     const routeIsTracked = pathname ? TRACKED_ROUTES.has(pathname) : false;
 
     if (!routeIsTracked || typeof window === 'undefined') {
       return;
     }
 
+    stickyThresholdRef.current = 0;
     lastScrollY.current = window.scrollY;
     showStickyRef.current = true;
 
@@ -47,11 +61,16 @@ export function ScrollVisibilityProvider({ children }: { children: ReactNode }) 
       const absDelta = Math.abs(delta);
       const atTop = currentY <= TOP_THRESHOLD;
 
-      if (atTop) {
+      if (currentY <= stickyThresholdRef.current) {
         if (!showStickyRef.current) {
           showStickyRef.current = true;
           setShowSticky(true);
         }
+        lastScrollY.current = currentY;
+        return;
+      }
+
+      if (atTop) {
         lastScrollY.current = currentY;
         return;
       }
