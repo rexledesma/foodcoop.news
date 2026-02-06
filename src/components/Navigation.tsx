@@ -6,6 +6,7 @@ import { usePathname } from 'next/navigation';
 import { useQuery } from 'convex/react';
 import { api } from '../../convex/_generated/api';
 import { useSession, signOut } from '@/lib/auth-client';
+import { useScrollVisibility } from '@/components/ScrollVisibilityProvider';
 
 const navItems = [
   { href: '/discover', label: 'Discover', icon: 'compass' },
@@ -40,6 +41,7 @@ export function Navigation() {
   const pathname = usePathname();
   const { data: session, isPending } = useSession();
   const memberProfile = useQuery(api.memberProfiles.getMemberProfile);
+  const { showSticky } = useScrollVisibility();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const desktopDropdownRef = useRef<HTMLDivElement>(null);
   const mobileDropdownRef = useRef<HTMLDivElement>(null);
@@ -64,7 +66,11 @@ export function Navigation() {
   }, []);
 
   return (
-    <nav className="safe-area-pt fixed top-0 right-0 left-0 z-40 bg-gradient-to-b from-[#e6f3fc] via-[#e6f9f0] to-white dark:from-[#1a2437] dark:via-[#162b24] dark:to-zinc-900">
+    <nav
+      className={`safe-area-pt fixed top-0 right-0 left-0 z-40 bg-gradient-to-b from-[#e6f3fc] via-[#e6f9f0] to-white transition-[opacity,transform] duration-200 ease-out motion-reduce:transition-none dark:from-[#1a2437] dark:via-[#162b24] dark:to-zinc-900 ${
+        showSticky ? 'translate-y-0 opacity-100' : 'pointer-events-none -translate-y-2 opacity-0'
+      }`}
+    >
       <div className="mx-auto flex h-16 max-w-3xl items-center justify-between px-4 md:h-14 md:gap-2">
         <div className="-ml-2 flex items-center justify-start md:-ml-4 md:justify-center md:gap-2">
           {navItems.map((item) => {

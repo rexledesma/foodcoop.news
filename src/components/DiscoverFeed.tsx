@@ -1,7 +1,7 @@
 'use client';
 
 /* eslint-disable @next/next/no-img-element */
-import { useMemo, useState, useSyncExternalStore } from 'react';
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import Link from 'next/link';
 import type {
   FeedPost,
@@ -12,6 +12,7 @@ import type {
   ProduceEvent,
 } from '@/lib/types';
 import { getFeedItemKey, useDiscoverFeedContext, type FeedItem } from '@/lib/discover-feed-context';
+import { useScrollVisibility } from '@/components/ScrollVisibilityProvider';
 
 type FilterType =
   | 'latest'
@@ -562,6 +563,9 @@ function ProduceCard({
 
 export function DiscoverFeed() {
   const [filter, setFilter] = useState<FilterType>('latest');
+  const { showSticky } = useScrollVisibility();
+  const filtersRef = useRef<HTMLDivElement>(null);
+  const [filtersHeight, setFiltersHeight] = useState(0);
   const favoritesSnapshot = useSyncExternalStore(
     subscribeToFavorites,
     getFavoritesSnapshot,
@@ -608,6 +612,22 @@ export function DiscoverFeed() {
       ? [...filteredItems].sort((a, b) => a.date.getTime() - b.date.getTime())
       : filteredItems;
 
+  useEffect(() => {
+    const element = filtersRef.current;
+    if (!element || typeof ResizeObserver === 'undefined') {
+      return;
+    }
+
+    const updateHeight = () => {
+      setFiltersHeight(element.offsetHeight);
+    };
+
+    updateHeight();
+    const observer = new ResizeObserver(updateHeight);
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, []);
+
   if (loading && items.length === 0) {
     return (
       <div className="space-y-4">
@@ -644,118 +664,132 @@ export function DiscoverFeed() {
 
   return (
     <div>
-      <div className="sticky top-[176px] z-20 bg-white pb-4 md:top-[136px] dark:bg-zinc-900">
-        <div className="flex flex-wrap gap-2">
-          {FILTER_OPTIONS.filter((option) => ['latest', 'upcoming'].includes(option.value)).map(
-            (option) => (
-              <button
-                type="button"
-                key={option.value}
-                onClick={() => setFilter(option.value)}
-                className={`rounded-full px-3 py-1.5 text-sm font-medium whitespace-nowrap transition-colors ${
-                  filter === option.value
-                    ? 'bg-green-600 text-white'
-                    : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-700'
-                }`}
-              >
-                {option.label}
-              </button>
-            ),
-          )}
-        </div>
-        <div className="mt-2 flex flex-wrap gap-2">
-          {FILTER_OPTIONS.filter((option) => !['latest', 'upcoming'].includes(option.value)).map(
-            (option) => (
-              <button
-                type="button"
-                key={option.value}
-                onClick={() => setFilter(option.value)}
-                className={`rounded-full px-3 py-1.5 text-sm font-medium whitespace-nowrap transition-colors ${
-                  filter === option.value
-                    ? 'bg-green-600 text-white'
-                    : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-700'
-                }`}
-              >
-                {option.label}
-              </button>
-            ),
-          )}
-        </div>
-        <div className="p-2 text-sm text-zinc-500 dark:text-zinc-400">
-          Showing {displayedItems.length} of {items.length} items
+      <div
+        ref={filtersRef}
+        className={`sticky top-[176px] z-20 bg-white transition-[opacity,transform] duration-200 ease-out motion-reduce:transition-none md:top-[136px] dark:bg-zinc-900 ${
+          showSticky ? 'translate-y-0 opacity-100' : 'pointer-events-none -translate-y-2 opacity-0'
+        }`}
+      >
+        <div className="pb-4">
+          <div className="flex flex-wrap gap-2">
+            {FILTER_OPTIONS.filter((option) => ['latest', 'upcoming'].includes(option.value)).map(
+              (option) => (
+                <button
+                  type="button"
+                  key={option.value}
+                  onClick={() => setFilter(option.value)}
+                  className={`rounded-full px-3 py-1.5 text-sm font-medium whitespace-nowrap transition-colors ${
+                    filter === option.value
+                      ? 'bg-green-600 text-white'
+                      : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-700'
+                  }`}
+                >
+                  {option.label}
+                </button>
+              ),
+            )}
+          </div>
+          <div className="mt-2 flex flex-wrap gap-2">
+            {FILTER_OPTIONS.filter((option) => !['latest', 'upcoming'].includes(option.value)).map(
+              (option) => (
+                <button
+                  type="button"
+                  key={option.value}
+                  onClick={() => setFilter(option.value)}
+                  className={`rounded-full px-3 py-1.5 text-sm font-medium whitespace-nowrap transition-colors ${
+                    filter === option.value
+                      ? 'bg-green-600 text-white'
+                      : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-700'
+                  }`}
+                >
+                  {option.label}
+                </button>
+              ),
+            )}
+          </div>
+          <div className="p-2 text-sm text-zinc-500 dark:text-zinc-400">
+            Showing {displayedItems.length} of {items.length} items
+          </div>
         </div>
       </div>
 
-      <div className="grid gap-4">
-        {displayedItems.map((item) => {
-          if (item.type === 'gazette') {
+      <div
+        className="transition-transform duration-200 ease-out motion-reduce:transition-none"
+        style={{
+          transform: showSticky ? 'translateY(0px)' : `translateY(-${filtersHeight}px)`,
+        }}
+      >
+        <div className="grid gap-4">
+          {displayedItems.map((item) => {
+            if (item.type === 'gazette') {
+              return (
+                <div key={getFeedItemKey(item)} className="feed-item-enter">
+                  <GazetteCard article={item.data} date={item.date} />
+                </div>
+              );
+            }
+            if (item.type === 'foodcoop') {
+              return (
+                <div key={getFeedItemKey(item)} className="feed-item-enter">
+                  <FoodCoopCard article={item.data} date={item.date} />
+                </div>
+              );
+            }
+            if (item.type === 'foodcoopcooks') {
+              return (
+                <div key={getFeedItemKey(item)} className="feed-item-enter">
+                  <FoodCoopCooksCard article={item.data} date={item.date} />
+                </div>
+              );
+            }
+            if (item.type === 'foodcoopcooks-events') {
+              return (
+                <div key={getFeedItemKey(item)} className="feed-item-enter">
+                  <EventbriteEventCard event={item.data} label="Cooking" emoji="🧑‍🍳" />
+                </div>
+              );
+            }
+            if (item.type === 'wordsprouts-events') {
+              return (
+                <div key={getFeedItemKey(item)} className="feed-item-enter">
+                  <EventbriteEventCard event={item.data} label="Wordsprouts" emoji="🌱" />
+                </div>
+              );
+            }
+            if (item.type === 'concert-series-events') {
+              return (
+                <div key={getFeedItemKey(item)} className="feed-item-enter">
+                  <EventbriteEventCard event={item.data} label="Concerts" emoji="🎶" />
+                </div>
+              );
+            }
+            if (item.type === 'gm-events') {
+              return (
+                <div key={getFeedItemKey(item)} className="feed-item-enter">
+                  <EventbriteEventCard event={item.data} label="General Meeting" emoji="🗳️" />
+                </div>
+              );
+            }
+            if (item.type === 'produce') {
+              return (
+                <div key={getFeedItemKey(item)} className="feed-item-enter">
+                  <ProduceCard update={item.data} date={item.date} favorites={favorites} />
+                </div>
+              );
+            }
             return (
               <div key={getFeedItemKey(item)} className="feed-item-enter">
-                <GazetteCard article={item.data} date={item.date} />
+                <BlueskyCard post={item.data} date={item.date} />
               </div>
             );
-          }
-          if (item.type === 'foodcoop') {
-            return (
-              <div key={getFeedItemKey(item)} className="feed-item-enter">
-                <FoodCoopCard article={item.data} date={item.date} />
-              </div>
-            );
-          }
-          if (item.type === 'foodcoopcooks') {
-            return (
-              <div key={getFeedItemKey(item)} className="feed-item-enter">
-                <FoodCoopCooksCard article={item.data} date={item.date} />
-              </div>
-            );
-          }
-          if (item.type === 'foodcoopcooks-events') {
-            return (
-              <div key={getFeedItemKey(item)} className="feed-item-enter">
-                <EventbriteEventCard event={item.data} label="Cooking" emoji="🧑‍🍳" />
-              </div>
-            );
-          }
-          if (item.type === 'wordsprouts-events') {
-            return (
-              <div key={getFeedItemKey(item)} className="feed-item-enter">
-                <EventbriteEventCard event={item.data} label="Wordsprouts" emoji="🌱" />
-              </div>
-            );
-          }
-          if (item.type === 'concert-series-events') {
-            return (
-              <div key={getFeedItemKey(item)} className="feed-item-enter">
-                <EventbriteEventCard event={item.data} label="Concerts" emoji="🎶" />
-              </div>
-            );
-          }
-          if (item.type === 'gm-events') {
-            return (
-              <div key={getFeedItemKey(item)} className="feed-item-enter">
-                <EventbriteEventCard event={item.data} label="General Meeting" emoji="🗳️" />
-              </div>
-            );
-          }
-          if (item.type === 'produce') {
-            return (
-              <div key={getFeedItemKey(item)} className="feed-item-enter">
-                <ProduceCard update={item.data} date={item.date} favorites={favorites} />
-              </div>
-            );
-          }
-          return (
-            <div key={getFeedItemKey(item)} className="feed-item-enter">
-              <BlueskyCard post={item.data} date={item.date} />
-            </div>
-          );
-        })}
-        {items.length > 0 && pendingSources > 0 && <FeedItemSkeleton />}
-      </div>
+          })}
+          {items.length > 0 && pendingSources > 0 && <FeedItemSkeleton />}
+        </div>
 
-      {filteredItems.length === 0 && pendingSources === 0 && (
-        <p className="py-8 text-center text-zinc-500 dark:text-zinc-400">No items found.</p>
-      )}
+        {filteredItems.length === 0 && pendingSources === 0 && (
+          <p className="py-8 text-center text-zinc-500 dark:text-zinc-400">No items found.</p>
+        )}
+      </div>
     </div>
   );
 }

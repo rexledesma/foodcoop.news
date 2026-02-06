@@ -8,6 +8,7 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  --nav-offset: 6rem;
 }
 
 @theme inline {
@@ -21,6 +22,12 @@
   :root {
     --background: #0a0a0a;
     --foreground: #ededed;
+  }
+}
+
+@media (min-width: 768px) {
+  :root {
+    --nav-offset: 3.5rem;
   }
 }
 

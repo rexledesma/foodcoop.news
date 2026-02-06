@@ -1,12 +1,13 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, CSSProperties } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useQuery, useMutation } from 'convex/react';
 import { api } from '../../convex/_generated/api';
 import { useSession } from '@/lib/auth-client';
 import { AppleWalletCard } from './AppleWalletCard';
+import { useScrollVisibility } from '@/components/ScrollVisibilityProvider';
 
 const CALENDAR_PROXY_PATH = '/api/calendar';
 const DRAFT_STORAGE_KEY = 'integrations:draft';
@@ -130,6 +131,7 @@ export function Integrations() {
   const { data: session, isPending: sessionPending } = useSession();
   const memberProfile = useQuery(api.memberProfiles.getMemberProfile);
   const updateMemberProfile = useMutation(api.memberProfiles.updateMemberProfile);
+  const { showSticky } = useScrollVisibility();
 
   const [fullName, setFullName] = useState('');
   const [memberId, setMemberId] = useState('');
@@ -153,6 +155,8 @@ export function Integrations() {
   >([]);
   const [isGeneratingPass, setIsGeneratingPass] = useState(false);
   const [isGeneratingGooglePass, setIsGeneratingGooglePass] = useState(false);
+  const headerRef = useRef<HTMLDivElement>(null);
+  const [headerHeight, setHeaderHeight] = useState(0);
 
   // Initialize form with profile data
   useEffect(() => {
@@ -195,6 +199,22 @@ export function Integrations() {
 
   useEffect(() => {
     setCalendarOrigin(window.location.origin);
+  }, []);
+
+  useEffect(() => {
+    const element = headerRef.current;
+    if (!element || typeof ResizeObserver === 'undefined') {
+      return;
+    }
+
+    const updateHeight = () => {
+      setHeaderHeight(element.offsetHeight);
+    };
+
+    updateHeight();
+    const observer = new ResizeObserver(updateHeight);
+    observer.observe(element);
+    return () => observer.disconnect();
   }, []);
 
   const requireAuth = () => {
@@ -486,14 +506,32 @@ export function Integrations() {
   }
 
   return (
-    <div>
-      <div className="sticky top-24 z-20 bg-white md:top-14 dark:bg-zinc-900">
+    <div
+      style={
+        {
+          '--header-offset': `${headerHeight}px`,
+        } as CSSProperties
+      }
+    >
+      <div
+        ref={headerRef}
+        className={`sticky top-24 z-20 bg-white transition-[opacity,transform] duration-200 ease-out motion-reduce:transition-none md:top-14 dark:bg-zinc-900 ${
+          showSticky ? 'translate-y-0 opacity-100' : 'pointer-events-none -translate-y-2 opacity-0'
+        }`}
+      >
         <h1 className="mx-auto max-w-3xl px-4 pt-6 pb-6 text-2xl font-bold text-zinc-900 dark:text-zinc-100">
           Integrations
         </h1>
       </div>
 
-      <div className="mx-auto max-w-3xl px-4 pb-6">
+      <div
+        className="mx-auto max-w-3xl px-4 pb-6 transition-transform duration-200 ease-out motion-reduce:transition-none"
+        style={{
+          transform: showSticky
+            ? 'translateY(0px)'
+            : 'translateY(calc(-1 * (var(--nav-offset) + var(--header-offset))))',
+        }}
+      >
         {!session?.user && !sessionPending && (
           <div className="mb-6 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
             <Link
