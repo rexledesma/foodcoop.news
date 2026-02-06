@@ -7,7 +7,7 @@ export const metadata = {
 
 export default function ProducePage() {
   return (
-    <ScrollAwarePageShell title="Produce">
+    <ScrollAwarePageShell>
       <ProducePageClient />
     </ScrollAwarePageShell>
   );

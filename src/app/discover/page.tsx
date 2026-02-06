@@ -7,7 +7,7 @@ export const metadata = {
 
 export default function DiscoverPage() {
   return (
-    <ScrollAwarePageShell title="Discover">
+    <ScrollAwarePageShell>
       <DiscoverFeed />
     </ScrollAwarePageShell>
   );

@@ -249,10 +249,11 @@ export function ProduceAnalytics({
       {/* Sticky controls + table header */}
       <div
         ref={controlsRef}
-        className={`sticky top-[176px] z-20 bg-white transition-[opacity,transform] duration-200 ease-out motion-reduce:transition-none md:top-[136px] dark:bg-zinc-900 ${
+        className={`sticky top-24 z-20 bg-white transition-[opacity,transform] duration-200 ease-out motion-reduce:transition-none md:top-14 dark:bg-zinc-900 ${
           showSticky ? 'translate-y-0 opacity-100' : 'pointer-events-none -translate-y-2 opacity-0'
         }`}
       >
+        <h1 className="py-6 text-2xl font-bold text-zinc-900 dark:text-zinc-100">Produce</h1>
         {/* Search */}
         <div className="mb-4">
           <div className="relative w-full max-w-md">
