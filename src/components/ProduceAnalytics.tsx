@@ -542,6 +542,7 @@ export function ProduceAnalytics({
                         points={history.get(row.name)}
                         dateRange={dateRange}
                         timePeriod={timePeriod}
+                        unavailableSinceDate={row.unavailable_since_date}
                       />
                     </div>
                   </td>
@@ -684,10 +685,12 @@ function Sparkline({
   points,
   dateRange,
   timePeriod,
+  unavailableSinceDate,
 }: {
   points?: ProduceHistoryPoint[];
   dateRange: ProduceDateRange | null;
   timePeriod: TimePeriod;
+  unavailableSinceDate?: string | null;
 }) {
   if (!points || points.length === 0) {
     return <div className="h-4 text-[10px] text-zinc-400">—</div>;
@@ -900,6 +903,15 @@ function Sparkline({
           )
         );
       })()}
+      {unavailableSinceDate && lastPoint && lastPoint.x < width + padding && (
+        <rect
+          x={lastPoint.x}
+          y={0}
+          width={width + padding - lastPoint.x}
+          height={height + padding * 2}
+          fill="url(#hatch)"
+        />
+      )}
       {periodStartPoint && (
         <circle
           cx={periodStartPoint.x}
