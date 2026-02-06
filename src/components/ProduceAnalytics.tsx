@@ -884,6 +884,19 @@ function Sparkline({
       preserveAspectRatio="xMidYMid meet"
       aria-hidden="true"
     >
+      <defs>
+        <pattern id="hatch" width="4" height="4" patternUnits="userSpaceOnUse">
+          <line
+            x1="0"
+            y1="4"
+            x2="4"
+            y2="0"
+            stroke="#52525b"
+            strokeWidth="0.5"
+            strokeOpacity="0.8"
+          />
+        </pattern>
+      </defs>
       {areaSegments.map((segment, index) => (
         <path
           key={`area-${segment.position}-${index}`}
@@ -917,15 +930,23 @@ function Sparkline({
           strokeDasharray="3 3"
         />
       )}
-      {timePeriod !== '1M' && (
-        <rect
-          x={padding}
-          y={0}
-          width={Math.max(0, periodStartX - padding)}
-          height={height + padding * 2}
-          className="fill-white/60 dark:fill-zinc-900/60"
-        />
-      )}
+      {(() => {
+        const hatchEndX = Math.max(
+          timePeriod !== '1M' ? periodStartX : padding,
+          firstPoint?.x ?? padding,
+        );
+        return (
+          hatchEndX > padding && (
+            <rect
+              x={padding}
+              y={0}
+              width={hatchEndX - padding}
+              height={height + padding * 2}
+              fill="url(#hatch)"
+            />
+          )
+        );
+      })()}
       {periodStartPoint && (
         <circle
           cx={periodStartPoint.x}
