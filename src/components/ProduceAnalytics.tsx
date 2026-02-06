@@ -742,8 +742,8 @@ function Sparkline({ points }: { points?: ProduceHistoryPoint[] }) {
   const prevPoint = normalized.length > 1 ? normalized[normalized.length - 2] : null;
   const baselineY = firstPoint?.y ?? height / 2 + padding;
 
-  const lineSegments: { d: string; above: boolean }[] = [];
-  const areaSegments: { d: string; above: boolean }[] = [];
+  const lineSegments: { d: string; above: boolean | null }[] = [];
+  const areaSegments: { d: string; above: boolean | null }[] = [];
   const side = (point: { y: number }) => (point.y === baselineY ? 0 : point.y < baselineY ? 1 : -1);
   const formatPoint = (point: { x: number; y: number }) =>
     `${point.x.toFixed(2)} ${point.y.toFixed(2)}`;
@@ -776,6 +776,16 @@ function Sparkline({ points }: { points?: ProduceHistoryPoint[] }) {
       const currSide = side(curr);
 
       if (prevSide === 0 && currSide === 0) {
+        // Flush any existing colored segment first
+        pushAreaSegment();
+        pushLineSegment();
+        currentPoints = [];
+        currentAbove = null;
+        // Push a baseline line segment (grey, no area fill needed)
+        lineSegments.push({
+          d: `M ${formatPoint(prev)} L ${formatPoint(curr)}`,
+          above: null,
+        });
         continue;
       }
 
@@ -825,7 +835,13 @@ function Sparkline({ points }: { points?: ProduceHistoryPoint[] }) {
         <path
           key={`${segment.above ? 'line-above' : 'line-below'}-${index}`}
           d={segment.d}
-          className={segment.above ? 'stroke-red-500' : 'stroke-green-500'}
+          className={
+            segment.above === null
+              ? 'stroke-zinc-400'
+              : segment.above
+                ? 'stroke-red-500'
+                : 'stroke-green-500'
+          }
           fill="none"
           strokeWidth="2"
           strokeLinecap="round"
