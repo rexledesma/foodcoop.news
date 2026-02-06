@@ -383,7 +383,7 @@ export function ProduceAnalytics({
                 : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-700'
             }`}
           >
-            {period}
+            {PERIOD_LABELS[period]}
           </button>
         ))}
       </div>
@@ -626,26 +626,26 @@ function MetricsCell({ row, period }: { row: ProduceRow; period: TimePeriod }) {
   return (
     <td className={`px-2 py-3 ${DATA_COL_CLASS} box-border text-xs`}>
       <div className="flex items-baseline gap-1.5">
-        <span className="w-8 shrink-0 text-zinc-500 dark:text-zinc-400">{period} %</span>
+        <span className="w-14 shrink-0 text-zinc-500 dark:text-zinc-400">% Diff</span>
         <span className={`font-mono ${colorClass}`}>
           {sign}
           {Math.abs(roundedPct).toFixed(1)}%
         </span>
       </div>
       <div className="flex items-baseline gap-1.5">
-        <span className="w-8 shrink-0 text-zinc-500 dark:text-zinc-400">{period} &#916;</span>
+        <span className="w-14 shrink-0 text-zinc-500 dark:text-zinc-400">$ Diff</span>
         <span className={`font-mono ${colorClass}`}>
           {sign}${Math.abs(change).toFixed(2)}
         </span>
       </div>
       <div className="flex items-baseline gap-1.5">
-        <span className="w-8 shrink-0 text-zinc-500 dark:text-zinc-400">{period} H</span>
+        <span className="w-14 shrink-0 text-zinc-500 dark:text-zinc-400">High</span>
         <span className="font-mono text-zinc-900 dark:text-zinc-100">
           {high !== null ? `\u2007$${high.toFixed(2)}` : '\u2007—'}
         </span>
       </div>
       <div className="flex items-baseline gap-1.5">
-        <span className="w-8 shrink-0 text-zinc-500 dark:text-zinc-400">{period} L</span>
+        <span className="w-14 shrink-0 text-zinc-500 dark:text-zinc-400">Low</span>
         <span className="font-mono text-zinc-900 dark:text-zinc-100">
           {low !== null ? `\u2007$${low.toFixed(2)}` : '\u2007—'}
         </span>
