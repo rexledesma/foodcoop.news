@@ -1,7 +1,12 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import type { ProduceHistoryMap, ProduceHistoryPoint, ProduceRow } from '@/lib/use-produce-data';
+import type {
+  ProduceDateRange,
+  ProduceHistoryMap,
+  ProduceHistoryPoint,
+  ProduceRow,
+} from '@/lib/use-produce-data';
 
 type SortField =
   | 'name'
@@ -17,6 +22,7 @@ type SortDirection = 'asc' | 'desc' | null;
 interface ProduceAnalyticsProps {
   data: ProduceRow[];
   history: ProduceHistoryMap;
+  dateRange: ProduceDateRange | null;
   isLoading?: boolean;
   error?: string | null;
 }
@@ -44,6 +50,7 @@ const NAME_COL_CLASS =
 export function ProduceAnalytics({
   data,
   history,
+  dateRange,
   isLoading = false,
   error = null,
 }: ProduceAnalyticsProps) {
@@ -570,7 +577,7 @@ export function ProduceAnalytics({
                       </div>
                       <div className="text-xs text-zinc-500 dark:text-zinc-400">/{row.unit}</div>
                       <div className="mt-1">
-                        <Sparkline points={history.get(row.name)} />
+                        <Sparkline points={history.get(row.name)} dateRange={dateRange} />
                       </div>
                     </td>
                     <AbsoluteChangeCell current={row.price} previous={row.prev_day_price} />
@@ -719,7 +726,13 @@ function PercentChangeCell({ current, previous }: { current: number; previous: n
 
 type PositionY = 'above' | 'baseline' | 'below';
 
-function Sparkline({ points }: { points?: ProduceHistoryPoint[] }) {
+function Sparkline({
+  points,
+  dateRange,
+}: {
+  points?: ProduceHistoryPoint[];
+  dateRange: ProduceDateRange | null;
+}) {
   if (!points || points.length === 0) {
     return <div className="h-4 text-[10px] text-zinc-400">—</div>;
   }
@@ -732,8 +745,17 @@ function Sparkline({ points }: { points?: ProduceHistoryPoint[] }) {
   const max = Math.max(...values);
   const range = max - min;
 
-  const normalized = points.map((point, index) => {
-    const x = (points.length === 1 ? width / 2 : (index / (points.length - 1)) * width) + padding;
+  const startMs = dateRange
+    ? new Date(dateRange.start + 'T00:00:00').getTime()
+    : new Date(points[0].date + 'T00:00:00').getTime();
+  const endMs = dateRange
+    ? new Date(dateRange.end + 'T00:00:00').getTime()
+    : new Date(points[points.length - 1].date + 'T00:00:00').getTime();
+  const totalMs = endMs - startMs;
+
+  const normalized = points.map((point) => {
+    const pointMs = new Date(point.date + 'T00:00:00').getTime();
+    const x = (totalMs === 0 ? width / 2 : ((pointMs - startMs) / totalMs) * width) + padding;
     const y =
       (range === 0 ? height / 2 : height - ((point.price - min) / range) * height) + padding;
     return { x, y };

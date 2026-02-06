@@ -30,6 +30,11 @@ export interface ProduceHistoryPoint {
 
 export type ProduceHistoryMap = Map<string, ProduceHistoryPoint[]>;
 
+export interface ProduceDateRange {
+  start: string;
+  end: string;
+}
+
 interface ProduceMetadata {
   months: {
     month: string;
@@ -42,6 +47,7 @@ interface ProduceMetadata {
 interface UseProduceDataResult {
   data: ProduceRow[];
   history: ProduceHistoryMap;
+  dateRange: ProduceDateRange | null;
   isLoading: boolean;
   error: string | null;
 }
@@ -50,6 +56,7 @@ export function useProduceData(): UseProduceDataResult {
   const { isReady, isLoading: dbLoading, error: dbError, query, loadParquet } = useDuckDB();
   const [data, setData] = useState<ProduceRow[]>([]);
   const [history, setHistory] = useState<ProduceHistoryMap>(new Map());
+  const [dateRange, setDateRange] = useState<ProduceDateRange | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -247,19 +254,29 @@ export function useProduceData(): UseProduceDataResult {
           WITH latest_date AS (
             SELECT MAX(date::DATE) as max_date FROM produce
           )
-          SELECT name, date::DATE as date, price
+          SELECT name, CAST(date::DATE AS VARCHAR) as date, price
           FROM produce, latest_date
           WHERE date::DATE BETWEEN max_date - INTERVAL '30 days' AND max_date
           ORDER BY name, date::DATE
         `);
 
         const historyMap = new Map<string, ProduceHistoryPoint[]>();
+        let maxDate: string | null = null;
         for (const row of historyRows) {
           const existing = historyMap.get(row.name) ?? [];
           existing.push(row);
           historyMap.set(row.name, existing);
+          if (!maxDate || row.date > maxDate) maxDate = row.date;
         }
         setHistory(historyMap);
+
+        if (maxDate) {
+          const endDate = new Date(maxDate + 'T00:00:00');
+          const startDate = new Date(endDate);
+          startDate.setDate(startDate.getDate() - 29);
+          const startStr = startDate.toISOString().slice(0, 10);
+          setDateRange({ start: startStr, end: maxDate });
+        }
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to load data');
       } finally {
@@ -273,5 +290,5 @@ export function useProduceData(): UseProduceDataResult {
   const isLoading = dbLoading || loading;
   const combinedError = dbError?.message || error;
 
-  return { data, history, isLoading, error: combinedError };
+  return { data, history, dateRange, isLoading, error: combinedError };
 }
