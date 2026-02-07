@@ -102,63 +102,63 @@ export function Navigation() {
             <NavIcon icon={aboutItem.icon} />
             <span className="text-sm font-medium">{aboutItem.label}</span>
           </Link>
-          {!isPending && (
-            <div className="relative hidden md:block" ref={desktopDropdownRef}>
-              {session?.user ? (
-                <>
-                  <button
-                    type="button"
-                    onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                    className={`flex flex-row items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
-                      isDropdownOpen
-                        ? 'text-black dark:text-white'
-                        : 'text-zinc-500 hover:text-black dark:text-zinc-400 dark:hover:text-white'
-                    }`}
-                  >
-                    <NavIcon icon="carrot" />
-                    <span>Account</span>
-                  </button>
-                  {isDropdownOpen && (
-                    <div className="absolute top-full left-0 z-50 mt-2 w-64 overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-lg dark:border-zinc-700 dark:bg-zinc-800">
-                      <div className="border-b border-zinc-200 p-4 dark:border-zinc-700">
-                        <p className="font-medium text-zinc-900 dark:text-zinc-100">
-                          {memberProfile?.memberName || session.user.name}
-                        </p>
-                        {memberProfile?.memberId && (
-                          <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
-                            Member ID: <span className="font-mono">{memberProfile.memberId}</span>
-                          </p>
-                        )}
-                        <p className="mt-1 truncate text-sm text-zinc-500 dark:text-zinc-400">
-                          {session.user.email}
-                        </p>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={handleSignOut}
-                        className="w-full px-4 py-3 text-left text-sm text-zinc-700 transition-colors hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-700"
-                      >
-                        Sign Out
-                      </button>
-                    </div>
-                  )}
-                </>
-              ) : (
-                <Link
-                  href="/login"
-                  className={`flex flex-row items-center justify-center gap-2 rounded-lg px-4 py-2 transition-colors ${
-                    pathname === '/login'
+        </div>
+        {!isPending && (
+          <div className="relative hidden md:block" ref={desktopDropdownRef}>
+            {session?.user ? (
+              <>
+                <button
+                  type="button"
+                  onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                  className={`flex flex-row items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
+                    isDropdownOpen
                       ? 'text-black dark:text-white'
                       : 'text-zinc-500 hover:text-black dark:text-zinc-400 dark:hover:text-white'
                   }`}
                 >
                   <NavIcon icon="carrot" />
-                  <span className="text-sm font-medium">Sign In</span>
-                </Link>
-              )}
-            </div>
-          )}
-        </div>
+                  <span>Account</span>
+                </button>
+                {isDropdownOpen && (
+                  <div className="absolute top-full right-0 z-50 mt-2 w-64 overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-lg dark:border-zinc-700 dark:bg-zinc-800">
+                    <div className="border-b border-zinc-200 p-4 dark:border-zinc-700">
+                      <p className="font-medium text-zinc-900 dark:text-zinc-100">
+                        {memberProfile?.memberName || session.user.name}
+                      </p>
+                      {memberProfile?.memberId && (
+                        <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
+                          Member ID: <span className="font-mono">{memberProfile.memberId}</span>
+                        </p>
+                      )}
+                      <p className="mt-1 truncate text-sm text-zinc-500 dark:text-zinc-400">
+                        {session.user.email}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleSignOut}
+                      className="w-full px-4 py-3 text-left text-sm text-zinc-700 transition-colors hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-700"
+                    >
+                      Sign Out
+                    </button>
+                  </div>
+                )}
+              </>
+            ) : (
+              <Link
+                href="/login"
+                className={`flex flex-row items-center justify-center gap-2 rounded-lg px-4 py-2 transition-colors ${
+                  pathname === '/login'
+                    ? 'text-black dark:text-white'
+                    : 'text-zinc-500 hover:text-black dark:text-zinc-400 dark:hover:text-white'
+                }`}
+              >
+                <NavIcon icon="carrot" />
+                <span className="text-sm font-medium">Sign In</span>
+              </Link>
+            )}
+          </div>
+        )}
       </div>
       <div className="mx-auto -ml-2 flex max-w-3xl items-center px-4 pb-2 md:hidden">
         <Link
