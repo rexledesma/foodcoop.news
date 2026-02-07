@@ -79,7 +79,7 @@ export default function RootLayout({
           <ProduceDataProvider>
             <DiscoverFeedProvider>
               <ScrollVisibilityProvider>
-                <div className="flex min-h-screen flex-col">
+                <div className="flex min-h-dvh flex-col">
                   <main className="pt-24 md:pt-14">{children}</main>
                 </div>
                 <Navigation />
