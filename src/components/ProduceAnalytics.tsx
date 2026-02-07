@@ -711,14 +711,16 @@ function SparklineTooltip({
   date,
   price,
   xPercent,
+  dimmed,
 }: {
   date: string;
   price: number;
   xPercent: number;
+  dimmed?: boolean;
 }) {
   return (
     <div
-      className="pointer-events-none absolute bottom-full mb-1 -translate-x-1/2 rounded bg-zinc-900 px-1.5 py-0.5 text-[10px] whitespace-nowrap text-white dark:bg-zinc-100 dark:text-zinc-900"
+      className={`pointer-events-none absolute bottom-full mb-1 -translate-x-1/2 rounded bg-zinc-900 px-1.5 py-0.5 text-[10px] whitespace-nowrap text-white dark:bg-zinc-100 dark:text-zinc-900 ${dimmed ? 'opacity-50' : ''}`}
       style={{ left: `${xPercent}%` }}
     >
       {formatShortDate(date)} · ${price.toFixed(2)}
@@ -925,6 +927,19 @@ function Sparkline({
 
   const activePoint = active ? { svg: normalized[active.index], data: points[active.index] } : null;
 
+  const hatchEndX = Math.max(
+    timePeriod !== '1M' ? periodStartX : padding,
+    firstPoint?.x ?? padding,
+  );
+
+  const isOutOfRange =
+    activePoint &&
+    (activePoint.svg.x < hatchEndX ||
+      (unavailableSinceDate &&
+        lastPoint &&
+        lastPoint.x < width + padding &&
+        activePoint.svg.x >= lastPoint.x));
+
   return (
     <div className="relative">
       <svg
@@ -985,23 +1000,15 @@ function Sparkline({
             strokeDasharray="3 3"
           />
         )}
-        {(() => {
-          const hatchEndX = Math.max(
-            timePeriod !== '1M' ? periodStartX : padding,
-            firstPoint?.x ?? padding,
-          );
-          return (
-            hatchEndX > padding && (
-              <rect
-                x={padding}
-                y={0}
-                width={hatchEndX - padding}
-                height={height + padding * 2}
-                fill="url(#hatch)"
-              />
-            )
-          );
-        })()}
+        {hatchEndX > padding && (
+          <rect
+            x={padding}
+            y={0}
+            width={hatchEndX - padding}
+            height={height + padding * 2}
+            fill="url(#hatch)"
+          />
+        )}
         {unavailableSinceDate && lastPoint && lastPoint.x < width + padding && (
           <rect
             x={lastPoint.x}
@@ -1040,7 +1047,7 @@ function Sparkline({
           />
         )}
         {activePoint && (
-          <>
+          <g opacity={isOutOfRange ? 0.5 : 1}>
             <line
               x1={activePoint.svg.x}
               x2={activePoint.svg.x}
@@ -1057,7 +1064,7 @@ function Sparkline({
               className="fill-white stroke-zinc-700 dark:fill-zinc-900 dark:stroke-zinc-300"
               strokeWidth="1.5"
             />
-          </>
+          </g>
         )}
       </svg>
       {active && activePoint && (
@@ -1065,6 +1072,7 @@ function Sparkline({
           date={activePoint.data.date}
           price={activePoint.data.price}
           xPercent={active.tooltipXPercent}
+          dimmed={!!isOutOfRange}
         />
       )}
     </div>
