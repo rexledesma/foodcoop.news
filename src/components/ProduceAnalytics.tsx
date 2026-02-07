@@ -455,7 +455,7 @@ export function ProduceAnalytics({
                           {favorites.has(row.name) ? '⭐' : '+'}
                         </span>
                         <div className="min-w-0">
-                          <div className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
+                          <div className="line-clamp-3 text-sm font-medium text-zinc-900 md:line-clamp-none dark:text-zinc-100">
                             <span className={row.is_unavailable ? 'line-through' : undefined}>
                               {row.name}
                             </span>
