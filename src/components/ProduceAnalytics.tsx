@@ -707,6 +707,25 @@ function SortHeader({
 
 type PositionY = 'above' | 'baseline' | 'below';
 
+function SparklineTooltip({
+  date,
+  price,
+  xPercent,
+}: {
+  date: string;
+  price: number;
+  xPercent: number;
+}) {
+  return (
+    <div
+      className="pointer-events-none absolute bottom-full mb-1 -translate-x-1/2 rounded bg-zinc-900 px-1.5 py-0.5 text-[10px] whitespace-nowrap text-white dark:bg-zinc-100 dark:text-zinc-900"
+      style={{ left: `${xPercent}%` }}
+    >
+      {formatShortDate(date)} · ${price.toFixed(2)}
+    </div>
+  );
+}
+
 function Sparkline({
   points,
   dateRange,
@@ -718,6 +737,10 @@ function Sparkline({
   timePeriod: TimePeriod;
   unavailableSinceDate?: string | null;
 }) {
+  const [active, setActive] = useState<{ index: number; tooltipXPercent: number } | null>(null);
+  const svgRef = useRef<SVGSVGElement>(null);
+  const lastActiveIndex = useRef<number | null>(null);
+
   if (!points || points.length === 0) {
     return <div className="h-4 text-[10px] text-zinc-400">—</div>;
   }
@@ -745,6 +768,47 @@ function Sparkline({
       (range === 0 ? height / 2 : height - ((point.price - min) / range) * height) + padding;
     return { x, y };
   });
+
+  const svgWidth = width + padding * 2;
+
+  const handlePointerMove = (e: React.PointerEvent<SVGSVGElement>) => {
+    const svg = svgRef.current;
+    if (!svg || normalized.length === 0) return;
+    const ctm = svg.getScreenCTM();
+    if (!ctm) return;
+    const svgX = (e.clientX - ctm.e) / ctm.a;
+    let closest = 0;
+    let closestDist = Math.abs(normalized[0].x - svgX);
+    for (let i = 1; i < normalized.length; i++) {
+      const dist = Math.abs(normalized[i].x - svgX);
+      if (dist < closestDist) {
+        closestDist = dist;
+        closest = i;
+      }
+    }
+    if (closestDist > 5) {
+      setActive(null);
+      lastActiveIndex.current = null;
+      return;
+    }
+    const rect = svg.getBoundingClientRect();
+    const tooltipXPercent = ((e.clientX - rect.left) / rect.width) * 100;
+    setActive({ index: closest, tooltipXPercent: Math.min(90, Math.max(10, tooltipXPercent)) });
+    if (lastActiveIndex.current !== closest) {
+      lastActiveIndex.current = closest;
+      navigator.vibrate?.(1);
+    }
+  };
+
+  const handlePointerDown = (e: React.PointerEvent<SVGSVGElement>) => {
+    (e.target as Element).setPointerCapture(e.pointerId);
+    handlePointerMove(e);
+  };
+
+  const handlePointerLeave = () => {
+    setActive(null);
+    lastActiveIndex.current = null;
+  };
 
   const firstPoint = normalized[0];
   const lastPoint = normalized[normalized.length - 1];
@@ -859,114 +923,151 @@ function Sparkline({
     pushLineSegment();
   }
 
+  const activePoint = active ? { svg: normalized[active.index], data: points[active.index] } : null;
+
   return (
-    <svg
-      viewBox={`0 0 ${width + padding * 2} ${height + padding * 2}`}
-      className="h-6 w-full"
-      preserveAspectRatio="xMidYMid meet"
-      aria-hidden="true"
-    >
-      <defs>
-        <pattern id="hatch" width="4" height="4" patternUnits="userSpaceOnUse">
-          <line
-            x1="0"
-            y1="4"
-            x2="4"
-            y2="0"
-            stroke="#52525b"
-            strokeWidth="0.5"
-            strokeOpacity="0.8"
-          />
-        </pattern>
-      </defs>
-      {areaSegments.map((segment, index) => (
-        <path
-          key={`area-${segment.position}-${index}`}
-          d={segment.d}
-          className={segment.position === 'above' ? 'fill-red-500/20' : 'fill-green-500/20'}
-        />
-      ))}
-      {lineSegments.map((segment, index) => (
-        <path
-          key={`line-${segment.position}-${index}`}
-          d={segment.d}
-          className={
-            { above: 'stroke-red-500', below: 'stroke-green-500', baseline: 'stroke-zinc-400' }[
-              segment.position
-            ]
-          }
-          fill="none"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-      ))}
-      {firstPoint && (
-        <line
-          x1={padding}
-          x2={width + padding}
-          y1={firstPoint.y}
-          y2={firstPoint.y}
-          className="stroke-black"
-          strokeWidth="1"
-          strokeDasharray="3 3"
-        />
-      )}
-      {(() => {
-        const hatchEndX = Math.max(
-          timePeriod !== '1M' ? periodStartX : padding,
-          firstPoint?.x ?? padding,
-        );
-        return (
-          hatchEndX > padding && (
-            <rect
-              x={padding}
-              y={0}
-              width={hatchEndX - padding}
-              height={height + padding * 2}
-              fill="url(#hatch)"
+    <div className="relative">
+      <svg
+        ref={svgRef}
+        viewBox={`0 0 ${svgWidth} ${height + padding * 2}`}
+        className="mx-auto h-6 touch-none"
+        preserveAspectRatio="xMidYMid meet"
+        aria-hidden="true"
+        onPointerMove={handlePointerMove}
+        onPointerDown={handlePointerDown}
+        onPointerUp={handlePointerLeave}
+        onPointerLeave={handlePointerLeave}
+        onPointerCancel={handlePointerLeave}
+      >
+        <defs>
+          <pattern id="hatch" width="4" height="4" patternUnits="userSpaceOnUse">
+            <line
+              x1="0"
+              y1="4"
+              x2="4"
+              y2="0"
+              stroke="#52525b"
+              strokeWidth="0.5"
+              strokeOpacity="0.8"
             />
-          )
-        );
-      })()}
-      {unavailableSinceDate && lastPoint && lastPoint.x < width + padding && (
-        <rect
-          x={lastPoint.x}
-          y={0}
-          width={width + padding - lastPoint.x}
-          height={height + padding * 2}
-          fill="url(#hatch)"
+          </pattern>
+        </defs>
+        {areaSegments.map((segment, index) => (
+          <path
+            key={`area-${segment.position}-${index}`}
+            d={segment.d}
+            className={segment.position === 'above' ? 'fill-red-500/20' : 'fill-green-500/20'}
+          />
+        ))}
+        {lineSegments.map((segment, index) => (
+          <path
+            key={`line-${segment.position}-${index}`}
+            d={segment.d}
+            className={
+              { above: 'stroke-red-500', below: 'stroke-green-500', baseline: 'stroke-zinc-400' }[
+                segment.position
+              ]
+            }
+            fill="none"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        ))}
+        {firstPoint && (
+          <line
+            x1={padding}
+            x2={width + padding}
+            y1={firstPoint.y}
+            y2={firstPoint.y}
+            className="stroke-black"
+            strokeWidth="1"
+            strokeDasharray="3 3"
+          />
+        )}
+        {(() => {
+          const hatchEndX = Math.max(
+            timePeriod !== '1M' ? periodStartX : padding,
+            firstPoint?.x ?? padding,
+          );
+          return (
+            hatchEndX > padding && (
+              <rect
+                x={padding}
+                y={0}
+                width={hatchEndX - padding}
+                height={height + padding * 2}
+                fill="url(#hatch)"
+              />
+            )
+          );
+        })()}
+        {unavailableSinceDate && lastPoint && lastPoint.x < width + padding && (
+          <rect
+            x={lastPoint.x}
+            y={0}
+            width={width + padding - lastPoint.x}
+            height={height + padding * 2}
+            fill="url(#hatch)"
+          />
+        )}
+        {periodStartPoint && (
+          <circle
+            cx={periodStartPoint.x}
+            cy={periodStartPoint.y}
+            r="2.25"
+            className={
+              {
+                above: 'fill-white stroke-red-500',
+                below: 'fill-white stroke-green-500',
+                baseline: 'fill-white stroke-zinc-400',
+              }[positionY(periodStartPoint)]
+            }
+            strokeWidth="1.5"
+          />
+        )}
+        {lastPoint && (
+          <circle
+            cx={lastPoint.x}
+            cy={lastPoint.y}
+            r="2.75"
+            className={
+              { above: 'fill-red-500', below: 'fill-green-500', baseline: 'fill-zinc-400' }[
+                positionY(lastPoint)
+              ]
+            }
+            strokeWidth="0"
+          />
+        )}
+        {activePoint && (
+          <>
+            <line
+              x1={activePoint.svg.x}
+              x2={activePoint.svg.x}
+              y1={0}
+              y2={height + padding * 2}
+              className="stroke-zinc-500 dark:stroke-zinc-400"
+              strokeWidth="0.75"
+              strokeDasharray="2 2"
+            />
+            <circle
+              cx={activePoint.svg.x}
+              cy={activePoint.svg.y}
+              r="3"
+              className="fill-white stroke-zinc-700 dark:fill-zinc-900 dark:stroke-zinc-300"
+              strokeWidth="1.5"
+            />
+          </>
+        )}
+      </svg>
+      {active && activePoint && (
+        <SparklineTooltip
+          date={activePoint.data.date}
+          price={activePoint.data.price}
+          xPercent={active.tooltipXPercent}
         />
       )}
-      {periodStartPoint && (
-        <circle
-          cx={periodStartPoint.x}
-          cy={periodStartPoint.y}
-          r="2.25"
-          className={
-            {
-              above: 'fill-white stroke-red-500',
-              below: 'fill-white stroke-green-500',
-              baseline: 'fill-white stroke-zinc-400',
-            }[positionY(periodStartPoint)]
-          }
-          strokeWidth="1.5"
-        />
-      )}
-      {lastPoint && (
-        <circle
-          cx={lastPoint.x}
-          cy={lastPoint.y}
-          r="2.75"
-          className={
-            { above: 'fill-red-500', below: 'fill-green-500', baseline: 'fill-zinc-400' }[
-              positionY(lastPoint)
-            ]
-          }
-          strokeWidth="0"
-        />
-      )}
-    </svg>
+    </div>
   );
 }
 
