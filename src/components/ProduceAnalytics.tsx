@@ -424,7 +424,7 @@ export function ProduceAnalytics({
                     className="border-b border-zinc-100 hover:bg-zinc-50 dark:border-zinc-800/50 dark:hover:bg-zinc-800/50"
                   >
                     <td
-                      className={`${NAME_COL_CLASS} sticky left-0 z-10 box-border border-r border-zinc-200 bg-white p-0 md:w-auto md:border-r-0 dark:border-zinc-700 dark:bg-zinc-900`}
+                      className={`${NAME_COL_CLASS} sticky left-0 z-10 box-border border-r border-zinc-200 p-0 md:w-auto md:border-r-0 dark:border-zinc-700 ${favorites.has(row.name) ? 'bg-amber-50 dark:bg-amber-950/30' : 'bg-white dark:bg-zinc-900'}`}
                     >
                       <button
                         type="button"
@@ -443,31 +443,20 @@ export function ProduceAnalytics({
                             return next;
                           })
                         }
-                        className="h-full w-full cursor-pointer p-2 text-left"
+                        className="flex h-full w-full cursor-pointer items-center gap-1 p-2 text-left"
                       >
-                        <div>
-                          <span
-                            className={`inline-flex h-4 w-4 items-center justify-center rounded-full text-[10px] font-bold ${
-                              favorites.has(row.name)
-                                ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300'
-                                : 'bg-zinc-200 text-zinc-500 dark:bg-zinc-700 dark:text-zinc-400'
-                            }`}
-                          >
-                            {favorites.has(row.name) ? '⭐' : '+'}
-                          </span>
-                        </div>
+                        <span
+                          className={`inline-flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded-sm border text-[9px] font-bold ${
+                            favorites.has(row.name)
+                              ? 'border-zinc-200 bg-amber-100 text-amber-700 dark:border-zinc-700 dark:bg-amber-900/40 dark:text-amber-300'
+                              : 'border-zinc-200 bg-white text-zinc-400 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-500'
+                          }`}
+                        >
+                          {favorites.has(row.name) ? '⭐' : '+'}
+                        </span>
                         <div className="min-w-0">
-                          <div className="font-medium text-zinc-900 dark:text-zinc-100">
-                            <span
-                              className={[
-                                'rounded px-1',
-                                favorites.has(row.name) &&
-                                  'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300',
-                                row.is_unavailable && 'line-through',
-                              ]
-                                .filter(Boolean)
-                                .join(' ')}
-                            >
+                          <div className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
+                            <span className={row.is_unavailable ? 'line-through' : undefined}>
                               {row.name}
                             </span>
                           </div>
