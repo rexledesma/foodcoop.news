@@ -474,11 +474,15 @@ export function ProduceAnalytics({
               </button>
             ) : null}
           </div>
-          {!isLoading && (
-            <div className="p-2 text-sm text-zinc-500 dark:text-zinc-400">
-              Showing {filteredAndSorted.length} of {quickFilterCount} items
-            </div>
-          )}
+          <div className="p-2 text-sm text-zinc-500 dark:text-zinc-400">
+            {isLoading ? (
+              <div className="feed-shimmer h-5 w-32 rounded" />
+            ) : (
+              <>
+                Showing {filteredAndSorted.length} of {quickFilterCount} items
+              </>
+            )}
+          </div>
         </div>
 
         {/* Quick Filters */}
