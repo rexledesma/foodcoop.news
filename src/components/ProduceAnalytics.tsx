@@ -30,6 +30,22 @@ const DATA_COL_CLASS = 'w-1/3 min-w-[33.333%] max-w-[33.333%] md:w-auto md:min-w
 const TIME_PERIODS: TimePeriod[] = ['1D', '1W', '1M'];
 const PERIOD_LABELS: Record<TimePeriod, string> = { '1D': 'Day', '1W': 'Week', '1M': 'Month' };
 
+const QUICK_FILTER_LABELS: Record<NonNullable<QuickFilter>, string> = {
+  favorites: 'Favorites',
+  drops: 'Price Drops',
+  increases: 'Price Increases',
+  new: 'New Arrivals',
+  recently_unavailable: 'Out of Stock',
+};
+
+const QUICK_FILTER_CHIP_COLORS: Record<NonNullable<QuickFilter>, string> = {
+  favorites: 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300',
+  drops: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
+  increases: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
+  new: 'bg-[rgb(255,246,220)] text-[#3F7540]',
+  recently_unavailable: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
+};
+
 function getPeriodData(row: ProduceRow, period: TimePeriod) {
   switch (period) {
     case '1D':
@@ -116,6 +132,20 @@ export function ProduceAnalytics({
     observer.observe(element);
     return () => observer.disconnect();
   }, []);
+
+  const quickFilterCount = useMemo(() => {
+    if (!quickFilter || quickFilter === 'drops' || quickFilter === 'increases') {
+      return data.length;
+    }
+    if (quickFilter === 'favorites') {
+      return data.filter((row) => favorites.has(row.name)).length;
+    }
+    if (quickFilter === 'new') {
+      return data.filter((row) => row.is_new).length;
+    }
+    // recently_unavailable
+    return data.filter((row) => row.is_unavailable).length;
+  }, [data, quickFilter, favorites]);
 
   const filteredAndSorted = useMemo(() => {
     let result = data;
@@ -250,23 +280,53 @@ export function ProduceAnalytics({
         <h1 className="py-6 text-2xl font-bold text-zinc-900 dark:text-zinc-100">Produce</h1>
         {/* Search */}
         <div className="mb-4">
-          <div className="relative w-full max-w-md">
+          <div
+            className="flex w-full max-w-md cursor-text items-center gap-1.5 rounded-lg border border-zinc-300 bg-white px-3 py-2 dark:border-zinc-700 dark:bg-zinc-900"
+            onClick={() => searchInputRef.current?.focus()}
+          >
+            {quickFilter && (
+              <span
+                className={`inline-flex shrink-0 items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium ${QUICK_FILTER_CHIP_COLORS[quickFilter]}`}
+              >
+                {QUICK_FILTER_LABELS[quickFilter]}
+                <button
+                  type="button"
+                  aria-label={`Remove ${QUICK_FILTER_LABELS[quickFilter]} filter`}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setQuickFilter(null);
+                    setSortField('name');
+                    setSortDirection('asc');
+                  }}
+                  className="ml-0.5 rounded-full p-0.5 transition hover:opacity-70"
+                >
+                  ✕
+                </button>
+              </span>
+            )}
             <input
               ref={searchInputRef}
               type="text"
-              placeholder="Search produce..."
+              placeholder={quickFilter ? 'Search within filter...' : 'Search produce...'}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               onFocus={() => setIsSearchFocused(true)}
               onBlur={() => setIsSearchFocused(false)}
-              className="w-full rounded-lg border border-zinc-300 bg-white px-4 py-2 pr-10 text-zinc-900 placeholder-zinc-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
+              onKeyDown={(e) => {
+                if (e.key === 'Backspace' && search === '' && quickFilter) {
+                  setQuickFilter(null);
+                  setSortField('name');
+                  setSortDirection('asc');
+                }
+              }}
+              className="min-w-0 flex-1 bg-transparent text-zinc-900 placeholder-zinc-500 outline-none dark:text-zinc-100"
             />
             {search ? (
               <button
                 type="button"
                 onClick={() => setSearch('')}
                 aria-label="Clear search"
-                className="absolute top-1/2 right-3 -translate-y-1/2 rounded-full p-1 text-sm text-zinc-500 transition hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200"
+                className="shrink-0 rounded-full p-1 text-sm text-zinc-500 transition hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200"
               >
                 ✕
               </button>
@@ -274,7 +334,7 @@ export function ProduceAnalytics({
           </div>
           {!isLoading && (
             <div className="p-2 text-sm text-zinc-500 dark:text-zinc-400">
-              Showing {filteredAndSorted.length} of {data.length} items
+              Showing {filteredAndSorted.length} of {quickFilterCount} items
             </div>
           )}
         </div>
