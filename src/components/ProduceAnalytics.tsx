@@ -546,6 +546,11 @@ export function ProduceAnalytics({
                             );
                           })()}
                         </div>
+                        {row.origin && (
+                          <div className="text-xs text-zinc-400 dark:text-zinc-500">
+                            {row.origin}
+                          </div>
+                        )}
                       </div>
                     </button>
                   </td>
