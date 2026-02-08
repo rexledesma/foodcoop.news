@@ -11,6 +11,7 @@
 import type * as auth from "../auth.js";
 import type * as http from "../http.js";
 import type * as memberProfiles from "../memberProfiles.js";
+import type * as produceFavorites from "../produceFavorites.js";
 
 import type {
   ApiFromModules,
@@ -22,6 +23,7 @@ declare const fullApi: ApiFromModules<{
   auth: typeof auth;
   http: typeof http;
   memberProfiles: typeof memberProfiles;
+  produceFavorites: typeof produceFavorites;
 }>;
 
 /**

@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useScrollVisibility } from '@/components/ScrollVisibilityProvider';
+import { useProduceFavorites } from '@/lib/use-produce-favorites';
 import type {
   ProduceDateRange,
   ProduceHistoryMap,
@@ -81,17 +82,7 @@ export function ProduceAnalytics({
   const [quickFilter, setQuickFilter] = useState<QuickFilter>(initialFilters.quickFilter);
   const [timePeriod, setTimePeriod] = useState<TimePeriod>(initialFilters.timePeriod);
   const [isSearchFocused, setIsSearchFocused] = useState(false);
-  const [favorites, setFavorites] = useState<Set<string>>(() => {
-    if (typeof window === 'undefined') return new Set();
-    const stored = localStorage.getItem('produce-favorites');
-    if (!stored) return new Set();
-    try {
-      const parsed = JSON.parse(stored) as string[];
-      return new Set(parsed);
-    } catch {
-      return new Set();
-    }
-  });
+  const { favorites, toggleFavorite } = useProduceFavorites();
   const { showSticky } = useScrollVisibility();
   const controlsRef = useRef<HTMLDivElement>(null);
 
@@ -101,11 +92,6 @@ export function ProduceAnalytics({
       JSON.stringify({ quickFilter, timePeriod, sortField, sortDirection }),
     );
   }, [quickFilter, timePeriod, sortField, sortDirection]);
-
-  useEffect(() => {
-    localStorage.setItem('produce-favorites', JSON.stringify(Array.from(favorites)));
-    window.dispatchEvent(new Event('produce-favorites'));
-  }, [favorites]);
 
   const stickyVisible = showSticky || isSearchFocused;
 
@@ -432,17 +418,7 @@ export function ProduceAnalytics({
                         aria-label={`${
                           favorites.has(row.name) ? 'Remove from' : 'Add to'
                         } favorites for ${row.name}`}
-                        onClick={() =>
-                          setFavorites((previous) => {
-                            const next = new Set(previous);
-                            if (next.has(row.name)) {
-                              next.delete(row.name);
-                            } else {
-                              next.add(row.name);
-                            }
-                            return next;
-                          })
-                        }
+                        onClick={() => toggleFavorite(row.name)}
                         className="flex h-full w-full cursor-pointer items-center gap-1 p-2 text-left"
                       >
                         <span

@@ -15,4 +15,12 @@ export default defineSchema({
     .index('by_userId', ['userId'])
     .index('by_memberId', ['memberId'])
     .index('by_calendarId', ['calendarId']),
+  produceFavorites: defineTable({
+    userId: v.string(),
+    itemName: v.string(),
+    createdAt: v.number(),
+  })
+    .index('by_userId', ['userId'])
+    .index('by_itemName', ['itemName'])
+    .index('by_userId_itemName', ['userId', 'itemName']),
 });
