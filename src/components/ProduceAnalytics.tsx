@@ -681,7 +681,7 @@ export function ProduceAnalytics({
                   onTouchEnd={cancelLongPress}
                   onTouchMove={cancelLongPress}
                   onTouchCancel={cancelLongPress}
-                  className={`group border-b border-zinc-100 dark:border-zinc-800/50 ${pressedRow === row.name ? 'bg-zinc-100 dark:bg-zinc-800' : favorites.has(row.name) ? 'bg-amber-50 dark:bg-amber-950/30' : 'hover:bg-amber-50 dark:hover:bg-amber-950/30'}`}
+                  className={`group border-b border-zinc-100 select-none dark:border-zinc-800/50 ${pressedRow === row.name ? 'bg-zinc-100 dark:bg-zinc-800' : favorites.has(row.name) ? 'bg-amber-50 dark:bg-amber-950/30' : 'hover:bg-amber-50 dark:hover:bg-amber-950/30'}`}
                 >
                   <td
                     className={`${NAME_COL_CLASS} sticky left-0 z-10 box-border border-r border-zinc-200 p-0 md:w-auto md:border-r-0 dark:border-zinc-700 ${pressedRow === row.name ? 'bg-zinc-100 dark:bg-zinc-800' : favorites.has(row.name) ? 'bg-amber-50 dark:bg-amber-950/30' : 'bg-white group-hover:bg-amber-50 dark:bg-zinc-900 dark:group-hover:bg-amber-950/30'}`}
