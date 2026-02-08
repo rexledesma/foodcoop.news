@@ -85,6 +85,7 @@ export function ProduceAnalytics({
   const { favorites, toggleFavorite } = useProduceFavorites();
   const { showSticky } = useScrollVisibility();
   const controlsRef = useRef<HTMLDivElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     localStorage.setItem(
@@ -251,6 +252,7 @@ export function ProduceAnalytics({
         <div className="mb-4">
           <div className="relative w-full max-w-md">
             <input
+              ref={searchInputRef}
               type="text"
               placeholder="Search produce..."
               value={search}
@@ -402,154 +404,178 @@ export function ProduceAnalytics({
         <table className="w-full min-w-full table-fixed text-sm">
           <Colgroup />
           <tbody>
-            {isLoading
-              ? skeletonRows.map((rowId) => <SkeletonRow key={rowId} />)
-              : filteredAndSorted.map((row) => (
-                  <tr
-                    key={row.name}
-                    className="border-b border-zinc-100 hover:bg-zinc-50 dark:border-zinc-800/50 dark:hover:bg-zinc-800/50"
+            {isLoading ? (
+              skeletonRows.map((rowId) => <SkeletonRow key={rowId} />)
+            ) : quickFilter === 'favorites' && filteredAndSorted.length === 0 ? (
+              <tr>
+                <td colSpan={3} className="px-2 py-12 text-center">
+                  <p className="mx-auto max-w-xs text-sm text-zinc-500 dark:text-zinc-400">
+                    You have no produce favorites at the Coop :( Search for produce items to
+                    favorite and stay up to date!
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setQuickFilter(null);
+                      setSortField('name');
+                      setSortDirection('asc');
+                      setSearch('');
+                      searchInputRef.current?.focus();
+                    }}
+                    className="mt-3 rounded-full bg-zinc-900 px-4 py-1.5 text-sm font-medium text-white transition-colors hover:bg-zinc-700 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300"
                   >
-                    <td
-                      className={`${NAME_COL_CLASS} sticky left-0 z-10 box-border border-r border-zinc-200 p-0 md:w-auto md:border-r-0 dark:border-zinc-700 ${favorites.has(row.name) ? 'bg-amber-50 dark:bg-amber-950/30' : 'bg-white dark:bg-zinc-900'}`}
+                    Find favorites
+                  </button>
+                </td>
+              </tr>
+            ) : (
+              filteredAndSorted.map((row) => (
+                <tr
+                  key={row.name}
+                  className="border-b border-zinc-100 hover:bg-zinc-50 dark:border-zinc-800/50 dark:hover:bg-zinc-800/50"
+                >
+                  <td
+                    className={`${NAME_COL_CLASS} sticky left-0 z-10 box-border border-r border-zinc-200 p-0 md:w-auto md:border-r-0 dark:border-zinc-700 ${favorites.has(row.name) ? 'bg-amber-50 dark:bg-amber-950/30' : 'bg-white dark:bg-zinc-900'}`}
+                  >
+                    <button
+                      type="button"
+                      aria-pressed={favorites.has(row.name)}
+                      aria-label={`${
+                        favorites.has(row.name) ? 'Remove from' : 'Add to'
+                      } favorites for ${row.name}`}
+                      onClick={() => toggleFavorite(row.name)}
+                      className="flex h-full w-full cursor-pointer items-center gap-1 p-2 text-left"
                     >
-                      <button
-                        type="button"
-                        aria-pressed={favorites.has(row.name)}
-                        aria-label={`${
-                          favorites.has(row.name) ? 'Remove from' : 'Add to'
-                        } favorites for ${row.name}`}
-                        onClick={() => toggleFavorite(row.name)}
-                        className="flex h-full w-full cursor-pointer items-center gap-1 p-2 text-left"
+                      <span
+                        className={`inline-flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded-sm border text-[9px] font-bold ${
+                          favorites.has(row.name)
+                            ? 'border-zinc-200 bg-amber-100 text-amber-700 dark:border-zinc-700 dark:bg-amber-900/40 dark:text-amber-300'
+                            : 'border-zinc-200 bg-white text-zinc-400 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-500'
+                        }`}
                       >
-                        <span
-                          className={`inline-flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded-sm border text-[9px] font-bold ${
-                            favorites.has(row.name)
-                              ? 'border-zinc-200 bg-amber-100 text-amber-700 dark:border-zinc-700 dark:bg-amber-900/40 dark:text-amber-300'
-                              : 'border-zinc-200 bg-white text-zinc-400 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-500'
-                          }`}
-                        >
-                          {favorites.has(row.name) ? '⭐' : '+'}
-                        </span>
-                        <div className="min-w-0">
-                          <div className="line-clamp-3 text-sm font-medium text-zinc-900 md:line-clamp-none dark:text-zinc-100">
-                            <span className={row.is_unavailable ? 'line-through' : undefined}>
-                              {row.name}
-                            </span>
-                          </div>
-                          <div className="text-xs text-zinc-500 dark:text-zinc-400">
-                            {(() => {
-                              const attributeElements = [
-                                row.is_hydroponic && {
-                                  key: 'hydroponic',
-                                  node: <span>Hydroponic</span>,
-                                },
-                                row.is_ipm && {
-                                  key: 'ipm',
-                                  node: <span>IPM</span>,
-                                },
-                                row.is_local && {
-                                  key: 'local',
-                                  node: (
-                                    <span className="text-blue-600 dark:text-blue-400">Local</span>
-                                  ),
-                                },
-                                row.is_organic && {
-                                  key: 'organic',
-                                  node: (
-                                    <span className="text-green-600 dark:text-green-400">
-                                      Organic
-                                    </span>
-                                  ),
-                                },
-                                row.is_waxed && {
-                                  key: 'waxed',
-                                  node: <span>Waxed</span>,
-                                },
-                              ].filter(Boolean) as { key: string; node: React.ReactNode }[];
-                              const hasAttributes = attributeElements.length > 0;
-                              const showUnavailable =
-                                row.is_unavailable && row.unavailable_since_date;
-                              const showNew = row.is_new;
-
-                              return (
-                                <>
-                                  {showUnavailable && (
-                                    <span className="rounded bg-red-100 px-1 text-red-700 dark:bg-red-900/30 dark:text-red-400">
-                                      <span className="inline-block">Last seen</span>{' '}
-                                      <span className="inline-block">
-                                        {formatShortDate(row.unavailable_since_date!)}
-                                      </span>
-                                    </span>
-                                  )}
-                                  {showUnavailable && showNew && ' · '}
-                                  {showNew && (
-                                    <span className="rounded bg-[rgb(255,246,220)] px-1 text-[#3F7540]">
-                                      <span className="inline-block">First seen</span>
-                                      {row.first_seen_date && (
-                                        <>
-                                          {' '}
-                                          <span className="inline-block">
-                                            {formatShortDate(row.first_seen_date)}
-                                          </span>
-                                        </>
-                                      )}
-                                    </span>
-                                  )}
-                                  {(showUnavailable || showNew) && hasAttributes && ' · '}
-                                  {attributeElements.map((item, index) => (
-                                    <span key={item.key}>
-                                      {item.node}
-                                      {index < attributeElements.length - 1 && ' · '}
-                                    </span>
-                                  ))}
-                                </>
-                              );
-                            })()}
-                          </div>
+                        {favorites.has(row.name) ? '⭐' : '+'}
+                      </span>
+                      <div className="min-w-0">
+                        <div className="line-clamp-3 text-sm font-medium text-zinc-900 md:line-clamp-none dark:text-zinc-100">
+                          <span className={row.is_unavailable ? 'line-through' : undefined}>
+                            {row.name}
+                          </span>
                         </div>
-                      </button>
-                    </td>
-                    <td
-                      className={`p-2 font-mono text-zinc-900 dark:text-zinc-100 ${DATA_COL_CLASS} box-border`}
-                    >
-                      <div>
-                        {(() => {
-                          const { prev } = getPeriodData(row, timePeriod);
-                          return (
-                            <>
-                              <span
-                                className={`font-bold ${
-                                  prev !== null && row.price < prev
-                                    ? 'text-green-600 dark:text-green-400'
-                                    : prev !== null && row.price > prev
-                                      ? 'text-red-600 dark:text-red-400'
-                                      : ''
-                                }`}
-                              >
-                                ${row.price.toFixed(2)}
-                              </span>
-                              {prev !== null && prev !== row.price && (
-                                <sup className="ml-1 text-[0.65em] text-zinc-400 line-through dark:text-zinc-500">
-                                  ${prev.toFixed(2)}
-                                </sup>
-                              )}
-                            </>
-                          );
-                        })()}
+                        <div className="text-xs text-zinc-500 dark:text-zinc-400">
+                          {(() => {
+                            const attributeElements = [
+                              row.is_hydroponic && {
+                                key: 'hydroponic',
+                                node: <span>Hydroponic</span>,
+                              },
+                              row.is_ipm && {
+                                key: 'ipm',
+                                node: <span>IPM</span>,
+                              },
+                              row.is_local && {
+                                key: 'local',
+                                node: (
+                                  <span className="text-blue-600 dark:text-blue-400">Local</span>
+                                ),
+                              },
+                              row.is_organic && {
+                                key: 'organic',
+                                node: (
+                                  <span className="text-green-600 dark:text-green-400">
+                                    Organic
+                                  </span>
+                                ),
+                              },
+                              row.is_waxed && {
+                                key: 'waxed',
+                                node: <span>Waxed</span>,
+                              },
+                            ].filter(Boolean) as { key: string; node: React.ReactNode }[];
+                            const hasAttributes = attributeElements.length > 0;
+                            const showUnavailable =
+                              row.is_unavailable && row.unavailable_since_date;
+                            const showNew = row.is_new;
+
+                            return (
+                              <>
+                                {showUnavailable && (
+                                  <span className="rounded bg-red-100 px-1 text-red-700 dark:bg-red-900/30 dark:text-red-400">
+                                    <span className="inline-block">Last seen</span>{' '}
+                                    <span className="inline-block">
+                                      {formatShortDate(row.unavailable_since_date!)}
+                                    </span>
+                                  </span>
+                                )}
+                                {showUnavailable && showNew && ' · '}
+                                {showNew && (
+                                  <span className="rounded bg-[rgb(255,246,220)] px-1 text-[#3F7540]">
+                                    <span className="inline-block">First seen</span>
+                                    {row.first_seen_date && (
+                                      <>
+                                        {' '}
+                                        <span className="inline-block">
+                                          {formatShortDate(row.first_seen_date)}
+                                        </span>
+                                      </>
+                                    )}
+                                  </span>
+                                )}
+                                {(showUnavailable || showNew) && hasAttributes && ' · '}
+                                {attributeElements.map((item, index) => (
+                                  <span key={item.key}>
+                                    {item.node}
+                                    {index < attributeElements.length - 1 && ' · '}
+                                  </span>
+                                ))}
+                              </>
+                            );
+                          })()}
+                        </div>
                       </div>
-                      <div className="text-xs text-zinc-500 dark:text-zinc-400">/{row.unit}</div>
-                      <div className="mt-1">
-                        <Sparkline
-                          points={history.get(row.name)}
-                          dateRange={dateRange}
-                          timePeriod={timePeriod}
-                          unavailableSinceDate={row.unavailable_since_date}
-                        />
-                      </div>
-                    </td>
-                    <MetricsCell row={row} period={timePeriod} />
-                  </tr>
-                ))}
+                    </button>
+                  </td>
+                  <td
+                    className={`p-2 font-mono text-zinc-900 dark:text-zinc-100 ${DATA_COL_CLASS} box-border`}
+                  >
+                    <div>
+                      {(() => {
+                        const { prev } = getPeriodData(row, timePeriod);
+                        return (
+                          <>
+                            <span
+                              className={`font-bold ${
+                                prev !== null && row.price < prev
+                                  ? 'text-green-600 dark:text-green-400'
+                                  : prev !== null && row.price > prev
+                                    ? 'text-red-600 dark:text-red-400'
+                                    : ''
+                              }`}
+                            >
+                              ${row.price.toFixed(2)}
+                            </span>
+                            {prev !== null && prev !== row.price && (
+                              <sup className="ml-1 text-[0.65em] text-zinc-400 line-through dark:text-zinc-500">
+                                ${prev.toFixed(2)}
+                              </sup>
+                            )}
+                          </>
+                        );
+                      })()}
+                    </div>
+                    <div className="text-xs text-zinc-500 dark:text-zinc-400">/{row.unit}</div>
+                    <div className="mt-1">
+                      <Sparkline
+                        points={history.get(row.name)}
+                        dateRange={dateRange}
+                        timePeriod={timePeriod}
+                        unavailableSinceDate={row.unavailable_since_date}
+                      />
+                    </div>
+                  </td>
+                  <MetricsCell row={row} period={timePeriod} />
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </div>
