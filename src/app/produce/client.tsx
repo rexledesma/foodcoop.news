@@ -13,6 +13,7 @@ export function ProducePageClient() {
   const { data, history, dateRange, isLoading, error } = useProduceDataContext();
   const searchParams = useSearchParams();
   const initialDateFilter = searchParams.get('date');
+  const initialItemFilter = searchParams.get('item');
 
   return (
     <ProduceAnalytics
@@ -22,6 +23,7 @@ export function ProducePageClient() {
       isLoading={isLoading}
       error={error}
       initialDateFilter={initialDateFilter}
+      initialItemFilter={initialItemFilter}
     />
   );
 }

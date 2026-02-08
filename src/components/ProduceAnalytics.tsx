@@ -1,7 +1,9 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { ProduceContextMenu } from '@/components/ProduceContextMenu';
 import { useScrollVisibility } from '@/components/ScrollVisibilityProvider';
+import { produceHash } from '@/lib/produce-hash';
 import { useProduceFavorites } from '@/lib/use-produce-favorites';
 import type {
   ProduceDateRange,
@@ -21,6 +23,7 @@ interface ProduceAnalyticsProps {
   isLoading?: boolean;
   error?: string | null;
   initialDateFilter?: string | null;
+  initialItemFilter?: string | null;
 }
 
 type QuickFilter = 'favorites' | 'drops' | 'increases' | 'new' | 'recently_unavailable' | null;
@@ -77,6 +80,7 @@ export function ProduceAnalytics({
   isLoading = false,
   error = null,
   initialDateFilter = null,
+  initialItemFilter = null,
 }: ProduceAnalyticsProps) {
   const [initialFilters] = useState(() => {
     const firstVisit = {
@@ -85,7 +89,7 @@ export function ProduceAnalytics({
       sortField: 'change' as SortField | null,
       sortDirection: 'asc' as SortDirection,
     };
-    if (initialDateFilter) {
+    if (initialItemFilter || initialDateFilter) {
       return {
         ...firstVisit,
         quickFilter: null as QuickFilter,
@@ -108,6 +112,10 @@ export function ProduceAnalytics({
   const [quickFilter, setQuickFilter] = useState<QuickFilter>(initialFilters.quickFilter);
   const [timePeriod, setTimePeriod] = useState<TimePeriod>(initialFilters.timePeriod);
   const [dateFilter, setDateFilter] = useState<string | null>(initialDateFilter);
+  const [itemFilter, setItemFilter] = useState<string | null>(initialItemFilter);
+  const [contextMenu, setContextMenu] = useState<{ itemName: string; x: number; y: number } | null>(
+    null,
+  );
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const { favorites, toggleFavorite } = useProduceFavorites();
   const { showSticky } = useScrollVisibility();
@@ -166,6 +174,11 @@ export function ProduceAnalytics({
 
   const filteredAndSorted = useMemo(() => {
     let result = data;
+
+    // Filter by item hash
+    if (itemFilter) {
+      result = result.filter((row) => produceHash(row.name) === itemFilter);
+    }
 
     // Filter by date
     if (dateFilter) {
@@ -237,7 +250,22 @@ export function ProduceAnalytics({
     });
 
     return result;
-  }, [data, search, sortField, sortDirection, quickFilter, favorites, timePeriod, dateFilter]);
+  }, [
+    data,
+    search,
+    sortField,
+    sortDirection,
+    quickFilter,
+    favorites,
+    timePeriod,
+    dateFilter,
+    itemFilter,
+  ]);
+
+  const itemFilterName = useMemo(() => {
+    if (!itemFilter) return null;
+    return data.find((row) => produceHash(row.name) === itemFilter)?.name ?? null;
+  }, [data, itemFilter]);
 
   const skeletonRows = useMemo(
     () => Array.from({ length: 8 }, (_, index) => `skeleton-${index}`),
@@ -274,6 +302,20 @@ export function ProduceAnalytics({
     url.searchParams.delete('date');
     window.history.replaceState(null, '', url.pathname + url.search);
   };
+
+  const clearItemFilter = () => {
+    setItemFilter(null);
+    const url = new URL(window.location.href);
+    url.searchParams.delete('item');
+    window.history.replaceState(null, '', url.pathname + url.search);
+  };
+
+  const handleContextMenu = useCallback((e: React.MouseEvent, itemName: string) => {
+    e.preventDefault();
+    setContextMenu({ itemName, x: e.clientX, y: e.clientY });
+  }, []);
+
+  const closeContextMenu = useCallback(() => setContextMenu(null), []);
 
   const handleQuickFilter = (filter: QuickFilter) => {
     if (dateFilter) clearDateFilter();
@@ -316,6 +358,22 @@ export function ProduceAnalytics({
             className="flex w-full max-w-md cursor-text items-center gap-1.5 rounded-lg border border-zinc-300 bg-white px-3 py-2 dark:border-zinc-700 dark:bg-zinc-900"
             onClick={() => searchInputRef.current?.focus()}
           >
+            {itemFilterName && (
+              <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-violet-100 px-2.5 py-0.5 text-xs font-medium text-violet-800 dark:bg-violet-900/40 dark:text-violet-300">
+                <span className="max-w-[120px] truncate">{itemFilterName}</span>
+                <button
+                  type="button"
+                  aria-label="Remove item filter"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    clearItemFilter();
+                  }}
+                  className="ml-0.5 rounded-full p-0.5 transition hover:opacity-70"
+                >
+                  ✕
+                </button>
+              </span>
+            )}
             {dateFilter && (
               <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-800 dark:bg-blue-900/40 dark:text-blue-300">
                 {formatShortDate(dateFilter)}
@@ -374,6 +432,8 @@ export function ProduceAnalytics({
                     setSortDirection('asc');
                   } else if (dateFilter) {
                     clearDateFilter();
+                  } else if (itemFilter) {
+                    clearItemFilter();
                   }
                 }
               }}
@@ -588,6 +648,7 @@ export function ProduceAnalytics({
               filteredAndSorted.map((row) => (
                 <tr
                   key={row.name}
+                  onContextMenu={(e) => handleContextMenu(e, row.name)}
                   className={`group border-b border-zinc-100 dark:border-zinc-800/50 ${favorites.has(row.name) ? 'bg-amber-50 dark:bg-amber-950/30' : 'hover:bg-amber-50 dark:hover:bg-amber-950/30'}`}
                 >
                   <td
@@ -740,6 +801,14 @@ export function ProduceAnalytics({
           </tbody>
         </table>
       </div>
+      {contextMenu && (
+        <ProduceContextMenu
+          itemName={contextMenu.itemName}
+          x={contextMenu.x}
+          y={contextMenu.y}
+          onClose={closeContextMenu}
+        />
+      )}
     </div>
   );
 }
