@@ -8,6 +8,7 @@ export interface ProduceDataState {
   history: ProduceHistoryMap;
   dateRange: ProduceDateRange | null;
   isLoading: boolean;
+  isRefreshing: boolean;
   error: string | null;
 }
 

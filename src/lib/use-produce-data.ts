@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { readProduceCache, writeProduceCache } from '@/lib/produce-cache';
 import { useDuckDB } from '@/lib/use-duckdb';
 
 export interface ProduceRow {
@@ -55,15 +56,22 @@ interface UseProduceDataResult {
   history: ProduceHistoryMap;
   dateRange: ProduceDateRange | null;
   isLoading: boolean;
+  isRefreshing: boolean;
   error: string | null;
 }
 
 export function useProduceData(): UseProduceDataResult {
   const { isReady, isLoading: dbLoading, error: dbError, query, loadParquet } = useDuckDB();
-  const [data, setData] = useState<ProduceRow[]>([]);
-  const [history, setHistory] = useState<ProduceHistoryMap>(new Map());
-  const [dateRange, setDateRange] = useState<ProduceDateRange | null>(null);
-  const [loading, setLoading] = useState(true);
+
+  const [cachedState] = useState(() => readProduceCache());
+  const hasCacheRef = useRef(!!cachedState);
+  const [data, setData] = useState<ProduceRow[]>(cachedState?.data ?? []);
+  const [history, setHistory] = useState<ProduceHistoryMap>(cachedState?.history ?? new Map());
+  const [dateRange, setDateRange] = useState<ProduceDateRange | null>(
+    cachedState?.dateRange ?? null,
+  );
+  const [loading, setLoading] = useState(!cachedState);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -71,7 +79,10 @@ export function useProduceData(): UseProduceDataResult {
 
     async function loadData() {
       try {
-        setLoading(true);
+        if (!hasCacheRef.current) {
+          setLoading(true);
+        }
+        setRefreshing(true);
         setError(null);
 
         // Fetch metadata to get Parquet URLs
@@ -306,25 +317,32 @@ export function useProduceData(): UseProduceDataResult {
         }
         setHistory(historyMap);
 
+        let range: ProduceDateRange | null = null;
         if (maxDate) {
           const endDate = new Date(maxDate + 'T00:00:00');
           const startDate = new Date(endDate);
           startDate.setDate(startDate.getDate() - 30);
           const startStr = startDate.toISOString().slice(0, 10);
-          setDateRange({ start: startStr, end: maxDate });
+          range = { start: startStr, end: maxDate };
+          setDateRange(range);
         }
+
+        writeProduceCache(results, historyMap, range);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to load data');
       } finally {
         setLoading(false);
+        setRefreshing(false);
       }
     }
 
     loadData();
   }, [isReady, query, loadParquet]);
 
-  const isLoading = dbLoading || loading;
+  const hasCachedData = data.length > 0 && !loading;
+  const isLoading = hasCachedData ? false : dbLoading || loading;
+  const isRefreshing = hasCachedData && (dbLoading || refreshing);
   const combinedError = dbError?.message || error;
 
-  return { data, history, dateRange, isLoading, error: combinedError };
+  return { data, history, dateRange, isLoading, isRefreshing, error: combinedError };
 }

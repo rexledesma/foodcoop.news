@@ -21,6 +21,7 @@ interface ProduceAnalyticsProps {
   history: ProduceHistoryMap;
   dateRange: ProduceDateRange | null;
   isLoading?: boolean;
+  isRefreshing?: boolean;
   error?: string | null;
   initialDateFilter?: string | null;
   initialItemFilter?: string | null;
@@ -78,6 +79,7 @@ export function ProduceAnalytics({
   history,
   dateRange,
   isLoading = false,
+  isRefreshing = false,
   error = null,
   initialDateFilter = null,
   initialItemFilter = null,
@@ -480,6 +482,7 @@ export function ProduceAnalytics({
             ) : (
               <>
                 Showing {filteredAndSorted.length} of {quickFilterCount} items
+                {isRefreshing && <span className="ml-2 inline-block animate-spin">🥕</span>}
               </>
             )}
           </div>

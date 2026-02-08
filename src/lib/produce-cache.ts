@@ -1,0 +1,51 @@
+import type { ProduceDateRange, ProduceHistoryPoint, ProduceRow } from '@/lib/use-produce-data';
+
+const CACHE_KEY = 'produce-cache';
+
+interface ProduceCachePayload {
+  data: ProduceRow[];
+  history: [string, ProduceHistoryPoint[]][];
+  dateRange: ProduceDateRange | null;
+  cachedAt: number;
+}
+
+export interface ProduceCacheResult {
+  data: ProduceRow[];
+  history: Map<string, ProduceHistoryPoint[]>;
+  dateRange: ProduceDateRange | null;
+}
+
+export function readProduceCache(): ProduceCacheResult | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = localStorage.getItem(CACHE_KEY);
+    if (!raw) return null;
+    const payload: ProduceCachePayload = JSON.parse(raw);
+    if (!Array.isArray(payload.data) || !Array.isArray(payload.history)) return null;
+    return {
+      data: payload.data,
+      history: new Map(payload.history),
+      dateRange: payload.dateRange,
+    };
+  } catch {
+    return null;
+  }
+}
+
+export function writeProduceCache(
+  data: ProduceRow[],
+  history: Map<string, ProduceHistoryPoint[]>,
+  dateRange: ProduceDateRange | null,
+): void {
+  try {
+    const payload: ProduceCachePayload = {
+      data,
+      history: Array.from(history.entries()),
+      dateRange,
+      cachedAt: Date.now(),
+    };
+    localStorage.setItem(CACHE_KEY, JSON.stringify(payload));
+  } catch {
+    // Silently ignore quota errors
+  }
+}
