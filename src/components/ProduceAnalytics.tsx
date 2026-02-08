@@ -481,7 +481,7 @@ export function ProduceAnalytics({
           <tbody>
             {isLoading ? (
               skeletonRows.map((rowId) => <SkeletonRow key={rowId} />)
-            ) : quickFilter === 'favorites' && filteredAndSorted.length === 0 ? (
+            ) : quickFilter === 'favorites' && favorites.size === 0 ? (
               <tr>
                 <td colSpan={3} className="px-2 py-12 text-center">
                   <p className="mx-auto max-w-xs text-sm text-zinc-500 dark:text-zinc-400">
@@ -500,6 +500,28 @@ export function ProduceAnalytics({
                     className="mt-3 rounded-full bg-zinc-900 px-4 py-1.5 text-sm font-medium text-white transition-colors hover:bg-zinc-700 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300"
                   >
                     Find favorites
+                  </button>
+                </td>
+              </tr>
+            ) : filteredAndSorted.length === 0 ? (
+              <tr>
+                <td colSpan={3} className="px-2 py-12 text-center">
+                  <p className="text-sm text-zinc-500 dark:text-zinc-400">
+                    No results found. Try a different search or filter.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (search) {
+                        setSearch('');
+                      } else {
+                        setQuickFilter(null);
+                      }
+                      searchInputRef.current?.focus();
+                    }}
+                    className="mt-3 rounded-full bg-zinc-900 px-4 py-1.5 text-sm font-medium text-white transition-colors hover:bg-zinc-700 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300"
+                  >
+                    Clear search
                   </button>
                 </td>
               </tr>
