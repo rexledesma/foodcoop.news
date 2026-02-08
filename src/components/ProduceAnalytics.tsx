@@ -284,6 +284,21 @@ export function ProduceAnalytics({
           <div className="flex flex-wrap gap-2">
             <button
               type="button"
+              onClick={() => {
+                setQuickFilter(null);
+                setSortField('name');
+                setSortDirection('asc');
+              }}
+              className={`rounded-full px-3 py-1.5 text-sm font-medium whitespace-nowrap transition-colors ${
+                quickFilter === null
+                  ? 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900'
+                  : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-700'
+              }`}
+            >
+              All
+            </button>
+            <button
+              type="button"
               onClick={() => handleQuickFilter('favorites')}
               className={`rounded-full px-3 py-1.5 text-sm font-medium whitespace-nowrap transition-colors ${
                 quickFilter === 'favorites'
