@@ -20,6 +20,7 @@ interface ProduceAnalyticsProps {
   dateRange: ProduceDateRange | null;
   isLoading?: boolean;
   error?: string | null;
+  initialDateFilter?: string | null;
 }
 
 type QuickFilter = 'favorites' | 'drops' | 'increases' | 'new' | 'recently_unavailable' | null;
@@ -75,6 +76,7 @@ export function ProduceAnalytics({
   dateRange,
   isLoading = false,
   error = null,
+  initialDateFilter = null,
 }: ProduceAnalyticsProps) {
   const [initialFilters] = useState(() => {
     const firstVisit = {
@@ -83,6 +85,14 @@ export function ProduceAnalytics({
       sortField: 'change' as SortField | null,
       sortDirection: 'asc' as SortDirection,
     };
+    if (initialDateFilter) {
+      return {
+        ...firstVisit,
+        quickFilter: null as QuickFilter,
+        sortField: 'name' as SortField | null,
+        sortDirection: 'asc' as SortDirection,
+      };
+    }
     if (typeof window === 'undefined') return firstVisit;
     try {
       const stored = localStorage.getItem('produce-filters');
@@ -97,6 +107,7 @@ export function ProduceAnalytics({
   const [sortDirection, setSortDirection] = useState<SortDirection>(initialFilters.sortDirection);
   const [quickFilter, setQuickFilter] = useState<QuickFilter>(initialFilters.quickFilter);
   const [timePeriod, setTimePeriod] = useState<TimePeriod>(initialFilters.timePeriod);
+  const [dateFilter, setDateFilter] = useState<string | null>(initialDateFilter);
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const { favorites, toggleFavorite } = useProduceFavorites();
   const { showSticky } = useScrollVisibility();
@@ -134,21 +145,34 @@ export function ProduceAnalytics({
   }, []);
 
   const quickFilterCount = useMemo(() => {
+    let base = data;
+    if (dateFilter) {
+      base = base.filter(
+        (row) => row.first_seen_date === dateFilter || row.unavailable_since_date === dateFilter,
+      );
+    }
     if (!quickFilter || quickFilter === 'drops' || quickFilter === 'increases') {
-      return data.length;
+      return base.length;
     }
     if (quickFilter === 'favorites') {
-      return data.filter((row) => favorites.has(row.name)).length;
+      return base.filter((row) => favorites.has(row.name)).length;
     }
     if (quickFilter === 'new') {
-      return data.filter((row) => row.is_new).length;
+      return base.filter((row) => row.is_new).length;
     }
     // recently_unavailable
-    return data.filter((row) => row.is_unavailable).length;
-  }, [data, quickFilter, favorites]);
+    return base.filter((row) => row.is_unavailable).length;
+  }, [data, quickFilter, favorites, dateFilter]);
 
   const filteredAndSorted = useMemo(() => {
     let result = data;
+
+    // Filter by date
+    if (dateFilter) {
+      result = result.filter(
+        (row) => row.first_seen_date === dateFilter || row.unavailable_since_date === dateFilter,
+      );
+    }
 
     // Filter by search
     if (search) {
@@ -213,7 +237,7 @@ export function ProduceAnalytics({
     });
 
     return result;
-  }, [data, search, sortField, sortDirection, quickFilter, favorites, timePeriod]);
+  }, [data, search, sortField, sortDirection, quickFilter, favorites, timePeriod, dateFilter]);
 
   const skeletonRows = useMemo(
     () => Array.from({ length: 8 }, (_, index) => `skeleton-${index}`),
@@ -244,7 +268,15 @@ export function ProduceAnalytics({
     }
   };
 
+  const clearDateFilter = () => {
+    setDateFilter(null);
+    const url = new URL(window.location.href);
+    url.searchParams.delete('date');
+    window.history.replaceState(null, '', url.pathname + url.search);
+  };
+
   const handleQuickFilter = (filter: QuickFilter) => {
+    if (dateFilter) clearDateFilter();
     if (quickFilter === filter) {
       // Clicking same filter again - reset to default
       setQuickFilter(null);
@@ -284,6 +316,22 @@ export function ProduceAnalytics({
             className="flex w-full max-w-md cursor-text items-center gap-1.5 rounded-lg border border-zinc-300 bg-white px-3 py-2 dark:border-zinc-700 dark:bg-zinc-900"
             onClick={() => searchInputRef.current?.focus()}
           >
+            {dateFilter && (
+              <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-800 dark:bg-blue-900/40 dark:text-blue-300">
+                {formatShortDate(dateFilter)}
+                <button
+                  type="button"
+                  aria-label="Remove date filter"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    clearDateFilter();
+                  }}
+                  className="ml-0.5 rounded-full p-0.5 transition hover:opacity-70"
+                >
+                  ✕
+                </button>
+              </span>
+            )}
             {quickFilter && (
               <span
                 className={`inline-flex shrink-0 items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium ${QUICK_FILTER_CHIP_COLORS[quickFilter]}`}
@@ -307,16 +355,26 @@ export function ProduceAnalytics({
             <input
               ref={searchInputRef}
               type="text"
-              placeholder={quickFilter ? 'Search within filter...' : 'Search produce...'}
+              placeholder={
+                dateFilter
+                  ? `Search within ${formatShortDate(dateFilter)}...`
+                  : quickFilter
+                    ? 'Search within filter...'
+                    : 'Search produce...'
+              }
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               onFocus={() => setIsSearchFocused(true)}
               onBlur={() => setIsSearchFocused(false)}
               onKeyDown={(e) => {
-                if (e.key === 'Backspace' && search === '' && quickFilter) {
-                  setQuickFilter(null);
-                  setSortField('name');
-                  setSortDirection('asc');
+                if (e.key === 'Backspace' && search === '') {
+                  if (quickFilter) {
+                    setQuickFilter(null);
+                    setSortField('name');
+                    setSortDirection('asc');
+                  } else if (dateFilter) {
+                    clearDateFilter();
+                  }
                 }
               }}
               className="min-w-0 flex-1 bg-transparent text-zinc-900 placeholder-zinc-500 outline-none dark:text-zinc-100"
@@ -345,12 +403,13 @@ export function ProduceAnalytics({
             <button
               type="button"
               onClick={() => {
+                if (dateFilter) clearDateFilter();
                 setQuickFilter(null);
                 setSortField('name');
                 setSortDirection('asc');
               }}
               className={`rounded-full px-3 py-1.5 text-sm font-medium whitespace-nowrap transition-colors ${
-                quickFilter === null
+                quickFilter === null && !dateFilter
                   ? 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900'
                   : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-700'
               }`}

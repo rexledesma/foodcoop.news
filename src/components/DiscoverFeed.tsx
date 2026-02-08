@@ -490,7 +490,7 @@ function ProduceCard({
 
   return (
     <Link
-      href="/produce"
+      href={`/produce?date=${update.id}`}
       className="block rounded-xl border border-zinc-200 bg-white p-4 transition-colors hover:border-green-300 dark:border-zinc-700 dark:bg-zinc-800 dark:hover:border-green-700"
     >
       <div className="flex items-start gap-3">

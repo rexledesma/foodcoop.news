@@ -1,3 +1,4 @@
+import { Suspense } from 'react';
 import { ProducePageClient } from './client';
 import { ScrollAwarePageShell } from '@/components/ScrollAwarePageShell';
 
@@ -8,7 +9,9 @@ export const metadata = {
 export default function ProducePage() {
   return (
     <ScrollAwarePageShell>
-      <ProducePageClient />
+      <Suspense>
+        <ProducePageClient />
+      </Suspense>
     </ScrollAwarePageShell>
   );
 }

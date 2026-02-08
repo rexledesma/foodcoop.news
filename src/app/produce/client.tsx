@@ -1,6 +1,7 @@
 'use client';
 
 import dynamic from 'next/dynamic';
+import { useSearchParams } from 'next/navigation';
 import { useProduceDataContext } from '@/lib/produce-data-context';
 
 const ProduceAnalytics = dynamic(
@@ -10,6 +11,8 @@ const ProduceAnalytics = dynamic(
 
 export function ProducePageClient() {
   const { data, history, dateRange, isLoading, error } = useProduceDataContext();
+  const searchParams = useSearchParams();
+  const initialDateFilter = searchParams.get('date');
 
   return (
     <ProduceAnalytics
@@ -18,6 +21,7 @@ export function ProducePageClient() {
       dateRange={dateRange}
       isLoading={isLoading}
       error={error}
+      initialDateFilter={initialDateFilter}
     />
   );
 }
