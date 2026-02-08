@@ -307,6 +307,7 @@ export function ProduceAnalytics({
     setItemFilter(null);
     const url = new URL(window.location.href);
     url.searchParams.delete('item');
+    url.searchParams.delete('name');
     window.history.replaceState(null, '', url.pathname + url.search);
   };
 
