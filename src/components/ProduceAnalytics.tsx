@@ -117,10 +117,12 @@ export function ProduceAnalytics({
     null,
   );
   const [isSearchFocused, setIsSearchFocused] = useState(false);
+  const [pressedRow, setPressedRow] = useState<string | null>(null);
   const { favorites, toggleFavorite } = useProduceFavorites();
   const { showSticky } = useScrollVisibility();
   const controlsRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     localStorage.setItem(
@@ -314,6 +316,27 @@ export function ProduceAnalytics({
   const handleContextMenu = useCallback((e: React.MouseEvent, itemName: string) => {
     e.preventDefault();
     setContextMenu({ itemName, x: e.clientX, y: e.clientY });
+  }, []);
+
+  const handleTouchStart = useCallback((e: React.TouchEvent, itemName: string) => {
+    const touch = e.touches[0];
+    const x = touch.clientX;
+    const y = touch.clientY;
+    setPressedRow(itemName);
+    longPressTimer.current = setTimeout(() => {
+      longPressTimer.current = null;
+      setPressedRow(null);
+      navigator.vibrate?.(10);
+      setContextMenu({ itemName, x, y });
+    }, 500);
+  }, []);
+
+  const cancelLongPress = useCallback(() => {
+    if (longPressTimer.current !== null) {
+      clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
+    }
+    setPressedRow(null);
   }, []);
 
   const closeContextMenu = useCallback(() => setContextMenu(null), []);
@@ -650,10 +673,14 @@ export function ProduceAnalytics({
                 <tr
                   key={row.name}
                   onContextMenu={(e) => handleContextMenu(e, row.name)}
-                  className={`group border-b border-zinc-100 dark:border-zinc-800/50 ${favorites.has(row.name) ? 'bg-amber-50 dark:bg-amber-950/30' : 'hover:bg-amber-50 dark:hover:bg-amber-950/30'}`}
+                  onTouchStart={(e) => handleTouchStart(e, row.name)}
+                  onTouchEnd={cancelLongPress}
+                  onTouchMove={cancelLongPress}
+                  onTouchCancel={cancelLongPress}
+                  className={`group border-b border-zinc-100 dark:border-zinc-800/50 ${pressedRow === row.name ? 'bg-zinc-100 dark:bg-zinc-800' : favorites.has(row.name) ? 'bg-amber-50 dark:bg-amber-950/30' : 'hover:bg-amber-50 dark:hover:bg-amber-950/30'}`}
                 >
                   <td
-                    className={`${NAME_COL_CLASS} sticky left-0 z-10 box-border border-r border-zinc-200 p-0 md:w-auto md:border-r-0 dark:border-zinc-700 ${favorites.has(row.name) ? 'bg-amber-50 dark:bg-amber-950/30' : 'bg-white group-hover:bg-amber-50 dark:bg-zinc-900 dark:group-hover:bg-amber-950/30'}`}
+                    className={`${NAME_COL_CLASS} sticky left-0 z-10 box-border border-r border-zinc-200 p-0 md:w-auto md:border-r-0 dark:border-zinc-700 ${pressedRow === row.name ? 'bg-zinc-100 dark:bg-zinc-800' : favorites.has(row.name) ? 'bg-amber-50 dark:bg-amber-950/30' : 'bg-white group-hover:bg-amber-50 dark:bg-zinc-900 dark:group-hover:bg-amber-950/30'}`}
                   >
                     <button
                       type="button"
