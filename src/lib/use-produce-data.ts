@@ -227,13 +227,15 @@ export function useProduceData(): UseProduceDataResult {
               r.is_waxed,
               r.is_local,
               r.is_hydroponic,
-              false as is_new,
-              NULL::VARCHAR as first_seen_date,
+              CASE WHEN pm.name IS NULL THEN true ELSE false END as is_new,
+              CASE WHEN pm.name IS NULL THEN fa.first_seen_date::VARCHAR ELSE NULL END as first_seen_date,
               r.origin,
               r.unit,
               true as is_unavailable,
               r.last_seen_date::VARCHAR as unavailable_since_date
             FROM last_seen_rows r
+            LEFT JOIN prev_month_items pm ON r.name = pm.name
+            LEFT JOIN first_appearance fa ON r.name = fa.name
           ),
           base_rows AS (
             SELECT * FROM current_with_new
