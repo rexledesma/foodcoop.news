@@ -482,7 +482,11 @@ export function ProduceAnalytics({
             ) : (
               <>
                 Showing {filteredAndSorted.length} of {quickFilterCount} items
-                {isRefreshing && <span className="ml-2 inline-block animate-spin">🥕</span>}
+                <span
+                  className={`ml-2 inline-block animate-spin transition-opacity duration-300 ${isRefreshing ? 'opacity-100' : 'opacity-0'}`}
+                >
+                  🥕
+                </span>
               </>
             )}
           </div>
