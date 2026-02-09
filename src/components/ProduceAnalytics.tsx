@@ -292,11 +292,17 @@ export function ProduceAnalytics({
     setSortField(newField);
     setSortDirection(newDirection);
 
-    // Sync pills with sort state for change column
-    if (!newField || !newDirection || newField === 'name' || newField === 'price') {
-      setQuickFilter(null);
-    } else if (newField === 'change') {
-      setQuickFilter(newDirection === 'asc' ? 'drops' : 'increases');
+    // Sync pills with sort state only for All/Drops/Increases flows.
+    // Preserve explicit views (favorites/new/recently_unavailable) when sorting.
+    const shouldSyncQuickFilter =
+      quickFilter === null || quickFilter === 'drops' || quickFilter === 'increases';
+
+    if (shouldSyncQuickFilter) {
+      if (!newField || !newDirection || newField === 'name' || newField === 'price') {
+        setQuickFilter(null);
+      } else if (newField === 'change') {
+        setQuickFilter(newDirection === 'asc' ? 'drops' : 'increases');
+      }
     }
   };
 
