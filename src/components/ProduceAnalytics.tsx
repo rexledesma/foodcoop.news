@@ -275,6 +275,17 @@ export function ProduceAnalytics({
     itemFilter,
   ]);
 
+  const allSearchResultCount = useMemo(() => {
+    if (!search) return 0;
+    const lower = search.toLowerCase();
+    return data.filter(
+      (row) => row.name.toLowerCase().includes(lower) || row.origin.toLowerCase().includes(lower),
+    ).length;
+  }, [data, search]);
+
+  const showSearchAllButton =
+    !!search && hasAnyScopedFilter && filteredAndSorted.length === 0 && allSearchResultCount > 0;
+
   const itemFilterName = useMemo(() => {
     if (!itemFilter) return null;
     return data.find((row) => produceHash(row.name) === itemFilter)?.name ?? null;
@@ -709,22 +720,51 @@ export function ProduceAnalytics({
               <tr>
                 <td colSpan={3} className="px-2 py-12 text-center">
                   <p className="text-sm text-zinc-500 dark:text-zinc-400">
-                    No results found. Try a different search or filter.
+                    {showSearchAllButton
+                      ? 'No matches in this view. Search across all inventory?'
+                      : 'No results found. Try a different search!'}
                   </p>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (search) {
-                        setSearch('');
-                      } else {
-                        setQuickFilter(null);
-                      }
-                      searchInputRef.current?.focus();
-                    }}
-                    className="mt-3 rounded-full bg-zinc-900 px-4 py-1.5 text-sm font-medium text-white transition-colors hover:bg-zinc-700 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300"
-                  >
-                    Clear search
-                  </button>
+                  <div className="mt-3 flex flex-wrap justify-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (search) {
+                          setSearch('');
+                        } else {
+                          setQuickFilter(null);
+                        }
+                        searchInputRef.current?.focus();
+                      }}
+                      className="rounded-full bg-zinc-900 px-4 py-1.5 text-sm font-medium text-white transition-colors hover:bg-zinc-700 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300"
+                    >
+                      Clear search
+                    </button>
+                    {showSearchAllButton && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setQuickFilter(null);
+                          if (dateFilter || itemFilter) {
+                            const url = new URL(window.location.href);
+                            if (dateFilter) {
+                              setDateFilter(null);
+                              url.searchParams.delete('date');
+                            }
+                            if (itemFilter) {
+                              setItemFilter(null);
+                              url.searchParams.delete('item');
+                              url.searchParams.delete('name');
+                            }
+                            window.history.replaceState(null, '', url.pathname + url.search);
+                          }
+                          searchInputRef.current?.focus();
+                        }}
+                        className="rounded-full border border-zinc-300 bg-white px-4 py-1.5 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
+                      >
+                        Search all
+                      </button>
+                    )}
+                  </div>
                 </td>
               </tr>
             ) : (
