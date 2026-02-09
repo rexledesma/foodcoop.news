@@ -8,6 +8,14 @@ import { api } from '../../convex/_generated/api';
 import { useSession } from '@/lib/auth-client';
 import { AppleWalletCard } from './AppleWalletCard';
 import { useScrollVisibility } from '@/components/ScrollVisibilityProvider';
+import {
+  isPushSupported,
+  registerServiceWorker,
+  getExistingSubscription,
+  subscribeToPush,
+  unsubscribeFromPush,
+  extractSubscriptionKeys,
+} from '@/lib/push-notifications';
 
 const CALENDAR_PROXY_PATH = '/api/calendar';
 const DRAFT_STORAGE_KEY = 'integrations:draft';
@@ -155,7 +163,14 @@ export function Integrations() {
   >([]);
   const [isGeneratingPass, setIsGeneratingPass] = useState(false);
   const [isGeneratingGooglePass, setIsGeneratingGooglePass] = useState(false);
+  const [pushSupported, setPushSupported] = useState(false);
+  const [pushEnabled, setPushEnabled] = useState(false);
+  const [pushLoading, setPushLoading] = useState(false);
+  const [isSendingTest, setIsSendingTest] = useState(false);
   const headerRef = useRef<HTMLDivElement>(null);
+  const savePushSubscription = useMutation(api.pushSubscriptions.savePushSubscription);
+  const deletePushSubscription = useMutation(api.pushSubscriptions.deletePushSubscription);
+  const pushSubscriptions = useQuery(api.pushSubscriptions.getUserPushSubscriptions);
 
   // Initialize form with profile data
   useEffect(() => {
@@ -199,6 +214,22 @@ export function Integrations() {
   useEffect(() => {
     setCalendarOrigin(window.location.origin);
   }, []);
+
+  // Register service worker and check existing push subscription
+  useEffect(() => {
+    if (!isPushSupported()) {
+      return;
+    }
+    setPushSupported(true);
+
+    void (async () => {
+      await registerServiceWorker();
+      const existing = await getExistingSubscription();
+      if (existing && pushSubscriptions && pushSubscriptions.length > 0) {
+        setPushEnabled(true);
+      }
+    })();
+  }, [pushSubscriptions]);
 
   useEffect(() => {
     const element = headerRef.current;
@@ -373,6 +404,55 @@ export function Integrations() {
       enqueueToast('success', 'Copied calendar URL to clipboard.');
     } catch {
       enqueueToast('error', 'Clipboard copy failed. Copy manually from the modal.');
+    }
+  };
+
+  const handleTogglePush = async () => {
+    if (!requireAuth()) {
+      return;
+    }
+    setPushLoading(true);
+    try {
+      if (pushEnabled) {
+        const existing = await getExistingSubscription();
+        if (existing) {
+          await deletePushSubscription({ endpoint: existing.endpoint });
+        }
+        await unsubscribeFromPush();
+        setPushEnabled(false);
+        enqueueToast('success', 'Notifications disabled.');
+      } else {
+        const subscription = await subscribeToPush();
+        const keys = extractSubscriptionKeys(subscription);
+        await savePushSubscription(keys);
+        setPushEnabled(true);
+        enqueueToast('success', 'Notifications enabled.');
+      }
+    } catch (error) {
+      enqueueToast(
+        'error',
+        error instanceof Error ? error.message : 'Failed to update notification settings',
+      );
+    } finally {
+      setPushLoading(false);
+    }
+  };
+
+  const handleSendTestNotification = async () => {
+    setIsSendingTest(true);
+    try {
+      const response = await fetch('/api/notifications/test', { method: 'POST' });
+      if (!response.ok) {
+        throw new Error('Failed to send test notification');
+      }
+      enqueueToast('success', 'Test notification sent!');
+    } catch (error) {
+      enqueueToast(
+        'error',
+        error instanceof Error ? error.message : 'Failed to send test notification',
+      );
+    } finally {
+      setIsSendingTest(false);
     }
   };
 
@@ -733,6 +813,59 @@ export function Integrations() {
             </div>
           </div>
         </section>
+
+        {pushSupported && (
+          <section className="mt-10">
+            <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
+              Notifications
+            </h2>
+            <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
+              Receive push notifications from foodcoop.news.
+            </p>
+
+            <div className="mt-6 rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-700 dark:bg-zinc-900">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-base font-semibold text-zinc-900 dark:text-zinc-100">
+                    Push Notifications
+                  </h3>
+                  <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
+                    Get notified about updates and announcements.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={pushEnabled}
+                  disabled={pushLoading}
+                  onClick={handleTogglePush}
+                  className={`relative inline-flex h-7 w-12 shrink-0 cursor-pointer items-center rounded-full transition-colors duration-200 ease-in-out disabled:opacity-50 ${
+                    pushEnabled ? 'bg-green-600' : 'bg-zinc-300 dark:bg-zinc-600'
+                  }`}
+                >
+                  <span
+                    className={`inline-block h-5 w-5 rounded-full bg-white shadow-sm transition-transform duration-200 ease-in-out ${
+                      pushEnabled ? 'translate-x-6' : 'translate-x-1'
+                    }`}
+                  />
+                </button>
+              </div>
+
+              {pushEnabled && (
+                <div className="mt-4 border-t border-zinc-100 pt-4 dark:border-zinc-800">
+                  <button
+                    type="button"
+                    onClick={handleSendTestNotification}
+                    disabled={isSendingTest}
+                    className="rounded-xl bg-green-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-green-700 disabled:bg-green-400 disabled:opacity-60"
+                  >
+                    {isSendingTest ? 'Sending...' : 'Send test notification'}
+                  </button>
+                </div>
+              )}
+            </div>
+          </section>
+        )}
       </div>
 
       {isCalendarModalOpen && (

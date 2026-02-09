@@ -23,4 +23,13 @@ export default defineSchema({
     .index('by_userId', ['userId'])
     .index('by_itemName', ['itemName'])
     .index('by_userId_itemName', ['userId', 'itemName']),
+  pushSubscriptions: defineTable({
+    userId: v.string(),
+    endpoint: v.string(),
+    p256dh: v.string(),
+    auth: v.string(),
+    createdAt: v.number(),
+  })
+    .index('by_userId', ['userId'])
+    .index('by_endpoint', ['endpoint']),
 });
