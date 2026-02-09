@@ -465,16 +465,14 @@ export function ProduceAnalytics({
               }}
               className="min-w-0 flex-1 bg-transparent text-zinc-900 placeholder-zinc-500 outline-none dark:text-zinc-100"
             />
-            {search ? (
-              <button
-                type="button"
-                onClick={() => setSearch('')}
-                aria-label="Clear search"
-                className="shrink-0 rounded-full p-1 text-sm text-zinc-500 transition hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200"
-              >
-                ✕
-              </button>
-            ) : null}
+            <button
+              type="button"
+              onClick={() => setSearch('')}
+              aria-label="Clear search"
+              className={`shrink-0 rounded-full p-1 text-sm text-zinc-500 transition hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200 ${search ? 'visible' : 'invisible'}`}
+            >
+              ✕
+            </button>
           </div>
           <div className="p-2 text-sm text-zinc-500 dark:text-zinc-400">
             {isLoading ? (
