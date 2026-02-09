@@ -482,6 +482,15 @@ export function ProduceAnalytics({
             ) : (
               <>
                 Showing {filteredAndSorted.length} of {quickFilterCount} items
+                {dateRange ? (
+                  <>
+                    {' · Last updated '}
+                    {new Date(dateRange.end + 'T00:00:00').toLocaleDateString('en-US', {
+                      month: 'short',
+                      day: 'numeric',
+                    })}
+                  </>
+                ) : null}
                 <span
                   className={`ml-2 inline-block animate-spin transition-opacity duration-300 ${isRefreshing ? 'opacity-100' : 'opacity-0'}`}
                 >
