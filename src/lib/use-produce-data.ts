@@ -71,7 +71,7 @@ export function useProduceData(): UseProduceDataResult {
     cachedState?.dateRange ?? null,
   );
   const [loading, setLoading] = useState(!cachedState);
-  const [refreshing, setRefreshing] = useState(false);
+  const [refreshing, setRefreshing] = useState(!!cachedState);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
