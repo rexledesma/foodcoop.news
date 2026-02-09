@@ -46,11 +46,7 @@ export async function GET() {
     });
     const data = await cached();
 
-    return NextResponse.json(data, {
-      headers: {
-        'Cache-Control': 'public, max-age=86400, s-maxage=86400, stale-while-revalidate=86400',
-      },
-    });
+    return NextResponse.json(data);
   } catch (error) {
     console.error('Produce metadata error:', error);
     return NextResponse.json({ error: 'Failed to list produce data' }, { status: 500 });
