@@ -7,6 +7,7 @@ import { useQuery } from 'convex/react';
 import { api } from '../../convex/_generated/api';
 import { useSession, signOut } from '@/lib/auth-client';
 import { useScrollVisibility } from '@/components/ScrollVisibilityProvider';
+import { withNextParam } from '@/lib/auth-redirect';
 
 const navItems = [
   { href: '/discover', label: 'Discover', icon: 'compass' },
@@ -45,10 +46,11 @@ export function Navigation() {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const desktopDropdownRef = useRef<HTMLDivElement>(null);
   const mobileDropdownRef = useRef<HTMLDivElement>(null);
+  const loginHref = withNextParam('/login', pathname);
 
   const handleSignOut = async () => {
     await signOut();
-    window.location.href = '/login';
+    window.location.href = loginHref;
   };
 
   // Close dropdown when clicking outside
@@ -146,7 +148,7 @@ export function Navigation() {
               </>
             ) : (
               <Link
-                href="/login"
+                href={loginHref}
                 className={`flex flex-row items-center justify-center gap-2 rounded-lg px-4 py-2 transition-colors ${
                   pathname === '/login'
                     ? 'text-black dark:text-white'
@@ -214,7 +216,7 @@ export function Navigation() {
             </div>
           ) : (
             <Link
-              href="/login"
+              href={loginHref}
               className={`flex flex-row items-center justify-center gap-2 rounded-lg px-2 py-1 transition-colors ${
                 pathname === '/login'
                   ? 'text-black dark:text-white'

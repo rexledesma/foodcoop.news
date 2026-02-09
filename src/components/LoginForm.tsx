@@ -1,14 +1,16 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useConvex } from 'convex/react';
 import { signIn } from '@/lib/auth-client';
 import { api } from '../../convex/_generated/api';
+import { resolveAuthDestination, withNextParam } from '@/lib/auth-redirect';
 
 export function LoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const convex = useConvex();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -16,6 +18,7 @@ export function LoginForm() {
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState<'email' | 'password'>('email');
   const [checkingEmail, setCheckingEmail] = useState(false);
+  const nextPath = searchParams.get('next');
 
   const handleEmailSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -34,7 +37,9 @@ export function LoginForm() {
       if (result.exists) {
         setStep('password');
       } else {
-        router.push(`/signup?email=${encodeURIComponent(email)}`);
+        const params = new URLSearchParams({ email });
+        const signupHref = withNextParam(`/signup?${params.toString()}`, nextPath);
+        router.push(signupHref);
       }
     } catch {
       setError('Failed to check email. Please try again.');
@@ -60,7 +65,7 @@ export function LoginForm() {
         return;
       }
 
-      router.push('/discover');
+      router.push(resolveAuthDestination(nextPath));
     } catch {
       setError('An unexpected error occurred');
       setLoading(false);
@@ -172,7 +177,10 @@ export function LoginForm() {
 
       <p className="mx-auto mt-4 max-w-sm text-center text-sm text-zinc-600 dark:text-zinc-400">
         First time here?{' '}
-        <Link href="/signup" className="text-green-600 hover:underline dark:text-green-400">
+        <Link
+          href={withNextParam('/signup', nextPath)}
+          className="text-green-600 hover:underline dark:text-green-400"
+        >
           Create account
         </Link>
       </p>

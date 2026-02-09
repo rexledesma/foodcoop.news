@@ -16,6 +16,7 @@ import {
   unsubscribeFromPush,
   extractSubscriptionKeys,
 } from '@/lib/push-notifications';
+import { withNextParam } from '@/lib/auth-redirect';
 
 const CALENDAR_PROXY_PATH = '/api/calendar';
 const DRAFT_STORAGE_KEY = 'integrations:draft';
@@ -251,7 +252,7 @@ export function Integrations() {
     if (session?.user) {
       return true;
     }
-    router.push('/signup?reason=integrations');
+    router.push(withNextParam('/signup', '/integrations'));
     return false;
   };
 
@@ -601,7 +602,7 @@ export function Integrations() {
         {!session?.user && !sessionPending && (
           <div className="mb-6 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
             <Link
-              href="/signup?reason=integrations"
+              href={withNextParam('/signup', '/integrations')}
               className="font-semibold underline underline-offset-4"
             >
               Create an account

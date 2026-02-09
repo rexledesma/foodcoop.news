@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { signUp } from '@/lib/auth-client';
+import { getNextPathname, resolveAuthDestination, withNextParam } from '@/lib/auth-redirect';
 
 export function SignUpForm() {
   const router = useRouter();
@@ -13,8 +14,8 @@ export function SignUpForm() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const reason = searchParams.get('reason');
-  const showIntegrationsPrompt = reason === 'integrations';
+  const nextPath = searchParams.get('next');
+  const showIntegrationsPrompt = getNextPathname(nextPath) === '/integrations';
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -46,11 +47,7 @@ export function SignUpForm() {
       }
 
       // Profile is auto-created via Convex trigger on user creation
-      if (reason === 'integrations') {
-        router.push('/integrations');
-      } else {
-        router.push('/discover');
-      }
+      router.push(resolveAuthDestination(nextPath));
     } catch {
       setError('An unexpected error occurred');
       setLoading(false);
@@ -139,7 +136,10 @@ export function SignUpForm() {
 
       <p className="mx-auto mt-4 max-w-sm text-center text-sm text-zinc-600 dark:text-zinc-400">
         Already have an account?{' '}
-        <Link href="/login" className="text-green-600 hover:underline dark:text-green-400">
+        <Link
+          href={withNextParam('/login', nextPath)}
+          className="text-green-600 hover:underline dark:text-green-400"
+        >
           Sign in
         </Link>
       </p>
