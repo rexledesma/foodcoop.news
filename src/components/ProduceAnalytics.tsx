@@ -135,6 +135,15 @@ export function ProduceAnalytics({
 
   const stickyVisible = showSticky || isSearchFocused;
 
+  const activeViewFilter =
+    quickFilter === 'favorites' || quickFilter === 'new' || quickFilter === 'recently_unavailable'
+      ? quickFilter
+      : null;
+  const hasAnyViewFilter = activeViewFilter !== null;
+  const hasAnyScopedFilter = hasAnyViewFilter || dateFilter !== null || itemFilter !== null;
+  const isPriceDropsSort = sortField === 'change' && sortDirection === 'asc';
+  const isPriceIncreasesSort = sortField === 'change' && sortDirection === 'desc';
+
   useEffect(() => {
     if (typeof window === 'undefined') return;
     window.dispatchEvent(new CustomEvent('force-sticky', { detail: isSearchFocused }));
@@ -351,6 +360,28 @@ export function ProduceAnalytics({
 
   const handleQuickFilter = (filter: QuickFilter) => {
     if (dateFilter) clearDateFilter();
+
+    const hasActiveViewFilter =
+      quickFilter === 'favorites' ||
+      quickFilter === 'new' ||
+      quickFilter === 'recently_unavailable';
+
+    if (filter === 'drops' || filter === 'increases') {
+      if (quickFilter === filter) {
+        setQuickFilter(null);
+        setSortField('name');
+        setSortDirection('asc');
+        return;
+      }
+
+      if (!hasActiveViewFilter) {
+        setQuickFilter(filter);
+      }
+      setSortField('change');
+      setSortDirection(filter === 'drops' ? 'asc' : 'desc');
+      return;
+    }
+
     if (quickFilter === filter) {
       // Clicking same filter again - reset to default
       setQuickFilter(null);
@@ -358,10 +389,7 @@ export function ProduceAnalytics({
       setSortDirection('asc');
     } else {
       setQuickFilter(filter);
-      if (filter === 'drops' || filter === 'increases') {
-        setSortField('change');
-        setSortDirection(filter === 'drops' ? 'asc' : 'desc');
-      } else if (filter === 'favorites') {
+      if (filter === 'favorites') {
         setSortField('name');
         setSortDirection('asc');
       } else if (filter === 'new') {
@@ -422,14 +450,19 @@ export function ProduceAnalytics({
                 </button>
               </span>
             )}
-            {quickFilter && (
+            {!hasAnyScopedFilter && (
+              <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-zinc-900 px-2.5 py-0.5 text-xs font-medium text-white dark:bg-zinc-100 dark:text-zinc-900">
+                All
+              </span>
+            )}
+            {activeViewFilter && (
               <span
-                className={`inline-flex shrink-0 items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium ${QUICK_FILTER_CHIP_COLORS[quickFilter]}`}
+                className={`inline-flex shrink-0 items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium ${QUICK_FILTER_CHIP_COLORS[activeViewFilter]}`}
               >
-                {QUICK_FILTER_LABELS[quickFilter]}
+                {QUICK_FILTER_LABELS[activeViewFilter]}
                 <button
                   type="button"
-                  aria-label={`Remove ${QUICK_FILTER_LABELS[quickFilter]} filter`}
+                  aria-label={`Remove ${QUICK_FILTER_LABELS[activeViewFilter]} filter`}
                   onClick={(e) => {
                     e.stopPropagation();
                     setQuickFilter(null);
@@ -448,7 +481,7 @@ export function ProduceAnalytics({
               placeholder={
                 dateFilter
                   ? `Search within ${formatShortDate(dateFilter)}...`
-                  : quickFilter
+                  : activeViewFilter
                     ? 'Search within filter...'
                     : 'Search produce...'
               }
@@ -458,7 +491,7 @@ export function ProduceAnalytics({
               onBlur={() => setIsSearchFocused(false)}
               onKeyDown={(e) => {
                 if (e.key === 'Backspace' && search === '') {
-                  if (quickFilter) {
+                  if (activeViewFilter) {
                     setQuickFilter(null);
                     setSortField('name');
                     setSortDirection('asc');
@@ -505,9 +538,9 @@ export function ProduceAnalytics({
           </div>
         </div>
 
-        {/* Quick Filters */}
-        <div className="mb-4 flex flex-col gap-3">
-          <div className="flex flex-wrap gap-2">
+        {/* Filter and sort chip rows */}
+        <div className="mb-4 flex flex-col gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <button
               type="button"
               onClick={() => {
@@ -517,7 +550,7 @@ export function ProduceAnalytics({
                 setSortDirection('asc');
               }}
               className={`rounded-full px-3 py-1.5 text-sm font-medium whitespace-nowrap transition-colors ${
-                quickFilter === null && !dateFilter
+                !hasAnyScopedFilter
                   ? 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900'
                   : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-700'
               }`}
@@ -534,28 +567,6 @@ export function ProduceAnalytics({
               }`}
             >
               Favorites
-            </button>
-            <button
-              type="button"
-              onClick={() => handleQuickFilter('drops')}
-              className={`rounded-full px-3 py-1.5 text-sm font-medium whitespace-nowrap transition-colors ${
-                quickFilter === 'drops'
-                  ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
-                  : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-700'
-              }`}
-            >
-              Price Drops
-            </button>
-            <button
-              type="button"
-              onClick={() => handleQuickFilter('increases')}
-              className={`rounded-full px-3 py-1.5 text-sm font-medium whitespace-nowrap transition-colors ${
-                quickFilter === 'increases'
-                  ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
-                  : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-700'
-              }`}
-            >
-              Price Increases
             </button>
             <button
               type="button"
@@ -580,24 +591,48 @@ export function ProduceAnalytics({
               Out of Stock
             </button>
           </div>
-        </div>
 
-        {/* Time Period Pills */}
-        <div className="mb-4 flex gap-1">
-          {TIME_PERIODS.map((period) => (
+          <div className="flex flex-wrap items-center gap-2">
             <button
-              key={period}
               type="button"
-              onClick={() => setTimePeriod(period)}
-              className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
-                timePeriod === period
-                  ? 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900'
+              onClick={() => handleQuickFilter('drops')}
+              className={`rounded-full px-3 py-1.5 text-sm font-medium whitespace-nowrap transition-colors ${
+                isPriceDropsSort
+                  ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
                   : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-700'
               }`}
             >
-              {PERIOD_LABELS[period]}
+              Price Drops
             </button>
-          ))}
+            <button
+              type="button"
+              onClick={() => handleQuickFilter('increases')}
+              className={`rounded-full px-3 py-1.5 text-sm font-medium whitespace-nowrap transition-colors ${
+                isPriceIncreasesSort
+                  ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                  : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-700'
+              }`}
+            >
+              Price Increases
+            </button>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2">
+            {TIME_PERIODS.map((period) => (
+              <button
+                key={period}
+                type="button"
+                onClick={() => setTimePeriod(period)}
+                className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+                  timePeriod === period
+                    ? 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900'
+                    : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-700'
+                }`}
+              >
+                {PERIOD_LABELS[period]}
+              </button>
+            ))}
+          </div>
         </div>
 
         {error && !isLoading && (
