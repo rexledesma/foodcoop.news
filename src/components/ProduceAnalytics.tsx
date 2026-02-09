@@ -1,5 +1,6 @@
 'use client';
 
+import Fuse from 'fuse.js';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ProduceContextMenu } from '@/components/ProduceContextMenu';
 import { useScrollVisibility } from '@/components/ScrollVisibilityProvider';
@@ -50,6 +51,30 @@ const QUICK_FILTER_CHIP_COLORS: Record<NonNullable<QuickFilter>, string> = {
   new: 'bg-[rgb(255,246,220)] text-[#3F7540]',
   recently_unavailable: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
 };
+
+interface ProduceAttributeDocument {
+  id: string;
+  name: string;
+  origin: string;
+  attributes: string;
+}
+
+interface ProduceSearchResults {
+  ids: Set<string>;
+  scores: Map<string, number>;
+}
+
+function getProduceAttributeTerms(row: ProduceRow): string {
+  const terms: string[] = [];
+
+  if (row.is_organic) terms.push('organic');
+  if (row.is_local) terms.push('local');
+  if (row.is_ipm) terms.push('ipm');
+  if (row.is_hydroponic) terms.push('hydroponic');
+  if (row.is_waxed) terms.push('waxed');
+
+  return terms.join(' ');
+}
 
 function getPeriodData(row: ProduceRow, period: TimePeriod) {
   switch (period) {
@@ -143,6 +168,49 @@ export function ProduceAnalytics({
   const hasAnyScopedFilter = hasAnyViewFilter || dateFilter !== null || itemFilter !== null;
   const isPriceDropsSort = sortField === 'change' && sortDirection === 'asc';
   const isPriceIncreasesSort = sortField === 'change' && sortDirection === 'desc';
+  const normalizedSearchTerm = search.trim().toLowerCase();
+  const hasSearchQuery = normalizedSearchTerm.length > 0;
+
+  const searchDocs = useMemo(
+    () =>
+      data.map<ProduceAttributeDocument>((row) => ({
+        id: produceHash(row.name),
+        name: row.name,
+        origin: row.origin,
+        attributes: getProduceAttributeTerms(row),
+      })),
+    [data],
+  );
+
+  const produceFuse = useMemo(
+    () =>
+      new Fuse(searchDocs, {
+        includeScore: true,
+        shouldSort: true,
+        ignoreLocation: true,
+        threshold: 0.3,
+        keys: [
+          { name: 'name', weight: 0.7 },
+          { name: 'origin', weight: 0.15 },
+          { name: 'attributes', weight: 0.15 },
+        ],
+      }),
+    [searchDocs],
+  );
+
+  const attributeSearchResults = useMemo<ProduceSearchResults | null>(() => {
+    if (!hasSearchQuery) return null;
+
+    const searchResults = produceFuse.search(normalizedSearchTerm);
+    const scores = new Map(
+      searchResults.map((hit) => [hit.item.id, hit.score ?? Number.MAX_VALUE]),
+    );
+
+    return {
+      ids: new Set(scores.keys()),
+      scores,
+    };
+  }, [produceFuse, hasSearchQuery, normalizedSearchTerm]);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -201,11 +269,8 @@ export function ProduceAnalytics({
     }
 
     // Filter by search
-    if (search) {
-      const lower = search.toLowerCase();
-      result = result.filter(
-        (row) => row.name.toLowerCase().includes(lower) || row.origin.toLowerCase().includes(lower),
-      );
+    if (attributeSearchResults) {
+      result = result.filter((row) => attributeSearchResults.ids.has(produceHash(row.name)));
     }
 
     // Filter by quick filter
@@ -215,6 +280,14 @@ export function ProduceAnalytics({
       result = result.filter((row) => row.is_new);
     } else if (quickFilter === 'recently_unavailable') {
       result = result.filter((row) => row.is_unavailable);
+    }
+
+    if (hasSearchQuery && attributeSearchResults) {
+      return [...result].sort((a, b) => {
+        const aScore = attributeSearchResults.scores.get(produceHash(a.name)) ?? Number.MAX_VALUE;
+        const bScore = attributeSearchResults.scores.get(produceHash(b.name)) ?? Number.MAX_VALUE;
+        return aScore - bScore;
+      });
     }
 
     // Sort
@@ -265,7 +338,6 @@ export function ProduceAnalytics({
     return result;
   }, [
     data,
-    search,
     sortField,
     sortDirection,
     quickFilter,
@@ -273,18 +345,20 @@ export function ProduceAnalytics({
     timePeriod,
     dateFilter,
     itemFilter,
+    hasSearchQuery,
+    attributeSearchResults,
   ]);
 
   const allSearchResultCount = useMemo(() => {
-    if (!search) return 0;
-    const lower = search.toLowerCase();
-    return data.filter(
-      (row) => row.name.toLowerCase().includes(lower) || row.origin.toLowerCase().includes(lower),
-    ).length;
-  }, [data, search]);
+    if (!attributeSearchResults) return 0;
+    return data.filter((row) => attributeSearchResults.ids.has(produceHash(row.name))).length;
+  }, [data, attributeSearchResults]);
 
   const showSearchAllButton =
-    !!search && hasAnyScopedFilter && filteredAndSorted.length === 0 && allSearchResultCount > 0;
+    hasSearchQuery &&
+    hasAnyScopedFilter &&
+    filteredAndSorted.length === 0 &&
+    allSearchResultCount > 0;
 
   const itemFilterName = useMemo(() => {
     if (!itemFilter) return null;
@@ -425,10 +499,7 @@ export function ProduceAnalytics({
         <h1 className="py-6 text-2xl font-bold text-zinc-900 dark:text-zinc-100">Produce</h1>
         {/* Search */}
         <div className="mb-4">
-          <div
-            className="flex w-full max-w-md cursor-text items-center gap-1.5 rounded-lg border border-zinc-300 bg-white px-3 py-2 dark:border-zinc-700 dark:bg-zinc-900"
-            onClick={() => searchInputRef.current?.focus()}
-          >
+          <div className="flex w-full max-w-md items-center gap-1.5 rounded-lg border border-zinc-300 bg-white px-3 py-2 dark:border-zinc-700 dark:bg-zinc-900">
             {itemFilterName && (
               <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-violet-100 px-2.5 py-0.5 text-xs font-medium text-violet-800 dark:bg-violet-900/40 dark:text-violet-300">
                 <span className="max-w-[120px] truncate">{itemFilterName}</span>
