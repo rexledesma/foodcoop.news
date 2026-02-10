@@ -9,7 +9,7 @@ interface ProduceCachePayload {
   cachedAt: number;
 }
 
-export interface ProduceCacheResult {
+interface ProduceCacheResult {
   data: ProduceRow[];
   history: Map<string, ProduceHistoryPoint[]>;
   dateRange: ProduceDateRange | null;

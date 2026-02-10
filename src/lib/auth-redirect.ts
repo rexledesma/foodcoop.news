@@ -8,7 +8,7 @@ function getPathname(path: string): string {
   }
 }
 
-export function normalizeAuthNext(path: string | null | undefined): string | null {
+function normalizeAuthNext(path: string | null | undefined): string | null {
   if (!path) {
     return null;
   }

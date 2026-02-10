@@ -86,8 +86,6 @@ export interface EventbriteEvent {
   image?: string;
 }
 
-export type FoodCoopCooksEvent = EventbriteEvent;
-
 export interface FoodcoopEvent {
   id: string;
   title: string;

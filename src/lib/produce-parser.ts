@@ -48,7 +48,7 @@ function generateId(date: string, name: string): string {
   return `${date}-${slug}`;
 }
 
-export function parsePrice(priceStr: string): {
+function parsePrice(priceStr: string): {
   price: number;
   unit: ProduceUnit;
 } {
@@ -66,7 +66,7 @@ export function parsePrice(priceStr: string): {
   return { price, unit };
 }
 
-export function parseAttributes(
+function parseAttributes(
   attrsCell: string,
   rawName: string,
 ): {
@@ -85,7 +85,7 @@ export function parseAttributes(
   };
 }
 
-export function parseOriginIsLocal(originStr: string): boolean {
+function parseOriginIsLocal(originStr: string): boolean {
   const lower = originStr.toLowerCase();
   return lower.includes('locally grown') || lower.includes('500 miles');
 }

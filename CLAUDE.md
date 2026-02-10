@@ -8,14 +8,15 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 pnpm dev              # Development server
 pnpm build            # Production build (Webpack)
 pnpm start            # Start production server
-pnpm check            # Run lint, format, and TypeScript checks
-pnpm lint             # Run ESLint
+pnpm check            # Run lint, knip, format, and TypeScript checks
+pnpm lint             # Run ESLint only
+pnpm knip             # Run knip unused code/deps checks
 pnpm format           # Format with Prettier
 pnpm format:check     # Check formatting
 npx convex dev        # Start Convex development server
 ```
 
-**Important:** After generating or modifying code, run `pnpm check` to fix any lint/format/TypeScript errors. This command should always succeed with no errors.
+**Important:** After generating or modifying code, run `pnpm check` to fix any lint/knip/format/TypeScript errors. This command should always succeed with no errors.
 
 ## Architecture
 

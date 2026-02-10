@@ -71,19 +71,3 @@ export async function generateParquetBuffer(items: ProduceItem[]): Promise<Buffe
     await unlink(tempPath).catch(() => {});
   }
 }
-
-/**
- * Group produce items by month (YYYY-MM)
- */
-export function groupByMonth(items: ProduceItem[]): Map<string, ProduceItem[]> {
-  const groups = new Map<string, ProduceItem[]>();
-
-  for (const item of items) {
-    const month = item.date.slice(0, 7); // "2025-01-29" -> "2025-01"
-    const existing = groups.get(month) ?? [];
-    existing.push(item);
-    groups.set(month, existing);
-  }
-
-  return groups;
-}

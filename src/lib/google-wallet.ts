@@ -50,7 +50,7 @@ function getServiceAccountCredentials(): {
 /**
  * Create a Generic pass object for an individual member.
  */
-export function createGenericObject(params: {
+function createGenericObject(params: {
   memberId: string;
   memberName: string;
   serialNumber: string;
@@ -151,7 +151,7 @@ export function createGenericObject(params: {
 /**
  * Generate a signed JWT for Google Wallet.
  */
-export function generateGoogleWalletJWT(params: {
+function generateGoogleWalletJWT(params: {
   memberId: string;
   memberName: string;
   serialNumber: string;
