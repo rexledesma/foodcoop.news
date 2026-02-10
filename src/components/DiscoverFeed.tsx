@@ -126,22 +126,20 @@ function GazetteCard({ article }: { article: GazetteArticle; date: Date }) {
       href={article.link}
       target="_blank"
       rel="noopener noreferrer"
-      className="block rounded-xl border border-zinc-200 bg-white p-4 transition-colors hover:border-green-300 dark:border-zinc-700 dark:bg-zinc-800 dark:hover:border-green-700"
+      className="block rounded-xl border border-zinc-200 bg-white p-4 transition-colors hover:border-green-300"
     >
       <div className="flex items-start gap-3">
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-amber-100 text-xl dark:bg-amber-900/30">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-amber-100 text-xl">
           📰
         </div>
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="font-semibold text-zinc-900 dark:text-zinc-100">
-              Linewaiters&apos; Gazette
-            </span>
-            <span className="shrink-0 text-sm text-zinc-400 dark:text-zinc-500">
+            <span className="font-semibold text-zinc-900">Linewaiters&apos; Gazette</span>
+            <span className="shrink-0 text-sm text-zinc-400">
               {formatRelativeTime(new Date(article.pubDate))}
             </span>
           </div>
-          <p className="mt-2 text-zinc-700 dark:text-zinc-300">{article.title}</p>
+          <p className="mt-2 text-zinc-700">{article.title}</p>
           {article.image && (
             <img
               src={article.image}
@@ -161,24 +159,22 @@ function FoodCoopCard({ article }: { article: FoodCoopAnnouncement; date: Date }
       href={article.link}
       target="_blank"
       rel="noopener noreferrer"
-      className="block rounded-xl border border-zinc-200 bg-white p-4 transition-colors hover:border-green-300 dark:border-zinc-700 dark:bg-zinc-800 dark:hover:border-green-700"
+      className="block rounded-xl border border-zinc-200 bg-white p-4 transition-colors hover:border-green-300"
     >
       <div className="flex items-start gap-3">
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-green-100 text-xl dark:bg-green-900/30">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-green-100 text-xl">
           📢
         </div>
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="font-semibold text-zinc-900 dark:text-zinc-100">Announcements</span>
-            <span className="shrink-0 text-sm text-zinc-400 dark:text-zinc-500">
+            <span className="font-semibold text-zinc-900">Announcements</span>
+            <span className="shrink-0 text-sm text-zinc-400">
               {formatRelativeTime(new Date(article.pubDate))}
             </span>
           </div>
-          <p className="mt-2 font-medium text-zinc-700 dark:text-zinc-300">{article.title}</p>
+          <p className="mt-2 font-medium text-zinc-700">{article.title}</p>
           {article.description && (
-            <p className="mt-1 line-clamp-3 text-sm text-zinc-500 dark:text-zinc-400">
-              {article.description}
-            </p>
+            <p className="mt-1 line-clamp-3 text-sm text-zinc-500">{article.description}</p>
           )}
           {article.image && (
             <img
@@ -199,24 +195,22 @@ function FoodCoopCooksCard({ article }: { article: FoodCoopCooksArticle; date: D
       href={article.link}
       target="_blank"
       rel="noopener noreferrer"
-      className="block rounded-xl border border-zinc-200 bg-white p-4 transition-colors hover:border-green-300 dark:border-zinc-700 dark:bg-zinc-800 dark:hover:border-green-700"
+      className="block rounded-xl border border-zinc-200 bg-white p-4 transition-colors hover:border-green-300"
     >
       <div className="flex items-start gap-3">
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-orange-100 text-xl dark:bg-orange-900/30">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-orange-100 text-xl">
           🧑‍🍳
         </div>
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="font-semibold text-zinc-900 dark:text-zinc-100">Cooking</span>
-            <span className="shrink-0 text-sm text-zinc-400 dark:text-zinc-500">
+            <span className="font-semibold text-zinc-900">Cooking</span>
+            <span className="shrink-0 text-sm text-zinc-400">
               {formatRelativeTime(new Date(article.pubDate))}
             </span>
           </div>
-          <p className="mt-2 font-medium text-zinc-700 dark:text-zinc-300">{article.title}</p>
+          <p className="mt-2 font-medium text-zinc-700">{article.title}</p>
           {article.description && (
-            <p className="mt-1 line-clamp-3 text-sm text-zinc-500 dark:text-zinc-400">
-              {article.description}
-            </p>
+            <p className="mt-1 line-clamp-3 text-sm text-zinc-500">{article.description}</p>
           )}
           {article.image && (
             <img
@@ -245,27 +239,25 @@ function EventbriteEventCard({
       href={event.url}
       target="_blank"
       rel="noopener noreferrer"
-      className="block rounded-xl border border-zinc-200 bg-white p-4 transition-colors hover:border-green-300 dark:border-zinc-700 dark:bg-zinc-800 dark:hover:border-green-700"
+      className="block rounded-xl border border-zinc-200 bg-white p-4 transition-colors hover:border-green-300"
     >
       <div className="flex items-start gap-3">
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-rose-100 text-xl dark:bg-rose-900/30">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-rose-100 text-xl">
           {emoji}
         </div>
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="font-semibold text-zinc-900 dark:text-zinc-100">{label}</span>
-            <span className="shrink-0 text-sm text-zinc-400 dark:text-zinc-500">
+            <span className="font-semibold text-zinc-900">{label}</span>
+            <span className="shrink-0 text-sm text-zinc-400">
               {formatEventDateTime(event.startUtc, event.timezone)}
             </span>
           </div>
-          <p className="mt-2 font-medium text-zinc-700 dark:text-zinc-300">{event.title}</p>
+          <p className="mt-2 font-medium text-zinc-700">{event.title}</p>
           {event.description && (
-            <p className="mt-1 line-clamp-3 text-sm text-zinc-500 dark:text-zinc-400">
-              {event.description}
-            </p>
+            <p className="mt-1 line-clamp-3 text-sm text-zinc-500">{event.description}</p>
           )}
           {(event.venueName || event.venueAddress) && (
-            <p className="mt-2 text-sm text-zinc-500 dark:text-zinc-400">
+            <p className="mt-2 text-sm text-zinc-500">
               {[event.venueName, event.venueAddress].filter(Boolean).join(' • ')}
             </p>
           )}
@@ -290,10 +282,10 @@ function BlueskyCard({ post }: { post: FeedPost; date: Date }) {
       href={getPostUrl(post.uri)}
       target="_blank"
       rel="noopener noreferrer"
-      className="block rounded-xl border border-zinc-200 bg-white p-4 transition-colors hover:border-green-300 dark:border-zinc-700 dark:bg-zinc-800 dark:hover:border-green-700"
+      className="block rounded-xl border border-zinc-200 bg-white p-4 transition-colors hover:border-green-300"
     >
       {post.repostedBy && (
-        <div className="mb-3 flex items-center gap-2 text-sm text-zinc-500 dark:text-zinc-400">
+        <div className="mb-3 flex items-center gap-2 text-sm text-zinc-500">
           <svg
             className="h-4 w-4"
             fill="none"
@@ -316,7 +308,7 @@ function BlueskyCard({ post }: { post: FeedPost; date: Date }) {
         </div>
       )}
       {post.parent && (
-        <div className="mb-3 border-b border-zinc-200 pb-3 dark:border-zinc-700">
+        <div className="mb-3 border-b border-zinc-200 pb-3">
           <div className="flex items-start gap-3">
             {post.parent.author.avatar && (
               <img
@@ -327,14 +319,14 @@ function BlueskyCard({ post }: { post: FeedPost; date: Date }) {
             )}
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2">
-                <span className="text-sm font-medium text-zinc-600 dark:text-zinc-400">
+                <span className="text-sm font-medium text-zinc-600">
                   {post.parent.author.displayName}
                 </span>
-                <span className="text-xs text-zinc-400 dark:text-zinc-500">
+                <span className="text-xs text-zinc-400">
                   {formatRelativeTime(new Date(post.parent.createdAt))}
                 </span>
               </div>
-              <p className="line-clamp-2 text-sm break-words whitespace-pre-wrap text-zinc-500 dark:text-zinc-500">
+              <p className="line-clamp-2 text-sm break-words whitespace-pre-wrap text-zinc-500">
                 {post.parent.text}
               </p>
             </div>
@@ -360,16 +352,12 @@ function BlueskyCard({ post }: { post: FeedPost; date: Date }) {
               <title>Bluesky</title>
               <path d="m135.72 44.03c66.496 49.921 138.02 151.14 164.28 205.46 26.262-54.316 97.782-155.54 164.28-205.46 47.98-36.021 125.72-63.892 125.72 24.795 0 17.712-10.155 148.79-16.111 170.07-20.703 73.984-96.144 92.854-163.25 81.433 117.3 19.964 147.14 86.092 82.697 152.22-122.39 125.59-175.91-31.511-189.63-71.766-2.514-7.3797-6.0634-17.664-8.9824-26.262-2.9191 8.5976-6.4685 18.882-8.9824 26.262-13.723 40.255-67.243 197.36-189.63 71.766-64.444-66.128-34.605-132.26 82.697-152.22-67.108 11.421-142.55-7.4491-163.25-81.433-5.9562-21.282-16.111-152.36-16.111-170.07 0-88.687 77.742-60.816 125.72-24.795z" />
             </svg>
-            <span className="truncate font-semibold text-zinc-900 dark:text-zinc-100">
-              {post.author.displayName}
-            </span>
-            <span className="shrink-0 text-sm text-zinc-400 dark:text-zinc-500">
+            <span className="truncate font-semibold text-zinc-900">{post.author.displayName}</span>
+            <span className="shrink-0 text-sm text-zinc-400">
               {formatRelativeTime(new Date(post.createdAt))}
             </span>
           </div>
-          <p className="mt-2 break-words whitespace-pre-wrap text-zinc-700 dark:text-zinc-300">
-            {post.text}
-          </p>
+          <p className="mt-2 break-words whitespace-pre-wrap text-zinc-700">{post.text}</p>
           {post.images && post.images.length > 0 && (
             <div className="mt-3 grid grid-cols-2 gap-2">
               {post.images.map((img, idx) => (
@@ -383,7 +371,7 @@ function BlueskyCard({ post }: { post: FeedPost; date: Date }) {
             </div>
           )}
           {post.quotedPost && (
-            <div className="mt-3 rounded-lg border border-zinc-200 p-3 dark:border-zinc-700">
+            <div className="mt-3 rounded-lg border border-zinc-200 p-3">
               <div className="flex items-center gap-2">
                 {post.quotedPost.author.avatar && (
                   <img
@@ -392,15 +380,15 @@ function BlueskyCard({ post }: { post: FeedPost; date: Date }) {
                     className="h-5 w-5 rounded-full"
                   />
                 )}
-                <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+                <span className="text-sm font-medium text-zinc-700">
                   {post.quotedPost.author.displayName}
                 </span>
-                <span className="text-xs text-zinc-400 dark:text-zinc-500">
+                <span className="text-xs text-zinc-400">
                   {formatRelativeTime(new Date(post.quotedPost.createdAt))}
                 </span>
               </div>
               {post.quotedPost.text && (
-                <p className="mt-2 text-sm break-words whitespace-pre-wrap text-zinc-600 dark:text-zinc-400">
+                <p className="mt-2 text-sm break-words whitespace-pre-wrap text-zinc-600">
                   {post.quotedPost.text}
                 </p>
               )}
@@ -418,7 +406,7 @@ function BlueskyCard({ post }: { post: FeedPost; date: Date }) {
               )}
             </div>
           )}
-          <div className="mt-3 flex items-center gap-4 text-sm text-zinc-500 dark:text-zinc-400">
+          <div className="mt-3 flex items-center gap-4 text-sm text-zinc-500">
             <span className="flex items-center gap-1">
               <svg
                 className="h-4 w-4"
@@ -491,30 +479,26 @@ function ProduceCard({
   return (
     <Link
       href={`/produce?date=${update.id}`}
-      className="block rounded-xl border border-zinc-200 bg-white p-4 transition-colors hover:border-green-300 dark:border-zinc-700 dark:bg-zinc-800 dark:hover:border-green-700"
+      className="block rounded-xl border border-zinc-200 bg-white p-4 transition-colors hover:border-green-300"
     >
       <div className="flex items-start gap-3">
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-green-100 text-xl dark:bg-green-900/30">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-green-100 text-xl">
           🥬
         </div>
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="font-semibold text-zinc-900 dark:text-zinc-100">Produce</span>
-            <span className="shrink-0 text-sm text-zinc-400 dark:text-zinc-500">
-              {formattedDate}
-            </span>
+            <span className="font-semibold text-zinc-900">Produce</span>
+            <span className="shrink-0 text-sm text-zinc-400">{formattedDate}</span>
           </div>
-          <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
+          <p className="mt-1 text-sm text-zinc-500">
             {update.newArrivals.length > 0 && (
-              <span className="text-green-600 dark:text-green-400">
+              <span className="text-green-600">
                 {update.newArrivals.length} new arrival{update.newArrivals.length !== 1 ? 's' : ''}
               </span>
             )}
             {update.newArrivals.length > 0 && update.outOfStock.length > 0 && ' · '}
             {update.outOfStock.length > 0 && (
-              <span className="text-red-600 dark:text-red-400">
-                {update.outOfStock.length} out of stock
-              </span>
+              <span className="text-red-600">{update.outOfStock.length} out of stock</span>
             )}
           </p>
           {update.newArrivals.length > 0 && (
@@ -523,10 +507,10 @@ function ProduceCard({
                 {update.newArrivals.map((item) => (
                   <span
                     key={item.name}
-                    className="inline-flex items-center gap-1 rounded-full bg-green-100 px-2 py-0.5 text-xs text-green-700 dark:bg-green-900/30 dark:text-green-300"
+                    className="inline-flex items-center gap-1 rounded-full bg-green-100 px-2 py-0.5 text-xs text-green-700"
                   >
                     {favorites.has(item.name) && (
-                      <span className="grid h-4 w-4 place-items-center rounded-full bg-amber-100 text-[12px] leading-none text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">
+                      <span className="grid h-4 w-4 place-items-center rounded-full bg-amber-100 text-[12px] leading-none text-amber-700">
                         ⭐
                       </span>
                     )}
@@ -542,10 +526,10 @@ function ProduceCard({
                 {update.outOfStock.map((item) => (
                   <span
                     key={item.name}
-                    className="inline-flex items-center gap-1 rounded-full bg-red-100 px-2 py-0.5 text-xs text-red-700 dark:bg-red-900/30 dark:text-red-300"
+                    className="inline-flex items-center gap-1 rounded-full bg-red-100 px-2 py-0.5 text-xs text-red-700"
                   >
                     {favorites.has(item.name) && (
-                      <span className="grid h-4 w-4 place-items-center rounded-full bg-amber-100 text-[12px] leading-none text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">
+                      <span className="grid h-4 w-4 place-items-center rounded-full bg-amber-100 text-[12px] leading-none text-amber-700">
                         ⭐
                       </span>
                     )}
@@ -634,11 +618,11 @@ export function DiscoverFeed() {
     <div>
       <div
         ref={filtersRef}
-        className={`sticky top-24 z-20 bg-white transition-opacity duration-300 ease-in-out motion-reduce:transition-none md:top-14 dark:bg-zinc-900 ${
+        className={`sticky top-24 z-20 bg-white transition-opacity duration-300 ease-in-out motion-reduce:transition-none md:top-14 ${
           showSticky ? 'opacity-100' : 'pointer-events-none opacity-0'
         }`}
       >
-        <h1 className="py-6 text-2xl font-bold text-zinc-900 dark:text-zinc-100">Discover</h1>
+        <h1 className="py-6 text-2xl font-bold text-zinc-900">Discover</h1>
         <div className="pb-4">
           {isInitialLoading ? (
             <div className="space-y-3">
@@ -665,7 +649,7 @@ export function DiscoverFeed() {
                     className={`rounded-full px-3 py-1.5 text-sm font-medium whitespace-nowrap transition-colors ${
                       filter === option.value
                         ? 'bg-green-600 text-white'
-                        : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-700'
+                        : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200'
                     }`}
                   >
                     {option.label}
@@ -683,7 +667,7 @@ export function DiscoverFeed() {
                     className={`rounded-full px-3 py-1.5 text-sm font-medium whitespace-nowrap transition-colors ${
                       filter === option.value
                         ? 'bg-green-600 text-white'
-                        : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-700'
+                        : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200'
                     }`}
                   >
                     {option.label}
@@ -691,7 +675,7 @@ export function DiscoverFeed() {
                 ))}
               </div>
               {!isInitialError && (
-                <div className="p-2 text-sm text-zinc-500 dark:text-zinc-400">
+                <div className="p-2 text-sm text-zinc-500">
                   Showing {displayedItems.length} of {items.length} items
                 </div>
               )}
@@ -708,7 +692,7 @@ export function DiscoverFeed() {
             <FeedItemSkeleton />
           </div>
         ) : isInitialError ? (
-          <div className="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-600 dark:bg-red-900/20 dark:text-red-400">
+          <div className="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-600">
             {error}
             <button
               type="button"
@@ -788,7 +772,7 @@ export function DiscoverFeed() {
             </div>
 
             {filteredItems.length === 0 && pendingSources === 0 && (
-              <p className="py-8 text-center text-zinc-500 dark:text-zinc-400">No items found.</p>
+              <p className="py-8 text-center text-zinc-500">No items found.</p>
             )}
           </>
         )}
@@ -799,7 +783,7 @@ export function DiscoverFeed() {
 
 function FeedItemSkeleton() {
   return (
-    <div className="rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-700 dark:bg-zinc-800">
+    <div className="rounded-xl border border-zinc-200 bg-white p-4">
       <div className="flex items-start gap-3">
         <div className="feed-shimmer h-10 w-10 rounded-full" />
         <div className="min-w-0 flex-1 space-y-3">

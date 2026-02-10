@@ -72,9 +72,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body
-        className={`${geistMono.variable} ${firaSans.variable} bg-zinc-50 antialiased dark:bg-zinc-950`}
-      >
+      <body className={`${geistMono.variable} ${firaSans.variable} bg-zinc-50 antialiased`}>
         <ConvexClientProvider>
           <ProduceDataProvider>
             <DiscoverFeedProvider>

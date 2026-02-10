@@ -69,7 +69,7 @@ export function Navigation() {
 
   return (
     <nav
-      className={`safe-area-pt fixed top-0 right-0 left-0 z-40 bg-gradient-to-b from-[#e6f3fc] via-[#e6f9f0] to-white transition-opacity duration-300 ease-in-out motion-reduce:transition-none dark:from-[#1a2437] dark:via-[#162b24] dark:to-zinc-900 ${
+      className={`safe-area-pt fixed top-0 right-0 left-0 z-40 bg-gradient-to-b from-[#e6f3fc] via-[#e6f9f0] to-white transition-opacity duration-300 ease-in-out motion-reduce:transition-none ${
         showSticky ? 'opacity-100' : 'pointer-events-none opacity-0'
       }`}
     >
@@ -82,9 +82,7 @@ export function Navigation() {
                 key={item.href}
                 href={item.href}
                 className={`flex flex-row items-center justify-center gap-2 rounded-lg px-2 py-2 transition-colors md:px-4 ${
-                  isActive
-                    ? 'text-black dark:text-white'
-                    : 'text-zinc-500 hover:text-black dark:text-zinc-400 dark:hover:text-white'
+                  isActive ? 'text-black' : 'text-zinc-500 hover:text-black'
                 }`}
               >
                 <NavIcon icon={item.icon} />
@@ -96,9 +94,7 @@ export function Navigation() {
           <Link
             href={aboutItem.href}
             className={`hidden flex-row items-center justify-center gap-2 rounded-lg px-2 py-2 transition-colors md:flex md:px-4 ${
-              pathname === aboutItem.href
-                ? 'text-black dark:text-white'
-                : 'text-zinc-500 hover:text-black dark:text-zinc-400 dark:hover:text-white'
+              pathname === aboutItem.href ? 'text-black' : 'text-zinc-500 hover:text-black'
             }`}
           >
             <NavIcon icon={aboutItem.icon} />
@@ -113,33 +109,29 @@ export function Navigation() {
                   type="button"
                   onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                   className={`flex flex-row items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
-                    isDropdownOpen
-                      ? 'text-black dark:text-white'
-                      : 'text-zinc-500 hover:text-black dark:text-zinc-400 dark:hover:text-white'
+                    isDropdownOpen ? 'text-black' : 'text-zinc-500 hover:text-black'
                   }`}
                 >
                   <NavIcon icon="carrot" />
                   <span>Account</span>
                 </button>
                 {isDropdownOpen && (
-                  <div className="absolute top-full right-0 z-50 mt-2 w-64 overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-lg dark:border-zinc-700 dark:bg-zinc-800">
-                    <div className="border-b border-zinc-200 p-4 dark:border-zinc-700">
-                      <p className="font-medium text-zinc-900 dark:text-zinc-100">
+                  <div className="absolute top-full right-0 z-50 mt-2 w-64 overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-lg">
+                    <div className="border-b border-zinc-200 p-4">
+                      <p className="font-medium text-zinc-900">
                         {memberProfile?.memberName || session.user.name}
                       </p>
                       {memberProfile?.memberId && (
-                        <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
+                        <p className="mt-1 text-sm text-zinc-500">
                           Member ID: <span className="font-mono">{memberProfile.memberId}</span>
                         </p>
                       )}
-                      <p className="mt-1 truncate text-sm text-zinc-500 dark:text-zinc-400">
-                        {session.user.email}
-                      </p>
+                      <p className="mt-1 truncate text-sm text-zinc-500">{session.user.email}</p>
                     </div>
                     <button
                       type="button"
                       onClick={handleSignOut}
-                      className="w-full px-4 py-3 text-left text-sm text-zinc-700 transition-colors hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-700"
+                      className="w-full px-4 py-3 text-left text-sm text-zinc-700 transition-colors hover:bg-zinc-100"
                     >
                       Sign Out
                     </button>
@@ -150,9 +142,7 @@ export function Navigation() {
               <Link
                 href={loginHref}
                 className={`flex flex-row items-center justify-center gap-2 rounded-lg px-4 py-2 transition-colors ${
-                  pathname === '/login'
-                    ? 'text-black dark:text-white'
-                    : 'text-zinc-500 hover:text-black dark:text-zinc-400 dark:hover:text-white'
+                  pathname === '/login' ? 'text-black' : 'text-zinc-500 hover:text-black'
                 }`}
               >
                 <NavIcon icon="carrot" />
@@ -166,9 +156,7 @@ export function Navigation() {
         <Link
           href={aboutItem.href}
           className={`inline-flex flex-row items-center justify-center gap-2 rounded-lg px-2 py-1 transition-colors ${
-            pathname === aboutItem.href
-              ? 'text-black dark:text-white'
-              : 'text-zinc-500 hover:text-black dark:text-zinc-400 dark:hover:text-white'
+            pathname === aboutItem.href ? 'text-black' : 'text-zinc-500 hover:text-black'
           }`}
         >
           <NavIcon icon={aboutItem.icon} />
@@ -181,33 +169,29 @@ export function Navigation() {
                 type="button"
                 onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                 className={`flex flex-row items-center justify-center gap-2 rounded-lg px-2 py-1 text-sm font-medium transition-colors ${
-                  isDropdownOpen
-                    ? 'text-black dark:text-white'
-                    : 'text-zinc-500 hover:text-black dark:text-zinc-400 dark:hover:text-white'
+                  isDropdownOpen ? 'text-black' : 'text-zinc-500 hover:text-black'
                 }`}
               >
                 <NavIcon icon="carrot" />
                 <span>Account</span>
               </button>
               {isDropdownOpen && (
-                <div className="absolute top-full left-0 z-50 mt-2 w-64 overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-lg dark:border-zinc-700 dark:bg-zinc-800">
-                  <div className="border-b border-zinc-200 p-4 dark:border-zinc-700">
-                    <p className="font-medium text-zinc-900 dark:text-zinc-100">
+                <div className="absolute top-full left-0 z-50 mt-2 w-64 overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-lg">
+                  <div className="border-b border-zinc-200 p-4">
+                    <p className="font-medium text-zinc-900">
                       {memberProfile?.memberName || session.user.name}
                     </p>
                     {memberProfile?.memberId && (
-                      <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
+                      <p className="mt-1 text-sm text-zinc-500">
                         Member ID: <span className="font-mono">{memberProfile.memberId}</span>
                       </p>
                     )}
-                    <p className="mt-1 truncate text-sm text-zinc-500 dark:text-zinc-400">
-                      {session.user.email}
-                    </p>
+                    <p className="mt-1 truncate text-sm text-zinc-500">{session.user.email}</p>
                   </div>
                   <button
                     type="button"
                     onClick={handleSignOut}
-                    className="w-full px-4 py-3 text-left text-sm text-zinc-700 transition-colors hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-700"
+                    className="w-full px-4 py-3 text-left text-sm text-zinc-700 transition-colors hover:bg-zinc-100"
                   >
                     Sign Out
                   </button>
@@ -218,9 +202,7 @@ export function Navigation() {
             <Link
               href={loginHref}
               className={`flex flex-row items-center justify-center gap-2 rounded-lg px-2 py-1 transition-colors ${
-                pathname === '/login'
-                  ? 'text-black dark:text-white'
-                  : 'text-zinc-500 hover:text-black dark:text-zinc-400 dark:hover:text-white'
+                pathname === '/login' ? 'text-black' : 'text-zinc-500 hover:text-black'
               }`}
             >
               <NavIcon icon="carrot" />

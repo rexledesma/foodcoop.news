@@ -72,7 +72,7 @@ export function ProduceContextMenu({ itemName, x, y, onClose }: ProduceContextMe
   return (
     <div
       ref={menuRef}
-      className={`fixed z-50 min-w-[160px] overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-lg dark:border-zinc-700 dark:bg-zinc-800 ${pos ? 'context-menu-genie' : ''}`}
+      className={`fixed z-50 min-w-[160px] overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-lg ${pos ? 'context-menu-genie' : ''}`}
       style={
         pos
           ? {
@@ -86,7 +86,7 @@ export function ProduceContextMenu({ itemName, x, y, onClose }: ProduceContextMe
       <button
         type="button"
         onClick={handleCopyLink}
-        className="flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm text-zinc-700 transition-colors hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-700"
+        className="flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm text-zinc-700 transition-colors hover:bg-zinc-100"
       >
         <span>{copied ? '✅' : '🔗'}</span>
         <span>{copied ? 'Copied!' : 'Copy Link'}</span>

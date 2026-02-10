@@ -30,11 +30,11 @@ export function ScrollAwarePageShell({ title, children }: { title?: string; chil
       {hasHeader ? (
         <div
           ref={headerRef}
-          className={`sticky top-24 z-20 bg-white transition-opacity duration-300 ease-in-out motion-reduce:transition-none md:top-14 dark:bg-zinc-900 ${
+          className={`sticky top-24 z-20 bg-white transition-opacity duration-300 ease-in-out motion-reduce:transition-none md:top-14 ${
             showSticky ? 'opacity-100' : 'pointer-events-none opacity-0'
           }`}
         >
-          <h1 className="py-6 text-2xl font-bold text-zinc-900 dark:text-zinc-100">{title}</h1>
+          <h1 className="py-6 text-2xl font-bold text-zinc-900">{title}</h1>
         </div>
       ) : null}
       <div>{children}</div>

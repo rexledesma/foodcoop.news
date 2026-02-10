@@ -575,10 +575,10 @@ export function Integrations() {
     return (
       <div className="mx-auto max-w-3xl px-4 py-6">
         <div className="animate-pulse">
-          <div className="mb-6 h-8 w-32 rounded bg-zinc-200 dark:bg-zinc-700" />
+          <div className="mb-6 h-8 w-32 rounded bg-zinc-200" />
           <div className="space-y-4">
-            <div className="h-10 rounded bg-zinc-200 dark:bg-zinc-700" />
-            <div className="h-10 rounded bg-zinc-200 dark:bg-zinc-700" />
+            <div className="h-10 rounded bg-zinc-200" />
+            <div className="h-10 rounded bg-zinc-200" />
           </div>
         </div>
       </div>
@@ -589,11 +589,11 @@ export function Integrations() {
     <div>
       <div
         ref={headerRef}
-        className={`sticky top-24 z-20 bg-white transition-opacity duration-300 ease-in-out motion-reduce:transition-none md:top-14 dark:bg-zinc-900 ${
+        className={`sticky top-24 z-20 bg-white transition-opacity duration-300 ease-in-out motion-reduce:transition-none md:top-14 ${
           showSticky ? 'opacity-100' : 'pointer-events-none opacity-0'
         }`}
       >
-        <h1 className="mx-auto max-w-3xl px-4 pt-6 pb-6 text-2xl font-bold text-zinc-900 dark:text-zinc-100">
+        <h1 className="mx-auto max-w-3xl px-4 pt-6 pb-6 text-2xl font-bold text-zinc-900">
           Integrations
         </h1>
       </div>
@@ -613,10 +613,8 @@ export function Integrations() {
 
         <form onSubmit={handleSave} className="space-y-6">
           <section className="space-y-4">
-            <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">Profile</h2>
-            <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
-              Edit your unofficial member card.
-            </p>
+            <h2 className="text-lg font-semibold text-zinc-900">Profile</h2>
+            <p className="mt-2 text-sm text-zinc-600">Edit your unofficial member card.</p>
             <AppleWalletCard
               memberName={fullName}
               memberId={memberId}
@@ -655,18 +653,16 @@ export function Integrations() {
         </form>
 
         <section className="mt-10">
-          <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">Calendar</h2>
-          <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
+          <h2 className="text-lg font-semibold text-zinc-900">Calendar</h2>
+          <p className="mt-2 text-sm text-zinc-600">
             Link your account to your calendar to view your prospective shifts.
           </p>
 
-          <div className="mt-6 rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-700 dark:bg-zinc-900">
+          <div className="mt-6 rounded-xl border border-zinc-200 bg-white p-4">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <h3 className="text-base font-semibold text-zinc-900 dark:text-zinc-100">
-                  Shift Calendar Syncing
-                </h3>
-                <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
+                <h3 className="text-base font-semibold text-zinc-900">Shift Calendar Syncing</h3>
+                <p className="mt-1 text-sm text-zinc-600">
                   Sync the shift calendar with your Google, Outlook, or Apple calendar.
                 </p>
               </div>
@@ -681,10 +677,8 @@ export function Integrations() {
 
             <div className="mt-6 space-y-3">
               <div className="space-y-1">
-                <h3 className="text-base font-semibold text-zinc-900 dark:text-zinc-100">
-                  Selected Shifts
-                </h3>
-                <p className="text-sm text-zinc-600 dark:text-zinc-400">
+                <h3 className="text-base font-semibold text-zinc-900">Selected Shifts</h3>
+                <p className="text-sm text-zinc-600">
                   Filter the shift calendar for your preferred shifts.
                 </p>
               </div>
@@ -746,10 +740,10 @@ export function Integrations() {
                     }
                   }}
                   placeholder="Search jobs"
-                  className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 shadow-sm focus:ring-2 focus:ring-green-500 focus:outline-none dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100 dark:focus:ring-green-400"
+                  className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 shadow-sm focus:ring-2 focus:ring-green-500 focus:outline-none"
                 />
                 {isJobDropdownOpen && (
-                  <div className="absolute z-10 mt-2 w-full rounded-xl border border-zinc-200 bg-white shadow-lg dark:border-zinc-700 dark:bg-zinc-900">
+                  <div className="absolute z-10 mt-2 w-full rounded-xl border border-zinc-200 bg-white shadow-lg">
                     <div className="max-h-48 overflow-y-auto">
                       {filteredJobOptions.length > 0 ? (
                         filteredJobOptions.map((job, index) => {
@@ -766,11 +760,9 @@ export function Integrations() {
                               onMouseEnter={() => setHighlightedJobIndex(index)}
                               className={`flex w-full items-center justify-between px-3 py-2 text-left text-sm transition-colors ${
                                 isSelected
-                                  ? 'bg-green-50 text-green-700 dark:bg-green-500/20 dark:text-green-200'
-                                  : 'text-zinc-700 hover:bg-zinc-100 dark:text-zinc-200 dark:hover:bg-zinc-800'
-                              } ${
-                                isHighlighted && !isSelected ? 'bg-zinc-100 dark:bg-zinc-800' : ''
-                              }`}
+                                  ? 'bg-green-50 text-green-700'
+                                  : 'text-zinc-700 hover:bg-zinc-100'
+                              } ${isHighlighted && !isSelected ? 'bg-zinc-100' : ''}`}
                             >
                               <span>{job}</span>
                               {isSelected && <span className="text-xs">Selected</span>}
@@ -778,9 +770,7 @@ export function Integrations() {
                           );
                         })
                       ) : (
-                        <div className="px-3 py-2 text-sm text-zinc-500 dark:text-zinc-400">
-                          No matching jobs.
-                        </div>
+                        <div className="px-3 py-2 text-sm text-zinc-500">No matching jobs.</div>
                       )}
                     </div>
                   </div>
@@ -792,13 +782,13 @@ export function Integrations() {
                   selectedJobs.map((job) => (
                     <span
                       key={job}
-                      className="group inline-flex items-center gap-2 rounded-full bg-zinc-100 px-3 py-1 text-xs font-medium text-zinc-700 transition-colors hover:bg-red-50 hover:text-red-700 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-red-500/20 dark:hover:text-red-200"
+                      className="group inline-flex items-center gap-2 rounded-full bg-zinc-100 px-3 py-1 text-xs font-medium text-zinc-700 transition-colors hover:bg-red-50 hover:text-red-700"
                     >
                       {job}
                       <button
                         type="button"
                         onClick={() => removeJob(job)}
-                        className="text-xs font-semibold text-zinc-400 transition-colors group-hover:text-red-600 dark:text-zinc-400 dark:group-hover:text-red-200"
+                        className="text-xs font-semibold text-zinc-400 transition-colors group-hover:text-red-600"
                         aria-label={`Remove ${job}`}
                       >
                         ×
@@ -806,9 +796,7 @@ export function Integrations() {
                     </span>
                   ))
                 ) : (
-                  <span className="text-sm text-zinc-500 dark:text-zinc-400">
-                    All shifts included.
-                  </span>
+                  <span className="text-sm text-zinc-500">All shifts included.</span>
                 )}
               </div>
             </div>
@@ -820,20 +808,16 @@ export function Integrations() {
             .split(',')
             .includes(session?.user?.email ?? '') && (
             <section className="mt-10">
-              <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
-                Notifications
-              </h2>
-              <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
+              <h2 className="text-lg font-semibold text-zinc-900">Notifications</h2>
+              <p className="mt-2 text-sm text-zinc-600">
                 Receive push notifications from foodcoop.news.
               </p>
 
-              <div className="mt-6 rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-700 dark:bg-zinc-900">
+              <div className="mt-6 rounded-xl border border-zinc-200 bg-white p-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <h3 className="text-base font-semibold text-zinc-900 dark:text-zinc-100">
-                      Push Notifications
-                    </h3>
-                    <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
+                    <h3 className="text-base font-semibold text-zinc-900">Push Notifications</h3>
+                    <p className="mt-1 text-sm text-zinc-600">
                       Get notified about updates and announcements.
                     </p>
                   </div>
@@ -844,7 +828,7 @@ export function Integrations() {
                     disabled={pushLoading}
                     onClick={handleTogglePush}
                     className={`relative inline-flex h-7 w-12 shrink-0 cursor-pointer items-center rounded-full transition-colors duration-200 ease-in-out disabled:opacity-50 ${
-                      pushEnabled ? 'bg-green-600' : 'bg-zinc-300 dark:bg-zinc-600'
+                      pushEnabled ? 'bg-green-600' : 'bg-zinc-300'
                     }`}
                   >
                     <span
@@ -856,7 +840,7 @@ export function Integrations() {
                 </div>
 
                 {pushEnabled && (
-                  <div className="mt-4 border-t border-zinc-100 pt-4 dark:border-zinc-800">
+                  <div className="mt-4 border-t border-zinc-100 pt-4">
                     <button
                       type="button"
                       onClick={handleSendTestNotification}
@@ -880,12 +864,10 @@ export function Integrations() {
             onClick={() => setIsCalendarModalOpen(false)}
             className="absolute inset-0 bg-black/40"
           />
-          <div className="relative w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl dark:bg-zinc-900">
+          <div className="relative w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl">
             <div>
-              <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
-                📅 Add iCal subscription
-              </h3>
-              <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
+              <h3 className="text-lg font-semibold text-zinc-900">📅 Add iCal subscription</h3>
+              <p className="mt-2 text-sm text-zinc-600">
                 Add the shift calendar to your calendar app to keep up with new shifts and updates.
               </p>
             </div>
@@ -911,7 +893,7 @@ export function Integrations() {
                 type="button"
                 onClick={handleCopyCalendarUrl}
                 disabled={!calendarId}
-                className="w-full rounded-xl bg-zinc-100 px-4 py-2 font-medium text-zinc-500 transition-colors hover:text-zinc-700 disabled:opacity-60 disabled:hover:text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200 dark:disabled:hover:text-zinc-400"
+                className="w-full rounded-xl bg-zinc-100 px-4 py-2 font-medium text-zinc-500 transition-colors hover:text-zinc-700 disabled:opacity-60 disabled:hover:text-zinc-500"
               >
                 Add URL to clipboard
               </button>
@@ -925,17 +907,17 @@ export function Integrations() {
           {toasts.map((toast) => (
             <div
               key={toast.id}
-              className={`rounded-xl border border-zinc-200 bg-white px-4 py-3 text-sm font-medium shadow-lg transition-all duration-300 ease-out dark:border-zinc-700 dark:bg-zinc-900 ${
+              className={`rounded-xl border border-zinc-200 bg-white px-4 py-3 text-sm font-medium shadow-lg transition-all duration-300 ease-out ${
                 toast.visible ? 'translate-y-0 opacity-100' : 'translate-y-2 opacity-0'
               }`}
             >
               <span
                 className={
                   toast.variant === 'success'
-                    ? 'text-green-600 dark:text-green-400'
+                    ? 'text-green-600'
                     : toast.variant === 'warning'
-                      ? 'text-amber-600 dark:text-amber-400'
-                      : 'text-red-600 dark:text-red-400'
+                      ? 'text-amber-600'
+                      : 'text-red-600'
                 }
               >
                 {toast.message}

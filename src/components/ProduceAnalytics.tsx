@@ -45,11 +45,11 @@ const QUICK_FILTER_LABELS: Record<NonNullable<QuickFilter>, string> = {
 };
 
 const QUICK_FILTER_CHIP_COLORS: Record<NonNullable<QuickFilter>, string> = {
-  favorites: 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300',
-  drops: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
-  increases: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
+  favorites: 'bg-amber-100 text-amber-800',
+  drops: 'bg-green-100 text-green-700',
+  increases: 'bg-red-100 text-red-700',
   new: 'bg-[rgb(255,246,220)] text-[#3F7540]',
-  recently_unavailable: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
+  recently_unavailable: 'bg-red-100 text-red-700',
 };
 
 interface ProduceAttributeDocument {
@@ -492,16 +492,16 @@ export function ProduceAnalytics({
       {/* Sticky controls + table header */}
       <div
         ref={controlsRef}
-        className={`sticky top-24 z-20 bg-white transition-opacity duration-300 ease-in-out motion-reduce:transition-none md:top-14 dark:bg-zinc-900 ${
+        className={`sticky top-24 z-20 bg-white transition-opacity duration-300 ease-in-out motion-reduce:transition-none md:top-14 ${
           stickyVisible ? 'opacity-100' : 'pointer-events-none opacity-0'
         }`}
       >
-        <h1 className="py-6 text-2xl font-bold text-zinc-900 dark:text-zinc-100">Produce</h1>
+        <h1 className="py-6 text-2xl font-bold text-zinc-900">Produce</h1>
         {/* Search */}
         <div className="mb-4">
-          <div className="flex w-full max-w-md items-center gap-1.5 rounded-lg border border-zinc-300 bg-white px-3 py-2 dark:border-zinc-700 dark:bg-zinc-900">
+          <div className="flex w-full max-w-md items-center gap-1.5 rounded-lg border border-zinc-300 bg-white px-3 py-2">
             {itemFilterName && (
-              <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-violet-100 px-2.5 py-0.5 text-xs font-medium text-violet-800 dark:bg-violet-900/40 dark:text-violet-300">
+              <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-violet-100 px-2.5 py-0.5 text-xs font-medium text-violet-800">
                 <span className="max-w-[120px] truncate">{itemFilterName}</span>
                 <button
                   type="button"
@@ -517,7 +517,7 @@ export function ProduceAnalytics({
               </span>
             )}
             {dateFilter && (
-              <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-800 dark:bg-blue-900/40 dark:text-blue-300">
+              <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-800">
                 {formatShortDate(dateFilter)}
                 <button
                   type="button"
@@ -533,7 +533,7 @@ export function ProduceAnalytics({
               </span>
             )}
             {!hasAnyScopedFilter && (
-              <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-zinc-900 px-2.5 py-0.5 text-xs font-medium text-white dark:bg-zinc-100 dark:text-zinc-900">
+              <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-zinc-900 px-2.5 py-0.5 text-xs font-medium text-white">
                 All
               </span>
             )}
@@ -584,18 +584,18 @@ export function ProduceAnalytics({
                   }
                 }
               }}
-              className="min-w-0 flex-1 bg-transparent text-zinc-900 placeholder-zinc-500 outline-none dark:text-zinc-100"
+              className="min-w-0 flex-1 bg-transparent text-zinc-900 placeholder-zinc-500 outline-none"
             />
             <button
               type="button"
               onClick={() => setSearch('')}
               aria-label="Clear search"
-              className={`shrink-0 rounded-full p-1 text-sm text-zinc-500 transition hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200 ${search ? 'visible' : 'invisible'}`}
+              className={`shrink-0 rounded-full p-1 text-sm text-zinc-500 transition hover:text-zinc-700 ${search ? 'visible' : 'invisible'}`}
             >
               ✕
             </button>
           </div>
-          <div className="p-2 text-sm text-zinc-500 dark:text-zinc-400">
+          <div className="p-2 text-sm text-zinc-500">
             {isLoading ? (
               <div className="feed-shimmer h-5 w-32 rounded" />
             ) : (
@@ -633,8 +633,8 @@ export function ProduceAnalytics({
               }}
               className={`rounded-full px-3 py-1.5 text-sm font-medium whitespace-nowrap transition-colors ${
                 !hasAnyScopedFilter
-                  ? 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900'
-                  : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-700'
+                  ? 'bg-zinc-900 text-white'
+                  : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200'
               }`}
             >
               All
@@ -644,8 +644,8 @@ export function ProduceAnalytics({
               onClick={() => handleQuickFilter('favorites')}
               className={`rounded-full px-3 py-1.5 text-sm font-medium whitespace-nowrap transition-colors ${
                 quickFilter === 'favorites'
-                  ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300'
-                  : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-700'
+                  ? 'bg-amber-100 text-amber-800'
+                  : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200'
               }`}
             >
               Favorites
@@ -656,7 +656,7 @@ export function ProduceAnalytics({
               className={`rounded-full px-3 py-1.5 text-sm font-medium whitespace-nowrap transition-colors ${
                 quickFilter === 'new'
                   ? 'bg-[rgb(255,246,220)] text-[#3F7540]'
-                  : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-700'
+                  : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200'
               }`}
             >
               New Arrivals
@@ -666,8 +666,8 @@ export function ProduceAnalytics({
               onClick={() => handleQuickFilter('recently_unavailable')}
               className={`rounded-full px-3 py-1.5 text-sm font-medium whitespace-nowrap transition-colors ${
                 quickFilter === 'recently_unavailable'
-                  ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
-                  : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-700'
+                  ? 'bg-red-100 text-red-700'
+                  : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200'
               }`}
             >
               Out of Stock
@@ -680,8 +680,8 @@ export function ProduceAnalytics({
               onClick={() => handleQuickFilter('drops')}
               className={`rounded-full px-3 py-1.5 text-sm font-medium whitespace-nowrap transition-colors ${
                 isPriceDropsSort
-                  ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
-                  : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-700'
+                  ? 'bg-green-100 text-green-700'
+                  : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200'
               }`}
             >
               Price Drops
@@ -691,8 +691,8 @@ export function ProduceAnalytics({
               onClick={() => handleQuickFilter('increases')}
               className={`rounded-full px-3 py-1.5 text-sm font-medium whitespace-nowrap transition-colors ${
                 isPriceIncreasesSort
-                  ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
-                  : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-700'
+                  ? 'bg-red-100 text-red-700'
+                  : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200'
               }`}
             >
               Price Increases
@@ -707,8 +707,8 @@ export function ProduceAnalytics({
                 onClick={() => setTimePeriod(period)}
                 className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
                   timePeriod === period
-                    ? 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900'
-                    : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-700'
+                    ? 'bg-zinc-900 text-white'
+                    : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200'
                 }`}
               >
                 {PERIOD_LABELS[period]}
@@ -717,21 +717,19 @@ export function ProduceAnalytics({
           </div>
         </div>
 
-        {error && !isLoading && (
-          <div className="mb-4 text-sm text-red-600 dark:text-red-400">{error}</div>
-        )}
+        {error && !isLoading && <div className="mb-4 text-sm text-red-600">{error}</div>}
 
         {/* Header table */}
         <table className="w-full min-w-full table-fixed text-sm">
           <Colgroup />
           <thead>
-            <tr className="border-b border-zinc-200 dark:border-zinc-800">
+            <tr className="border-b border-zinc-200">
               <SortHeader
                 field="name"
                 current={sortField}
                 direction={sortDirection}
                 onClick={handleSort}
-                className={`${NAME_COL_CLASS} sticky left-0 z-10 border-r border-zinc-200 bg-white md:border-r-0 dark:border-zinc-700 dark:bg-zinc-900`}
+                className={`${NAME_COL_CLASS} sticky left-0 z-10 border-r border-zinc-200 bg-white md:border-r-0`}
               >
                 Name
               </SortHeader>
@@ -768,7 +766,7 @@ export function ProduceAnalytics({
             ) : quickFilter === 'favorites' && favorites.size === 0 ? (
               <tr>
                 <td colSpan={3} className="px-2 py-12 text-center">
-                  <p className="mx-auto max-w-xs text-sm text-zinc-500 dark:text-zinc-400">
+                  <p className="mx-auto max-w-xs text-sm text-zinc-500">
                     You have no produce favorites at the Coop :( Search for produce items to
                     favorite and stay up to date!
                   </p>
@@ -781,7 +779,7 @@ export function ProduceAnalytics({
                       setSearch('');
                       searchInputRef.current?.focus();
                     }}
-                    className="mt-3 rounded-full bg-zinc-900 px-4 py-1.5 text-sm font-medium text-white transition-colors hover:bg-zinc-700 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300"
+                    className="mt-3 rounded-full bg-zinc-900 px-4 py-1.5 text-sm font-medium text-white transition-colors hover:bg-zinc-700"
                   >
                     Find favorites
                   </button>
@@ -790,7 +788,7 @@ export function ProduceAnalytics({
             ) : filteredAndSorted.length === 0 ? (
               <tr>
                 <td colSpan={3} className="px-2 py-12 text-center">
-                  <p className="text-sm text-zinc-500 dark:text-zinc-400">
+                  <p className="text-sm text-zinc-500">
                     {showSearchAllButton
                       ? 'No matches in this view. Search across all inventory?'
                       : 'No results found. Try a different search!'}
@@ -806,7 +804,7 @@ export function ProduceAnalytics({
                         }
                         searchInputRef.current?.focus();
                       }}
-                      className="rounded-full bg-zinc-900 px-4 py-1.5 text-sm font-medium text-white transition-colors hover:bg-zinc-700 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300"
+                      className="rounded-full bg-zinc-900 px-4 py-1.5 text-sm font-medium text-white transition-colors hover:bg-zinc-700"
                     >
                       Clear search
                     </button>
@@ -830,7 +828,7 @@ export function ProduceAnalytics({
                           }
                           searchInputRef.current?.focus();
                         }}
-                        className="rounded-full border border-zinc-300 bg-white px-4 py-1.5 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
+                        className="rounded-full border border-zinc-300 bg-white px-4 py-1.5 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-100"
                       >
                         Search all
                       </button>
@@ -847,10 +845,10 @@ export function ProduceAnalytics({
                   onTouchEnd={cancelLongPress}
                   onTouchMove={cancelLongPress}
                   onTouchCancel={cancelLongPress}
-                  className={`group border-b border-zinc-100 select-none dark:border-zinc-800/50 ${pressedRow === row.name ? 'bg-zinc-100 dark:bg-zinc-800' : favorites.has(row.name) ? 'bg-amber-50 dark:bg-amber-950/30' : 'hover:bg-zinc-50 dark:hover:bg-zinc-800/50 [&:has(>td:first-child:hover)]:bg-amber-50 dark:[&:has(>td:first-child:hover)]:bg-amber-950/30'}`}
+                  className={`group border-b border-zinc-100 select-none ${pressedRow === row.name ? 'bg-zinc-100' : favorites.has(row.name) ? 'bg-amber-50' : 'hover:bg-zinc-50 [&:has(>td:first-child:hover)]:bg-amber-50'}`}
                 >
                   <td
-                    className={`${NAME_COL_CLASS} sticky left-0 z-10 box-border border-r border-zinc-200 p-0 md:w-auto md:border-r-0 dark:border-zinc-700 ${pressedRow === row.name ? 'bg-zinc-100 dark:bg-zinc-800' : favorites.has(row.name) ? 'bg-amber-50 dark:bg-amber-950/30' : 'bg-white group-hover:bg-zinc-50 hover:bg-amber-50 dark:bg-zinc-900 dark:group-hover:bg-zinc-800/50 dark:hover:bg-amber-950/30'}`}
+                    className={`${NAME_COL_CLASS} sticky left-0 z-10 box-border border-r border-zinc-200 p-0 md:w-auto md:border-r-0 ${pressedRow === row.name ? 'bg-zinc-100' : favorites.has(row.name) ? 'bg-amber-50' : 'bg-white group-hover:bg-zinc-50 hover:bg-amber-50'}`}
                   >
                     <button
                       type="button"
@@ -864,19 +862,19 @@ export function ProduceAnalytics({
                       <span
                         className={`inline-flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded-sm border text-[9px] font-bold ${
                           favorites.has(row.name)
-                            ? 'border-zinc-200 bg-amber-100 text-amber-700 dark:border-zinc-700 dark:bg-amber-900/40 dark:text-amber-300'
-                            : 'border-zinc-200 bg-white text-zinc-400 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-500'
+                            ? 'border-zinc-200 bg-amber-100 text-amber-700'
+                            : 'border-zinc-200 bg-white text-zinc-400'
                         }`}
                       >
                         {favorites.has(row.name) ? '⭐' : '+'}
                       </span>
                       <div className="min-w-0">
-                        <div className="line-clamp-3 text-sm font-medium text-zinc-900 md:line-clamp-none dark:text-zinc-100">
+                        <div className="line-clamp-3 text-sm font-medium text-zinc-900 md:line-clamp-none">
                           <span className={row.is_unavailable ? 'line-through' : undefined}>
                             {row.name}
                           </span>
                         </div>
-                        <div className="text-xs text-zinc-500 dark:text-zinc-400">
+                        <div className="text-xs text-zinc-500">
                           {(() => {
                             const attributeElements = [
                               row.is_hydroponic && {
@@ -889,17 +887,11 @@ export function ProduceAnalytics({
                               },
                               row.is_local && {
                                 key: 'local',
-                                node: (
-                                  <span className="text-blue-600 dark:text-blue-400">Local</span>
-                                ),
+                                node: <span className="text-blue-600">Local</span>,
                               },
                               row.is_organic && {
                                 key: 'organic',
-                                node: (
-                                  <span className="text-green-600 dark:text-green-400">
-                                    Organic
-                                  </span>
-                                ),
+                                node: <span className="text-green-600">Organic</span>,
                               },
                               row.is_waxed && {
                                 key: 'waxed',
@@ -914,7 +906,7 @@ export function ProduceAnalytics({
                             return (
                               <>
                                 {showUnavailable && (
-                                  <span className="rounded bg-red-100 px-1 text-red-700 dark:bg-red-900/30 dark:text-red-400">
+                                  <span className="rounded bg-red-100 px-1 text-red-700">
                                     <span className="inline-block">Last seen</span>{' '}
                                     <span className="inline-block">
                                       {formatShortDate(row.unavailable_since_date!)}
@@ -946,17 +938,11 @@ export function ProduceAnalytics({
                             );
                           })()}
                         </div>
-                        {row.origin && (
-                          <div className="text-xs text-zinc-400 dark:text-zinc-500">
-                            {row.origin}
-                          </div>
-                        )}
+                        {row.origin && <div className="text-xs text-zinc-400">{row.origin}</div>}
                       </div>
                     </button>
                   </td>
-                  <td
-                    className={`p-2 font-mono text-zinc-900 dark:text-zinc-100 ${DATA_COL_CLASS} box-border`}
-                  >
+                  <td className={`p-2 font-mono text-zinc-900 ${DATA_COL_CLASS} box-border`}>
                     <div>
                       {(() => {
                         const { prev } = getPeriodData(row, timePeriod);
@@ -965,16 +951,16 @@ export function ProduceAnalytics({
                             <span
                               className={`font-bold ${
                                 prev !== null && row.price < prev
-                                  ? 'text-green-600 dark:text-green-400'
+                                  ? 'text-green-600'
                                   : prev !== null && row.price > prev
-                                    ? 'text-red-600 dark:text-red-400'
+                                    ? 'text-red-600'
                                     : ''
                               }`}
                             >
                               ${row.price.toFixed(2)}
                             </span>
                             {prev !== null && prev !== row.price && (
-                              <sup className="ml-1 text-[0.65em] text-zinc-400 line-through dark:text-zinc-500">
+                              <sup className="ml-1 text-[0.65em] text-zinc-400 line-through">
                                 ${prev.toFixed(2)}
                               </sup>
                             )}
@@ -982,7 +968,7 @@ export function ProduceAnalytics({
                         );
                       })()}
                     </div>
-                    <div className="text-xs text-zinc-500 dark:text-zinc-400">/{row.unit}</div>
+                    <div className="text-xs text-zinc-500">/{row.unit}</div>
                     <div className="mt-1">
                       <Sparkline
                         points={history.get(row.name)}
@@ -1025,31 +1011,27 @@ function MetricsCell({ row, period }: { row: ProduceRow; period: TimePeriod }) {
   const isPositive = change > 0;
   const isNegative = change < 0;
 
-  const colorClass = isPositive
-    ? 'text-red-600 dark:text-red-400'
-    : isNegative
-      ? 'text-green-600 dark:text-green-400'
-      : 'text-zinc-500';
+  const colorClass = isPositive ? 'text-red-600' : isNegative ? 'text-green-600' : 'text-zinc-500';
 
   const sign = isPositive ? '+' : isNegative ? '-' : '\u2007';
 
   return (
     <td className={`p-2 ${DATA_COL_CLASS} box-border text-xs tabular-nums`}>
       <div className="flex items-baseline gap-2 rounded bg-transparent px-1">
-        <span className="w-10 shrink-0 text-zinc-500 dark:text-zinc-400">% Diff</span>
+        <span className="w-10 shrink-0 text-zinc-500">% Diff</span>
         <span className={`w-20 text-right font-mono ${colorClass}`}>
           {sign}
           {Math.abs(roundedPct).toFixed(1)}%
         </span>
       </div>
       <div className="flex items-baseline gap-2 rounded bg-transparent px-1">
-        <span className="w-10 shrink-0 text-zinc-500 dark:text-zinc-400">$ Diff</span>
+        <span className="w-10 shrink-0 text-zinc-500">$ Diff</span>
         <span className={`w-20 text-right font-mono ${colorClass}`}>
           {sign}${Math.abs(change).toFixed(2)}
         </span>
       </div>
       <div
-        className={`flex items-baseline gap-2 rounded px-1 ${high !== null && row.price === high && row.price !== low ? 'bg-red-100 text-zinc-900 dark:bg-red-900/40 dark:text-zinc-100' : 'bg-transparent text-zinc-500'}`}
+        className={`flex items-baseline gap-2 rounded px-1 ${high !== null && row.price === high && row.price !== low ? 'bg-red-100 text-zinc-900' : 'bg-transparent text-zinc-500'}`}
       >
         <span className="w-10 shrink-0">High</span>
         <span className="w-20 text-right font-mono">
@@ -1057,7 +1039,7 @@ function MetricsCell({ row, period }: { row: ProduceRow; period: TimePeriod }) {
         </span>
       </div>
       <div
-        className={`flex items-baseline gap-2 rounded px-1 ${low !== null && row.price === low ? 'bg-green-100 text-zinc-900 dark:bg-green-900/40 dark:text-zinc-100' : 'bg-transparent text-zinc-500'}`}
+        className={`flex items-baseline gap-2 rounded px-1 ${low !== null && row.price === low ? 'bg-green-100 text-zinc-900' : 'bg-transparent text-zinc-500'}`}
       >
         <span className="w-10 shrink-0">Low</span>
         <span className="w-20 text-right font-mono">
@@ -1070,9 +1052,9 @@ function MetricsCell({ row, period }: { row: ProduceRow; period: TimePeriod }) {
 
 function SkeletonRow() {
   return (
-    <tr className="border-b border-zinc-100 dark:border-zinc-800/50">
+    <tr className="border-b border-zinc-100">
       <td
-        className={`px-2 py-3 ${NAME_COL_CLASS} sticky left-0 z-10 box-border border-r border-zinc-200 bg-white md:w-auto md:border-r-0 dark:border-zinc-700 dark:bg-zinc-900`}
+        className={`px-2 py-3 ${NAME_COL_CLASS} sticky left-0 z-10 box-border border-r border-zinc-200 bg-white md:w-auto md:border-r-0`}
       >
         <div className="space-y-1">
           <div className="feed-shimmer h-4 w-full rounded" />
@@ -1124,7 +1106,7 @@ function SortHeader({
   const isActive = field === current && direction !== null;
   return (
     <th
-      className={`box-border cursor-pointer px-2 py-3 text-left font-medium whitespace-nowrap text-zinc-600 select-none hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-200 ${className}`}
+      className={`box-border cursor-pointer px-2 py-3 text-left font-medium whitespace-nowrap text-zinc-600 select-none hover:text-zinc-900 ${className}`}
       onClick={() => onClick(field)}
     >
       {children}
@@ -1150,7 +1132,7 @@ function SparklineTooltip({
 }) {
   return (
     <div
-      className={`pointer-events-none absolute bottom-full mb-1 -translate-x-1/2 rounded bg-zinc-900 px-1.5 py-0.5 text-[10px] whitespace-nowrap text-white dark:bg-zinc-100 dark:text-zinc-900 ${dimmed ? 'opacity-50' : ''}`}
+      className={`pointer-events-none absolute bottom-full mb-1 -translate-x-1/2 rounded bg-zinc-900 px-1.5 py-0.5 text-[10px] whitespace-nowrap text-white ${dimmed ? 'opacity-50' : ''}`}
       style={{ left: `${xPercent}%` }}
     >
       {formatShortDate(date)} · ${price.toFixed(2)}
@@ -1483,7 +1465,7 @@ function Sparkline({
               x2={activePoint.svg.x}
               y1={0}
               y2={height + padding * 2}
-              className="stroke-zinc-500 dark:stroke-zinc-400"
+              className="stroke-zinc-500"
               strokeWidth="0.75"
               strokeDasharray="2 2"
             />
@@ -1491,7 +1473,7 @@ function Sparkline({
               cx={activePoint.svg.x}
               cy={activePoint.svg.y}
               r="3"
-              className="fill-white stroke-zinc-700 dark:fill-zinc-900 dark:stroke-zinc-300"
+              className="fill-white stroke-zinc-700"
               strokeWidth="1.5"
             />
           </g>

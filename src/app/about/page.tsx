@@ -7,15 +7,15 @@ export const metadata = {
 export default function AboutPage() {
   return (
     <div className="mx-auto max-w-3xl px-4 py-6">
-      <h1 className="mb-6 text-2xl font-bold text-zinc-900 dark:text-zinc-100">About</h1>
-      <div className="space-y-4 text-zinc-600 dark:text-zinc-400">
+      <h1 className="mb-6 text-2xl font-bold text-zinc-900">About</h1>
+      <div className="space-y-4 text-zinc-600">
         <p>
-          <em className="font-medium text-zinc-900 not-italic dark:text-zinc-100">
+          <em className="font-medium text-zinc-900 not-italic">
             <Link
               href="https://github.com/rexledesma/foodcoop.news"
               target="_blank"
               rel="noopener noreferrer"
-              className="underline transition-colors hover:text-zinc-900 dark:hover:text-zinc-100"
+              className="underline transition-colors hover:text-zinc-900"
             >
               foodcoop.news
             </Link>
@@ -25,7 +25,7 @@ export default function AboutPage() {
             href="https://www.foodcoop.com"
             target="_blank"
             rel="noopener noreferrer"
-            className="underline transition-colors hover:text-zinc-900 dark:hover:text-zinc-100"
+            className="underline transition-colors hover:text-zinc-900"
           >
             Park Slope Food Coop
           </Link>
@@ -44,7 +44,7 @@ export default function AboutPage() {
             href="https://github.com/rexledesma/foodcoop.news"
             target="_blank"
             rel="noopener noreferrer"
-            className="underline transition-colors hover:text-zinc-900 dark:hover:text-zinc-100"
+            className="underline transition-colors hover:text-zinc-900"
           >
             open-source project
           </Link>{' '}
@@ -53,7 +53,7 @@ export default function AboutPage() {
             href="https://rexledesma.com"
             target="_blank"
             rel="noopener noreferrer"
-            className="underline transition-colors hover:text-zinc-900 dark:hover:text-zinc-100"
+            className="underline transition-colors hover:text-zinc-900"
           >
             Rex Ledesma
           </Link>
@@ -62,14 +62,14 @@ export default function AboutPage() {
             href="https://apps.apple.com/sa/app/park-slope-food-coop/id1236581358"
             target="_blank"
             rel="noopener noreferrer"
-            className="underline transition-colors hover:text-zinc-900 dark:hover:text-zinc-100"
+            className="underline transition-colors hover:text-zinc-900"
           >
             Park Slope Food Coop App
           </Link>
           . If you have any feedback, please{' '}
           <a
             href="mailto:rex.ledesma1@gmail.com"
-            className="underline transition-colors hover:text-zinc-900 dark:hover:text-zinc-100"
+            className="underline transition-colors hover:text-zinc-900"
           >
             email me
           </a>
