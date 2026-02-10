@@ -52,6 +52,13 @@ const QUICK_FILTER_CHIP_COLORS: Record<NonNullable<QuickFilter>, string> = {
   recently_unavailable: 'bg-red-100 text-red-700',
 };
 
+function getDateFilterGroupRank(row: ProduceRow): number {
+  // Out of stock takes precedence when both labels are present.
+  if (row.is_unavailable) return 1;
+  if (row.is_new) return 0;
+  return 2;
+}
+
 interface ProduceAttributeDocument {
   id: string;
   name: string;
@@ -288,6 +295,17 @@ export function ProduceAnalytics({
         const aScore = attributeSearchResults.scores.get(produceHash(a.name)) ?? Number.MAX_VALUE;
         const bScore = attributeSearchResults.scores.get(produceHash(b.name)) ?? Number.MAX_VALUE;
         return aScore - bScore;
+      });
+    }
+
+    // Specific-day view: new arrivals first, then out of stock. Sort names within each group.
+    if (dateFilter) {
+      return [...result].sort((a, b) => {
+        const aRank = getDateFilterGroupRank(a);
+        const bRank = getDateFilterGroupRank(b);
+
+        if (aRank !== bRank) return aRank - bRank;
+        return a.name.localeCompare(b.name);
       });
     }
 
