@@ -4,6 +4,13 @@ import TestimonialsCarousel from '@/components/TestimonialsCarousel';
 
 export const metadata = {
   title: 'About',
+  description:
+    'Learn about foodcoop.news and how it helps Park Slope Food Coop members stay informed.',
+  openGraph: {
+    title: 'About · foodcoop.news',
+    description:
+      'Learn about foodcoop.news and how it helps Park Slope Food Coop members stay informed.',
+  },
 };
 
 export default function AboutPage() {

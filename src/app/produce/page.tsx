@@ -15,11 +15,12 @@ export async function generateMetadata({
 
   if (name) {
     const description = `Track price and availability trends for ${name} at the Park Slope Food Coop.`;
+    const openGraphTitle = `${name} · foodcoop.news`;
     return {
       title: name,
       description,
       openGraph: {
-        title: name,
+        title: openGraphTitle,
         description,
       },
     };
@@ -31,10 +32,30 @@ export async function generateMetadata({
       day: 'numeric',
       year: 'numeric',
     });
-    return { title: `Produce (${formatted})` };
+    const title = `Produce (${formatted})`;
+    const description = `See produce prices and availability at the Park Slope Food Coop for ${formatted}.`;
+    const openGraphTitle = `${title} · foodcoop.news`;
+    return {
+      title,
+      description,
+      openGraph: {
+        title: openGraphTitle,
+        description,
+      },
+    };
   }
 
-  return { title: 'Produce' };
+  const title = 'Produce';
+  const description = 'Explore Park Slope Food Coop produce pricing and availability trends.';
+  const openGraphTitle = `${title} · foodcoop.news`;
+  return {
+    title,
+    description,
+    openGraph: {
+      title: openGraphTitle,
+      description,
+    },
+  };
 }
 
 export default function ProducePage() {
