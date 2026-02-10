@@ -48,6 +48,19 @@ export function Navigation() {
   const mobileDropdownRef = useRef<HTMLDivElement>(null);
   const loginHref = withNextParam('/login', pathname);
 
+  useEffect(() => {
+    if (!session?.user || typeof window === 'undefined') {
+      return;
+    }
+
+    if (localStorage.getItem('produce-favorites') === null) {
+      return;
+    }
+
+    localStorage.removeItem('produce-favorites');
+    window.dispatchEvent(new Event('produce-favorites'));
+  }, [session?.user]);
+
   const handleSignOut = async () => {
     await signOut();
     window.location.href = loginHref;
