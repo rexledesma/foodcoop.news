@@ -446,20 +446,37 @@ export function ProduceAnalytics({
   const handleQuickFilter = (filter: QuickFilter) => {
     if (dateFilter) clearDateFilter();
 
-    const hasActiveViewFilter =
-      quickFilter === 'favorites' ||
-      quickFilter === 'new' ||
-      quickFilter === 'recently_unavailable';
-
     if (filter === 'drops' || filter === 'increases') {
-      if (quickFilter === filter) {
+      const isAlreadySelected =
+        (filter === 'drops' && isPriceDropsSort) ||
+        (filter === 'increases' && isPriceIncreasesSort);
+
+      if (isAlreadySelected) {
+        if (activeViewFilter === 'favorites') {
+          setSortField('name');
+          setSortDirection('asc');
+          return;
+        }
+
+        if (activeViewFilter === 'new') {
+          setSortField('first_seen');
+          setSortDirection('desc');
+          return;
+        }
+
+        if (activeViewFilter === 'recently_unavailable') {
+          setSortField('last_seen');
+          setSortDirection('desc');
+          return;
+        }
+
         setQuickFilter(null);
         setSortField('name');
         setSortDirection('asc');
         return;
       }
 
-      if (!hasActiveViewFilter) {
+      if (!activeViewFilter) {
         setQuickFilter(filter);
       }
       setSortField('change');
