@@ -1,5 +1,7 @@
 import Link from 'next/link';
 
+import TestimonialsCarousel from '@/components/TestimonialsCarousel';
+
 export const metadata = {
   title: 'About',
 };
@@ -38,6 +40,10 @@ export default function AboutPage() {
           <li>Add your Coop membership card to your Apple Wallet or Google Wallet</li>
           <li>Sync your favorite available work shifts to Google, Outlook, or Apple Calendar</li>
         </ul>
+        <section className="space-y-2">
+          <h2 className="text-xl font-semibold text-zinc-900">Testimonials</h2>
+          <TestimonialsCarousel />
+        </section>
         <section className="space-y-2">
           <h2 className="text-xl font-semibold text-zinc-900">How to support this project</h2>
           <ul className="list-inside list-disc space-y-2">
