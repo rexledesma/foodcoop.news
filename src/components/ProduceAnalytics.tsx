@@ -924,7 +924,7 @@ export function ProduceAnalytics({
                               <>
                                 {showUnavailable && (
                                   <span className="rounded bg-red-100 px-1 text-red-700">
-                                    <span className="inline-block">Last seen</span>{' '}
+                                    <span className="inline-block">Out of stock</span>{' '}
                                     <span className="inline-block">
                                       {formatShortDate(row.unavailable_since_date!)}
                                     </span>
@@ -933,7 +933,7 @@ export function ProduceAnalytics({
                                 {showUnavailable && showNew && ' · '}
                                 {showNew && (
                                   <span className="rounded bg-[rgb(255,246,220)] px-1 text-[#3F7540]">
-                                    <span className="inline-block">First seen</span>
+                                    <span className="inline-block">New arrival</span>
                                     {row.first_seen_date && (
                                       <>
                                         {' '}
