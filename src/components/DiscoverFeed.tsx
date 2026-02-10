@@ -37,7 +37,7 @@ const FILTER_OPTIONS: { value: FilterType; label: string }[] = [
   { value: 'concert-series', label: 'Concerts' },
 ];
 
-function formatRelativeTime(date: Date): string {
+function formatRelativeTime(date: Date): string | null {
   const now = new Date();
   const diffMs = now.getTime() - date.getTime();
   const diffMins = Math.floor(diffMs / 60000);
@@ -48,7 +48,20 @@ function formatRelativeTime(date: Date): string {
   if (diffMins < 60) return `${diffMins}m ago`;
   if (diffHours < 24) return `${diffHours}h ago`;
   if (diffDays < 7) return `${diffDays}d ago`;
-  return date.toLocaleDateString();
+  return null;
+}
+
+function formatExactDateTime(date: Date): string {
+  return date.toLocaleString('en-US', {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  });
+}
+
+function formatPublishedAt(date: Date): string {
+  const relative = formatRelativeTime(date);
+  if (!relative) return formatExactDateTime(date);
+  return `${relative} · ${formatExactDateTime(date)}`;
 }
 
 function parseFavorites(stored: string): Set<string> {
@@ -121,6 +134,8 @@ function getPostUrl(uri: string): string {
 }
 
 function GazetteCard({ article }: { article: GazetteArticle; date: Date }) {
+  const publishedAt = formatPublishedAt(new Date(article.pubDate));
+
   return (
     <a
       href={article.link}
@@ -135,9 +150,7 @@ function GazetteCard({ article }: { article: GazetteArticle; date: Date }) {
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
             <span className="font-semibold text-zinc-900">Linewaiters&apos; Gazette</span>
-            <span className="shrink-0 text-sm text-zinc-400">
-              {formatRelativeTime(new Date(article.pubDate))}
-            </span>
+            <span className="shrink-0 text-sm text-zinc-400">{publishedAt}</span>
           </div>
           <p className="mt-2 text-zinc-700">{article.title}</p>
           {article.image && (
@@ -154,6 +167,8 @@ function GazetteCard({ article }: { article: GazetteArticle; date: Date }) {
 }
 
 function FoodCoopCard({ article }: { article: FoodCoopAnnouncement; date: Date }) {
+  const publishedAt = formatPublishedAt(new Date(article.pubDate));
+
   return (
     <a
       href={article.link}
@@ -168,9 +183,7 @@ function FoodCoopCard({ article }: { article: FoodCoopAnnouncement; date: Date }
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
             <span className="font-semibold text-zinc-900">Announcements</span>
-            <span className="shrink-0 text-sm text-zinc-400">
-              {formatRelativeTime(new Date(article.pubDate))}
-            </span>
+            <span className="shrink-0 text-sm text-zinc-400">{publishedAt}</span>
           </div>
           <p className="mt-2 font-medium text-zinc-700">{article.title}</p>
           {article.description && (
@@ -190,6 +203,8 @@ function FoodCoopCard({ article }: { article: FoodCoopAnnouncement; date: Date }
 }
 
 function FoodCoopCooksCard({ article }: { article: FoodCoopCooksArticle; date: Date }) {
+  const publishedAt = formatPublishedAt(new Date(article.pubDate));
+
   return (
     <a
       href={article.link}
@@ -204,9 +219,7 @@ function FoodCoopCooksCard({ article }: { article: FoodCoopCooksArticle; date: D
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
             <span className="font-semibold text-zinc-900">Cooking</span>
-            <span className="shrink-0 text-sm text-zinc-400">
-              {formatRelativeTime(new Date(article.pubDate))}
-            </span>
+            <span className="shrink-0 text-sm text-zinc-400">{publishedAt}</span>
           </div>
           <p className="mt-2 font-medium text-zinc-700">{article.title}</p>
           {article.description && (
@@ -276,6 +289,7 @@ function EventbriteEventCard({
 
 function BlueskyCard({ post }: { post: FeedPost; date: Date }) {
   const isSelfRepost = post.repostedBy && post.repostedBy.handle === post.author.handle;
+  const publishedAt = formatPublishedAt(new Date(post.createdAt));
 
   return (
     <a
@@ -323,7 +337,7 @@ function BlueskyCard({ post }: { post: FeedPost; date: Date }) {
                   {post.parent.author.displayName}
                 </span>
                 <span className="text-xs text-zinc-400">
-                  {formatRelativeTime(new Date(post.parent.createdAt))}
+                  {formatPublishedAt(new Date(post.parent.createdAt))}
                 </span>
               </div>
               <p className="line-clamp-2 text-sm break-words whitespace-pre-wrap text-zinc-500">
@@ -353,9 +367,7 @@ function BlueskyCard({ post }: { post: FeedPost; date: Date }) {
               <path d="m135.72 44.03c66.496 49.921 138.02 151.14 164.28 205.46 26.262-54.316 97.782-155.54 164.28-205.46 47.98-36.021 125.72-63.892 125.72 24.795 0 17.712-10.155 148.79-16.111 170.07-20.703 73.984-96.144 92.854-163.25 81.433 117.3 19.964 147.14 86.092 82.697 152.22-122.39 125.59-175.91-31.511-189.63-71.766-2.514-7.3797-6.0634-17.664-8.9824-26.262-2.9191 8.5976-6.4685 18.882-8.9824 26.262-13.723 40.255-67.243 197.36-189.63 71.766-64.444-66.128-34.605-132.26 82.697-152.22-67.108 11.421-142.55-7.4491-163.25-81.433-5.9562-21.282-16.111-152.36-16.111-170.07 0-88.687 77.742-60.816 125.72-24.795z" />
             </svg>
             <span className="truncate font-semibold text-zinc-900">{post.author.displayName}</span>
-            <span className="shrink-0 text-sm text-zinc-400">
-              {formatRelativeTime(new Date(post.createdAt))}
-            </span>
+            <span className="shrink-0 text-sm text-zinc-400">{publishedAt}</span>
           </div>
           <p className="mt-2 break-words whitespace-pre-wrap text-zinc-700">{post.text}</p>
           {post.images && post.images.length > 0 && (
@@ -384,7 +396,7 @@ function BlueskyCard({ post }: { post: FeedPost; date: Date }) {
                   {post.quotedPost.author.displayName}
                 </span>
                 <span className="text-xs text-zinc-400">
-                  {formatRelativeTime(new Date(post.quotedPost.createdAt))}
+                  {formatPublishedAt(new Date(post.quotedPost.createdAt))}
                 </span>
               </div>
               {post.quotedPost.text && (
@@ -474,7 +486,7 @@ function ProduceCard({
   date: Date;
   favorites: Set<string>;
 }) {
-  const formattedDate = formatRelativeTime(date);
+  const formattedDate = formatPublishedAt(date);
 
   return (
     <Link
