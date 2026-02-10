@@ -127,8 +127,9 @@ export function ProduceAnalytics({
       return {
         ...firstVisit,
         quickFilter: null as QuickFilter,
-        sortField: 'name' as SortField | null,
-        sortDirection: 'asc' as SortDirection,
+        // Deep-linked day view should use its own default grouping sort.
+        sortField: initialDateFilter ? (null as SortField | null) : ('name' as SortField | null),
+        sortDirection: initialDateFilter ? (null as SortDirection) : ('asc' as SortDirection),
       };
     }
     if (typeof window === 'undefined') return firstVisit;
@@ -299,7 +300,7 @@ export function ProduceAnalytics({
     }
 
     // Specific-day view: new arrivals first, then out of stock. Sort names within each group.
-    if (dateFilter) {
+    if (dateFilter && (!sortField || !sortDirection)) {
       return [...result].sort((a, b) => {
         const aRank = getDateFilterGroupRank(a);
         const bRank = getDateFilterGroupRank(b);
