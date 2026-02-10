@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { decode } from 'html-entities';
 import type { GazetteArticle } from '@/lib/types';
 
 const GAZETTE_RSS_URL = 'https://linewaitersgazette.com/feed/';
@@ -65,7 +66,7 @@ async function fetchGazetteFeed(): Promise<GazetteArticle[]> {
   while ((match = itemRegex.exec(xml)) !== null) {
     const itemXml = match[1];
 
-    const title = extractTextContent(itemXml, 'title');
+    const title = decode(extractTextContent(itemXml, 'title'));
     const link = extractTextContent(itemXml, 'link');
     const pubDate = extractTextContent(itemXml, 'pubDate');
     const guid = extractTextContent(itemXml, 'guid');
