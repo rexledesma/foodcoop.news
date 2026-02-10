@@ -170,6 +170,7 @@ export function ProduceAnalytics({
   const isPriceIncreasesSort = sortField === 'change' && sortDirection === 'desc';
   const normalizedSearchTerm = search.trim().toLowerCase();
   const hasSearchQuery = normalizedSearchTerm.length > 0;
+  const [allowQuerySortOverride, setAllowQuerySortOverride] = useState(false);
 
   const searchDocs = useMemo(
     () =>
@@ -282,7 +283,7 @@ export function ProduceAnalytics({
       result = result.filter((row) => row.is_unavailable);
     }
 
-    if (hasSearchQuery && attributeSearchResults) {
+    if (hasSearchQuery && attributeSearchResults && !allowQuerySortOverride) {
       return [...result].sort((a, b) => {
         const aScore = attributeSearchResults.scores.get(produceHash(a.name)) ?? Number.MAX_VALUE;
         const bScore = attributeSearchResults.scores.get(produceHash(b.name)) ?? Number.MAX_VALUE;
@@ -347,6 +348,7 @@ export function ProduceAnalytics({
     itemFilter,
     hasSearchQuery,
     attributeSearchResults,
+    allowQuerySortOverride,
   ]);
 
   const allSearchResultCount = useMemo(() => {
@@ -371,6 +373,10 @@ export function ProduceAnalytics({
   );
 
   const handleSort = (field: SortField) => {
+    if (hasSearchQuery) {
+      setAllowQuerySortOverride(true);
+    }
+
     let newField: SortField | null = field;
     let newDirection: SortDirection = 'asc';
 
@@ -401,6 +407,9 @@ export function ProduceAnalytics({
   };
 
   const clearDateFilter = () => {
+    if (hasSearchQuery) {
+      setAllowQuerySortOverride(true);
+    }
     setDateFilter(null);
     const url = new URL(window.location.href);
     url.searchParams.delete('date');
@@ -408,6 +417,9 @@ export function ProduceAnalytics({
   };
 
   const clearItemFilter = () => {
+    if (hasSearchQuery) {
+      setAllowQuerySortOverride(true);
+    }
     setItemFilter(null);
     const url = new URL(window.location.href);
     url.searchParams.delete('item');
@@ -444,6 +456,10 @@ export function ProduceAnalytics({
   const closeContextMenu = useCallback(() => setContextMenu(null), []);
 
   const handleQuickFilter = (filter: QuickFilter) => {
+    if (hasSearchQuery) {
+      setAllowQuerySortOverride(true);
+    }
+
     if (dateFilter) clearDateFilter();
 
     if (filter === 'drops' || filter === 'increases') {
@@ -564,6 +580,9 @@ export function ProduceAnalytics({
                   aria-label={`Remove ${QUICK_FILTER_LABELS[activeViewFilter]} filter`}
                   onClick={(e) => {
                     e.stopPropagation();
+                    if (hasSearchQuery) {
+                      setAllowQuerySortOverride(true);
+                    }
                     setQuickFilter(null);
                     setSortField('name');
                     setSortDirection('asc');
@@ -585,12 +604,21 @@ export function ProduceAnalytics({
                     : 'Search produce...'
               }
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(e) => {
+                const nextValue = e.target.value;
+                setSearch(nextValue);
+                if (nextValue.trim().length === 0) {
+                  setAllowQuerySortOverride(false);
+                }
+              }}
               onFocus={() => setIsSearchFocused(true)}
               onBlur={() => setIsSearchFocused(false)}
               onKeyDown={(e) => {
                 if (e.key === 'Backspace' && search === '') {
                   if (activeViewFilter) {
+                    if (hasSearchQuery) {
+                      setAllowQuerySortOverride(true);
+                    }
                     setQuickFilter(null);
                     setSortField('name');
                     setSortDirection('asc');
@@ -605,7 +633,10 @@ export function ProduceAnalytics({
             />
             <button
               type="button"
-              onClick={() => setSearch('')}
+              onClick={() => {
+                setSearch('');
+                setAllowQuerySortOverride(false);
+              }}
               aria-label="Clear search"
               className={`shrink-0 rounded-full p-1 text-sm text-zinc-500 transition hover:text-zinc-700 ${search ? 'visible' : 'invisible'}`}
             >
@@ -643,6 +674,9 @@ export function ProduceAnalytics({
             <button
               type="button"
               onClick={() => {
+                if (hasSearchQuery) {
+                  setAllowQuerySortOverride(true);
+                }
                 if (dateFilter) clearDateFilter();
                 setQuickFilter(null);
                 setSortField('name');
@@ -816,6 +850,7 @@ export function ProduceAnalytics({
                       onClick={() => {
                         if (search) {
                           setSearch('');
+                          setAllowQuerySortOverride(false);
                         } else {
                           setQuickFilter(null);
                         }
@@ -829,6 +864,9 @@ export function ProduceAnalytics({
                       <button
                         type="button"
                         onClick={() => {
+                          if (hasSearchQuery) {
+                            setAllowQuerySortOverride(true);
+                          }
                           setQuickFilter(null);
                           if (dateFilter || itemFilter) {
                             const url = new URL(window.location.href);
