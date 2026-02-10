@@ -13,7 +13,29 @@ export const metadata = {
   },
 };
 
-export default function AboutPage() {
+async function getGitHubStarCount(): Promise<string | null> {
+  try {
+    const response = await fetch('https://api.github.com/repos/rexledesma/foodcoop.news', {
+      next: { revalidate: 3600 },
+      headers: {
+        Accept: 'application/vnd.github+json',
+      },
+    });
+    if (!response.ok) return null;
+
+    const data: { stargazers_count?: number } = await response.json();
+    if (typeof data.stargazers_count !== 'number') return null;
+
+    return new Intl.NumberFormat('en-US').format(data.stargazers_count);
+  } catch {
+    return null;
+  }
+}
+
+export default async function AboutPage() {
+  const starCount = await getGitHubStarCount();
+  const starCountLabel = starCount ?? '...';
+
   return (
     <div className="mx-auto max-w-3xl px-4 py-6">
       <h1 className="mb-6 text-2xl font-bold text-zinc-900">About</h1>
@@ -86,6 +108,17 @@ export default function AboutPage() {
               )
             </li>
             <li>
+              Star this project on{' '}
+              <Link
+                href="https://github.com/rexledesma/foodcoop.news"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="underline transition-colors hover:text-zinc-900"
+              >
+                GitHub
+              </Link>
+            </li>
+            <li>
               Support the server costs and sponsor my work on{' '}
               <Link
                 href="https://github.com/sponsors/rexledesma"
@@ -95,12 +128,26 @@ export default function AboutPage() {
               >
                 GitHub
               </Link>
-              <div className="mt-2 flex justify-center">
+              <div className="mt-2 flex justify-center gap-2">
+                <Link
+                  href="https://github.com/rexledesma/foodcoop.news"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={`Star repository (${starCountLabel})`}
+                  className="group inline-flex items-stretch rounded-md border border-zinc-300 text-sm font-medium text-zinc-900 transition-all hover:-translate-y-0.5 hover:shadow-[0_6px_18px_-8px_rgba(0,0,0,0.55)] focus-visible:-translate-y-0.5 focus-visible:shadow-[0_6px_18px_-8px_rgba(0,0,0,0.55)] focus-visible:ring-2 focus-visible:ring-zinc-400 focus-visible:ring-offset-2 focus-visible:outline-none active:-translate-y-0.5 active:shadow-[0_6px_18px_-8px_rgba(0,0,0,0.55)]"
+                >
+                  <span className="inline-flex items-center justify-center rounded-l-md bg-zinc-100 px-3 py-1.5 text-center transition-colors group-hover:bg-zinc-200 group-focus-visible:bg-zinc-200 group-active:bg-zinc-200">
+                    ⭐ Star
+                  </span>
+                  <span className="inline-flex min-w-8 items-center justify-center rounded-r-md border-l border-zinc-300 bg-white px-2 py-1 text-center transition-colors group-hover:bg-zinc-50 group-focus-visible:bg-zinc-50 group-active:bg-zinc-50">
+                    {starCountLabel}
+                  </span>
+                </Link>
                 <Link
                   href="https://github.com/sponsors/rexledesma"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="group relative inline-flex items-center rounded-md border border-zinc-300 bg-zinc-100 px-3 py-1.5 text-sm font-medium text-zinc-900 transition-all hover:-translate-y-0.5 hover:bg-zinc-200 hover:shadow-[0_6px_18px_-8px_rgba(0,0,0,0.55)] focus-visible:-translate-y-0.5 focus-visible:bg-zinc-200 focus-visible:shadow-[0_6px_18px_-8px_rgba(0,0,0,0.55)] focus-visible:ring-2 focus-visible:ring-zinc-400 focus-visible:ring-offset-2 focus-visible:outline-none active:-translate-y-0.5 active:bg-zinc-200 active:shadow-[0_6px_18px_-8px_rgba(0,0,0,0.55)]"
+                  className="group relative inline-flex items-center justify-center rounded-md border border-zinc-300 bg-zinc-100 px-3 py-1.5 text-center text-sm font-medium text-zinc-900 transition-all hover:-translate-y-0.5 hover:bg-zinc-200 hover:shadow-[0_6px_18px_-8px_rgba(0,0,0,0.55)] focus-visible:-translate-y-0.5 focus-visible:bg-zinc-200 focus-visible:shadow-[0_6px_18px_-8px_rgba(0,0,0,0.55)] focus-visible:ring-2 focus-visible:ring-zinc-400 focus-visible:ring-offset-2 focus-visible:outline-none active:-translate-y-0.5 active:bg-zinc-200 active:shadow-[0_6px_18px_-8px_rgba(0,0,0,0.55)]"
                 >
                   <span className="absolute top-0 -left-1 text-xs opacity-0 transition-all group-hover:-translate-x-0.5 group-hover:-translate-y-1 group-hover:opacity-100 group-focus-visible:-translate-x-0.5 group-focus-visible:-translate-y-1 group-focus-visible:opacity-100 group-active:-translate-x-0.5 group-active:-translate-y-1 group-active:opacity-100">
                     ✨
@@ -108,7 +155,7 @@ export default function AboutPage() {
                   <span className="absolute -right-1 bottom-0 text-xs opacity-0 transition-all group-hover:translate-x-0.5 group-hover:translate-y-1 group-hover:opacity-100 group-focus-visible:translate-x-0.5 group-focus-visible:translate-y-1 group-focus-visible:opacity-100 group-active:translate-x-0.5 group-active:translate-y-1 group-active:opacity-100">
                     ✨
                   </span>
-                  <span>💖 Sponsor on GitHub</span>
+                  <span>💖 Sponsor</span>
                 </Link>
               </div>
             </li>
