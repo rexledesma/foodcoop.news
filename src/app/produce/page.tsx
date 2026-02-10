@@ -10,10 +10,19 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const params = await searchParams;
   const date = typeof params.date === 'string' ? params.date : undefined;
-  const name = typeof params.name === 'string' ? params.name : undefined;
+  const nameParam = typeof params.name === 'string' ? params.name : undefined;
+  const name = nameParam?.trim() || undefined;
 
   if (name) {
-    return { title: name };
+    const description = `Track price and availability trends for ${name} at the Park Slope Food Coop.`;
+    return {
+      title: name,
+      description,
+      openGraph: {
+        title: name,
+        description,
+      },
+    };
   }
 
   if (date) {
