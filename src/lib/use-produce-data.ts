@@ -232,7 +232,7 @@ export function useProduceData(): UseProduceDataResult {
               r.origin,
               r.unit,
               true as is_unavailable,
-              r.last_seen_date::VARCHAR as unavailable_since_date
+              (r.last_seen_date + INTERVAL '1 day')::DATE::VARCHAR as unavailable_since_date
             FROM last_seen_rows r
             LEFT JOIN prev_month_items pm ON r.name = pm.name
             LEFT JOIN first_appearance fa ON r.name = fa.name
