@@ -1,4 +1,5 @@
-import { list, put } from '@vercel/blob';
+import { del, list, put } from '@vercel/blob';
+import { randomBytes } from 'crypto';
 import { parseProduceHtml } from '@/lib/produce-parser';
 import { generateParquetBuffer } from '@/lib/parquet-generator';
 import type { ProduceItem } from '@/lib/types';
@@ -34,12 +35,32 @@ export async function regenerateMonthParquet(month: string): Promise<{
 
   // Generate and upload Parquet
   const buffer = await generateParquetBuffer(allItems);
-  const parquetBlob = await put(`produce-data/${month}.parquet`, buffer, {
+  const version = randomBytes(4).toString('hex').slice(0, 7);
+  const parquetBlob = await put(`produce-data/${month}-${version}.parquet`, buffer, {
     contentType: 'application/octet-stream',
     access: 'public',
-    allowOverwrite: true,
     token: process.env.VERCEL_BLOB_READ_WRITE_TOKEN,
   });
+
+  // Keep exactly one parquet per month to avoid stale canonical URLs.
+  const { blobs: monthParquetBlobs } = await list({
+    prefix: `produce-data/${month}`,
+    token: process.env.VERCEL_BLOB_READ_WRITE_TOKEN,
+  });
+
+  const monthParquetPathsToDelete = monthParquetBlobs
+    .map((blob) => blob.pathname)
+    .filter(
+      (pathname) =>
+        pathname !== parquetBlob.pathname &&
+        new RegExp(`^produce-data/${month}(?:-[^.]+)?\\.parquet$`).test(pathname),
+    );
+
+  if (monthParquetPathsToDelete.length > 0) {
+    await del(monthParquetPathsToDelete, {
+      token: process.env.VERCEL_BLOB_READ_WRITE_TOKEN,
+    });
+  }
 
   return {
     url: parquetBlob.url,

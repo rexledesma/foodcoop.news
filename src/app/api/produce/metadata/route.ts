@@ -21,7 +21,7 @@ async function loadProduceMetadata() {
   const months = blobs
     .filter((blob) => blob.pathname.endsWith('.parquet'))
     .map((blob) => {
-      const match = blob.pathname.match(/produce-data\/(\d{4}-\d{2})\.parquet$/);
+      const match = blob.pathname.match(/produce-data\/(\d{4}-\d{2})-[a-f0-9]{7}\.parquet$/);
       if (!match) return null;
 
       const month = match[1];
