@@ -1073,6 +1073,7 @@ export function ProduceAnalytics({
 
 function MetricsCell({ row, period }: { row: ProduceRow; period: TimePeriod }) {
   const { prev, high, low } = getPeriodData(row, period);
+  const isDayPeriod = period === '1D';
 
   if (prev === null) {
     return <td className={`p-2 ${DATA_COL_CLASS} box-border text-zinc-400`}>—</td>;
@@ -1105,19 +1106,19 @@ function MetricsCell({ row, period }: { row: ProduceRow; period: TimePeriod }) {
         </span>
       </div>
       <div
-        className={`flex items-baseline gap-2 rounded px-1 ${high !== null && row.price === high && row.price !== low ? 'bg-red-100 text-zinc-900' : 'bg-transparent text-zinc-500'}`}
+        className={`flex items-baseline gap-2 rounded px-1 ${!isDayPeriod && high !== null && row.price === high && row.price !== low ? 'bg-red-100 text-zinc-900' : 'bg-transparent text-zinc-500'}`}
       >
         <span className="w-10 shrink-0">High</span>
         <span className="w-20 text-right font-mono">
-          {high !== null ? `$${high.toFixed(2)}` : '—'}
+          {isDayPeriod ? '—' : high !== null ? `$${high.toFixed(2)}` : '—'}
         </span>
       </div>
       <div
-        className={`flex items-baseline gap-2 rounded px-1 ${low !== null && row.price === low ? 'bg-green-100 text-zinc-900' : 'bg-transparent text-zinc-500'}`}
+        className={`flex items-baseline gap-2 rounded px-1 ${!isDayPeriod && low !== null && row.price === low ? 'bg-green-100 text-zinc-900' : 'bg-transparent text-zinc-500'}`}
       >
         <span className="w-10 shrink-0">Low</span>
         <span className="w-20 text-right font-mono">
-          {low !== null ? `$${low.toFixed(2)}` : '—'}
+          {isDayPeriod ? '—' : low !== null ? `$${low.toFixed(2)}` : '—'}
         </span>
       </div>
     </td>
