@@ -502,15 +502,19 @@ function ProduceCard({
             <span className="font-semibold text-zinc-900">Produce</span>
             <span className="shrink-0 text-sm text-zinc-400">{formattedDate}</span>
           </div>
-          <p className="mt-1 text-sm text-zinc-500">
+          <p className="mt-1 flex flex-wrap items-center gap-1.5 text-sm text-zinc-500">
             {update.newArrivals.length > 0 && (
-              <span className="text-green-600">
+              <span className="inline-flex items-center rounded-full bg-[rgb(255,246,220)] px-2.5 py-1 text-xs font-medium text-[#3F7540]">
                 {update.newArrivals.length} new arrival{update.newArrivals.length !== 1 ? 's' : ''}
               </span>
             )}
-            {update.newArrivals.length > 0 && update.outOfStock.length > 0 && ' · '}
+            {update.newArrivals.length > 0 && update.outOfStock.length > 0 && (
+              <span className="text-zinc-400">·</span>
+            )}
             {update.outOfStock.length > 0 && (
-              <span className="text-red-600">{update.outOfStock.length} out of stock</span>
+              <span className="inline-flex items-center rounded-full bg-red-100 px-2.5 py-1 text-xs font-medium text-red-700">
+                {update.outOfStock.length} out of stock
+              </span>
             )}
           </p>
           {update.newArrivals.length > 0 && (
@@ -519,7 +523,7 @@ function ProduceCard({
                 {update.newArrivals.map((item) => (
                   <span
                     key={item.name}
-                    className="inline-flex items-center gap-1 rounded-full bg-green-100 px-2 py-0.5 text-xs text-green-700"
+                    className="inline-flex items-center gap-1 rounded-full bg-[rgb(255,246,220)] px-2 py-0.5 text-xs text-[#3F7540]"
                   >
                     {favorites.has(item.name) && (
                       <span className="grid h-4 w-4 place-items-center rounded-full bg-amber-100 text-[12px] leading-none text-amber-700">
