@@ -1,6 +1,7 @@
 import type { ProduceDateRange, ProduceHistoryPoint, ProduceRow } from '@/lib/use-produce-data';
 
 const CACHE_KEY = 'produce-cache';
+const CACHE_TTL_MS = 24 * 60 * 60 * 1000;
 
 interface ProduceCachePayload {
   data: ProduceRow[];
@@ -22,6 +23,11 @@ export function readProduceCache(): ProduceCacheResult | null {
     if (!raw) return null;
     const payload: ProduceCachePayload = JSON.parse(raw);
     if (!Array.isArray(payload.data) || !Array.isArray(payload.history)) return null;
+    if (typeof payload.cachedAt !== 'number') return null;
+    if (Date.now() - payload.cachedAt > CACHE_TTL_MS) {
+      localStorage.removeItem(CACHE_KEY);
+      return null;
+    }
     return {
       data: payload.data,
       history: new Map(payload.history),
@@ -47,5 +53,14 @@ export function writeProduceCache(
     localStorage.setItem(CACHE_KEY, JSON.stringify(payload));
   } catch {
     // Silently ignore quota errors
+  }
+}
+
+export function clearProduceCache(): void {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.removeItem(CACHE_KEY);
+  } catch {
+    // Silently ignore storage errors
   }
 }

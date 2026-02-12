@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { readProduceCache, writeProduceCache } from '@/lib/produce-cache';
+import { clearProduceCache, readProduceCache, writeProduceCache } from '@/lib/produce-cache';
 import { useDuckDB } from '@/lib/use-duckdb';
 
 export interface ProduceRow {
@@ -73,6 +73,7 @@ export function useProduceData(): UseProduceDataResult {
   const [loading, setLoading] = useState(!cachedState);
   const [refreshing, setRefreshing] = useState(!!cachedState);
   const [error, setError] = useState<string | null>(null);
+  const didRetryAfterCacheClearRef = useRef(false);
 
   useEffect(() => {
     if (!isReady) return;
@@ -85,28 +86,28 @@ export function useProduceData(): UseProduceDataResult {
         setRefreshing(true);
         setError(null);
 
-        // Fetch metadata to get Parquet URLs
-        const metaRes = await fetch('/api/produce/metadata');
-        if (!metaRes.ok) throw new Error('Failed to fetch metadata');
-        const meta: ProduceMetadata = await metaRes.json();
+        const fetchAndBuildData = async () => {
+          // Fetch metadata to get Parquet URLs
+          const metaRes = await fetch('/api/produce/metadata');
+          if (!metaRes.ok) throw new Error('Failed to fetch metadata');
+          const meta: ProduceMetadata = await metaRes.json();
 
-        if (meta.months.length === 0) {
-          setError('No produce data available');
-          return;
-        }
+          if (meta.months.length === 0) {
+            throw new Error('No produce data available');
+          }
 
-        // Load all available months
-        for (const { url, month } of meta.months) {
-          await loadParquet(url, `produce_${month.replace('-', '_')}`);
-        }
+          // Load all available months
+          for (const { url, month } of meta.months) {
+            await loadParquet(url, `produce_${month.replace('-', '_')}`);
+          }
 
-        // Create unified view
-        const tableNames = meta.months.map((m) => `produce_${m.month.replace('-', '_')}`);
-        const unionQuery = tableNames.map((t) => `SELECT * FROM ${t}`).join(' UNION ALL ');
-        await query(`CREATE OR REPLACE TABLE produce AS ${unionQuery}`);
+          // Create unified view
+          const tableNames = meta.months.map((m) => `produce_${m.month.replace('-', '_')}`);
+          const unionQuery = tableNames.map((t) => `SELECT * FROM ${t}`).join(' UNION ALL ');
+          await query(`CREATE OR REPLACE TABLE produce AS ${unionQuery}`);
 
-        // Query with price comparisons (using name as key to distinguish organic vs conventional)
-        const results = await query<ProduceRow>(`
+          // Query with price comparisons (using name as key to distinguish organic vs conventional)
+          const results = await query<ProduceRow>(`
           WITH latest_date AS (
             SELECT MAX(date::DATE) as max_date FROM produce
           ),
@@ -297,9 +298,9 @@ export function useProduceData(): UseProduceDataResult {
           ORDER BY b.name
         `);
 
-        setData(results);
+          setData(results);
 
-        const historyRows = await query<ProduceHistoryPoint>(`
+          const historyRows = await query<ProduceHistoryPoint>(`
           WITH latest_date AS (
             SELECT MAX(date::DATE) as max_date FROM produce
           )
@@ -309,28 +310,45 @@ export function useProduceData(): UseProduceDataResult {
           ORDER BY name, date::DATE
         `);
 
-        const historyMap = new Map<string, ProduceHistoryPoint[]>();
-        let maxDate: string | null = null;
-        for (const row of historyRows) {
-          const existing = historyMap.get(row.name) ?? [];
-          existing.push(row);
-          historyMap.set(row.name, existing);
-          if (!maxDate || row.date > maxDate) maxDate = row.date;
-        }
-        setHistory(historyMap);
+          const historyMap = new Map<string, ProduceHistoryPoint[]>();
+          let maxDate: string | null = null;
+          for (const row of historyRows) {
+            const existing = historyMap.get(row.name) ?? [];
+            existing.push(row);
+            historyMap.set(row.name, existing);
+            if (!maxDate || row.date > maxDate) maxDate = row.date;
+          }
+          setHistory(historyMap);
 
-        let range: ProduceDateRange | null = null;
-        if (maxDate) {
-          const endDate = new Date(maxDate + 'T00:00:00');
-          const startDate = new Date(endDate);
-          startDate.setDate(startDate.getDate() - 30);
-          const startStr = startDate.toISOString().slice(0, 10);
-          range = { start: startStr, end: maxDate };
-          setDateRange(range);
-        }
+          let range: ProduceDateRange | null = null;
+          if (maxDate) {
+            const endDate = new Date(maxDate + 'T00:00:00');
+            const startDate = new Date(endDate);
+            startDate.setDate(startDate.getDate() - 30);
+            const startStr = startDate.toISOString().slice(0, 10);
+            range = { start: startStr, end: maxDate };
+            setDateRange(range);
+          }
 
-        writeProduceCache(results, historyMap, range);
+          writeProduceCache(results, historyMap, range);
+        };
+
+        try {
+          await fetchAndBuildData();
+          didRetryAfterCacheClearRef.current = false;
+        } catch (initialError) {
+          if (!didRetryAfterCacheClearRef.current) {
+            didRetryAfterCacheClearRef.current = true;
+            clearProduceCache();
+            hasCacheRef.current = false;
+            await fetchAndBuildData();
+            didRetryAfterCacheClearRef.current = false;
+          } else {
+            throw initialError;
+          }
+        }
       } catch (err) {
+        didRetryAfterCacheClearRef.current = false;
         setError(err instanceof Error ? err.message : 'Failed to load data');
       } finally {
         setLoading(false);
