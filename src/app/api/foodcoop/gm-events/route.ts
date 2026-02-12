@@ -123,7 +123,6 @@ async function fetchGMEvents(): Promise<FoodcoopEvent[]> {
 
   // Try to extract location - look for "Picnic House" mention or address patterns
   let venueName: string | undefined;
-  let venueAddress: string | undefined;
 
   // Look for location pattern like "Picnic House, Prospect Park, 95 Prospect Park West..."
   const locationMatch = sectionText.match(/(Prospect Park Picnic House|Picnic House)/i);
@@ -144,7 +143,6 @@ async function fetchGMEvents(): Promise<FoodcoopEvent[]> {
     startUtc,
     timezone: TIMEZONE,
     venueName,
-    venueAddress: venueAddress || undefined,
   });
 
   return events;

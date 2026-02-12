@@ -9,7 +9,7 @@ pnpm dev              # Development server
 pnpm build            # Production build (Webpack)
 pnpm start            # Start production server
 pnpm check            # Run lint, knip, format, and TypeScript checks
-pnpm lint             # Run ESLint only
+pnpm lint             # Run Oxlint only
 pnpm knip             # Run knip unused code/deps checks
 pnpm format           # Format with Prettier
 pnpm format:check     # Check formatting
