@@ -1052,7 +1052,12 @@ export function ProduceAnalytics({
                       />
                     </div>
                   </td>
-                  <MetricsCell row={row} period={timePeriod} />
+                  <MetricsCell
+                    row={row}
+                    period={timePeriod}
+                    points={history.get(row.name)}
+                    dateRange={dateRange}
+                  />
                 </tr>
               ))
             )}
@@ -1071,9 +1076,45 @@ export function ProduceAnalytics({
   );
 }
 
-function MetricsCell({ row, period }: { row: ProduceRow; period: TimePeriod }) {
+function getPeriodPointCount(
+  points: ProduceHistoryPoint[] | undefined,
+  dateRange: ProduceDateRange | null,
+  period: TimePeriod,
+): number {
+  if (!points || points.length === 0) return 0;
+
+  const endMs = dateRange
+    ? new Date(dateRange.end + 'T00:00:00').getTime()
+    : new Date(points[points.length - 1].date + 'T00:00:00').getTime();
+
+  const periodStartMs =
+    period === '1D'
+      ? endMs - 1 * 24 * 60 * 60 * 1000
+      : period === '1W'
+        ? endMs - 7 * 24 * 60 * 60 * 1000
+        : dateRange
+          ? new Date(dateRange.start + 'T00:00:00').getTime()
+          : new Date(points[0].date + 'T00:00:00').getTime();
+
+  return points.filter((point) => {
+    const pointMs = new Date(point.date + 'T00:00:00').getTime();
+    return pointMs >= periodStartMs && pointMs <= endMs;
+  }).length;
+}
+
+function MetricsCell({
+  row,
+  period,
+  points,
+  dateRange,
+}: {
+  row: ProduceRow;
+  period: TimePeriod;
+  points?: ProduceHistoryPoint[];
+  dateRange: ProduceDateRange | null;
+}) {
   const { prev, high, low } = getPeriodData(row, period);
-  const isDayPeriod = period === '1D';
+  const showHighLow = getPeriodPointCount(points, dateRange, period) >= 3;
 
   if (prev === null) {
     return <td className={`p-2 ${DATA_COL_CLASS} box-border text-zinc-400`}>—</td>;
@@ -1106,19 +1147,19 @@ function MetricsCell({ row, period }: { row: ProduceRow; period: TimePeriod }) {
         </span>
       </div>
       <div
-        className={`flex items-baseline gap-2 rounded px-1 ${!isDayPeriod && high !== null && row.price === high && row.price !== low ? 'bg-red-100 text-zinc-900' : 'bg-transparent text-zinc-500'}`}
+        className={`flex items-baseline gap-2 rounded px-1 ${showHighLow && high !== null && row.price === high && row.price !== low ? 'bg-red-100 text-zinc-900' : 'bg-transparent text-zinc-500'}`}
       >
         <span className="w-10 shrink-0">High</span>
         <span className="w-20 text-right font-mono">
-          {isDayPeriod ? '—' : high !== null ? `$${high.toFixed(2)}` : '—'}
+          {showHighLow && high !== null ? `$${high.toFixed(2)}` : '—'}
         </span>
       </div>
       <div
-        className={`flex items-baseline gap-2 rounded px-1 ${!isDayPeriod && low !== null && row.price === low ? 'bg-green-100 text-zinc-900' : 'bg-transparent text-zinc-500'}`}
+        className={`flex items-baseline gap-2 rounded px-1 ${showHighLow && low !== null && row.price === low ? 'bg-green-100 text-zinc-900' : 'bg-transparent text-zinc-500'}`}
       >
         <span className="w-10 shrink-0">Low</span>
         <span className="w-20 text-right font-mono">
-          {isDayPeriod ? '—' : low !== null ? `$${low.toFixed(2)}` : '—'}
+          {showHighLow && low !== null ? `$${low.toFixed(2)}` : '—'}
         </span>
       </div>
     </td>
