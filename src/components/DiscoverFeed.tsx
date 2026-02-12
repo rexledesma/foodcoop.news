@@ -36,6 +36,11 @@ const FILTER_OPTIONS: { value: FilterType; label: string }[] = [
   { value: 'wordsprouts', label: 'Wordsprouts' },
   { value: 'concert-series', label: 'Concerts' },
 ];
+const DISCOVER_FILTER_STORAGE_KEY = 'discover-filter';
+
+function isFilterType(value: string): value is FilterType {
+  return FILTER_OPTIONS.some((option) => option.value === value);
+}
 
 function formatRelativeTime(date: Date): string | null {
   const now = new Date();
@@ -562,7 +567,12 @@ function ProduceCard({
 }
 
 export function DiscoverFeed() {
-  const [filter, setFilter] = useState<FilterType>('latest');
+  const [filter, setFilter] = useState<FilterType>(() => {
+    if (typeof window === 'undefined') return 'latest';
+    const storedFilter = localStorage.getItem(DISCOVER_FILTER_STORAGE_KEY);
+    if (!storedFilter || !isFilterType(storedFilter)) return 'latest';
+    return storedFilter;
+  });
   const { showSticky } = useScrollVisibility();
   const filtersRef = useRef<HTMLDivElement>(null);
   const favoritesSnapshot = useSyncExternalStore(
@@ -610,6 +620,10 @@ export function DiscoverFeed() {
     filter === 'upcoming'
       ? [...filteredItems].sort((a, b) => a.date.getTime() - b.date.getTime())
       : filteredItems;
+
+  useEffect(() => {
+    localStorage.setItem(DISCOVER_FILTER_STORAGE_KEY, filter);
+  }, [filter]);
 
   useEffect(() => {
     const element = filtersRef.current;
