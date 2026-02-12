@@ -9,8 +9,8 @@
     "lint": "pnpm lint:check --fix --fix-suggestions",
     "lint:check": "pnpm exec oxlint $(rg --files . --glob '**/*.{js,jsx,ts,tsx,mjs,cjs}') --config .oxlintrc.json --tsconfig tsconfig.json",
     "knip": "knip",
-    "format": "prettier . --write",
-    "format:check": "prettier . --check",
+    "format": "pnpm exec oxfmt .",
+    "format:check": "pnpm exec oxfmt . --check",
     "check": "pnpm lint && pnpm knip && pnpm format && pnpm exec tsc --noEmit",
     "backfill": "curl -X POST \"$SITE_URL/api/cron/backfill-produce\" -H \"Authorization: Bearer $CRON_SECRET\""
   },
@@ -42,10 +42,9 @@
     "@types/react-dom": "^19",
     "@types/web-push": "^3.6.4",
     "knip": "^5.83.1",
+    "oxfmt": "^0.31.0",
     "oxlint": "^1.46.0",
     "postcss": "^8.5.6",
-    "prettier": "^3.8.1",
-    "prettier-plugin-tailwindcss": "^0.7.2",
     "tailwindcss": "^4",
     "typescript": "^5"
   }

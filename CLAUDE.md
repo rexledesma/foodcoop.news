@@ -11,8 +11,8 @@ pnpm start            # Start production server
 pnpm check            # Run lint, knip, format, and TypeScript checks
 pnpm lint             # Run Oxlint only
 pnpm knip             # Run knip unused code/deps checks
-pnpm format           # Format with Prettier
-pnpm format:check     # Check formatting
+pnpm format           # Format with Oxfmt
+pnpm format:check     # Check formatting with Oxfmt
 npx convex dev        # Start Convex development server
 ```
 
