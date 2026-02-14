@@ -37,7 +37,7 @@ export function SignUpForm() {
       const result = await signUp.email({
         email,
         password,
-        name: '',
+        name: ' ',
       });
 
       if (result.error) {
