@@ -734,21 +734,33 @@ export function ProduceAnalytics({
     setContextMenu({ itemName, x: e.clientX, y: e.clientY });
   }, []);
 
-  const handleTouchStart = useCallback((e: React.TouchEvent, itemName: string) => {
-    const touch = e.touches[0];
-    const x = touch.clientX;
-    const y = touch.clientY;
-    setPressedRow(itemName);
-    swipeStartRef.current = { itemName, x, y, dx: 0, dy: 0, thresholdHapticFired: false };
-    setActiveSwipeItem(itemName);
-    setSwipeOffsets((prev) => ({ ...prev, [itemName]: 0 }));
-    longPressTimer.current = setTimeout(() => {
-      longPressTimer.current = null;
-      setPressedRow(null);
-      navigator.vibrate?.(10);
-      setContextMenu({ itemName, x, y });
-    }, 500);
+  const isSparklineTarget = useCallback((target: EventTarget | null) => {
+    return (
+      target instanceof Element && target.closest('[data-sparkline-interactive="true"]') !== null
+    );
   }, []);
+
+  const handleTouchStart = useCallback(
+    (e: React.TouchEvent, itemName: string) => {
+      if (isSparklineTarget(e.target)) {
+        return;
+      }
+      const touch = e.touches[0];
+      const x = touch.clientX;
+      const y = touch.clientY;
+      setPressedRow(itemName);
+      swipeStartRef.current = { itemName, x, y, dx: 0, dy: 0, thresholdHapticFired: false };
+      setActiveSwipeItem(itemName);
+      setSwipeOffsets((prev) => ({ ...prev, [itemName]: 0 }));
+      longPressTimer.current = setTimeout(() => {
+        longPressTimer.current = null;
+        setPressedRow(null);
+        navigator.vibrate?.(10);
+        setContextMenu({ itemName, x, y });
+      }, 500);
+    },
+    [isSparklineTarget],
+  );
 
   const getSwipeThresholdPx = useCallback(
     (itemName: string) => {
@@ -1938,7 +1950,7 @@ function Sparkline({
         activePoint.svg.x >= lastPoint.x));
 
   return (
-    <div className="relative">
+    <div className="relative" data-sparkline-interactive="true">
       <svg
         ref={svgRef}
         viewBox={`0 0 ${svgWidth} ${height + padding * 2}`}
