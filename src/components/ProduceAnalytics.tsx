@@ -423,7 +423,7 @@ export function ProduceAnalytics({
   );
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [pressedRow, setPressedRow] = useState<string | null>(null);
-  const [swipeOffsets, setSwipeOffsets] = useState<Record<string, number>>({});
+  const [activeSwipeOffset, setActiveSwipeOffset] = useState(0);
   const [activeSwipeItem, setActiveSwipeItem] = useState<string | null>(null);
   const [nameCellWidths, setNameCellWidths] = useState<Record<string, number>>({});
   const { favorites, toggleFavorite } = useProduceFavorites();
@@ -751,7 +751,7 @@ export function ProduceAnalytics({
       setPressedRow(itemName);
       swipeStartRef.current = { itemName, x, y, dx: 0, dy: 0, thresholdHapticFired: false };
       setActiveSwipeItem(itemName);
-      setSwipeOffsets((prev) => ({ ...prev, [itemName]: 0 }));
+      setActiveSwipeOffset(0);
       longPressTimer.current = setTimeout(() => {
         longPressTimer.current = null;
         setPressedRow(null);
@@ -798,7 +798,7 @@ export function ProduceAnalytics({
         const thresholdPx = getSwipeThresholdPx(itemName);
         const maxOffsetPx = Math.max(FAVORITE_SWIPE_MAX_OFFSET_PX, thresholdPx + 16);
         const clamped = Math.max(0, Math.min(maxOffsetPx, swipe.dx));
-        setSwipeOffsets((prev) => ({ ...prev, [itemName]: clamped }));
+        setActiveSwipeOffset((prev) => (Math.abs(prev - clamped) < 0.5 ? prev : clamped));
 
         if (swipe.dx >= thresholdPx && !swipe.thresholdHapticFired) {
           swipe.thresholdHapticFired = true;
@@ -830,16 +830,16 @@ export function ProduceAnalytics({
         }
       }
       setActiveSwipeItem(null);
-      setSwipeOffsets((prev) => ({ ...prev, [itemName]: 0 }));
+      setActiveSwipeOffset(0);
       cancelLongPress();
     },
     [cancelLongPress, getSwipeThresholdPx, toggleFavorite],
   );
 
   const handleTouchCancel = useCallback(
-    (itemName: string) => {
+    (_itemName: string) => {
       setActiveSwipeItem(null);
-      setSwipeOffsets((prev) => ({ ...prev, [itemName]: 0 }));
+      setActiveSwipeOffset(0);
       cancelLongPress();
     },
     [cancelLongPress],
@@ -1298,7 +1298,7 @@ export function ProduceAnalytics({
                     specialtyUrl={getSpecialtyProduceUrl(row.name)}
                     isPressed={pressedRow === row.name}
                     isActiveSwipe={activeSwipeItem === row.name}
-                    swipeOffset={swipeOffsets[row.name] ?? 0}
+                    swipeOffset={activeSwipeItem === row.name ? activeSwipeOffset : 0}
                     timePeriod={timePeriod}
                     history={history}
                     dateRange={dateRange}
@@ -1372,19 +1372,12 @@ const ProduceTableRow = memo(function ProduceTableRow({
   const thresholdReached = swipeOffset >= swipeThresholdPx;
   const revealActionIsFavorite = !isFavorited;
   const revealIcon = revealActionIsFavorite ? '⭐' : '💔';
-  const swipeCoverClass = isFavorited ? 'bg-amber-50' : 'bg-white';
+  const swipeUnderlayClass = revealActionIsFavorite ? 'bg-amber-50' : 'bg-red-100';
   const rowBaseClass = isPressed ? 'bg-zinc-100' : isFavorited ? 'bg-amber-50' : 'hover:bg-zinc-50';
-  const revealColor = revealActionIsFavorite ? 'rgba(255, 251, 235, 1)' : 'rgba(254, 202, 202, 1)';
   const swipeStyle = {
     transform: `translateX(${swipeOffset}px)`,
     transition: isActiveSwipe ? 'none' : 'transform 180ms ease-out',
   };
-  const rowStyle =
-    isSwiping && swipeOffset > 0
-      ? {
-          backgroundImage: `linear-gradient(to right, ${revealColor} 0px, ${revealColor} ${swipeOffset}px, transparent ${swipeOffset}px)`,
-        }
-      : undefined;
   const { prev } = getPeriodData(row, timePeriod, rowHistory, dateRange);
   const priceTrendClass =
     prev !== null && row.price < prev
@@ -1425,24 +1418,24 @@ const ProduceTableRow = memo(function ProduceTableRow({
       onTouchEnd={() => onTouchEnd(row.name)}
       onTouchMove={(e) => onTouchMove(e, row.name)}
       onTouchCancel={() => onTouchCancel(row.name)}
-      className={`group border-b border-zinc-100 select-none ${isSwiping ? (isFavorited ? 'bg-amber-50' : 'bg-white') : rowBaseClass}`}
-      style={rowStyle}
+      className={`group [touch-action:pan-y] border-b border-zinc-100 select-none ${isSwiping ? (isFavorited ? 'bg-amber-50' : 'bg-white') : rowBaseClass}`}
     >
       <td
         ref={(el) => {
           if (!el) return;
           onMeasureNameCell(row.name, el.clientWidth);
         }}
-        className={`${NAME_COL_CLASS} sticky left-0 z-10 box-border border-r border-zinc-200 p-0 md:w-auto md:border-r-0 ${
-          isSwiping
-            ? 'relative'
-            : isPressed
-              ? 'bg-zinc-100'
-              : isFavorited
-                ? 'bg-amber-50'
-                : 'bg-white group-hover:bg-zinc-50 hover:bg-zinc-50'
+        className={`${NAME_COL_CLASS} relative sticky left-0 z-10 box-border border-r border-zinc-200 p-0 md:w-auto md:border-r-0 ${
+          isPressed
+            ? 'bg-zinc-100'
+            : isFavorited
+              ? 'bg-amber-50'
+              : 'bg-white group-hover:bg-zinc-50 hover:bg-zinc-50'
         }`}
       >
+        {isSwiping && (
+          <div className={`pointer-events-none absolute inset-0 z-0 ${swipeUnderlayClass}`} />
+        )}
         {isSwiping && swipeOffset > 0 && (
           <div className="pointer-events-none absolute inset-0 z-0 flex items-center justify-center">
             <span
@@ -1462,7 +1455,7 @@ const ProduceTableRow = memo(function ProduceTableRow({
           />
         )}
         <div
-          className={`relative ${specialtyUrl ? 'z-20' : 'z-10'} flex h-full w-full items-center gap-1 p-2 text-left ${isSwiping ? swipeCoverClass : ''} ${specialtyUrl ? 'pointer-events-none' : ''}`}
+          className={`relative ${specialtyUrl ? 'z-20' : 'z-10'} flex h-full w-full items-center gap-1 p-2 text-left will-change-transform ${specialtyUrl ? 'pointer-events-none' : ''}`}
           style={swipeStyle}
         >
           <button
@@ -1521,8 +1514,11 @@ const ProduceTableRow = memo(function ProduceTableRow({
           </div>
         </div>
       </td>
-      <td className={`p-2 font-mono text-zinc-900 ${DATA_COL_CLASS} box-border`}>
-        <div className={isSwiping ? swipeCoverClass : ''} style={swipeStyle}>
+      <td className={`relative p-2 font-mono text-zinc-900 ${DATA_COL_CLASS} box-border`}>
+        {isSwiping && (
+          <div className={`pointer-events-none absolute inset-0 z-0 ${swipeUnderlayClass}`} />
+        )}
+        <div className="relative z-10 will-change-transform" style={swipeStyle}>
           <div>
             <span className={`font-bold ${priceTrendClass}`}>${row.price.toFixed(2)}</span>
             {prev !== null && prev !== row.price && (
@@ -1547,8 +1543,9 @@ const ProduceTableRow = memo(function ProduceTableRow({
         period={timePeriod}
         points={rowHistory}
         dateRange={dateRange}
+        isSwiping={isSwiping}
+        swipeUnderlayClass={swipeUnderlayClass}
         swipeStyle={swipeStyle}
-        swipeCoverClass={isSwiping ? swipeCoverClass : ''}
       />
     </tr>
   );
@@ -1578,15 +1575,17 @@ function MetricsCell({
   period,
   points,
   dateRange,
+  isSwiping,
+  swipeUnderlayClass,
   swipeStyle,
-  swipeCoverClass,
 }: {
   row: ProduceRow;
   period: TimePeriod;
   points?: ProduceHistoryPoint[];
   dateRange: ProduceDateRange | null;
+  isSwiping: boolean;
+  swipeUnderlayClass: string;
   swipeStyle: React.CSSProperties;
-  swipeCoverClass: string;
 }) {
   const { prev, high, low } = getPeriodData(row, period, points, dateRange);
   const showHighLow = getPeriodPointCount(points, dateRange, period) >= 3;
@@ -1594,7 +1593,10 @@ function MetricsCell({
   if (prev === null) {
     return (
       <td className={`relative p-2 ${DATA_COL_CLASS} box-border text-zinc-400`}>
-        <div className={`relative z-10 ${swipeCoverClass}`} style={swipeStyle}>
+        {isSwiping && (
+          <div className={`pointer-events-none absolute inset-0 z-0 ${swipeUnderlayClass}`} />
+        )}
+        <div className="relative z-10" style={swipeStyle}>
           —
         </div>
       </td>
@@ -1614,7 +1616,10 @@ function MetricsCell({
 
   return (
     <td className={`relative p-2 ${DATA_COL_CLASS} box-border text-xs tabular-nums`}>
-      <div className={`relative z-10 ${swipeCoverClass}`} style={swipeStyle}>
+      {isSwiping && (
+        <div className={`pointer-events-none absolute inset-0 z-0 ${swipeUnderlayClass}`} />
+      )}
+      <div className="relative z-10" style={swipeStyle}>
         <div className="flex items-baseline gap-2 rounded bg-transparent px-1">
           <span className="w-10 shrink-0 text-zinc-500">% Diff</span>
           <span className={`w-20 text-right font-mono ${colorClass}`}>
