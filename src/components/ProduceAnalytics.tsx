@@ -1315,9 +1315,10 @@ function SparklineTooltip({
   xPercent: number;
   dimmed?: boolean;
 }) {
+  const alignRight = xPercent > 50;
   return (
     <div
-      className={`pointer-events-none absolute bottom-full mb-1 -translate-x-1/2 rounded bg-zinc-900 px-1.5 py-0.5 text-[10px] whitespace-nowrap text-white ${dimmed ? 'opacity-50' : ''}`}
+      className={`pointer-events-none absolute bottom-full mb-1 rounded bg-zinc-900 px-1.5 py-0.5 text-[10px] whitespace-nowrap text-white ${alignRight ? '-translate-x-full' : ''} ${dimmed ? 'opacity-50' : ''}`}
       style={{ left: `${xPercent}%` }}
     >
       {formatShortDate(date)} · ${price.toFixed(2)}
@@ -1401,7 +1402,7 @@ function Sparkline({
     }
     const rect = svg.getBoundingClientRect();
     const tooltipXPercent = ((e.clientX - rect.left) / rect.width) * 100;
-    setActive({ index: closest, tooltipXPercent: Math.min(90, Math.max(10, tooltipXPercent)) });
+    setActive({ index: closest, tooltipXPercent: Math.min(100, Math.max(0, tooltipXPercent)) });
     if (lastActiveIndex.current !== closest) {
       lastActiveIndex.current = closest;
       navigator.vibrate?.(1);
