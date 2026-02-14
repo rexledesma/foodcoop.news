@@ -13,7 +13,7 @@ import type {
   ProduceRow,
 } from '@/lib/use-produce-data';
 
-type TimePeriod = '1D' | '1W' | '1M' | '3M' | '6M' | '1Y' | 'YTD';
+type TimePeriod = '1D' | '1W' | '1M' | '3M' | '6M' | '1Y' | '2Y' | 'YTD';
 type SortField = 'name' | 'price' | 'change' | 'first_seen' | 'last_seen';
 type SortDirection = 'asc' | 'desc' | null;
 
@@ -36,7 +36,8 @@ const DATA_COL_CLASS = 'w-1/3 min-w-[33.333%] max-w-[33.333%] md:w-auto md:min-w
 const DAY_MS = 24 * 60 * 60 * 1000;
 const MAX_CONNECTED_GAP_DAYS = 3;
 
-const TIME_PERIODS: TimePeriod[] = ['1D', '1W', '1M', '3M', '6M', '1Y', 'YTD'];
+const TIME_PERIODS: TimePeriod[] = ['1D', '1W', '1M', '3M', '6M', '1Y', '2Y', 'YTD'];
+const TIME_PERIOD_SET = new Set<TimePeriod>(TIME_PERIODS);
 const PERIOD_BUTTON_LABELS: Record<TimePeriod, string> = {
   '1D': '1D',
   '1W': '1W',
@@ -44,6 +45,7 @@ const PERIOD_BUTTON_LABELS: Record<TimePeriod, string> = {
   '3M': '3M',
   '6M': '6M',
   '1Y': '1Y',
+  '2Y': '2Y',
   YTD: 'YTD',
 };
 const PERIOD_METRIC_LABELS: Record<TimePeriod, string> = {
@@ -53,8 +55,13 @@ const PERIOD_METRIC_LABELS: Record<TimePeriod, string> = {
   '3M': 'Past 3 months',
   '6M': 'Past 6 months',
   '1Y': 'Past year',
+  '2Y': 'Past 2 years',
   YTD: 'Year to date',
 };
+
+function isTimePeriod(value: unknown): value is TimePeriod {
+  return typeof value === 'string' && TIME_PERIOD_SET.has(value as TimePeriod);
+}
 
 const QUICK_FILTER_LABELS: Record<NonNullable<QuickFilter>, string> = {
   favorites: 'Favorites',
@@ -141,11 +148,23 @@ function getPeriodData(row: ProduceRow, period: TimePeriod) {
         high: row.year_high,
         low: row.year_low,
       };
+    case '2Y':
+      return {
+        prev: row.prev_2_year_price,
+        high: row.two_year_high,
+        low: row.two_year_low,
+      };
     case 'YTD':
       return {
         prev: row.prev_ytd_price,
         high: row.ytd_high,
         low: row.ytd_low,
+      };
+    default:
+      return {
+        prev: row.prev_day_price,
+        high: row.day_high,
+        low: row.day_low,
       };
   }
 }
@@ -164,22 +183,36 @@ function getPeriodStartMs(period: TimePeriod, endMs: number): number {
       return endMs - 180 * DAY_MS;
     case '1Y':
       return endMs - 365 * DAY_MS;
+    case '2Y':
+      return endMs - 730 * DAY_MS;
     case 'YTD': {
       const endDate = new Date(endMs);
       return new Date(endDate.getFullYear(), 0, 1).getTime();
     }
+    default:
+      return endMs - DAY_MS;
   }
 }
 
 function getScaleStartMs(period: TimePeriod, endMs: number): number {
-  if (period === '1D' || period === '1W' || period === '1M') {
-    return endMs - 30 * DAY_MS;
+  switch (period) {
+    case '1D':
+    case '1W':
+    case '1M':
+      return endMs - 30 * DAY_MS;
+    case '3M':
+    case '6M':
+    case '1Y':
+      return endMs - 365 * DAY_MS;
+    case '2Y':
+      return endMs - 730 * DAY_MS;
+    case 'YTD': {
+      const endDate = new Date(endMs);
+      return new Date(endDate.getFullYear(), 0, 1).getTime();
+    }
+    default:
+      return endMs - 30 * DAY_MS;
   }
-  if (period === '3M' || period === '6M' || period === '1Y') {
-    return endMs - 365 * DAY_MS;
-  }
-  const endDate = new Date(endMs);
-  return new Date(endDate.getFullYear(), 0, 1).getTime();
 }
 
 export function ProduceAnalytics({
@@ -212,7 +245,13 @@ export function ProduceAnalytics({
     try {
       const stored = localStorage.getItem('produce-filters');
       if (!stored) return firstVisit;
-      return JSON.parse(stored) as typeof firstVisit;
+      const parsed = JSON.parse(stored) as Partial<typeof firstVisit>;
+      return {
+        quickFilter: parsed.quickFilter ?? firstVisit.quickFilter,
+        timePeriod: isTimePeriod(parsed.timePeriod) ? parsed.timePeriod : firstVisit.timePeriod,
+        sortField: parsed.sortField ?? firstVisit.sortField,
+        sortDirection: parsed.sortDirection ?? firstVisit.sortDirection,
+      };
     } catch {
       return firstVisit;
     }

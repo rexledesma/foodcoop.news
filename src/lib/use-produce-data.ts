@@ -13,6 +13,7 @@ export interface ProduceRow {
   prev_3_month_price: number | null;
   prev_6_month_price: number | null;
   prev_year_price: number | null;
+  prev_2_year_price: number | null;
   prev_ytd_price: number | null;
   day_high: number | null;
   day_low: number | null;
@@ -26,6 +27,8 @@ export interface ProduceRow {
   six_month_low: number | null;
   year_high: number | null;
   year_low: number | null;
+  two_year_high: number | null;
+  two_year_low: number | null;
   ytd_high: number | null;
   ytd_low: number | null;
   is_organic: boolean;
@@ -130,6 +133,7 @@ export function useProduceData(): UseProduceDataResult {
               (max_date - INTERVAL '90 days')::DATE as target_3_month,
               (max_date - INTERVAL '180 days')::DATE as target_6_month,
               (max_date - INTERVAL '365 days')::DATE as target_year,
+              (max_date - INTERVAL '730 days')::DATE as target_2_year,
               date_trunc('year', max_date)::DATE as target_ytd
             FROM latest_date
           ),
@@ -243,6 +247,21 @@ export function useProduceData(): UseProduceDataResult {
                 ROW_NUMBER() OVER (
                   PARTITION BY p.name
                   ORDER BY ABS(p.date::DATE - t.target_year), p.date::DATE ASC
+                ) as rn
+              FROM produce p, targets t
+            )
+            WHERE rn = 1
+          ),
+          prev_2_year AS (
+            SELECT name, price as prev_2_year_price
+            FROM (
+              SELECT
+                p.name,
+                p.price,
+                p.date::DATE as date,
+                ROW_NUMBER() OVER (
+                  PARTITION BY p.name
+                  ORDER BY ABS(p.date::DATE - t.target_2_year), p.date::DATE ASC
                 ) as rn
               FROM produce p, targets t
             )
@@ -365,6 +384,12 @@ export function useProduceData(): UseProduceDataResult {
             WHERE date::DATE >= max_date - INTERVAL '365 days'
             GROUP BY name
           ),
+          two_year_high_low AS (
+            SELECT name, MAX(price) as two_year_high, MIN(price) as two_year_low
+            FROM produce, latest_date
+            WHERE date::DATE >= max_date - INTERVAL '730 days'
+            GROUP BY name
+          ),
           ytd_high_low AS (
             SELECT name, MAX(price) as ytd_high, MIN(price) as ytd_low
             FROM produce, latest_date
@@ -390,6 +415,7 @@ export function useProduceData(): UseProduceDataResult {
             m3.prev_3_month_price,
             m6.prev_6_month_price,
             y.prev_year_price,
+            y2.prev_2_year_price,
             ytd.prev_ytd_price,
             dhl.day_high,
             dhl.day_low,
@@ -403,6 +429,8 @@ export function useProduceData(): UseProduceDataResult {
             m6hl.six_month_low,
             yhl.year_high,
             yhl.year_low,
+            y2hl.two_year_high,
+            y2hl.two_year_low,
             ytdhl.ytd_high,
             ytdhl.ytd_low,
             b.is_unavailable,
@@ -414,6 +442,7 @@ export function useProduceData(): UseProduceDataResult {
           LEFT JOIN prev_3_month m3 ON b.name = m3.name
           LEFT JOIN prev_6_month m6 ON b.name = m6.name
           LEFT JOIN prev_year y ON b.name = y.name
+          LEFT JOIN prev_2_year y2 ON b.name = y2.name
           LEFT JOIN prev_ytd ytd ON b.name = ytd.name
           LEFT JOIN day_high_low dhl ON b.name = dhl.name
           LEFT JOIN week_high_low whl ON b.name = whl.name
@@ -421,6 +450,7 @@ export function useProduceData(): UseProduceDataResult {
           LEFT JOIN three_month_high_low m3hl ON b.name = m3hl.name
           LEFT JOIN six_month_high_low m6hl ON b.name = m6hl.name
           LEFT JOIN year_high_low yhl ON b.name = yhl.name
+          LEFT JOIN two_year_high_low y2hl ON b.name = y2hl.name
           LEFT JOIN ytd_high_low ytdhl ON b.name = ytdhl.name
           ORDER BY b.name
         `);
@@ -433,7 +463,7 @@ export function useProduceData(): UseProduceDataResult {
           )
           SELECT name, CAST(date::DATE AS VARCHAR) as date, price
           FROM produce, latest_date
-          WHERE date::DATE BETWEEN max_date - INTERVAL '366 days' AND max_date
+          WHERE date::DATE BETWEEN max_date - INTERVAL '1096 days' AND max_date
           ORDER BY name, date::DATE
         `);
 

@@ -18,7 +18,8 @@ async function loadProduceMetadata() {
 
   const currentYear = getCurrentYear();
   const previousYear = String(Number.parseInt(currentYear, 10) - 1);
-  const allowedYears = new Set([previousYear, currentYear]);
+  const twoYearsAgo = String(Number.parseInt(currentYear, 10) - 2);
+  const allowedYears = new Set([twoYearsAgo, previousYear, currentYear]);
 
   const byYear = new Map<string, (typeof blobs)[number]>();
   for (const blob of blobs) {
