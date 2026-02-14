@@ -24,6 +24,10 @@
 
 Contributions of all kinds are welcome, from bug reports and feature ideas to pull requests. Send feedback :)
 
+## Acknowledgments
+
+Special thanks to [John Resig](https://johnresig.com/), former member of the web committee, for preserving and graciously sharing Park Slope Food Coop produce snapshot data from August 2013 through January 2026.
+
 ## License
 
 This project is licensed under the [MIT License](LICENSE).

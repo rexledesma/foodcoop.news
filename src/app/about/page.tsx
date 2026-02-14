@@ -198,6 +198,22 @@ export default async function AboutPage() {
           </a>
           !
         </p>
+        <section className="space-y-2">
+          <h2 className="text-xl font-semibold text-zinc-900">Acknowledgments</h2>
+          <p>
+            Special thanks to{' '}
+            <Link
+              href="https://johnresig.com/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline transition-colors hover:text-zinc-900"
+            >
+              John Resig
+            </Link>
+            , former member of the web committee, for preserving and graciously sharing Park Slope
+            Food Coop produce snapshot data from August 2013 through January 2026.
+          </p>
+        </section>
       </div>
     </div>
   );
