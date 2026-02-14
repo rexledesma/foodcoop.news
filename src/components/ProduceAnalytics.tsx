@@ -13,7 +13,18 @@ import type {
   ProduceRow,
 } from '@/lib/use-produce-data';
 
-type TimePeriod = '1D' | '1W' | '1M' | '3M' | '6M' | '1Y' | '2Y' | 'YTD';
+type TimePeriod =
+  | '1D'
+  | '1W'
+  | '1M'
+  | '3M'
+  | '6M'
+  | '1Y'
+  | '2Y'
+  | '5Y'
+  | '10Y'
+  | 'SINCE_2013'
+  | 'YTD';
 type SortField = 'name' | 'price' | 'change' | 'first_seen' | 'last_seen';
 type SortDirection = 'asc' | 'desc' | null;
 
@@ -35,8 +46,21 @@ const DATA_COL_CLASS = 'w-1/3 min-w-[33.333%] max-w-[33.333%] md:w-auto md:min-w
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const MAX_CONNECTED_GAP_DAYS = 3;
+const SINCE_2013_START_MS = new Date('2013-01-01T00:00:00').getTime();
 
-const TIME_PERIODS: TimePeriod[] = ['1D', '1W', '1M', '3M', '6M', '1Y', '2Y', 'YTD'];
+const TIME_PERIODS: TimePeriod[] = [
+  '1D',
+  '1W',
+  '1M',
+  '3M',
+  '6M',
+  '1Y',
+  '2Y',
+  '5Y',
+  '10Y',
+  'SINCE_2013',
+  'YTD',
+];
 const TIME_PERIOD_SET = new Set<TimePeriod>(TIME_PERIODS);
 const PERIOD_BUTTON_LABELS: Record<TimePeriod, string> = {
   '1D': '1D',
@@ -46,6 +70,9 @@ const PERIOD_BUTTON_LABELS: Record<TimePeriod, string> = {
   '6M': '6M',
   '1Y': '1Y',
   '2Y': '2Y',
+  '5Y': '5Y',
+  '10Y': '10Y',
+  SINCE_2013: 'Since 2013',
   YTD: 'YTD',
 };
 const PERIOD_METRIC_LABELS: Record<TimePeriod, string> = {
@@ -56,6 +83,9 @@ const PERIOD_METRIC_LABELS: Record<TimePeriod, string> = {
   '6M': 'Past 6 months',
   '1Y': 'Past year',
   '2Y': 'Past 2 years',
+  '5Y': 'Past 5 years',
+  '10Y': 'Past 10 years',
+  SINCE_2013: 'Since 2013',
   YTD: 'Year to date',
 };
 
@@ -110,7 +140,54 @@ function getProduceAttributeTerms(row: ProduceRow): string {
   return terms.join(' ');
 }
 
-function getPeriodData(row: ProduceRow, period: TimePeriod) {
+function getHistoryPeriodData(
+  points: ProduceHistoryPoint[] | undefined,
+  dateRange: ProduceDateRange | null,
+  period: TimePeriod,
+) {
+  if (!points || points.length === 0) {
+    return {
+      prev: null,
+      high: null,
+      low: null,
+    };
+  }
+
+  const endMs = dateRange
+    ? new Date(dateRange.end + 'T00:00:00').getTime()
+    : new Date(points[points.length - 1].date + 'T00:00:00').getTime();
+  const periodStartMs = getPeriodStartMs(period, endMs);
+
+  let prev: number | null = null;
+  let closestPrevDist = Number.POSITIVE_INFINITY;
+  let high: number | null = null;
+  let low: number | null = null;
+
+  for (const point of points) {
+    const pointMs = new Date(point.date + 'T00:00:00').getTime();
+    if (pointMs > endMs) continue;
+
+    const prevDist = Math.abs(pointMs - periodStartMs);
+    if (prevDist < closestPrevDist) {
+      closestPrevDist = prevDist;
+      prev = point.price;
+    }
+
+    if (pointMs < periodStartMs) continue;
+
+    if (high === null || point.price > high) high = point.price;
+    if (low === null || point.price < low) low = point.price;
+  }
+
+  return { prev, high, low };
+}
+
+function getPeriodData(
+  row: ProduceRow,
+  period: TimePeriod,
+  points?: ProduceHistoryPoint[],
+  dateRange: ProduceDateRange | null = null,
+) {
   switch (period) {
     case '1D':
       return {
@@ -154,6 +231,10 @@ function getPeriodData(row: ProduceRow, period: TimePeriod) {
         high: row.two_year_high,
         low: row.two_year_low,
       };
+    case '5Y':
+    case '10Y':
+    case 'SINCE_2013':
+      return getHistoryPeriodData(points, dateRange, period);
     case 'YTD':
       return {
         prev: row.prev_ytd_price,
@@ -185,6 +266,12 @@ function getPeriodStartMs(period: TimePeriod, endMs: number): number {
       return endMs - 365 * DAY_MS;
     case '2Y':
       return endMs - 730 * DAY_MS;
+    case '5Y':
+      return endMs - 1825 * DAY_MS;
+    case '10Y':
+      return endMs - 3650 * DAY_MS;
+    case 'SINCE_2013':
+      return SINCE_2013_START_MS;
     case 'YTD': {
       const endDate = new Date(endMs);
       return new Date(endDate.getFullYear(), 0, 1).getTime();
@@ -206,12 +293,75 @@ function getScaleStartMs(period: TimePeriod, endMs: number): number {
       return endMs - 365 * DAY_MS;
     case '2Y':
       return endMs - 730 * DAY_MS;
+    case '5Y':
+      return endMs - 1825 * DAY_MS;
+    case '10Y':
+      return endMs - 3650 * DAY_MS;
+    case 'SINCE_2013':
+      return SINCE_2013_START_MS;
     case 'YTD': {
       const endDate = new Date(endMs);
       return new Date(endDate.getFullYear(), 0, 1).getTime();
     }
     default:
       return endMs - 30 * DAY_MS;
+  }
+}
+
+function downsampleForTimePeriod(
+  points: ProduceHistoryPoint[],
+  period: TimePeriod,
+): ProduceHistoryPoint[] {
+  if (points.length < 2) return points;
+
+  if (period === '5Y' || period === '10Y') {
+    const bucketSizeMs = (period === '5Y' ? 7 : 14) * DAY_MS;
+    const sampled: ProduceHistoryPoint[] = [];
+    let activeBucket: number | null = null;
+
+    for (const point of points) {
+      const pointMs = new Date(point.date + 'T00:00:00').getTime();
+      const bucket = Math.floor(pointMs / bucketSizeMs);
+      if (bucket !== activeBucket) {
+        sampled.push(point);
+        activeBucket = bucket;
+      } else {
+        sampled[sampled.length - 1] = point;
+      }
+    }
+
+    return sampled;
+  }
+
+  if (period === 'SINCE_2013') {
+    const sampled: ProduceHistoryPoint[] = [];
+    let activeMonthKey: string | null = null;
+
+    for (const point of points) {
+      const date = new Date(point.date + 'T00:00:00');
+      const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+      if (monthKey !== activeMonthKey) {
+        sampled.push(point);
+        activeMonthKey = monthKey;
+      }
+    }
+
+    return sampled;
+  }
+
+  return points;
+}
+
+function getConnectedGapThresholdMs(period: TimePeriod): number {
+  switch (period) {
+    case '5Y':
+      return 7 * DAY_MS;
+    case '10Y':
+      return 14 * DAY_MS;
+    case 'SINCE_2013':
+      return 31 * DAY_MS;
+    default:
+      return MAX_CONNECTED_GAP_DAYS * DAY_MS;
   }
 }
 
@@ -444,8 +594,8 @@ export function ProduceAnalytics({
           bVal = b.price;
           break;
         case 'change': {
-          const aPeriod = getPeriodData(a, timePeriod);
-          const bPeriod = getPeriodData(b, timePeriod);
+          const aPeriod = getPeriodData(a, timePeriod, history.get(a.name), dateRange);
+          const bPeriod = getPeriodData(b, timePeriod, history.get(b.name), dateRange);
           aVal = aPeriod.prev !== null ? (a.price - aPeriod.prev) / aPeriod.prev : 0;
           bVal = bPeriod.prev !== null ? (b.price - bPeriod.prev) / bPeriod.prev : 0;
           break;
@@ -477,7 +627,9 @@ export function ProduceAnalytics({
     sortDirection,
     quickFilter,
     favorites,
+    history,
     timePeriod,
+    dateRange,
     dateFilter,
     itemFilter,
     hasSearchQuery,
@@ -1134,7 +1286,12 @@ export function ProduceAnalytics({
                   <td className={`p-2 font-mono text-zinc-900 ${DATA_COL_CLASS} box-border`}>
                     <div>
                       {(() => {
-                        const { prev } = getPeriodData(row, timePeriod);
+                        const { prev } = getPeriodData(
+                          row,
+                          timePeriod,
+                          history.get(row.name),
+                          dateRange,
+                        );
                         return (
                           <>
                             <span
@@ -1221,7 +1378,7 @@ function MetricsCell({
   points?: ProduceHistoryPoint[];
   dateRange: ProduceDateRange | null;
 }) {
-  const { prev, high, low } = getPeriodData(row, period);
+  const { prev, high, low } = getPeriodData(row, period, points, dateRange);
   const showHighLow = getPeriodPointCount(points, dateRange, period) >= 3;
 
   if (prev === null) {
@@ -1393,7 +1550,10 @@ function Sparkline({
     return pointMs >= scaleStartMs && pointMs <= scaleEndMs;
   });
 
-  const pointsInScale = plottedPoints.length > 0 ? plottedPoints : points;
+  const pointsInScale = downsampleForTimePeriod(
+    plottedPoints.length > 0 ? plottedPoints : points,
+    timePeriod,
+  );
   const values = pointsInScale.map((point) => point.price);
   const min = Math.min(...values);
   const max = Math.max(...values);
@@ -1487,7 +1647,7 @@ function Sparkline({
     `${point.x.toFixed(2)} ${point.y.toFixed(2)}`;
 
   if (normalized.length > 1) {
-    const gapThresholdMs = MAX_CONNECTED_GAP_DAYS * DAY_MS;
+    const gapThresholdMs = getConnectedGapThresholdMs(timePeriod);
     const contiguousChunks: (typeof normalized)[] = [];
     let activeChunk = [normalized[0]];
     for (let i = 1; i < normalized.length; i += 1) {

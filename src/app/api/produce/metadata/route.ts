@@ -17,16 +17,18 @@ async function loadProduceMetadata() {
   });
 
   const currentYear = getCurrentYear();
-  const previousYear = String(Number.parseInt(currentYear, 10) - 1);
-  const twoYearsAgo = String(Number.parseInt(currentYear, 10) - 2);
-  const allowedYears = new Set([twoYearsAgo, previousYear, currentYear]);
+  const earliestSupportedYear = 2013;
+  const currentYearNum = Number.parseInt(currentYear, 10);
 
   const byYear = new Map<string, (typeof blobs)[number]>();
   for (const blob of blobs) {
     const match = blob.pathname.match(/produce-data-yearly\/(\d{4})-[a-f0-9]{7}\.parquet$/);
     if (!match) continue;
     const year = match[1];
-    if (!allowedYears.has(year)) continue;
+    const yearNum = Number.parseInt(year, 10);
+    if (Number.isNaN(yearNum) || yearNum < earliestSupportedYear || yearNum > currentYearNum) {
+      continue;
+    }
 
     const previousBlob = byYear.get(year);
     if (!previousBlob) {

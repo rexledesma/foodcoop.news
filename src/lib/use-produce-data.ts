@@ -57,6 +57,8 @@ export interface ProduceDateRange {
   end: string;
 }
 
+const LONG_RANGE_HISTORY_START = '2013-01-01';
+
 interface ProduceMetadata {
   years: {
     year: string;
@@ -111,7 +113,7 @@ export function useProduceData(): UseProduceDataResult {
             throw new Error('No produce data available');
           }
 
-          // Load current and previous year parquet files.
+          // Load yearly parquet files needed for long-range history views.
           for (const { url, year } of meta.years) {
             await loadParquet(url, `produce_${year}`);
           }
@@ -463,7 +465,7 @@ export function useProduceData(): UseProduceDataResult {
           )
           SELECT name, CAST(date::DATE AS VARCHAR) as date, price
           FROM produce, latest_date
-          WHERE date::DATE BETWEEN max_date - INTERVAL '1096 days' AND max_date
+          WHERE date::DATE BETWEEN DATE '${LONG_RANGE_HISTORY_START}' AND max_date
           ORDER BY name, date::DATE
         `);
 
