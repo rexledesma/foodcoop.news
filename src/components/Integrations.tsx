@@ -258,6 +258,7 @@ export function Integrations() {
 
   const calendarPath = `${CALENDAR_PROXY_PATH}/${calendarId}`;
   const calendarDisplayUrl = calendarOrigin ? `${calendarOrigin}${calendarPath}` : calendarPath;
+  const displayFullName = fullName.trim();
   const googleCalendarUrl = `https://calendar.google.com/calendar/render?cid=${encodeURIComponent(
     calendarDisplayUrl.replace(/^https:\/\//, 'http://'),
   )}`;
@@ -616,7 +617,7 @@ export function Integrations() {
             <h2 className="text-lg font-semibold text-zinc-900">Profile</h2>
             <p className="mt-2 text-sm text-zinc-600">Edit your unofficial member card.</p>
             <AppleWalletCard
-              memberName={fullName}
+              memberName={displayFullName}
               memberId={memberId}
               onMemberNameChange={setFullName}
               onMemberIdChange={(value) => setMemberId(value.replace(/\D/g, ''))}
@@ -634,7 +635,7 @@ export function Integrations() {
             <button
               type="button"
               onClick={handleAddToWallet}
-              disabled={isGeneratingPass || !memberId || !fullName}
+              disabled={isGeneratingPass || !memberId || !displayFullName}
               className="transition-opacity hover:opacity-80 disabled:opacity-40"
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -643,7 +644,7 @@ export function Integrations() {
             <button
               type="button"
               onClick={handleAddToGoogleWallet}
-              disabled={isGeneratingGooglePass || !memberId || !fullName}
+              disabled={isGeneratingGooglePass || !memberId || !displayFullName}
               className="transition-opacity hover:opacity-80 disabled:opacity-40"
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
