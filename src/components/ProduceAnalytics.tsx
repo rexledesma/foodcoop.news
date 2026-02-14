@@ -34,6 +34,7 @@ const NAME_COL_CLASS = 'w-1/3 min-w-[33.333%] max-w-[33.333%] md:w-2/5 md:min-w-
 const DATA_COL_CLASS = 'w-1/3 min-w-[33.333%] max-w-[33.333%] md:w-auto md:min-w-0 md:max-w-none';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
+const MAX_CONNECTED_GAP_DAYS = 3;
 
 const TIME_PERIODS: TimePeriod[] = ['1D', '1W', '1M', '3M', '6M', '1Y', 'YTD'];
 const PERIOD_BUTTON_LABELS: Record<TimePeriod, string> = {
@@ -1373,7 +1374,7 @@ function Sparkline({
     const x = (totalMs === 0 ? width / 2 : ((pointMs - startMs) / totalMs) * width) + padding;
     const y =
       (range === 0 ? height / 2 : height - ((point.price - min) / range) * height) + padding;
-    return { x, y };
+    return { x, y, pointMs };
   });
 
   const svgWidth = width + padding * 2;
@@ -1445,81 +1446,103 @@ function Sparkline({
 
   const lineSegments: { d: string; position: PositionY }[] = [];
   const areaSegments: { d: string; position: PositionY }[] = [];
+  const missingGapRanges: { startX: number; endX: number }[] = [];
   const positionY = (point: { y: number }): PositionY =>
     point.y === baselineY ? 'baseline' : point.y < baselineY ? 'above' : 'below';
   const formatPoint = (point: { x: number; y: number }) =>
     `${point.x.toFixed(2)} ${point.y.toFixed(2)}`;
 
   if (normalized.length > 1) {
-    let currentPoints: { x: number; y: number }[] = [];
-    let currentPosition: PositionY | null = null;
-
-    const pushAreaSegment = () => {
-      if (currentPosition === null || currentPoints.length < 2) return;
-      const start = currentPoints[0];
-      const end = currentPoints[currentPoints.length - 1];
-      const line = currentPoints.map((point) => `L ${formatPoint(point)}`).join(' ');
-      const d = `M ${start.x.toFixed(2)} ${baselineY.toFixed(2)} ${line} L ${end.x.toFixed(2)} ${baselineY.toFixed(2)} Z`;
-      areaSegments.push({ d, position: currentPosition });
-    };
-
-    const pushLineSegment = () => {
-      if (currentPosition === null || currentPoints.length < 2) return;
-      const line = currentPoints.map(
-        (point, index) => `${index === 0 ? 'M' : 'L'} ${formatPoint(point)}`,
-      );
-      lineSegments.push({ d: line.join(' '), position: currentPosition });
-    };
-
+    const gapThresholdMs = MAX_CONNECTED_GAP_DAYS * DAY_MS;
+    const contiguousChunks: (typeof normalized)[] = [];
+    let activeChunk = [normalized[0]];
     for (let i = 1; i < normalized.length; i += 1) {
-      const prev = normalized[i - 1];
-      const curr = normalized[i];
-      const prevPos = positionY(prev);
-      const currPos = positionY(curr);
-
-      if (prevPos === 'baseline' && currPos === 'baseline') {
-        // Flush any existing colored segment first
-        pushAreaSegment();
-        pushLineSegment();
-        currentPoints = [];
-        currentPosition = null;
-        // Push a baseline line segment (grey, no area fill needed)
-        lineSegments.push({
-          d: `M ${formatPoint(prev)} L ${formatPoint(curr)}`,
-          position: 'baseline',
-        });
+      const prevPoint = normalized[i - 1];
+      const currentPoint = normalized[i];
+      const gapMs = currentPoint.pointMs - prevPoint.pointMs;
+      if (gapMs > gapThresholdMs) {
+        contiguousChunks.push(activeChunk);
+        activeChunk = [currentPoint];
+        missingGapRanges.push({ startX: prevPoint.x, endX: currentPoint.x });
         continue;
       }
-
-      const segmentPos = prevPos !== 'baseline' ? prevPos : currPos;
-      if (currentPosition === null) {
-        currentPosition = segmentPos;
-      }
-      if (currentPoints.length === 0) {
-        currentPoints.push(prev);
-      }
-
-      if (
-        (prevPos === 'above' && currPos === 'below') ||
-        (prevPos === 'below' && currPos === 'above')
-      ) {
-        const t = (baselineY - prev.y) / (curr.y - prev.y);
-        const intersection = {
-          x: prev.x + t * (curr.x - prev.x),
-          y: baselineY,
-        };
-        currentPoints.push(intersection);
-        pushAreaSegment();
-        pushLineSegment();
-        currentPoints = [intersection, curr];
-        currentPosition = currPos;
-      } else {
-        currentPoints.push(curr);
-      }
+      activeChunk.push(currentPoint);
     }
+    contiguousChunks.push(activeChunk);
 
-    pushAreaSegment();
-    pushLineSegment();
+    for (const chunk of contiguousChunks) {
+      if (chunk.length < 2) continue;
+
+      let currentPoints: { x: number; y: number }[] = [];
+      let currentPosition: PositionY | null = null;
+
+      const pushAreaSegment = () => {
+        if (currentPosition === null || currentPoints.length < 2) return;
+        const start = currentPoints[0];
+        const end = currentPoints[currentPoints.length - 1];
+        const line = currentPoints.map((point) => `L ${formatPoint(point)}`).join(' ');
+        const d = `M ${start.x.toFixed(2)} ${baselineY.toFixed(2)} ${line} L ${end.x.toFixed(2)} ${baselineY.toFixed(2)} Z`;
+        areaSegments.push({ d, position: currentPosition });
+      };
+
+      const pushLineSegment = () => {
+        if (currentPosition === null || currentPoints.length < 2) return;
+        const line = currentPoints.map(
+          (point, index) => `${index === 0 ? 'M' : 'L'} ${formatPoint(point)}`,
+        );
+        lineSegments.push({ d: line.join(' '), position: currentPosition });
+      };
+
+      for (let i = 1; i < chunk.length; i += 1) {
+        const prev = chunk[i - 1];
+        const curr = chunk[i];
+        const prevPos = positionY(prev);
+        const currPos = positionY(curr);
+
+        if (prevPos === 'baseline' && currPos === 'baseline') {
+          // Flush any existing colored segment first
+          pushAreaSegment();
+          pushLineSegment();
+          currentPoints = [];
+          currentPosition = null;
+          // Push a baseline line segment (grey, no area fill needed)
+          lineSegments.push({
+            d: `M ${formatPoint(prev)} L ${formatPoint(curr)}`,
+            position: 'baseline',
+          });
+          continue;
+        }
+
+        const segmentPos = prevPos !== 'baseline' ? prevPos : currPos;
+        if (currentPosition === null) {
+          currentPosition = segmentPos;
+        }
+        if (currentPoints.length === 0) {
+          currentPoints.push(prev);
+        }
+
+        if (
+          (prevPos === 'above' && currPos === 'below') ||
+          (prevPos === 'below' && currPos === 'above')
+        ) {
+          const t = (baselineY - prev.y) / (curr.y - prev.y);
+          const intersection = {
+            x: prev.x + t * (curr.x - prev.x),
+            y: baselineY,
+          };
+          currentPoints.push(intersection);
+          pushAreaSegment();
+          pushLineSegment();
+          currentPoints = [intersection, curr];
+          currentPosition = currPos;
+        } else {
+          currentPoints.push(curr);
+        }
+      }
+
+      pushAreaSegment();
+      pushLineSegment();
+    }
   }
 
   const activePoint = active
@@ -1563,6 +1586,16 @@ function Sparkline({
             />
           </pattern>
         </defs>
+        {missingGapRanges.map((gap, index) => (
+          <rect
+            key={`gap-${index}`}
+            x={gap.startX}
+            y={0}
+            width={Math.max(0, gap.endX - gap.startX)}
+            height={height + padding * 2}
+            fill="url(#hatch)"
+          />
+        ))}
         {areaSegments.map((segment, index) => (
           <path
             key={`area-${segment.position}-${index}`}
