@@ -9,8 +9,10 @@ type ScrollVisibilityState = {
 
 const ScrollVisibilityContext = createContext<ScrollVisibilityState | null>(null);
 const TRACKED_ROUTES = new Set(['/discover', '/produce', '/integrations']);
+const REVEAL_ON_UP_STOP_ROUTES = new Set(['/discover', '/produce']);
 const SCROLL_THRESHOLD = 8;
 const TOP_THRESHOLD = 4;
+const REVEAL_ON_UP_SCROLL_STOP_DELAY_MS = 150;
 
 export function ScrollVisibilityProvider({ children }: { children: ReactNode }) {
   const pathname = usePathname();
@@ -20,6 +22,9 @@ export function ScrollVisibilityProvider({ children }: { children: ReactNode }) 
   const stickyThresholdRef = useRef(0);
   const lastScrollY = useRef(0);
   const showStickyRef = useRef(true);
+  const isTouchInteractingRef = useRef(false);
+  const lastScrollDirectionRef = useRef<'up' | 'down' | null>(null);
+  const revealTimerRef = useRef<number | null>(null);
   const rafId = useRef<number | null>(null);
 
   useEffect(() => {
@@ -46,14 +51,44 @@ export function ScrollVisibilityProvider({ children }: { children: ReactNode }) 
 
   useEffect(() => {
     const routeIsTracked = pathname ? TRACKED_ROUTES.has(pathname) : false;
+    const revealOnUpStop = pathname ? REVEAL_ON_UP_STOP_ROUTES.has(pathname) : false;
 
     if (!routeIsTracked || typeof window === 'undefined') {
       return;
     }
 
+    const clearRevealTimer = () => {
+      if (revealTimerRef.current !== null) {
+        window.clearTimeout(revealTimerRef.current);
+        revealTimerRef.current = null;
+      }
+    };
+
     stickyThresholdRef.current = 0;
     lastScrollY.current = window.scrollY;
     showStickyRef.current = true;
+    isTouchInteractingRef.current = false;
+    lastScrollDirectionRef.current = null;
+    clearRevealTimer();
+
+    const scheduleRevealIfEligible = () => {
+      clearRevealTimer();
+      if (!revealOnUpStop) return;
+      if (isTouchInteractingRef.current) return;
+      if (lastScrollDirectionRef.current !== 'up') return;
+
+      revealTimerRef.current = window.setTimeout(() => {
+        revealTimerRef.current = null;
+        if (
+          !isTouchInteractingRef.current &&
+          window.scrollY > stickyThresholdRef.current &&
+          !showStickyRef.current
+        ) {
+          showStickyRef.current = true;
+          setShowSticky(true);
+        }
+      }, REVEAL_ON_UP_SCROLL_STOP_DELAY_MS);
+    };
 
     const update = () => {
       const currentY = window.scrollY;
@@ -62,6 +97,7 @@ export function ScrollVisibilityProvider({ children }: { children: ReactNode }) 
       const atTop = currentY <= TOP_THRESHOLD;
 
       if (currentY <= stickyThresholdRef.current) {
+        clearRevealTimer();
         if (!showStickyRef.current) {
           showStickyRef.current = true;
           setShowSticky(true);
@@ -71,11 +107,28 @@ export function ScrollVisibilityProvider({ children }: { children: ReactNode }) 
       }
 
       if (atTop) {
+        clearRevealTimer();
+        lastScrollY.current = currentY;
+        return;
+      }
+
+      if (revealOnUpStop && absDelta > 0) {
+        clearRevealTimer();
+        lastScrollDirectionRef.current = delta < 0 ? 'up' : 'down';
+
+        if (showStickyRef.current) {
+          showStickyRef.current = false;
+          setShowSticky(false);
+        }
+
+        if (delta < 0) scheduleRevealIfEligible();
+
         lastScrollY.current = currentY;
         return;
       }
 
       if (absDelta >= SCROLL_THRESHOLD) {
+        clearRevealTimer();
         const direction = delta > 0 ? 'down' : 'up';
         const nextShowSticky = direction === 'up';
         if (nextShowSticky !== showStickyRef.current) {
@@ -104,12 +157,37 @@ export function ScrollVisibilityProvider({ children }: { children: ReactNode }) 
       update();
     });
     window.addEventListener('scroll', onScroll, { passive: true });
+
+    const onTouchStart = () => {
+      if (!revealOnUpStop) return;
+      isTouchInteractingRef.current = true;
+      clearRevealTimer();
+      if (window.scrollY > stickyThresholdRef.current && showStickyRef.current) {
+        showStickyRef.current = false;
+        setShowSticky(false);
+      }
+    };
+
+    const onTouchEnd = () => {
+      if (!revealOnUpStop) return;
+      isTouchInteractingRef.current = false;
+      scheduleRevealIfEligible();
+    };
+
+    window.addEventListener('touchstart', onTouchStart, { passive: true });
+    window.addEventListener('touchend', onTouchEnd, { passive: true });
+    window.addEventListener('touchcancel', onTouchEnd, { passive: true });
+
     return () => {
       window.removeEventListener('scroll', onScroll);
+      window.removeEventListener('touchstart', onTouchStart);
+      window.removeEventListener('touchend', onTouchEnd);
+      window.removeEventListener('touchcancel', onTouchEnd);
       if (rafId.current !== null) {
         window.cancelAnimationFrame(rafId.current);
         rafId.current = null;
       }
+      clearRevealTimer();
     };
   }, [pathname]);
 
