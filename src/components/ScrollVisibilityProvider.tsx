@@ -38,6 +38,19 @@ export function ScrollVisibilityProvider({ children }: { children: ReactNode }) 
   }, []);
 
   useEffect(() => {
+    const handleHideSticky = () => {
+      if (typeof window === 'undefined') return;
+      if (window.scrollY <= stickyThresholdRef.current) return;
+      if (!showStickyRef.current) return;
+      showStickyRef.current = false;
+      setShowSticky(false);
+    };
+
+    window.addEventListener('hide-sticky', handleHideSticky as EventListener);
+    return () => window.removeEventListener('hide-sticky', handleHideSticky as EventListener);
+  }, []);
+
+  useEffect(() => {
     const handleStickyThreshold = (event: Event) => {
       if (!(event instanceof CustomEvent)) return;
       const nextThreshold = Number(event.detail);
@@ -162,10 +175,6 @@ export function ScrollVisibilityProvider({ children }: { children: ReactNode }) 
       if (!revealOnUpStop) return;
       isTouchInteractingRef.current = true;
       clearRevealTimer();
-      if (window.scrollY > stickyThresholdRef.current && showStickyRef.current) {
-        showStickyRef.current = false;
-        setShowSticky(false);
-      }
     };
 
     const onTouchEnd = () => {

@@ -644,6 +644,10 @@ export function DiscoverFeed() {
   const isInitialLoading = loading && items.length === 0;
   const isInitialError = Boolean(error) && items.length === 0;
 
+  const handleFeedTouchStart = () => {
+    window.dispatchEvent(new CustomEvent('hide-sticky'));
+  };
+
   return (
     <div>
       <div
@@ -714,7 +718,10 @@ export function DiscoverFeed() {
         </div>
       </div>
 
-      <div className="transition-opacity duration-300 ease-in-out motion-reduce:transition-none">
+      <div
+        className="transition-opacity duration-300 ease-in-out motion-reduce:transition-none"
+        onTouchStart={handleFeedTouchStart}
+      >
         {isInitialLoading ? (
           <div className="grid gap-4">
             <FeedItemSkeleton />
