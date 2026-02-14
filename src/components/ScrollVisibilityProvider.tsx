@@ -12,7 +12,8 @@ const TRACKED_ROUTES = new Set(['/discover', '/produce', '/integrations']);
 const REVEAL_ON_UP_STOP_ROUTES = new Set(['/discover', '/produce']);
 const SCROLL_THRESHOLD = 8;
 const TOP_THRESHOLD = 4;
-const REVEAL_ON_UP_SCROLL_STOP_DELAY_MS = 150;
+const REVEAL_ON_UP_SCROLL_STOP_DELAY_MS = 250;
+const REVEAL_ON_UP_MIN_REVERSE_SCROLL_PX = 144;
 
 export function ScrollVisibilityProvider({ children }: { children: ReactNode }) {
   const pathname = usePathname();
@@ -24,6 +25,7 @@ export function ScrollVisibilityProvider({ children }: { children: ReactNode }) 
   const showStickyRef = useRef(true);
   const isTouchInteractingRef = useRef(false);
   const lastScrollDirectionRef = useRef<'up' | 'down' | null>(null);
+  const reverseScrollDistanceRef = useRef(0);
   const revealTimerRef = useRef<number | null>(null);
   const rafId = useRef<number | null>(null);
 
@@ -82,6 +84,7 @@ export function ScrollVisibilityProvider({ children }: { children: ReactNode }) 
     showStickyRef.current = true;
     isTouchInteractingRef.current = false;
     lastScrollDirectionRef.current = null;
+    reverseScrollDistanceRef.current = 0;
     clearRevealTimer();
 
     const scheduleRevealIfEligible = () => {
@@ -89,6 +92,7 @@ export function ScrollVisibilityProvider({ children }: { children: ReactNode }) 
       if (!revealOnUpStop) return;
       if (isTouchInteractingRef.current) return;
       if (lastScrollDirectionRef.current !== 'up') return;
+      if (reverseScrollDistanceRef.current < REVEAL_ON_UP_MIN_REVERSE_SCROLL_PX) return;
 
       revealTimerRef.current = window.setTimeout(() => {
         revealTimerRef.current = null;
@@ -111,6 +115,7 @@ export function ScrollVisibilityProvider({ children }: { children: ReactNode }) 
 
       if (currentY <= stickyThresholdRef.current) {
         clearRevealTimer();
+        reverseScrollDistanceRef.current = 0;
         if (!showStickyRef.current) {
           showStickyRef.current = true;
           setShowSticky(true);
@@ -121,6 +126,7 @@ export function ScrollVisibilityProvider({ children }: { children: ReactNode }) 
 
       if (atTop) {
         clearRevealTimer();
+        reverseScrollDistanceRef.current = 0;
         lastScrollY.current = currentY;
         return;
       }
@@ -128,6 +134,11 @@ export function ScrollVisibilityProvider({ children }: { children: ReactNode }) 
       if (revealOnUpStop && absDelta > 0) {
         clearRevealTimer();
         lastScrollDirectionRef.current = delta < 0 ? 'up' : 'down';
+        if (delta < 0) {
+          reverseScrollDistanceRef.current += absDelta;
+        } else {
+          reverseScrollDistanceRef.current = 0;
+        }
 
         if (showStickyRef.current) {
           showStickyRef.current = false;
