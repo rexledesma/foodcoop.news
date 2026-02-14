@@ -10,12 +10,24 @@ export interface ProduceRow {
   prev_day_price: number | null;
   prev_week_price: number | null;
   prev_month_price: number | null;
+  prev_3_month_price: number | null;
+  prev_6_month_price: number | null;
+  prev_year_price: number | null;
+  prev_ytd_price: number | null;
   day_high: number | null;
   day_low: number | null;
   week_high: number | null;
   week_low: number | null;
   month_high: number | null;
   month_low: number | null;
+  three_month_high: number | null;
+  three_month_low: number | null;
+  six_month_high: number | null;
+  six_month_low: number | null;
+  year_high: number | null;
+  year_low: number | null;
+  ytd_high: number | null;
+  ytd_low: number | null;
   is_organic: boolean;
   is_ipm: boolean;
   is_waxed: boolean;
@@ -114,7 +126,11 @@ export function useProduceData(): UseProduceDataResult {
           targets AS (
             SELECT
               (max_date - INTERVAL '7 days')::DATE as target_week,
-              (max_date - INTERVAL '30 days')::DATE as target_month
+              (max_date - INTERVAL '30 days')::DATE as target_month,
+              (max_date - INTERVAL '90 days')::DATE as target_3_month,
+              (max_date - INTERVAL '180 days')::DATE as target_6_month,
+              (max_date - INTERVAL '365 days')::DATE as target_year,
+              date_trunc('year', max_date)::DATE as target_ytd
             FROM latest_date
           ),
           current_prices AS (
@@ -182,6 +198,73 @@ export function useProduceData(): UseProduceDataResult {
                 ROW_NUMBER() OVER (
                   PARTITION BY p.name
                   ORDER BY ABS(p.date::DATE - t.target_month), p.date::DATE ASC
+                ) as rn
+              FROM produce p, targets t
+            )
+            WHERE rn = 1
+          ),
+          prev_3_month AS (
+            SELECT name, price as prev_3_month_price
+            FROM (
+              SELECT
+                p.name,
+                p.price,
+                p.date::DATE as date,
+                ROW_NUMBER() OVER (
+                  PARTITION BY p.name
+                  ORDER BY ABS(p.date::DATE - t.target_3_month), p.date::DATE ASC
+                ) as rn
+              FROM produce p, targets t
+            )
+            WHERE rn = 1
+          ),
+          prev_6_month AS (
+            SELECT name, price as prev_6_month_price
+            FROM (
+              SELECT
+                p.name,
+                p.price,
+                p.date::DATE as date,
+                ROW_NUMBER() OVER (
+                  PARTITION BY p.name
+                  ORDER BY ABS(p.date::DATE - t.target_6_month), p.date::DATE ASC
+                ) as rn
+              FROM produce p, targets t
+            )
+            WHERE rn = 1
+          ),
+          prev_year AS (
+            SELECT name, price as prev_year_price
+            FROM (
+              SELECT
+                p.name,
+                p.price,
+                p.date::DATE as date,
+                ROW_NUMBER() OVER (
+                  PARTITION BY p.name
+                  ORDER BY ABS(p.date::DATE - t.target_year), p.date::DATE ASC
+                ) as rn
+              FROM produce p, targets t
+            )
+            WHERE rn = 1
+          ),
+          prev_ytd AS (
+            SELECT name, price as prev_ytd_price
+            FROM (
+              SELECT
+                p.name,
+                p.price,
+                p.date::DATE as date,
+                ROW_NUMBER() OVER (
+                  PARTITION BY p.name
+                  ORDER BY
+                    CASE WHEN p.date::DATE >= t.target_ytd THEN 0 ELSE 1 END,
+                    CASE
+                      WHEN p.date::DATE >= t.target_ytd
+                        THEN p.date::DATE - t.target_ytd
+                      ELSE t.target_ytd - p.date::DATE
+                    END,
+                    p.date::DATE ASC
                 ) as rn
               FROM produce p, targets t
             )
@@ -263,6 +346,30 @@ export function useProduceData(): UseProduceDataResult {
             FROM produce, latest_date
             WHERE date::DATE >= max_date - INTERVAL '30 days'
             GROUP BY name
+          ),
+          three_month_high_low AS (
+            SELECT name, MAX(price) as three_month_high, MIN(price) as three_month_low
+            FROM produce, latest_date
+            WHERE date::DATE >= max_date - INTERVAL '90 days'
+            GROUP BY name
+          ),
+          six_month_high_low AS (
+            SELECT name, MAX(price) as six_month_high, MIN(price) as six_month_low
+            FROM produce, latest_date
+            WHERE date::DATE >= max_date - INTERVAL '180 days'
+            GROUP BY name
+          ),
+          year_high_low AS (
+            SELECT name, MAX(price) as year_high, MIN(price) as year_low
+            FROM produce, latest_date
+            WHERE date::DATE >= max_date - INTERVAL '365 days'
+            GROUP BY name
+          ),
+          ytd_high_low AS (
+            SELECT name, MAX(price) as ytd_high, MIN(price) as ytd_low
+            FROM produce, latest_date
+            WHERE date::DATE >= date_trunc('year', max_date)
+            GROUP BY name
           )
           SELECT
             b.name,
@@ -280,21 +387,41 @@ export function useProduceData(): UseProduceDataResult {
             d.prev_day_price,
             w.prev_week_price,
             m.prev_month_price,
+            m3.prev_3_month_price,
+            m6.prev_6_month_price,
+            y.prev_year_price,
+            ytd.prev_ytd_price,
             dhl.day_high,
             dhl.day_low,
             whl.week_high,
             whl.week_low,
             mhl.month_high,
             mhl.month_low,
+            m3hl.three_month_high,
+            m3hl.three_month_low,
+            m6hl.six_month_high,
+            m6hl.six_month_low,
+            yhl.year_high,
+            yhl.year_low,
+            ytdhl.ytd_high,
+            ytdhl.ytd_low,
             b.is_unavailable,
             b.unavailable_since_date
           FROM base_rows b
           LEFT JOIN prev_day d ON b.name = d.name
           LEFT JOIN prev_week w ON b.name = w.name
           LEFT JOIN prev_month m ON b.name = m.name
+          LEFT JOIN prev_3_month m3 ON b.name = m3.name
+          LEFT JOIN prev_6_month m6 ON b.name = m6.name
+          LEFT JOIN prev_year y ON b.name = y.name
+          LEFT JOIN prev_ytd ytd ON b.name = ytd.name
           LEFT JOIN day_high_low dhl ON b.name = dhl.name
           LEFT JOIN week_high_low whl ON b.name = whl.name
           LEFT JOIN month_high_low mhl ON b.name = mhl.name
+          LEFT JOIN three_month_high_low m3hl ON b.name = m3hl.name
+          LEFT JOIN six_month_high_low m6hl ON b.name = m6hl.name
+          LEFT JOIN year_high_low yhl ON b.name = yhl.name
+          LEFT JOIN ytd_high_low ytdhl ON b.name = ytdhl.name
           ORDER BY b.name
         `);
 
@@ -306,7 +433,7 @@ export function useProduceData(): UseProduceDataResult {
           )
           SELECT name, CAST(date::DATE AS VARCHAR) as date, price
           FROM produce, latest_date
-          WHERE date::DATE BETWEEN max_date - INTERVAL '30 days' AND max_date
+          WHERE date::DATE BETWEEN max_date - INTERVAL '366 days' AND max_date
           ORDER BY name, date::DATE
         `);
 
@@ -322,11 +449,8 @@ export function useProduceData(): UseProduceDataResult {
 
           let range: ProduceDateRange | null = null;
           if (maxDate) {
-            const endDate = new Date(maxDate + 'T00:00:00');
-            const startDate = new Date(endDate);
-            startDate.setDate(startDate.getDate() - 30);
-            const startStr = startDate.toISOString().slice(0, 10);
-            range = { start: startStr, end: maxDate };
+            const minDate = historyRows[0]?.date ?? maxDate;
+            range = { start: minDate, end: maxDate };
             setDateRange(range);
           }
 

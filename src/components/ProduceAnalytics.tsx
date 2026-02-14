@@ -13,7 +13,7 @@ import type {
   ProduceRow,
 } from '@/lib/use-produce-data';
 
-type TimePeriod = '1D' | '1W' | '1M';
+type TimePeriod = '1D' | '1W' | '1M' | '3M' | '6M' | '1Y' | 'YTD';
 type SortField = 'name' | 'price' | 'change' | 'first_seen' | 'last_seen';
 type SortDirection = 'asc' | 'desc' | null;
 
@@ -33,8 +33,27 @@ type QuickFilter = 'favorites' | 'drops' | 'increases' | 'new' | 'recently_unava
 const NAME_COL_CLASS = 'w-1/3 min-w-[33.333%] max-w-[33.333%] md:w-2/5 md:min-w-0 md:max-w-none';
 const DATA_COL_CLASS = 'w-1/3 min-w-[33.333%] max-w-[33.333%] md:w-auto md:min-w-0 md:max-w-none';
 
-const TIME_PERIODS: TimePeriod[] = ['1D', '1W', '1M'];
-const PERIOD_LABELS: Record<TimePeriod, string> = { '1D': 'Day', '1W': 'Week', '1M': 'Month' };
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+const TIME_PERIODS: TimePeriod[] = ['1D', '1W', '1M', '3M', '6M', '1Y', 'YTD'];
+const PERIOD_BUTTON_LABELS: Record<TimePeriod, string> = {
+  '1D': '1D',
+  '1W': '1W',
+  '1M': '1M',
+  '3M': '3M',
+  '6M': '6M',
+  '1Y': '1Y',
+  YTD: 'YTD',
+};
+const PERIOD_METRIC_LABELS: Record<TimePeriod, string> = {
+  '1D': 'Past day',
+  '1W': 'Past week',
+  '1M': 'Past month',
+  '3M': 'Past 3 months',
+  '6M': 'Past 6 months',
+  '1Y': 'Past year',
+  YTD: 'Year to date',
+};
 
 const QUICK_FILTER_LABELS: Record<NonNullable<QuickFilter>, string> = {
   favorites: 'Favorites',
@@ -103,7 +122,63 @@ function getPeriodData(row: ProduceRow, period: TimePeriod) {
         high: row.month_high,
         low: row.month_low,
       };
+    case '3M':
+      return {
+        prev: row.prev_3_month_price,
+        high: row.three_month_high,
+        low: row.three_month_low,
+      };
+    case '6M':
+      return {
+        prev: row.prev_6_month_price,
+        high: row.six_month_high,
+        low: row.six_month_low,
+      };
+    case '1Y':
+      return {
+        prev: row.prev_year_price,
+        high: row.year_high,
+        low: row.year_low,
+      };
+    case 'YTD':
+      return {
+        prev: row.prev_ytd_price,
+        high: row.ytd_high,
+        low: row.ytd_low,
+      };
   }
+}
+
+function getPeriodStartMs(period: TimePeriod, endMs: number): number {
+  switch (period) {
+    case '1D':
+      return endMs - DAY_MS;
+    case '1W':
+      return endMs - 7 * DAY_MS;
+    case '1M':
+      return endMs - 30 * DAY_MS;
+    case '3M':
+      return endMs - 90 * DAY_MS;
+    case '6M':
+      return endMs - 180 * DAY_MS;
+    case '1Y':
+      return endMs - 365 * DAY_MS;
+    case 'YTD': {
+      const endDate = new Date(endMs);
+      return new Date(endDate.getFullYear(), 0, 1).getTime();
+    }
+  }
+}
+
+function getScaleStartMs(period: TimePeriod, endMs: number): number {
+  if (period === '1D' || period === '1W' || period === '1M') {
+    return endMs - 30 * DAY_MS;
+  }
+  if (period === '3M' || period === '6M' || period === '1Y') {
+    return endMs - 365 * DAY_MS;
+  }
+  const endDate = new Date(endMs);
+  return new Date(endDate.getFullYear(), 0, 1).getTime();
 }
 
 export function ProduceAnalytics({
@@ -781,7 +856,7 @@ export function ProduceAnalytics({
                     : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200'
                 }`}
               >
-                {PERIOD_LABELS[period]}
+                {PERIOD_BUTTON_LABELS[period]}
               </button>
             ))}
           </div>
@@ -819,7 +894,7 @@ export function ProduceAnalytics({
                 onClick={handleSort}
                 className={DATA_COL_CLASS}
               >
-                {PERIOD_LABELS[timePeriod]}
+                {PERIOD_METRIC_LABELS[timePeriod]}
               </SortHeader>
             </tr>
           </thead>
@@ -1087,14 +1162,7 @@ function getPeriodPointCount(
     ? new Date(dateRange.end + 'T00:00:00').getTime()
     : new Date(points[points.length - 1].date + 'T00:00:00').getTime();
 
-  const periodStartMs =
-    period === '1D'
-      ? endMs - 1 * 24 * 60 * 60 * 1000
-      : period === '1W'
-        ? endMs - 7 * 24 * 60 * 60 * 1000
-        : dateRange
-          ? new Date(dateRange.start + 'T00:00:00').getTime()
-          : new Date(points[0].date + 'T00:00:00').getTime();
+  const periodStartMs = getPeriodStartMs(period, endMs);
 
   return points.filter((point) => {
     const pointMs = new Date(point.date + 'T00:00:00').getTime();
@@ -1278,20 +1346,29 @@ function Sparkline({
   const width = 100;
   const height = 24;
   const padding = 3;
-  const values = points.map((point) => point.price);
+  const scaleEndMs = dateRange
+    ? new Date(dateRange.end + 'T00:00:00').getTime()
+    : new Date(points[points.length - 1].date + 'T00:00:00').getTime();
+  const scaleStartMs = getScaleStartMs(timePeriod, scaleEndMs);
+
+  const plottedPoints = points.filter((point) => {
+    const pointMs = new Date(point.date + 'T00:00:00').getTime();
+    return pointMs >= scaleStartMs && pointMs <= scaleEndMs;
+  });
+
+  const pointsInScale = plottedPoints.length > 0 ? plottedPoints : points;
+  const values = pointsInScale.map((point) => point.price);
   const min = Math.min(...values);
   const max = Math.max(...values);
   const range = max - min;
 
-  const startMs = dateRange
-    ? new Date(dateRange.start + 'T00:00:00').getTime()
-    : new Date(points[0].date + 'T00:00:00').getTime();
+  const startMs = scaleStartMs;
   const endMs = dateRange
     ? new Date(dateRange.end + 'T00:00:00').getTime()
     : new Date(points[points.length - 1].date + 'T00:00:00').getTime();
   const totalMs = endMs - startMs;
 
-  const normalized = points.map((point) => {
+  const normalized = pointsInScale.map((point) => {
     const pointMs = new Date(point.date + 'T00:00:00').getTime();
     const x = (totalMs === 0 ? width / 2 : ((pointMs - startMs) / totalMs) * width) + padding;
     const y =
@@ -1345,27 +1422,19 @@ function Sparkline({
   const baselineY = firstPoint?.y ?? height / 2 + padding;
 
   // Compute period start boundary
-  const periodStartMs =
-    timePeriod === '1D'
-      ? endMs - 1 * 24 * 60 * 60 * 1000
-      : timePeriod === '1W'
-        ? endMs - 7 * 24 * 60 * 60 * 1000
-        : startMs;
+  const periodStartMs = getPeriodStartMs(timePeriod, endMs);
   const periodStartX =
     (totalMs === 0 ? width / 2 : ((periodStartMs - startMs) / totalMs) * width) + padding;
 
   // Find the period start data point
   const periodStartPoint = (() => {
     if (normalized.length < 2) return null;
-    if (timePeriod === '1D') return normalized[normalized.length - 2];
-    if (timePeriod === '1M') return normalized[0];
-    // 1W: find closest point to periodStartMs
     let closest = normalized[0];
     let closestDist = Infinity;
-    for (const point of points) {
+    for (const [index, point] of pointsInScale.entries()) {
       const pointMs = new Date(point.date + 'T00:00:00').getTime();
       const dist = Math.abs(pointMs - periodStartMs);
-      const normPoint = normalized[points.indexOf(point)];
+      const normPoint = normalized[index];
       if (dist < closestDist) {
         closestDist = dist;
         closest = normPoint;
@@ -1453,12 +1522,11 @@ function Sparkline({
     pushLineSegment();
   }
 
-  const activePoint = active ? { svg: normalized[active.index], data: points[active.index] } : null;
+  const activePoint = active
+    ? { svg: normalized[active.index], data: pointsInScale[active.index] }
+    : null;
 
-  const hatchEndX = Math.max(
-    timePeriod !== '1M' ? periodStartX : padding,
-    firstPoint?.x ?? padding,
-  );
+  const hatchEndX = Math.max(periodStartX, padding, firstPoint?.x ?? padding);
 
   const isOutOfRange =
     activePoint &&
