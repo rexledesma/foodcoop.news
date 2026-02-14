@@ -1343,24 +1343,20 @@ function SortHeader({
 
 type PositionY = 'above' | 'baseline' | 'below';
 
-function SparklineTooltip({
+function SparklineReadout({
   date,
   price,
-  xPercent,
   dimmed,
 }: {
   date: string;
-  price: number;
-  xPercent: number;
+  price: number | null | undefined;
   dimmed?: boolean;
 }) {
-  const alignRight = xPercent > 50;
   return (
     <div
-      className={`pointer-events-none absolute bottom-full mb-1 rounded bg-zinc-900 px-1.5 py-0.5 text-[10px] whitespace-nowrap text-white ${alignRight ? '-translate-x-full' : ''} ${dimmed ? 'opacity-50' : ''}`}
-      style={{ left: `${xPercent}%` }}
+      className={`mb-0.5 inline-block rounded bg-black px-1.5 py-0.5 text-center text-[10px] text-white tabular-nums ${dimmed ? 'opacity-50' : ''}`}
     >
-      {formatShortDate(date)} · ${price.toFixed(2)}
+      {formatShortDateWithYear(date)} · {typeof price === 'number' ? `$${price.toFixed(2)}` : '—'}
     </div>
   );
 }
@@ -1376,7 +1372,7 @@ function Sparkline({
   timePeriod: TimePeriod;
   unavailableSinceDate?: string | null;
 }) {
-  const [active, setActive] = useState<{ index: number; tooltipXPercent: number } | null>(null);
+  const [activeIndex, setActiveIndex] = useState<number | null>(null);
   const svgRef = useRef<SVGSVGElement>(null);
   const lastActiveIndex = useRef<number | null>(null);
 
@@ -1435,13 +1431,11 @@ function Sparkline({
       }
     }
     if (closestDist > 5) {
-      setActive(null);
+      setActiveIndex(null);
       lastActiveIndex.current = null;
       return;
     }
-    const rect = svg.getBoundingClientRect();
-    const tooltipXPercent = ((e.clientX - rect.left) / rect.width) * 100;
-    setActive({ index: closest, tooltipXPercent: Math.min(100, Math.max(0, tooltipXPercent)) });
+    setActiveIndex(closest);
     if (lastActiveIndex.current !== closest) {
       lastActiveIndex.current = closest;
       navigator.vibrate?.(1);
@@ -1454,7 +1448,7 @@ function Sparkline({
   };
 
   const handlePointerLeave = () => {
-    setActive(null);
+    setActiveIndex(null);
     lastActiveIndex.current = null;
   };
 
@@ -1585,10 +1579,13 @@ function Sparkline({
     }
   }
 
-  const activePoint = active
-    ? { svg: normalized[active.index], data: pointsInScale[active.index] }
-    : null;
-
+  const activePoint =
+    activeIndex !== null &&
+    activeIndex >= 0 &&
+    activeIndex < normalized.length &&
+    activeIndex < pointsInScale.length
+      ? { svg: normalized[activeIndex], data: pointsInScale[activeIndex] }
+      : null;
   const hatchEndX = Math.max(periodStartX, padding, firstPoint?.x ?? padding);
 
   const isOutOfRange =
@@ -1736,14 +1733,15 @@ function Sparkline({
           </g>
         )}
       </svg>
-      {active && activePoint && (
-        <SparklineTooltip
-          date={activePoint.data.date}
-          price={activePoint.data.price}
-          xPercent={active.tooltipXPercent}
-          dimmed={!!isOutOfRange}
-        />
-      )}
+      <div className="mt-0.5 h-3">
+        {activePoint && (
+          <SparklineReadout
+            date={activePoint.data.date}
+            price={activePoint.data.price}
+            dimmed={!!isOutOfRange}
+          />
+        )}
+      </div>
     </div>
   );
 }
@@ -1751,4 +1749,9 @@ function Sparkline({
 function formatShortDate(isoDate: string): string {
   const date = new Date(isoDate + 'T00:00:00');
   return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+
+function formatShortDateWithYear(isoDate: string): string {
+  const date = new Date(isoDate + 'T00:00:00');
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 }
