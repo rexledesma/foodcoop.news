@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ProduceContextMenu } from '@/components/ProduceContextMenu';
 import { useScrollVisibility } from '@/components/ScrollVisibilityProvider';
 import { produceHash } from '@/lib/produce-hash';
+import { getSpecialtyProduceUrl } from '@/lib/specialty-produce-map';
 import { useProduceFavorites } from '@/lib/use-produce-favorites';
 import type {
   ProduceDateRange,
@@ -1264,6 +1265,7 @@ export function ProduceAnalytics({
             ) : (
               filteredAndSorted.map((row) => {
                 const isFavorited = favorites.has(row.name);
+                const specialtyUrl = getSpecialtyProduceUrl(row.name);
                 const swipeOffset = swipeOffsets[row.name] ?? 0;
                 const isSwiping = swipeOffset !== 0;
                 const swipeThresholdPx = getSwipeThresholdPx(row.name);
@@ -1339,8 +1341,17 @@ export function ProduceAnalytics({
                           </span>
                         </div>
                       )}
+                      {specialtyUrl && (
+                        <a
+                          href={specialtyUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="absolute inset-0 z-10"
+                          aria-label={`View ${row.name} on Specialty Produce`}
+                        />
+                      )}
                       <div
-                        className={`relative z-10 flex h-full w-full items-center gap-1 p-2 text-left ${isSwiping ? swipeCoverClass : ''}`}
+                        className={`relative ${specialtyUrl ? 'z-20' : 'z-10'} flex h-full w-full items-center gap-1 p-2 text-left ${isSwiping ? swipeCoverClass : ''} ${specialtyUrl ? 'pointer-events-none' : ''}`}
                         style={swipeStyle}
                       >
                         <button
@@ -1353,7 +1364,7 @@ export function ProduceAnalytics({
                             isFavorited
                               ? 'border-zinc-200 bg-amber-100 text-amber-700'
                               : 'border-zinc-200 bg-white text-zinc-400 hover:bg-amber-100 hover:text-amber-700'
-                          }`}
+                          } ${specialtyUrl ? 'pointer-events-auto' : ''}`}
                           aria-label={
                             isFavorited
                               ? `Remove ${row.name} from favorites`
@@ -1365,7 +1376,7 @@ export function ProduceAnalytics({
                         <div className="min-w-0">
                           <div className="line-clamp-3 text-sm font-medium text-zinc-900 md:line-clamp-none">
                             <span className={row.is_unavailable ? 'line-through' : undefined}>
-                              {row.name}
+                              {specialtyUrl ? `${row.name} ↗` : row.name}
                             </span>
                           </div>
                           <div className="text-xs text-zinc-500">
