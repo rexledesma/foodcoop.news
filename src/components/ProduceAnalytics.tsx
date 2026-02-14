@@ -1,7 +1,7 @@
 'use client';
 
 import Fuse from 'fuse.js';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ProduceContextMenu } from '@/components/ProduceContextMenu';
 import { useScrollVisibility } from '@/components/ScrollVisibilityProvider';
 import { produceHash } from '@/lib/produce-hash';
@@ -836,6 +836,20 @@ export function ProduceAnalytics({
     [cancelLongPress, getSwipeThresholdPx, toggleFavorite],
   );
 
+  const handleTouchCancel = useCallback(
+    (itemName: string) => {
+      setActiveSwipeItem(null);
+      setSwipeOffsets((prev) => ({ ...prev, [itemName]: 0 }));
+      cancelLongPress();
+    },
+    [cancelLongPress],
+  );
+
+  const handleNameCellWidth = useCallback((itemName: string, width: number) => {
+    if (!width) return;
+    setNameCellWidths((prev) => (prev[itemName] === width ? prev : { ...prev, [itemName]: width }));
+  }, []);
+
   const closeContextMenu = useCallback(() => setContextMenu(null), []);
 
   const handleQuickFilter = (filter: QuickFilter) => {
@@ -1276,241 +1290,27 @@ export function ProduceAnalytics({
               </tr>
             ) : (
               filteredAndSorted.map((row) => {
-                const isFavorited = favorites.has(row.name);
-                const specialtyUrl = getSpecialtyProduceUrl(row.name);
-                const swipeOffset = swipeOffsets[row.name] ?? 0;
-                const isSwiping = swipeOffset !== 0;
-                const swipeThresholdPx = getSwipeThresholdPx(row.name);
-                const thresholdReached = swipeOffset >= swipeThresholdPx;
-                const showRevealCue = isSwiping;
-                const revealActionIsFavorite = !isFavorited;
-                const revealIcon = revealActionIsFavorite ? '⭐' : '💔';
-                const swipeCoverClass = isFavorited ? 'bg-amber-50' : 'bg-white';
-                const rowBaseClass =
-                  pressedRow === row.name
-                    ? 'bg-zinc-100'
-                    : isFavorited
-                      ? 'bg-amber-50'
-                      : 'hover:bg-zinc-50';
-                const revealColor = revealActionIsFavorite
-                  ? 'rgba(255, 251, 235, 1)'
-                  : 'rgba(254, 202, 202, 1)';
-                const swipeStyle = {
-                  transform: `translateX(${swipeOffset}px)`,
-                  transition: activeSwipeItem === row.name ? 'none' : 'transform 180ms ease-out',
-                };
-                const rowStyle =
-                  isSwiping && swipeOffset > 0
-                    ? {
-                        backgroundImage: `linear-gradient(to right, ${revealColor} 0px, ${revealColor} ${swipeOffset}px, transparent ${swipeOffset}px)`,
-                      }
-                    : undefined;
-
                 return (
-                  <tr
+                  <ProduceTableRow
                     key={row.name}
-                    onContextMenu={(e) => handleContextMenu(e, row.name)}
-                    onTouchStart={(e) => handleTouchStart(e, row.name)}
-                    onTouchEnd={() => handleTouchEnd(row.name)}
-                    onTouchMove={(e) => handleTouchMove(e, row.name)}
-                    onTouchCancel={() => {
-                      setActiveSwipeItem(null);
-                      setSwipeOffsets((prev) => ({ ...prev, [row.name]: 0 }));
-                      cancelLongPress();
-                    }}
-                    className={`group border-b border-zinc-100 select-none ${isSwiping ? (isFavorited ? 'bg-amber-50' : 'bg-white') : rowBaseClass}`}
-                    style={rowStyle}
-                  >
-                    <td
-                      ref={(el) => {
-                        if (!el) return;
-                        const width = el.clientWidth;
-                        if (!width) return;
-                        setNameCellWidths((prev) =>
-                          prev[row.name] === width ? prev : { ...prev, [row.name]: width },
-                        );
-                      }}
-                      className={`${NAME_COL_CLASS} sticky left-0 z-10 box-border border-r border-zinc-200 p-0 md:w-auto md:border-r-0 ${
-                        isSwiping
-                          ? 'relative'
-                          : pressedRow === row.name
-                            ? 'bg-zinc-100'
-                            : isFavorited
-                              ? 'bg-amber-50'
-                              : 'bg-white group-hover:bg-zinc-50 hover:bg-zinc-50'
-                      }`}
-                    >
-                      {showRevealCue && swipeOffset > 0 && (
-                        <div className="pointer-events-none absolute inset-0 z-0 flex items-center justify-center">
-                          <span
-                            className={`transition-all duration-150 ${
-                              thresholdReached
-                                ? 'scale-110 text-base'
-                                : 'scale-75 text-xs opacity-80'
-                            }`}
-                          >
-                            {revealIcon}
-                          </span>
-                        </div>
-                      )}
-                      {specialtyUrl && (
-                        <a
-                          href={specialtyUrl}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="absolute inset-0 z-10"
-                          aria-label={`View ${row.name} on Specialty Produce`}
-                        />
-                      )}
-                      <div
-                        className={`relative ${specialtyUrl ? 'z-20' : 'z-10'} flex h-full w-full items-center gap-1 p-2 text-left ${isSwiping ? swipeCoverClass : ''} ${specialtyUrl ? 'pointer-events-none' : ''}`}
-                        style={swipeStyle}
-                      >
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            toggleFavorite(row.name);
-                          }}
-                          className={`hidden h-3.5 w-3.5 shrink-0 items-center justify-center rounded-sm border text-[9px] font-bold md:inline-flex ${
-                            isFavorited
-                              ? 'border-zinc-200 bg-amber-100 text-amber-700'
-                              : 'border-zinc-200 bg-white text-zinc-400 hover:bg-amber-100 hover:text-amber-700'
-                          } ${specialtyUrl ? 'pointer-events-auto' : ''}`}
-                          aria-label={
-                            isFavorited
-                              ? `Remove ${row.name} from favorites`
-                              : `Add ${row.name} to favorites`
-                          }
-                        >
-                          {isFavorited ? '⭐' : '+'}
-                        </button>
-                        <div className="min-w-0">
-                          <div className="line-clamp-3 text-sm font-medium text-zinc-900 md:line-clamp-none">
-                            <span className={row.is_unavailable ? 'line-through' : undefined}>
-                              {specialtyUrl ? `${row.name} ↗` : row.name}
-                            </span>
-                          </div>
-                          <div className="text-xs text-zinc-500">
-                            {(() => {
-                              const attributeElements = [
-                                row.is_hydroponic && {
-                                  key: 'hydroponic',
-                                  node: <span>Hydroponic</span>,
-                                },
-                                row.is_ipm && {
-                                  key: 'ipm',
-                                  node: <span>IPM</span>,
-                                },
-                                row.is_local && {
-                                  key: 'local',
-                                  node: <span className="text-blue-600">Local</span>,
-                                },
-                                row.is_organic && {
-                                  key: 'organic',
-                                  node: <span className="text-green-600">Organic</span>,
-                                },
-                                row.is_waxed && {
-                                  key: 'waxed',
-                                  node: <span>Waxed</span>,
-                                },
-                              ].filter(Boolean) as { key: string; node: React.ReactNode }[];
-                              const hasAttributes = attributeElements.length > 0;
-                              const showUnavailable =
-                                row.is_unavailable && row.unavailable_since_date;
-                              const showNew = row.is_new;
-
-                              return (
-                                <>
-                                  {showUnavailable && (
-                                    <span className="rounded bg-red-100 px-1 text-red-700">
-                                      <span className="inline-block">Out of stock</span>{' '}
-                                      <span className="inline-block">
-                                        {formatShortDate(row.unavailable_since_date!)}
-                                      </span>
-                                    </span>
-                                  )}
-                                  {showUnavailable && showNew && ' · '}
-                                  {showNew && (
-                                    <span className="rounded bg-[rgb(255,246,220)] px-1 text-[#3F7540]">
-                                      <span className="inline-block">New arrival</span>
-                                      {row.first_seen_date && (
-                                        <>
-                                          {' '}
-                                          <span className="inline-block">
-                                            {formatShortDate(row.first_seen_date)}
-                                          </span>
-                                        </>
-                                      )}
-                                    </span>
-                                  )}
-                                  {(showUnavailable || showNew) && hasAttributes && ' · '}
-                                  {attributeElements.map((item, index) => (
-                                    <span key={item.key}>
-                                      {item.node}
-                                      {index < attributeElements.length - 1 && ' · '}
-                                    </span>
-                                  ))}
-                                </>
-                              );
-                            })()}
-                          </div>
-                          {row.origin && <div className="text-xs text-zinc-400">{row.origin}</div>}
-                        </div>
-                      </div>
-                    </td>
-                    <td className={`p-2 font-mono text-zinc-900 ${DATA_COL_CLASS} box-border`}>
-                      <div className={isSwiping ? swipeCoverClass : ''} style={swipeStyle}>
-                        <div>
-                          {(() => {
-                            const { prev } = getPeriodData(
-                              row,
-                              timePeriod,
-                              history.get(row.name),
-                              dateRange,
-                            );
-                            return (
-                              <>
-                                <span
-                                  className={`font-bold ${
-                                    prev !== null && row.price < prev
-                                      ? 'text-green-600'
-                                      : prev !== null && row.price > prev
-                                        ? 'text-red-600'
-                                        : ''
-                                  }`}
-                                >
-                                  ${row.price.toFixed(2)}
-                                </span>
-                                {prev !== null && prev !== row.price && (
-                                  <sup className="ml-1 text-[0.65em] text-zinc-400 line-through">
-                                    ${prev.toFixed(2)}
-                                  </sup>
-                                )}
-                              </>
-                            );
-                          })()}
-                        </div>
-                        <div className="text-xs text-zinc-500">/{row.unit}</div>
-                        <div className="mt-1">
-                          <Sparkline
-                            points={history.get(row.name)}
-                            dateRange={dateRange}
-                            timePeriod={timePeriod}
-                            unavailableSinceDate={row.unavailable_since_date}
-                          />
-                        </div>
-                      </div>
-                    </td>
-                    <MetricsCell
-                      row={row}
-                      period={timePeriod}
-                      points={history.get(row.name)}
-                      dateRange={dateRange}
-                      swipeStyle={swipeStyle}
-                      swipeCoverClass={isSwiping ? swipeCoverClass : ''}
-                    />
-                  </tr>
+                    row={row}
+                    isFavorited={favorites.has(row.name)}
+                    specialtyUrl={getSpecialtyProduceUrl(row.name)}
+                    isPressed={pressedRow === row.name}
+                    isActiveSwipe={activeSwipeItem === row.name}
+                    swipeOffset={swipeOffsets[row.name] ?? 0}
+                    timePeriod={timePeriod}
+                    history={history}
+                    dateRange={dateRange}
+                    onContextMenu={handleContextMenu}
+                    onTouchStart={handleTouchStart}
+                    onTouchEnd={handleTouchEnd}
+                    onTouchMove={handleTouchMove}
+                    onTouchCancel={handleTouchCancel}
+                    onMeasureNameCell={handleNameCellWidth}
+                    getSwipeThresholdPx={getSwipeThresholdPx}
+                    toggleFavorite={toggleFavorite}
+                  />
                 );
               })
             )}
@@ -1528,6 +1328,231 @@ export function ProduceAnalytics({
     </div>
   );
 }
+
+const ProduceTableRow = memo(function ProduceTableRow({
+  row,
+  isFavorited,
+  specialtyUrl,
+  isPressed,
+  isActiveSwipe,
+  swipeOffset,
+  timePeriod,
+  history,
+  dateRange,
+  onContextMenu,
+  onTouchStart,
+  onTouchEnd,
+  onTouchMove,
+  onTouchCancel,
+  onMeasureNameCell,
+  getSwipeThresholdPx,
+  toggleFavorite,
+}: {
+  row: ProduceRow;
+  isFavorited: boolean;
+  specialtyUrl: string | null;
+  isPressed: boolean;
+  isActiveSwipe: boolean;
+  swipeOffset: number;
+  timePeriod: TimePeriod;
+  history: ProduceHistoryMap;
+  dateRange: ProduceDateRange | null;
+  onContextMenu: (event: React.MouseEvent, itemName: string) => void;
+  onTouchStart: (event: React.TouchEvent, itemName: string) => void;
+  onTouchEnd: (itemName: string) => void;
+  onTouchMove: (event: React.TouchEvent, itemName: string) => void;
+  onTouchCancel: (itemName: string) => void;
+  onMeasureNameCell: (itemName: string, width: number) => void;
+  getSwipeThresholdPx: (itemName: string) => number;
+  toggleFavorite: (itemName: string) => void;
+}) {
+  const rowHistory = history.get(row.name);
+  const isSwiping = swipeOffset !== 0;
+  const swipeThresholdPx = getSwipeThresholdPx(row.name);
+  const thresholdReached = swipeOffset >= swipeThresholdPx;
+  const revealActionIsFavorite = !isFavorited;
+  const revealIcon = revealActionIsFavorite ? '⭐' : '💔';
+  const swipeCoverClass = isFavorited ? 'bg-amber-50' : 'bg-white';
+  const rowBaseClass = isPressed ? 'bg-zinc-100' : isFavorited ? 'bg-amber-50' : 'hover:bg-zinc-50';
+  const revealColor = revealActionIsFavorite ? 'rgba(255, 251, 235, 1)' : 'rgba(254, 202, 202, 1)';
+  const swipeStyle = {
+    transform: `translateX(${swipeOffset}px)`,
+    transition: isActiveSwipe ? 'none' : 'transform 180ms ease-out',
+  };
+  const rowStyle =
+    isSwiping && swipeOffset > 0
+      ? {
+          backgroundImage: `linear-gradient(to right, ${revealColor} 0px, ${revealColor} ${swipeOffset}px, transparent ${swipeOffset}px)`,
+        }
+      : undefined;
+  const { prev } = getPeriodData(row, timePeriod, rowHistory, dateRange);
+  const priceTrendClass =
+    prev !== null && row.price < prev
+      ? 'text-green-600'
+      : prev !== null && row.price > prev
+        ? 'text-red-600'
+        : '';
+  const attributeElements = [
+    row.is_hydroponic && {
+      key: 'hydroponic',
+      node: <span>Hydroponic</span>,
+    },
+    row.is_ipm && {
+      key: 'ipm',
+      node: <span>IPM</span>,
+    },
+    row.is_local && {
+      key: 'local',
+      node: <span className="text-blue-600">Local</span>,
+    },
+    row.is_organic && {
+      key: 'organic',
+      node: <span className="text-green-600">Organic</span>,
+    },
+    row.is_waxed && {
+      key: 'waxed',
+      node: <span>Waxed</span>,
+    },
+  ].filter(Boolean) as { key: string; node: React.ReactNode }[];
+  const hasAttributes = attributeElements.length > 0;
+  const showUnavailable = row.is_unavailable && row.unavailable_since_date;
+  const showNew = row.is_new;
+
+  return (
+    <tr
+      onContextMenu={(e) => onContextMenu(e, row.name)}
+      onTouchStart={(e) => onTouchStart(e, row.name)}
+      onTouchEnd={() => onTouchEnd(row.name)}
+      onTouchMove={(e) => onTouchMove(e, row.name)}
+      onTouchCancel={() => onTouchCancel(row.name)}
+      className={`group border-b border-zinc-100 select-none ${isSwiping ? (isFavorited ? 'bg-amber-50' : 'bg-white') : rowBaseClass}`}
+      style={rowStyle}
+    >
+      <td
+        ref={(el) => {
+          if (!el) return;
+          onMeasureNameCell(row.name, el.clientWidth);
+        }}
+        className={`${NAME_COL_CLASS} sticky left-0 z-10 box-border border-r border-zinc-200 p-0 md:w-auto md:border-r-0 ${
+          isSwiping
+            ? 'relative'
+            : isPressed
+              ? 'bg-zinc-100'
+              : isFavorited
+                ? 'bg-amber-50'
+                : 'bg-white group-hover:bg-zinc-50 hover:bg-zinc-50'
+        }`}
+      >
+        {isSwiping && swipeOffset > 0 && (
+          <div className="pointer-events-none absolute inset-0 z-0 flex items-center justify-center">
+            <span
+              className={`transition-all duration-150 ${thresholdReached ? 'scale-110 text-base' : 'scale-75 text-xs opacity-80'}`}
+            >
+              {revealIcon}
+            </span>
+          </div>
+        )}
+        {specialtyUrl && (
+          <a
+            href={specialtyUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="absolute inset-0 z-10"
+            aria-label={`View ${row.name} on Specialty Produce`}
+          />
+        )}
+        <div
+          className={`relative ${specialtyUrl ? 'z-20' : 'z-10'} flex h-full w-full items-center gap-1 p-2 text-left ${isSwiping ? swipeCoverClass : ''} ${specialtyUrl ? 'pointer-events-none' : ''}`}
+          style={swipeStyle}
+        >
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              toggleFavorite(row.name);
+            }}
+            className={`hidden h-3.5 w-3.5 shrink-0 items-center justify-center rounded-sm border text-[9px] font-bold md:inline-flex ${
+              isFavorited
+                ? 'border-zinc-200 bg-amber-100 text-amber-700'
+                : 'border-zinc-200 bg-white text-zinc-400 hover:bg-amber-100 hover:text-amber-700'
+            } ${specialtyUrl ? 'pointer-events-auto' : ''}`}
+            aria-label={
+              isFavorited ? `Remove ${row.name} from favorites` : `Add ${row.name} to favorites`
+            }
+          >
+            {isFavorited ? '⭐' : '+'}
+          </button>
+          <div className="min-w-0">
+            <div className="line-clamp-3 text-sm font-medium text-zinc-900 md:line-clamp-none">
+              <span className={row.is_unavailable ? 'line-through' : undefined}>
+                {specialtyUrl ? `${row.name} ↗` : row.name}
+              </span>
+            </div>
+            <div className="text-xs text-zinc-500">
+              {showUnavailable && (
+                <span className="rounded bg-red-100 px-1 text-red-700">
+                  <span className="inline-block">Out of stock</span>{' '}
+                  <span className="inline-block">
+                    {formatShortDate(row.unavailable_since_date!)}
+                  </span>
+                </span>
+              )}
+              {showUnavailable && showNew && ' · '}
+              {showNew && (
+                <span className="rounded bg-[rgb(255,246,220)] px-1 text-[#3F7540]">
+                  <span className="inline-block">New arrival</span>
+                  {row.first_seen_date && (
+                    <>
+                      {' '}
+                      <span className="inline-block">{formatShortDate(row.first_seen_date)}</span>
+                    </>
+                  )}
+                </span>
+              )}
+              {(showUnavailable || showNew) && hasAttributes && ' · '}
+              {attributeElements.map((item, index) => (
+                <span key={item.key}>
+                  {item.node}
+                  {index < attributeElements.length - 1 && ' · '}
+                </span>
+              ))}
+            </div>
+            {row.origin && <div className="text-xs text-zinc-400">{row.origin}</div>}
+          </div>
+        </div>
+      </td>
+      <td className={`p-2 font-mono text-zinc-900 ${DATA_COL_CLASS} box-border`}>
+        <div className={isSwiping ? swipeCoverClass : ''} style={swipeStyle}>
+          <div>
+            <span className={`font-bold ${priceTrendClass}`}>${row.price.toFixed(2)}</span>
+            {prev !== null && prev !== row.price && (
+              <sup className="ml-1 text-[0.65em] text-zinc-400 line-through">
+                ${prev.toFixed(2)}
+              </sup>
+            )}
+          </div>
+          <div className="text-xs text-zinc-500">/{row.unit}</div>
+          <div className="mt-1">
+            <Sparkline
+              points={rowHistory}
+              dateRange={dateRange}
+              timePeriod={timePeriod}
+              unavailableSinceDate={row.unavailable_since_date}
+            />
+          </div>
+        </div>
+      </td>
+      <MetricsCell
+        row={row}
+        period={timePeriod}
+        points={rowHistory}
+        dateRange={dateRange}
+        swipeStyle={swipeStyle}
+        swipeCoverClass={isSwiping ? swipeCoverClass : ''}
+      />
+    </tr>
+  );
+});
 
 function getPeriodPointCount(
   points: ProduceHistoryPoint[] | undefined,
