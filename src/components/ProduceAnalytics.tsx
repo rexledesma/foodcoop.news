@@ -740,26 +740,44 @@ export function ProduceAnalytics({
     );
   }, []);
 
+  const isNameCellTarget = useCallback((target: EventTarget | null) => {
+    return target instanceof Element && target.closest('[data-name-cell="true"]') !== null;
+  }, []);
+
   const handleTouchStart = useCallback(
     (e: React.TouchEvent, itemName: string) => {
       if (isSparklineTarget(e.target)) {
         return;
       }
+      if (longPressTimer.current !== null) {
+        clearTimeout(longPressTimer.current);
+        longPressTimer.current = null;
+      }
       const touch = e.touches[0];
       const x = touch.clientX;
       const y = touch.clientY;
+      const isNameCellPress = isNameCellTarget(e.target);
       setPressedRow(itemName);
-      swipeStartRef.current = { itemName, x, y, dx: 0, dy: 0, thresholdHapticFired: false };
+      swipeStartRef.current = {
+        itemName,
+        x,
+        y,
+        dx: 0,
+        dy: 0,
+        thresholdHapticFired: false,
+      };
       setActiveSwipeItem(itemName);
       setActiveSwipeOffset(0);
-      longPressTimer.current = setTimeout(() => {
-        longPressTimer.current = null;
-        setPressedRow(null);
-        navigator.vibrate?.(10);
-        setContextMenu({ itemName, x, y });
-      }, 500);
+      if (!isNameCellPress) {
+        longPressTimer.current = setTimeout(() => {
+          longPressTimer.current = null;
+          setPressedRow(null);
+          navigator.vibrate?.(10);
+          setContextMenu({ itemName, x, y });
+        }, 500);
+      }
     },
-    [isSparklineTarget],
+    [isNameCellTarget, isSparklineTarget],
   );
 
   const getSwipeThresholdPx = useCallback(
@@ -781,13 +799,12 @@ export function ProduceAnalytics({
       swipe.dx = touch.clientX - swipe.x;
       swipe.dy = touch.clientY - swipe.y;
 
-      if (
-        Math.abs(swipe.dx) > 8 &&
-        Math.abs(swipe.dx) > Math.abs(swipe.dy) &&
-        longPressTimer.current !== null
-      ) {
+      if (longPressTimer.current !== null && (Math.abs(swipe.dx) > 8 || Math.abs(swipe.dy) > 8)) {
         clearTimeout(longPressTimer.current);
         longPressTimer.current = null;
+      }
+
+      if (Math.abs(swipe.dx) > 8 && Math.abs(swipe.dx) > Math.abs(swipe.dy)) {
         setPressedRow(null);
       }
 
@@ -1421,6 +1438,7 @@ const ProduceTableRow = memo(function ProduceTableRow({
       className={`group [touch-action:pan-y] border-b border-zinc-100 select-none ${isSwiping ? (isFavorited ? 'bg-amber-50' : 'bg-white') : rowBaseClass}`}
     >
       <td
+        data-name-cell="true"
         ref={(el) => {
           if (!el) return;
           onMeasureNameCell(row.name, el.clientWidth);
