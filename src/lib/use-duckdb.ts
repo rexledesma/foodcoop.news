@@ -9,6 +9,7 @@ interface UseDuckDBResult {
   error: Error | null;
   query: <T = Record<string, unknown>>(sql: string) => Promise<T[]>;
   loadParquet: (url: string, tableName: string) => Promise<void>;
+  loadParquetBuffer: (buffer: ArrayBuffer, tableName: string) => Promise<void>;
 }
 
 export function useDuckDB(): UseDuckDBResult {
@@ -90,5 +91,20 @@ export function useDuckDB(): UseDuckDBResult {
       `);
   }, []);
 
-  return { isReady, isLoading, error, query, loadParquet };
+  const loadParquetBuffer = useCallback(
+    async (buffer: ArrayBuffer, tableName: string): Promise<void> => {
+      if (!dbRef.current || !connRef.current) {
+        throw new Error('DuckDB not initialized');
+      }
+
+      await dbRef.current.registerFileBuffer(tableName, new Uint8Array(buffer));
+      await connRef.current.query(`
+        CREATE OR REPLACE TABLE ${tableName} AS
+        SELECT * FROM parquet_scan('${tableName}')
+      `);
+    },
+    [],
+  );
+
+  return { isReady, isLoading, error, query, loadParquet, loadParquetBuffer };
 }

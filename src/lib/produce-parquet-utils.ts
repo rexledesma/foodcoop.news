@@ -5,6 +5,10 @@ import { parseProduceHtml } from '@/lib/produce-parser';
 import { generateParquetBuffer } from '@/lib/parquet-generator';
 import type { ProduceItem } from '@/lib/types';
 
+const DAY_MS = 24 * 60 * 60 * 1000;
+const DERIVED_PREFIX = 'produce-data-derived/';
+const SINCE_2013_START = '2013-01-01';
+
 export async function regenerateMonthParquet(month: string): Promise<{
   url: string;
   itemCount: number;
@@ -132,6 +136,228 @@ function pickNewestBlob<T extends { uploadedAt: string | Date }>(blobs: T[]): T 
     const blobTs = new Date(blob.uploadedAt).getTime();
     return blobTs > latestTs ? blob : latest;
   });
+}
+
+function isoDateToMs(isoDate: string): number {
+  return new Date(`${isoDate}T00:00:00`).getTime();
+}
+
+function msToIsoDate(ms: number): string {
+  return new Date(ms).toISOString().slice(0, 10);
+}
+
+function clampIsoDateFloor(isoDate: string, floorIsoDate: string): string {
+  return isoDate < floorIsoDate ? floorIsoDate : isoDate;
+}
+
+function filterByDateRange(
+  items: ProduceItem[],
+  startIsoDate: string,
+  endIsoDateInclusive: string,
+): ProduceItem[] {
+  return items.filter((item) => item.date >= startIsoDate && item.date <= endIsoDateInclusive);
+}
+
+function downsampleByDayBucket(items: ProduceItem[], bucketDays: number): ProduceItem[] {
+  const byName = new Map<string, ProduceItem[]>();
+  for (const item of items) {
+    const existing = byName.get(item.name) ?? [];
+    existing.push(item);
+    byName.set(item.name, existing);
+  }
+
+  const sampled: ProduceItem[] = [];
+  const bucketMs = bucketDays * DAY_MS;
+
+  for (const series of byName.values()) {
+    series.sort((a, b) => a.date.localeCompare(b.date));
+
+    let activeBucket: number | null = null;
+    for (const item of series) {
+      const itemBucket = Math.floor(isoDateToMs(item.date) / bucketMs);
+      if (itemBucket !== activeBucket) {
+        sampled.push(item);
+        activeBucket = itemBucket;
+      }
+    }
+  }
+
+  sampled.sort((a, b) => {
+    const dateCompare = a.date.localeCompare(b.date);
+    if (dateCompare !== 0) return dateCompare;
+    return a.name.localeCompare(b.name);
+  });
+
+  return sampled;
+}
+
+function downsampleMonthlyFirst(items: ProduceItem[]): ProduceItem[] {
+  const byName = new Map<string, ProduceItem[]>();
+  for (const item of items) {
+    const existing = byName.get(item.name) ?? [];
+    existing.push(item);
+    byName.set(item.name, existing);
+  }
+
+  const sampled: ProduceItem[] = [];
+
+  for (const series of byName.values()) {
+    series.sort((a, b) => a.date.localeCompare(b.date));
+    let activeMonth: string | null = null;
+
+    for (const item of series) {
+      const monthKey = item.date.slice(0, 7);
+      if (monthKey !== activeMonth) {
+        sampled.push(item);
+        activeMonth = monthKey;
+      }
+    }
+  }
+
+  sampled.sort((a, b) => {
+    const dateCompare = a.date.localeCompare(b.date);
+    if (dateCompare !== 0) return dateCompare;
+    return a.name.localeCompare(b.name);
+  });
+
+  return sampled;
+}
+
+async function loadAllYearlyProduceItems(): Promise<ProduceItem[]> {
+  const { blobs } = await list({
+    prefix: 'produce-data-yearly/',
+    token: process.env.VERCEL_BLOB_READ_WRITE_TOKEN,
+  });
+
+  const byYear = new Map<string, (typeof blobs)[number]>();
+  for (const blob of blobs) {
+    const match = blob.pathname.match(/^produce-data-yearly\/(\d{4})-[a-f0-9]{7}\.parquet$/);
+    if (!match) continue;
+    const year = match[1];
+    const previousBlob = byYear.get(year);
+    if (!previousBlob) {
+      byYear.set(year, blob);
+      continue;
+    }
+    if (new Date(blob.uploadedAt).getTime() > new Date(previousBlob.uploadedAt).getTime()) {
+      byYear.set(year, blob);
+    }
+  }
+
+  const yearlyBlobs = Array.from(byYear.values()).sort((a, b) =>
+    a.pathname.localeCompare(b.pathname),
+  );
+
+  const itemsByYear = await Promise.all(
+    yearlyBlobs.map((blob) => loadParquetItemsFromBlobUrl(blob.url)),
+  );
+  const allItems = itemsByYear.flat();
+  allItems.sort((a, b) => {
+    const dateCompare = a.date.localeCompare(b.date);
+    if (dateCompare !== 0) return dateCompare;
+    return a.name.localeCompare(b.name);
+  });
+  return allItems;
+}
+
+async function putDerivedParquet(
+  slug: string,
+  items: ProduceItem[],
+): Promise<{ url: string; rows: number }> {
+  const buffer = await generateParquetBuffer(items);
+  const version = randomBytes(4).toString('hex').slice(0, 7);
+  const pathname = `${DERIVED_PREFIX}${slug}-${version}.parquet`;
+  const parquetBlob = await put(pathname, buffer, {
+    contentType: 'application/octet-stream',
+    access: 'public',
+    token: process.env.VERCEL_BLOB_READ_WRITE_TOKEN,
+  });
+
+  const { blobs } = await list({
+    prefix: `${DERIVED_PREFIX}${slug}`,
+    token: process.env.VERCEL_BLOB_READ_WRITE_TOKEN,
+  });
+
+  const stalePathnames = blobs
+    .map((blob) => blob.pathname)
+    .filter(
+      (path) =>
+        path !== parquetBlob.pathname &&
+        new RegExp(`^${DERIVED_PREFIX}${slug}-[a-f0-9]{7}\\.parquet$`).test(path),
+    );
+
+  if (stalePathnames.length > 0) {
+    await del(stalePathnames, {
+      token: process.env.VERCEL_BLOB_READ_WRITE_TOKEN,
+    });
+  }
+
+  return { url: parquetBlob.url, rows: items.length };
+}
+
+export async function regenerateDerivedProduceParquets(): Promise<{
+  ytd: { url: string; rows: number };
+  longRangeDownsampled: { url: string; rows: number };
+}> {
+  const allItems = await loadAllYearlyProduceItems();
+  if (allItems.length === 0) {
+    throw new Error('No yearly produce rows found to build derived parquet datasets');
+  }
+
+  const maxDate = allItems[allItems.length - 1].date;
+  const maxMs = isoDateToMs(maxDate);
+  const ytdStart = `${maxDate.slice(0, 4)}-01-01`;
+  const fiveYearStart = clampIsoDateFloor(msToIsoDate(maxMs - 1825 * DAY_MS), SINCE_2013_START);
+  const tenYearStart = clampIsoDateFloor(msToIsoDate(maxMs - 3650 * DAY_MS), SINCE_2013_START);
+
+  // YTD is a dedicated high-resolution dataset refreshed by cron.
+  const ytdItems = filterByDateRange(allItems, ytdStart, maxDate);
+
+  // Long-range dataset is a single union of downsampled points used for 5Y/10Y/Since 2013 views.
+  const fiveYearWeeklyBase = filterByDateRange(allItems, fiveYearStart, maxDate);
+  const tenYearBiweeklyBase = filterByDateRange(allItems, tenYearStart, maxDate);
+  const since2013MonthlyBase = filterByDateRange(allItems, SINCE_2013_START, maxDate);
+  const ytdWeeklyBase = filterByDateRange(allItems, ytdStart, maxDate);
+
+  const fiveYearWeekly = downsampleByDayBucket(fiveYearWeeklyBase, 7);
+  const tenYearBiweekly = downsampleByDayBucket(tenYearBiweeklyBase, 14);
+  const since2013Monthly = downsampleMonthlyFirst(since2013MonthlyBase);
+  const ytdWeekly = downsampleByDayBucket(ytdWeeklyBase, 7);
+
+  const longRangeDeduped = Array.from(
+    new Map(
+      [...fiveYearWeekly, ...tenYearBiweekly, ...since2013Monthly, ...ytdWeekly].map((item) => [
+        item.id,
+        item,
+      ]),
+    ).values(),
+  ).sort((a, b) => {
+    const dateCompare = a.date.localeCompare(b.date);
+    if (dateCompare !== 0) return dateCompare;
+    return a.name.localeCompare(b.name);
+  });
+
+  const [ytd, longRangeDownsampled] = await Promise.all([
+    putDerivedParquet('ytd', ytdItems),
+    putDerivedParquet('long-range-downsampled', longRangeDeduped),
+  ]);
+
+  return {
+    ytd,
+    longRangeDownsampled,
+  };
+}
+
+export async function regenerateYtdDerivedParquet(): Promise<{ url: string; rows: number }> {
+  const allItems = await loadAllYearlyProduceItems();
+  if (allItems.length === 0) {
+    throw new Error('No yearly produce rows found to build YTD parquet dataset');
+  }
+
+  const maxDate = allItems[allItems.length - 1].date;
+  const ytdStart = `${maxDate.slice(0, 4)}-01-01`;
+  const ytdItems = filterByDateRange(allItems, ytdStart, maxDate);
+  return putDerivedParquet('ytd', ytdItems);
 }
 
 export async function upsertYearParquetForDate(

@@ -66,6 +66,10 @@ interface ProduceMetadata {
     size: number;
     isCurrentYear: boolean;
   }[];
+  derived?: {
+    ytd: { url: string; size: number } | null;
+    longRangeDownsampled: { url: string; size: number } | null;
+  };
 }
 
 interface UseProduceDataResult {
@@ -78,7 +82,7 @@ interface UseProduceDataResult {
 }
 
 export function useProduceData(): UseProduceDataResult {
-  const { isReady, isLoading: dbLoading, error: dbError, query, loadParquet } = useDuckDB();
+  const { isReady, isLoading: dbLoading, error: dbError, query, loadParquetBuffer } = useDuckDB();
 
   const [cachedState] = useState(() => readProduceCache());
   const hasCacheRef = useRef(!!cachedState);
@@ -113,15 +117,174 @@ export function useProduceData(): UseProduceDataResult {
             throw new Error('No produce data available');
           }
 
-          // Load yearly parquet files needed for long-range history views.
-          for (const { url, year } of meta.years) {
-            await loadParquet(url, `produce_${year}`);
-          }
+          const currentYearEntry = meta.years.find((entry) => entry.isCurrentYear);
+          const currentYear = currentYearEntry
+            ? Number.parseInt(currentYearEntry.year, 10)
+            : Number.parseInt(meta.years[0].year, 10);
+          const previousTwoYearEntries = meta.years.filter((entry) => {
+            const yearNum = Number.parseInt(entry.year, 10);
+            return yearNum === currentYear - 1 || yearNum === currentYear - 2;
+          });
 
-          // Create unified view
-          const tableNames = meta.years.map((entry) => `produce_${entry.year}`);
-          const unionQuery = tableNames.map((t) => `SELECT * FROM ${t}`).join(' UNION ALL ');
-          await query(`CREATE OR REPLACE TABLE produce AS ${unionQuery}`);
+          const coreParquets = [
+            meta.derived?.ytd?.url ? { tableName: 'produce_ytd', url: meta.derived.ytd.url } : null,
+            ...previousTwoYearEntries.map((entry) => ({
+              tableName: `produce_${entry.year}`,
+              url: entry.url,
+            })),
+          ].filter(Boolean) as { tableName: string; url: string }[];
+
+          const fallbackCoreParquets = meta.years
+            .filter(
+              (entry) =>
+                entry.isCurrentYear ||
+                previousTwoYearEntries.some((prev) => prev.year === entry.year),
+            )
+            .map((entry) => ({ tableName: `produce_${entry.year}`, url: entry.url }));
+
+          const effectiveCoreParquets =
+            coreParquets.length > 0 ? coreParquets : fallbackCoreParquets;
+          if (effectiveCoreParquets.length === 0) {
+            throw new Error('No core produce parquet files available');
+          }
+          const backgroundParquets = meta.derived?.longRangeDownsampled?.url
+            ? [
+                {
+                  tableName: 'produce_long_range_downsampled',
+                  url: meta.derived.longRangeDownsampled.url,
+                },
+              ]
+            : [];
+
+          const loadedTableNames: string[] = [];
+          let latestHistoryMap = new Map<string, ProduceHistoryPoint[]>();
+          let latestRange: ProduceDateRange | null = null;
+          let hasDetailedRows = false;
+
+          const refreshProduceUnion = async () => {
+            if (loadedTableNames.length === 0) return;
+            const unionQuery = loadedTableNames.map((t) => `SELECT * FROM ${t}`).join(' UNION ');
+            await query(`CREATE OR REPLACE TABLE produce AS ${unionQuery}`);
+          };
+
+          const queryIncrementalRows = async () =>
+            query<ProduceRow>(`
+            WITH latest_date AS (
+              SELECT MAX(date::DATE) as max_date FROM produce
+            )
+            SELECT
+              p.name,
+              p.price,
+              NULL::DOUBLE as prev_day_price,
+              NULL::DOUBLE as prev_week_price,
+              NULL::DOUBLE as prev_month_price,
+              NULL::DOUBLE as prev_3_month_price,
+              NULL::DOUBLE as prev_6_month_price,
+              NULL::DOUBLE as prev_year_price,
+              NULL::DOUBLE as prev_2_year_price,
+              NULL::DOUBLE as prev_ytd_price,
+              NULL::DOUBLE as day_high,
+              NULL::DOUBLE as day_low,
+              NULL::DOUBLE as week_high,
+              NULL::DOUBLE as week_low,
+              NULL::DOUBLE as month_high,
+              NULL::DOUBLE as month_low,
+              NULL::DOUBLE as three_month_high,
+              NULL::DOUBLE as three_month_low,
+              NULL::DOUBLE as six_month_high,
+              NULL::DOUBLE as six_month_low,
+              NULL::DOUBLE as year_high,
+              NULL::DOUBLE as year_low,
+              NULL::DOUBLE as two_year_high,
+              NULL::DOUBLE as two_year_low,
+              NULL::DOUBLE as ytd_high,
+              NULL::DOUBLE as ytd_low,
+              p.is_organic,
+              p.is_ipm,
+              p.is_waxed,
+              p.is_local,
+              p.is_hydroponic,
+              false as is_new,
+              NULL::VARCHAR as first_seen_date,
+              p.origin,
+              p.unit,
+              false as is_unavailable,
+              NULL::VARCHAR as unavailable_since_date
+            FROM produce p, latest_date
+            WHERE p.date::DATE = max_date
+            ORDER BY p.name
+          `);
+
+          const refreshIncrementalHistory = async () => {
+            await refreshProduceUnion();
+            const historyRows = await query<ProduceHistoryPoint>(`
+            WITH latest_date AS (
+              SELECT MAX(date::DATE) as max_date FROM produce
+            )
+            SELECT name, CAST(date::DATE AS VARCHAR) as date, price
+            FROM produce, latest_date
+            WHERE date::DATE BETWEEN DATE '${LONG_RANGE_HISTORY_START}' AND max_date
+            ORDER BY name, date::DATE
+          `);
+
+            const historyMap = new Map<string, ProduceHistoryPoint[]>();
+            let maxDate: string | null = null;
+            for (const row of historyRows) {
+              const existing = historyMap.get(row.name) ?? [];
+              existing.push(row);
+              historyMap.set(row.name, existing);
+              if (!maxDate || row.date > maxDate) maxDate = row.date;
+            }
+
+            let range: ProduceDateRange | null = null;
+            if (maxDate) {
+              const minDate = historyRows[0]?.date ?? maxDate;
+              range = { start: minDate, end: maxDate };
+            }
+
+            latestHistoryMap = historyMap;
+            latestRange = range;
+            setHistory(historyMap);
+            setDateRange(range);
+
+            const incrementalRows = await queryIncrementalRows();
+            if (!hasDetailedRows && incrementalRows.length > 0) {
+              setData(incrementalRows);
+              setLoading(false);
+            }
+          };
+
+          let ingestQueue = Promise.resolve();
+          const enqueueIngest = (task: () => Promise<void>) => {
+            const next = ingestQueue.then(task);
+            ingestQueue = next.catch(() => {});
+            return next;
+          };
+
+          const loadDescriptorGroup = async (descriptors: { tableName: string; url: string }[]) => {
+            await Promise.all(
+              descriptors.map(({ tableName, url }) =>
+                (async () => {
+                  const response = await fetch(url);
+                  if (!response.ok) {
+                    throw new Error(
+                      `Failed to fetch parquet ${tableName}: HTTP ${response.status}`,
+                    );
+                  }
+                  const parquetBuffer = await response.arrayBuffer();
+                  await enqueueIngest(async () => {
+                    await loadParquetBuffer(parquetBuffer, tableName);
+                    if (!loadedTableNames.includes(tableName)) {
+                      loadedTableNames.push(tableName);
+                    }
+                    await refreshIncrementalHistory();
+                  });
+                })(),
+              ),
+            );
+          };
+
+          await loadDescriptorGroup(effectiveCoreParquets);
 
           // Query with price comparisons (using name as key to distinguish organic vs conventional)
           const results = await query<ProduceRow>(`
@@ -457,36 +620,18 @@ export function useProduceData(): UseProduceDataResult {
           ORDER BY b.name
         `);
 
+          hasDetailedRows = true;
           setData(results);
 
-          const historyRows = await query<ProduceHistoryPoint>(`
-          WITH latest_date AS (
-            SELECT MAX(date::DATE) as max_date FROM produce
-          )
-          SELECT name, CAST(date::DATE AS VARCHAR) as date, price
-          FROM produce, latest_date
-          WHERE date::DATE BETWEEN DATE '${LONG_RANGE_HISTORY_START}' AND max_date
-          ORDER BY name, date::DATE
-        `);
-
-          const historyMap = new Map<string, ProduceHistoryPoint[]>();
-          let maxDate: string | null = null;
-          for (const row of historyRows) {
-            const existing = historyMap.get(row.name) ?? [];
-            existing.push(row);
-            historyMap.set(row.name, existing);
-            if (!maxDate || row.date > maxDate) maxDate = row.date;
-          }
-          setHistory(historyMap);
-
-          let range: ProduceDateRange | null = null;
-          if (maxDate) {
-            const minDate = historyRows[0]?.date ?? maxDate;
-            range = { start: minDate, end: maxDate };
-            setDateRange(range);
+          if (backgroundParquets.length > 0) {
+            try {
+              await loadDescriptorGroup(backgroundParquets);
+            } catch (backgroundError) {
+              console.error('Background parquet load failed:', backgroundError);
+            }
           }
 
-          writeProduceCache(results, historyMap, range);
+          writeProduceCache(results, latestHistoryMap, latestRange);
         };
 
         try {
@@ -513,7 +658,7 @@ export function useProduceData(): UseProduceDataResult {
     }
 
     loadData();
-  }, [isReady, query, loadParquet]);
+  }, [isReady, query, loadParquetBuffer]);
 
   const hasCachedData = data.length > 0 && !loading;
   const isLoading = hasCachedData ? false : dbLoading || loading;

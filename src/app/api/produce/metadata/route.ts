@@ -10,18 +10,37 @@ function getCurrentYear() {
     .slice(0, 4);
 }
 
+const DERIVED_PATH_PATTERNS = {
+  ytd: /^produce-data-derived\/ytd-[a-f0-9]{7}\.parquet$/,
+  longRangeDownsampled: /^produce-data-derived\/long-range-downsampled-[a-f0-9]{7}\.parquet$/,
+} as const;
+
+type DerivedKey = keyof typeof DERIVED_PATH_PATTERNS;
+
+function pickLatestBlob<T extends { uploadedAt: string | Date }>(blobs: T[]): T {
+  return blobs.reduce((latest, blob) =>
+    new Date(blob.uploadedAt).getTime() > new Date(latest.uploadedAt).getTime() ? blob : latest,
+  );
+}
+
 async function loadProduceMetadata() {
-  const { blobs } = await list({
-    prefix: 'produce-data-yearly/',
-    token: process.env.VERCEL_BLOB_READ_WRITE_TOKEN,
-  });
+  const [{ blobs: yearlyBlobs }, { blobs: derivedBlobs }] = await Promise.all([
+    list({
+      prefix: 'produce-data-yearly/',
+      token: process.env.VERCEL_BLOB_READ_WRITE_TOKEN,
+    }),
+    list({
+      prefix: 'produce-data-derived/',
+      token: process.env.VERCEL_BLOB_READ_WRITE_TOKEN,
+    }),
+  ]);
 
   const currentYear = getCurrentYear();
   const earliestSupportedYear = 2013;
   const currentYearNum = Number.parseInt(currentYear, 10);
 
-  const byYear = new Map<string, (typeof blobs)[number]>();
-  for (const blob of blobs) {
+  const byYear = new Map<string, (typeof yearlyBlobs)[number]>();
+  for (const blob of yearlyBlobs) {
     const match = blob.pathname.match(/produce-data-yearly\/(\d{4})-[a-f0-9]{7}\.parquet$/);
     if (!match) continue;
     const year = match[1];
@@ -50,7 +69,24 @@ async function loadProduceMetadata() {
     }))
     .sort((a, b) => b.year.localeCompare(a.year));
 
-  return { years };
+  const derived = Object.fromEntries(
+    (Object.keys(DERIVED_PATH_PATTERNS) as DerivedKey[]).map((key) => {
+      const matchingDerivedBlobs = derivedBlobs.filter((blob) =>
+        DERIVED_PATH_PATTERNS[key].test(blob.pathname),
+      );
+      if (matchingDerivedBlobs.length === 0) return [key, null];
+      const latest = pickLatestBlob(matchingDerivedBlobs);
+      return [
+        key,
+        {
+          url: latest.url,
+          size: latest.size,
+        },
+      ];
+    }),
+  ) as Record<DerivedKey, { url: string; size: number } | null>;
+
+  return { years, derived };
 }
 
 export async function GET() {

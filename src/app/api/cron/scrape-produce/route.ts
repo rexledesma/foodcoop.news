@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { put } from '@vercel/blob';
 import { revalidateTag } from 'next/cache';
 import { parseProduceHtml } from '@/lib/produce-parser';
-import { upsertYearParquetForDate } from '@/lib/produce-parquet-utils';
+import { regenerateYtdDerivedParquet, upsertYearParquetForDate } from '@/lib/produce-parquet-utils';
 
 // https://vercel.com/docs/cron-jobs/manage-cron-jobs#securing-cron-jobs
 export async function GET(request: Request) {
@@ -51,6 +51,7 @@ export async function GET(request: Request) {
     // Upsert today's rows into the current year parquet.
     const { items } = parseProduceHtml(html, date);
     const parquetResult = await upsertYearParquetForDate(year, date, items);
+    const ytdParquet = await regenerateYtdDerivedParquet();
 
     revalidateTag('produce-metadata', { expire: 0 });
 
@@ -59,6 +60,7 @@ export async function GET(request: Request) {
       htmlUrl: htmlBlob.url,
       htmlSize: html.length,
       parquet: parquetResult,
+      ytd: ytdParquet,
     });
   } catch (error) {
     console.error('Scrape produce error:', error);

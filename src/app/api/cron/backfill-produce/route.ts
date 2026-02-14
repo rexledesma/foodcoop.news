@@ -1,7 +1,10 @@
 import { NextResponse } from 'next/server';
 import { list } from '@vercel/blob';
 import { revalidateTag } from 'next/cache';
-import { regenerateMonthParquet } from '@/lib/produce-parquet-utils';
+import {
+  regenerateDerivedProduceParquets,
+  regenerateMonthParquet,
+} from '@/lib/produce-parquet-utils';
 
 // POST /api/cron/backfill-produce
 // Regenerates all monthly parquet files from stored HTML snapshots
@@ -41,6 +44,8 @@ export async function POST(request: Request) {
       results.push({ month, ...result });
     }
 
+    const derived = await regenerateDerivedProduceParquets();
+
     revalidateTag('produce-metadata', { expire: 0 });
 
     const totalItems = results.reduce((sum, r) => sum + r.itemCount, 0);
@@ -49,6 +54,7 @@ export async function POST(request: Request) {
       success: true,
       months: results,
       totalItems,
+      derived,
     });
   } catch (error) {
     console.error('Backfill produce error:', error);
