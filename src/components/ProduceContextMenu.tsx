@@ -2,6 +2,7 @@
 
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { produceItemUrl } from '@/lib/produce-hash';
+import { getSpecialtyProduceUrl } from '@/lib/specialty-produce-map';
 
 interface ProduceContextMenuProps {
   itemName: string;
@@ -14,6 +15,7 @@ const MENU_GAP = 8;
 
 export function ProduceContextMenu({ itemName, x, y, onClose }: ProduceContextMenuProps) {
   const [copied, setCopied] = useState(false);
+  const specialtyUrl = getSpecialtyProduceUrl(itemName);
   const menuRef = useRef<HTMLDivElement>(null);
   const [pos, setPos] = useState<{
     left: number;
@@ -83,6 +85,18 @@ export function ProduceContextMenu({ itemName, x, y, onClose }: ProduceContextMe
           : { left: x, top: y, visibility: 'hidden' as const }
       }
     >
+      {specialtyUrl ? (
+        <a
+          href={specialtyUrl}
+          target="_blank"
+          rel="noreferrer"
+          className="flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm text-zinc-700 transition-colors hover:bg-zinc-100"
+        >
+          <span>View on Specialty Produce</span>
+        </a>
+      ) : (
+        <div className="px-4 py-2.5 text-sm text-zinc-400">No Specialty Produce link yet</div>
+      )}
       <button
         type="button"
         onClick={handleCopyLink}
