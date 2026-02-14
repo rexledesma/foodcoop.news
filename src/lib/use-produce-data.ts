@@ -43,11 +43,11 @@ export interface ProduceDateRange {
 }
 
 interface ProduceMetadata {
-  months: {
-    month: string;
+  years: {
+    year: string;
     url: string;
     size: number;
-    isCurrentMonth: boolean;
+    isCurrentYear: boolean;
   }[];
 }
 
@@ -92,17 +92,17 @@ export function useProduceData(): UseProduceDataResult {
           if (!metaRes.ok) throw new Error('Failed to fetch metadata');
           const meta: ProduceMetadata = await metaRes.json();
 
-          if (meta.months.length === 0) {
+          if (meta.years.length === 0) {
             throw new Error('No produce data available');
           }
 
-          // Load all available months
-          for (const { url, month } of meta.months) {
-            await loadParquet(url, `produce_${month.replace('-', '_')}`);
+          // Load current and previous year parquet files.
+          for (const { url, year } of meta.years) {
+            await loadParquet(url, `produce_${year}`);
           }
 
           // Create unified view
-          const tableNames = meta.months.map((m) => `produce_${m.month.replace('-', '_')}`);
+          const tableNames = meta.years.map((entry) => `produce_${entry.year}`);
           const unionQuery = tableNames.map((t) => `SELECT * FROM ${t}`).join(' UNION ALL ');
           await query(`CREATE OR REPLACE TABLE produce AS ${unionQuery}`);
 

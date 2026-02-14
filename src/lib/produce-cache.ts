@@ -1,6 +1,6 @@
 import type { ProduceDateRange, ProduceHistoryPoint, ProduceRow } from '@/lib/use-produce-data';
 
-const CACHE_KEY = 'produce-cache';
+const CACHE_KEY = 'produce-cache-v2';
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000;
 
 interface ProduceCachePayload {

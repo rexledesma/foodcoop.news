@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
 import { put } from '@vercel/blob';
 import { revalidateTag } from 'next/cache';
-import { regenerateMonthParquet } from '@/lib/produce-parquet-utils';
+import { parseProduceHtml } from '@/lib/produce-parser';
+import { upsertYearParquetForDate } from '@/lib/produce-parquet-utils';
 
 // https://vercel.com/docs/cron-jobs/manage-cron-jobs#securing-cron-jobs
 export async function GET(request: Request) {
@@ -37,7 +38,7 @@ export async function GET(request: Request) {
     const date = new Date().toLocaleDateString('en-CA', {
       timeZone: 'America/New_York',
     }); // "YYYY-MM-DD"
-    const month = date.slice(0, 7); // "YYYY-MM"
+    const year = date.slice(0, 4);
 
     // Store HTML snapshot
     const htmlBlob = await put(`produce/${date}.html`, html, {
@@ -47,8 +48,9 @@ export async function GET(request: Request) {
       token: process.env.VERCEL_BLOB_READ_WRITE_TOKEN,
     });
 
-    // Regenerate Parquet for the current month
-    const parquetResult = await regenerateMonthParquet(month);
+    // Upsert today's rows into the current year parquet.
+    const { items } = parseProduceHtml(html, date);
+    const parquetResult = await upsertYearParquetForDate(year, date, items);
 
     revalidateTag('produce-metadata', { expire: 0 });
 

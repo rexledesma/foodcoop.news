@@ -9,10 +9,24 @@ export function parseProduceHtml(html: string, date: string): ParsedProducePage 
     const tds = $(row).find('td');
     if (tds.length < 4) return;
 
-    const nameCell = $(tds[0]).find('div').first().text().trim();
-    const priceCell = $(tds[1]).text().trim();
-    const attrsCell = $(tds[2]).text().trim();
-    const originCell = $(tds[3]).text().trim();
+    let nameCell = '';
+    let priceCell = '';
+    let attrsCell = '';
+    let originCell = '';
+
+    if (tds.length >= 5) {
+      // Legacy foodcoop HTML includes: Name, Type, Price, Organic?, Origin
+      nameCell = $(tds[0]).text().trim();
+      priceCell = $(tds[2]).text().trim();
+      attrsCell = $(tds[3]).text().trim();
+      originCell = $(tds[4]).text().trim();
+    } else {
+      // Current layout includes: Name, Price, Organic?, Origin
+      nameCell = $(tds[0]).find('div').first().text().trim() || $(tds[0]).text().trim();
+      priceCell = $(tds[1]).text().trim();
+      attrsCell = $(tds[2]).text().trim();
+      originCell = $(tds[3]).text().trim();
+    }
 
     if (!nameCell || !priceCell) return;
 
