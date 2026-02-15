@@ -10,7 +10,8 @@ const ProduceAnalytics = dynamic(
 );
 
 export function ProducePageClient() {
-  const { data, history, dateRange, isLoading, isRefreshing, error } = useProduceDataContext();
+  const { data, history, dateRange, isLoading, isRefreshing, error, revalidateForPeriod } =
+    useProduceDataContext();
   const searchParams = useSearchParams();
   const initialDateFilter = searchParams.get('date');
   const initialItemFilter = searchParams.get('item');
@@ -23,6 +24,7 @@ export function ProducePageClient() {
       isLoading={isLoading}
       isRefreshing={isRefreshing}
       error={error}
+      revalidateForPeriod={revalidateForPeriod}
       initialDateFilter={initialDateFilter}
       initialItemFilter={initialItemFilter}
     />

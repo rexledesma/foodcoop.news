@@ -12,6 +12,7 @@ import type {
   ProduceHistoryMap,
   ProduceHistoryPoint,
   ProduceRow,
+  ProduceSWRPeriod,
 } from '@/lib/use-produce-data';
 
 type TimePeriod =
@@ -36,6 +37,7 @@ interface ProduceAnalyticsProps {
   isLoading?: boolean;
   isRefreshing?: boolean;
   error?: string | null;
+  revalidateForPeriod: (period: ProduceSWRPeriod) => void;
   initialDateFilter?: string | null;
   initialItemFilter?: string | null;
 }
@@ -67,6 +69,20 @@ const TIME_PERIODS: TimePeriod[] = [
   'YTD',
 ];
 const TIME_PERIOD_SET = new Set<TimePeriod>(TIME_PERIODS);
+const SWR_PERIOD_SET = new Set<ProduceSWRPeriod>([
+  '3M',
+  '6M',
+  '1Y',
+  '2Y',
+  '5Y',
+  '10Y',
+  'SINCE_2013',
+  'YTD',
+]);
+
+function isProduceSwrPeriod(period: TimePeriod): period is ProduceSWRPeriod {
+  return SWR_PERIOD_SET.has(period as ProduceSWRPeriod);
+}
 const PERIOD_BUTTON_LABELS: Record<TimePeriod, string> = {
   '1D': '1D',
   '1W': '1W',
@@ -377,6 +393,7 @@ export function ProduceAnalytics({
   isLoading = false,
   isRefreshing = false,
   error = null,
+  revalidateForPeriod,
   initialDateFilter = null,
   initialItemFilter = null,
 }: ProduceAnalyticsProps) {
@@ -446,6 +463,12 @@ export function ProduceAnalytics({
       JSON.stringify({ quickFilter, timePeriod, sortField, sortDirection }),
     );
   }, [quickFilter, timePeriod, sortField, sortDirection]);
+
+  useEffect(() => {
+    if (isProduceSwrPeriod(timePeriod)) {
+      revalidateForPeriod(timePeriod);
+    }
+  }, [timePeriod, revalidateForPeriod]);
 
   const stickyVisible = showSticky || isSearchFocused;
 

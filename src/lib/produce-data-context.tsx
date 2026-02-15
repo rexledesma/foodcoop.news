@@ -1,7 +1,12 @@
 'use client';
 
 import { createContext, useContext } from 'react';
-import type { ProduceDateRange, ProduceHistoryMap, ProduceRow } from '@/lib/use-produce-data';
+import type {
+  ProduceDateRange,
+  ProduceHistoryMap,
+  ProduceRow,
+  ProduceSWRPeriod,
+} from '@/lib/use-produce-data';
 
 export interface ProduceDataState {
   data: ProduceRow[];
@@ -10,6 +15,7 @@ export interface ProduceDataState {
   isLoading: boolean;
   isRefreshing: boolean;
   error: string | null;
+  revalidateForPeriod: (period: ProduceSWRPeriod) => void;
 }
 
 const ProduceDataContext = createContext<ProduceDataState | null>(null);

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { clearProduceCache, readProduceCache, writeProduceCache } from '@/lib/produce-cache';
 import { useDuckDB } from '@/lib/use-duckdb';
 
@@ -58,6 +58,19 @@ export interface ProduceDateRange {
 }
 
 const LONG_RANGE_HISTORY_START = '2013-01-01';
+const SWR_REVALIDATE_INTERVAL_MS = 5 * 60 * 1000;
+const SWR_PERIODS = new Set<ProduceSWRPeriod>([
+  '3M',
+  '6M',
+  '1Y',
+  '2Y',
+  '5Y',
+  '10Y',
+  'SINCE_2013',
+  'YTD',
+]);
+
+export type ProduceSWRPeriod = '3M' | '6M' | '1Y' | '2Y' | '5Y' | '10Y' | 'SINCE_2013' | 'YTD';
 
 interface ProduceMetadata {
   years: {
@@ -79,6 +92,7 @@ interface UseProduceDataResult {
   isLoading: boolean;
   isRefreshing: boolean;
   error: string | null;
+  revalidateForPeriod: (period: ProduceSWRPeriod) => void;
 }
 
 export function useProduceData(): UseProduceDataResult {
@@ -95,80 +109,81 @@ export function useProduceData(): UseProduceDataResult {
   const [refreshing, setRefreshing] = useState(!!cachedState);
   const [error, setError] = useState<string | null>(null);
   const didRetryAfterCacheClearRef = useRef(false);
+  const isFetchingRef = useRef(false);
+  const pendingPeriodRef = useRef<ProduceSWRPeriod | null>(null);
+  const periodRefreshAtRef = useRef<Map<ProduceSWRPeriod, number>>(new Map());
 
-  useEffect(() => {
-    if (!isReady) return;
+  const loadData = useCallback(async () => {
+    if (!isReady || isFetchingRef.current) return;
+    isFetchingRef.current = true;
+    try {
+      if (!hasCacheRef.current) {
+        setLoading(true);
+      }
+      setRefreshing(true);
+      setError(null);
 
-    async function loadData() {
-      try {
-        if (!hasCacheRef.current) {
-          setLoading(true);
+      const fetchAndBuildData = async () => {
+        // Fetch metadata to get Parquet URLs
+        const metaRes = await fetch('/api/produce/metadata');
+        if (!metaRes.ok) throw new Error('Failed to fetch metadata');
+        const meta: ProduceMetadata = await metaRes.json();
+
+        if (meta.years.length === 0) {
+          throw new Error('No produce data available');
         }
-        setRefreshing(true);
-        setError(null);
 
-        const fetchAndBuildData = async () => {
-          // Fetch metadata to get Parquet URLs
-          const metaRes = await fetch('/api/produce/metadata');
-          if (!metaRes.ok) throw new Error('Failed to fetch metadata');
-          const meta: ProduceMetadata = await metaRes.json();
+        const currentYearEntry = meta.years.find((entry) => entry.isCurrentYear);
+        const currentYear = currentYearEntry
+          ? Number.parseInt(currentYearEntry.year, 10)
+          : Number.parseInt(meta.years[0].year, 10);
+        const previousTwoYearEntries = meta.years.filter((entry) => {
+          const yearNum = Number.parseInt(entry.year, 10);
+          return yearNum === currentYear - 1 || yearNum === currentYear - 2;
+        });
 
-          if (meta.years.length === 0) {
-            throw new Error('No produce data available');
-          }
+        const coreParquets = [
+          meta.derived?.ytd?.url ? { tableName: 'produce_ytd', url: meta.derived.ytd.url } : null,
+          ...previousTwoYearEntries.map((entry) => ({
+            tableName: `produce_${entry.year}`,
+            url: entry.url,
+          })),
+        ].filter(Boolean) as { tableName: string; url: string }[];
 
-          const currentYearEntry = meta.years.find((entry) => entry.isCurrentYear);
-          const currentYear = currentYearEntry
-            ? Number.parseInt(currentYearEntry.year, 10)
-            : Number.parseInt(meta.years[0].year, 10);
-          const previousTwoYearEntries = meta.years.filter((entry) => {
-            const yearNum = Number.parseInt(entry.year, 10);
-            return yearNum === currentYear - 1 || yearNum === currentYear - 2;
-          });
+        const fallbackCoreParquets = meta.years
+          .filter(
+            (entry) =>
+              entry.isCurrentYear ||
+              previousTwoYearEntries.some((prev) => prev.year === entry.year),
+          )
+          .map((entry) => ({ tableName: `produce_${entry.year}`, url: entry.url }));
 
-          const coreParquets = [
-            meta.derived?.ytd?.url ? { tableName: 'produce_ytd', url: meta.derived.ytd.url } : null,
-            ...previousTwoYearEntries.map((entry) => ({
-              tableName: `produce_${entry.year}`,
-              url: entry.url,
-            })),
-          ].filter(Boolean) as { tableName: string; url: string }[];
+        const effectiveCoreParquets = coreParquets.length > 0 ? coreParquets : fallbackCoreParquets;
+        if (effectiveCoreParquets.length === 0) {
+          throw new Error('No core produce parquet files available');
+        }
+        const backgroundParquets = meta.derived?.longRangeDownsampled?.url
+          ? [
+              {
+                tableName: 'produce_long_range_downsampled',
+                url: meta.derived.longRangeDownsampled.url,
+              },
+            ]
+          : [];
 
-          const fallbackCoreParquets = meta.years
-            .filter(
-              (entry) =>
-                entry.isCurrentYear ||
-                previousTwoYearEntries.some((prev) => prev.year === entry.year),
-            )
-            .map((entry) => ({ tableName: `produce_${entry.year}`, url: entry.url }));
+        const loadedTableNames: string[] = [];
+        let latestHistoryMap = new Map<string, ProduceHistoryPoint[]>();
+        let latestRange: ProduceDateRange | null = null;
+        let hasDetailedRows = false;
 
-          const effectiveCoreParquets =
-            coreParquets.length > 0 ? coreParquets : fallbackCoreParquets;
-          if (effectiveCoreParquets.length === 0) {
-            throw new Error('No core produce parquet files available');
-          }
-          const backgroundParquets = meta.derived?.longRangeDownsampled?.url
-            ? [
-                {
-                  tableName: 'produce_long_range_downsampled',
-                  url: meta.derived.longRangeDownsampled.url,
-                },
-              ]
-            : [];
+        const refreshProduceUnion = async () => {
+          if (loadedTableNames.length === 0) return;
+          const unionQuery = loadedTableNames.map((t) => `SELECT * FROM ${t}`).join(' UNION ');
+          await query(`CREATE OR REPLACE TABLE produce AS ${unionQuery}`);
+        };
 
-          const loadedTableNames: string[] = [];
-          let latestHistoryMap = new Map<string, ProduceHistoryPoint[]>();
-          let latestRange: ProduceDateRange | null = null;
-          let hasDetailedRows = false;
-
-          const refreshProduceUnion = async () => {
-            if (loadedTableNames.length === 0) return;
-            const unionQuery = loadedTableNames.map((t) => `SELECT * FROM ${t}`).join(' UNION ');
-            await query(`CREATE OR REPLACE TABLE produce AS ${unionQuery}`);
-          };
-
-          const queryIncrementalRows = async () =>
-            query<ProduceRow>(`
+        const queryIncrementalRows = async () =>
+          query<ProduceRow>(`
             WITH latest_date AS (
               SELECT MAX(date::DATE) as max_date FROM produce
             )
@@ -215,9 +230,9 @@ export function useProduceData(): UseProduceDataResult {
             ORDER BY p.name
           `);
 
-          const refreshIncrementalHistory = async () => {
-            await refreshProduceUnion();
-            const historyRows = await query<ProduceHistoryPoint>(`
+        const refreshIncrementalHistory = async () => {
+          await refreshProduceUnion();
+          const historyRows = await query<ProduceHistoryPoint>(`
             WITH latest_date AS (
               SELECT MAX(date::DATE) as max_date FROM produce
             )
@@ -227,67 +242,65 @@ export function useProduceData(): UseProduceDataResult {
             ORDER BY name, date::DATE
           `);
 
-            const historyMap = new Map<string, ProduceHistoryPoint[]>();
-            let maxDate: string | null = null;
-            for (const row of historyRows) {
-              const existing = historyMap.get(row.name) ?? [];
-              existing.push(row);
-              historyMap.set(row.name, existing);
-              if (!maxDate || row.date > maxDate) maxDate = row.date;
-            }
+          const historyMap = new Map<string, ProduceHistoryPoint[]>();
+          let maxDate: string | null = null;
+          for (const row of historyRows) {
+            const existing = historyMap.get(row.name) ?? [];
+            existing.push(row);
+            historyMap.set(row.name, existing);
+            if (!maxDate || row.date > maxDate) maxDate = row.date;
+          }
 
-            let range: ProduceDateRange | null = null;
-            if (maxDate) {
-              const minDate = historyRows[0]?.date ?? maxDate;
-              range = { start: minDate, end: maxDate };
-            }
+          let range: ProduceDateRange | null = null;
+          if (maxDate) {
+            const minDate = historyRows[0]?.date ?? maxDate;
+            range = { start: minDate, end: maxDate };
+          }
 
-            latestHistoryMap = historyMap;
-            latestRange = range;
-            setHistory(historyMap);
-            setDateRange(range);
+          latestHistoryMap = historyMap;
+          latestRange = range;
+          setHistory(historyMap);
+          setDateRange(range);
 
-            const incrementalRows = await queryIncrementalRows();
-            if (!hasDetailedRows && incrementalRows.length > 0) {
-              setData(incrementalRows);
-              setLoading(false);
-            }
-          };
+          const incrementalRows = await queryIncrementalRows();
+          if (!hasDetailedRows && incrementalRows.length > 0) {
+            setData(incrementalRows);
+            setLoading(false);
+          }
+        };
 
-          let ingestQueue = Promise.resolve();
-          const enqueueIngest = (task: () => Promise<void>) => {
-            const next = ingestQueue.then(task);
-            ingestQueue = next.catch(() => {});
-            return next;
-          };
+        let ingestQueue = Promise.resolve();
+        const enqueueIngest = (task: () => Promise<void>) => {
+          const next = ingestQueue.then(task);
+          ingestQueue = next.catch(() => {});
+          return next;
+        };
 
-          const loadDescriptorGroup = async (descriptors: { tableName: string; url: string }[]) => {
-            await Promise.all(
-              descriptors.map(({ tableName, url }) =>
-                (async () => {
-                  const response = await fetch(url);
-                  if (!response.ok) {
-                    throw new Error(
-                      `Failed to fetch parquet ${tableName}: HTTP ${response.status}`,
-                    );
+        const loadDescriptorGroup = async (descriptors: { tableName: string; url: string }[]) => {
+          await Promise.all(
+            descriptors.map(({ tableName, url }) =>
+              (async () => {
+                const response = await fetch(url);
+                if (!response.ok) {
+                  throw new Error(`Failed to fetch parquet ${tableName}: HTTP ${response.status}`);
+                }
+                const parquetBuffer = await response.arrayBuffer();
+                await enqueueIngest(async () => {
+                  await loadParquetBuffer(parquetBuffer, tableName);
+                  if (!loadedTableNames.includes(tableName)) {
+                    loadedTableNames.push(tableName);
                   }
-                  const parquetBuffer = await response.arrayBuffer();
-                  await enqueueIngest(async () => {
-                    await loadParquetBuffer(parquetBuffer, tableName);
-                    if (!loadedTableNames.includes(tableName)) {
-                      loadedTableNames.push(tableName);
-                    }
-                    await refreshIncrementalHistory();
-                  });
-                })(),
-              ),
-            );
-          };
+                  await refreshIncrementalHistory();
+                });
+              })(),
+            ),
+          );
+        };
 
-          await loadDescriptorGroup(effectiveCoreParquets);
+        await loadDescriptorGroup(effectiveCoreParquets);
 
-          // Query with price comparisons (using name as key to distinguish organic vs conventional)
-          const results = await query<ProduceRow>(`
+        // Query with price comparisons (using name as key to distinguish organic vs conventional)
+        const results = await query<ProduceRow>(`
           WITH latest_date AS (
             SELECT MAX(date::DATE) as max_date FROM produce
           ),
@@ -620,50 +633,81 @@ export function useProduceData(): UseProduceDataResult {
           ORDER BY b.name
         `);
 
-          hasDetailedRows = true;
-          setData(results);
+        hasDetailedRows = true;
+        setData(results);
 
-          if (backgroundParquets.length > 0) {
-            try {
-              await loadDescriptorGroup(backgroundParquets);
-            } catch (backgroundError) {
-              console.error('Background parquet load failed:', backgroundError);
-            }
-          }
-
-          writeProduceCache(results, latestHistoryMap, latestRange);
-        };
-
-        try {
-          await fetchAndBuildData();
-          didRetryAfterCacheClearRef.current = false;
-        } catch (initialError) {
-          if (!didRetryAfterCacheClearRef.current) {
-            didRetryAfterCacheClearRef.current = true;
-            clearProduceCache();
-            hasCacheRef.current = false;
-            await fetchAndBuildData();
-            didRetryAfterCacheClearRef.current = false;
-          } else {
-            throw initialError;
+        if (backgroundParquets.length > 0) {
+          try {
+            await loadDescriptorGroup(backgroundParquets);
+          } catch (backgroundError) {
+            console.error('Background parquet load failed:', backgroundError);
           }
         }
-      } catch (err) {
+
+        writeProduceCache(results, latestHistoryMap, latestRange);
+      };
+
+      try {
+        await fetchAndBuildData();
         didRetryAfterCacheClearRef.current = false;
-        setError(err instanceof Error ? err.message : 'Failed to load data');
-      } finally {
-        setLoading(false);
-        setRefreshing(false);
+      } catch (initialError) {
+        if (!didRetryAfterCacheClearRef.current) {
+          didRetryAfterCacheClearRef.current = true;
+          clearProduceCache();
+          hasCacheRef.current = false;
+          await fetchAndBuildData();
+          didRetryAfterCacheClearRef.current = false;
+        } else {
+          throw initialError;
+        }
+      }
+    } catch (err) {
+      didRetryAfterCacheClearRef.current = false;
+      setError(err instanceof Error ? err.message : 'Failed to load data');
+    } finally {
+      isFetchingRef.current = false;
+      setLoading(false);
+      setRefreshing(false);
+
+      const pendingPeriod = pendingPeriodRef.current;
+      pendingPeriodRef.current = null;
+      if (pendingPeriod) {
+        const now = Date.now();
+        periodRefreshAtRef.current.set(pendingPeriod, now);
       }
     }
-
-    loadData();
   }, [isReady, query, loadParquetBuffer]);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
+
+  const revalidateForPeriod = useCallback(
+    (period: ProduceSWRPeriod) => {
+      if (!SWR_PERIODS.has(period) || !isReady) return;
+      const now = Date.now();
+      const lastRefreshAt = periodRefreshAtRef.current.get(period) ?? 0;
+      if (now - lastRefreshAt < SWR_REVALIDATE_INTERVAL_MS) return;
+      if (isFetchingRef.current) return;
+
+      pendingPeriodRef.current = period;
+      loadData();
+    },
+    [isReady, loadData],
+  );
 
   const hasCachedData = data.length > 0 && !loading;
   const isLoading = hasCachedData ? false : dbLoading || loading;
   const isRefreshing = hasCachedData && (dbLoading || refreshing);
   const combinedError = dbError?.message || error;
 
-  return { data, history, dateRange, isLoading, isRefreshing, error: combinedError };
+  return {
+    data,
+    history,
+    dateRange,
+    isLoading,
+    isRefreshing,
+    error: combinedError,
+    revalidateForPeriod,
+  };
 }

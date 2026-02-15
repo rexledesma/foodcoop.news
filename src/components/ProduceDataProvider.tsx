@@ -5,11 +5,12 @@ import { useProduceData } from '@/lib/use-produce-data';
 import { ProduceDataContext, type ProduceDataState } from '@/lib/produce-data-context';
 
 export function ProduceDataProvider({ children }: { children: ReactNode }) {
-  const { data, history, dateRange, isLoading, isRefreshing, error } = useProduceData();
+  const { data, history, dateRange, isLoading, isRefreshing, error, revalidateForPeriod } =
+    useProduceData();
 
   const value = useMemo<ProduceDataState>(
-    () => ({ data, history, dateRange, isLoading, isRefreshing, error }),
-    [data, history, dateRange, isLoading, isRefreshing, error],
+    () => ({ data, history, dateRange, isLoading, isRefreshing, error, revalidateForPeriod }),
+    [data, history, dateRange, isLoading, isRefreshing, error, revalidateForPeriod],
   );
 
   return <ProduceDataContext.Provider value={value}>{children}</ProduceDataContext.Provider>;
