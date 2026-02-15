@@ -679,7 +679,7 @@ export function useProduceData(): UseProduceDataResult {
   }, [isReady, query, loadParquetBuffer]);
 
   useEffect(() => {
-    loadData();
+    void loadData();
   }, [loadData]);
 
   const revalidateForPeriod = useCallback(
@@ -691,7 +691,7 @@ export function useProduceData(): UseProduceDataResult {
       if (isFetchingRef.current) return;
 
       pendingPeriodRef.current = period;
-      loadData();
+      void loadData();
     },
     [isReady, loadData],
   );

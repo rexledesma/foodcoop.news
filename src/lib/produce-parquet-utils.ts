@@ -90,19 +90,32 @@ function parseParquetNumber(value: unknown): number {
   return 0;
 }
 
+function parseParquetString(value: unknown): string {
+  if (typeof value === 'string') return value;
+  if (typeof value === 'number' || typeof value === 'boolean' || typeof value === 'bigint') {
+    return `${value}`;
+  }
+  return '';
+}
+
+function parseParquetUnit(value: unknown): ProduceItem['unit'] {
+  if (value === 'pound' || value === 'each' || value === 'bunch') return value;
+  return 'each';
+}
+
 function toProduceItemFromParquetRow(row: Record<string, unknown>): ProduceItem {
   return {
-    id: String(row.id ?? ''),
-    date: String(row.date ?? ''),
-    name: String(row.name ?? ''),
+    id: parseParquetString(row.id),
+    date: parseParquetString(row.date),
+    name: parseParquetString(row.name),
     price: parseParquetNumber(row.price),
-    unit: String(row.unit ?? 'each') as ProduceItem['unit'],
+    unit: parseParquetUnit(row.unit),
     isOrganic: parseParquetBoolean(row.is_organic),
     isIpm: parseParquetBoolean(row.is_ipm),
     isWaxed: parseParquetBoolean(row.is_waxed),
     isLocal: parseParquetBoolean(row.is_local),
     isHydroponic: parseParquetBoolean(row.is_hydroponic),
-    origin: String(row.origin ?? ''),
+    origin: parseParquetString(row.origin),
   };
 }
 

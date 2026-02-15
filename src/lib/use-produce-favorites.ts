@@ -94,7 +94,9 @@ export function useProduceFavorites(): {
   const toggleFavorite = useCallback(
     (name: string) => {
       if (isAuthenticated) {
-        toggleMutation({ itemName: name });
+        void toggleMutation({ itemName: name }).catch((error) => {
+          console.error('Failed to toggle produce favorite:', error);
+        });
         // Optimistically update the localStorage cache
         const current = readFavoritesCache();
         if (current) {

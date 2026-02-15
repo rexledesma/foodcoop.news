@@ -61,12 +61,23 @@ export function useDuckDB(): UseDuckDBResult {
       }
     }
 
-    initDuckDB();
+    void initDuckDB();
 
     return () => {
       cancelled = true;
-      connRef.current?.close();
-      dbRef.current?.terminate();
+      const closePromise = connRef.current?.close();
+      if (closePromise) {
+        void closePromise.catch((err) => {
+          console.error('[DuckDB] Error closing connection:', err);
+        });
+      }
+
+      const terminatePromise = dbRef.current?.terminate();
+      if (terminatePromise) {
+        void terminatePromise.catch((err) => {
+          console.error('[DuckDB] Error terminating database:', err);
+        });
+      }
     };
   }, []);
 
