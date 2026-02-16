@@ -15,6 +15,7 @@ export function ProducePageClient() {
   const searchParams = useSearchParams();
   const initialDateFilter = searchParams.get('date');
   const initialItemFilter = searchParams.get('item');
+  const initialProduceFilter = searchParams.get('produce');
 
   return (
     <ProduceAnalytics
@@ -27,6 +28,7 @@ export function ProducePageClient() {
       revalidateForPeriod={revalidateForPeriod}
       initialDateFilter={initialDateFilter}
       initialItemFilter={initialItemFilter}
+      initialProduceFilter={initialProduceFilter}
     />
   );
 }
