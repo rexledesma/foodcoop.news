@@ -1,7 +1,8 @@
 'use client';
 
 import { useEffect, useState, useCallback, useRef } from 'react';
-import * as duckdb from '@duckdb/duckdb-wasm';
+
+type DuckDBModule = typeof import('@duckdb/duckdb-wasm/dist/duckdb-browser');
 
 interface UseDuckDBResult {
   isReady: boolean;
@@ -17,14 +18,19 @@ export function useDuckDB(): UseDuckDBResult {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
-  const dbRef = useRef<duckdb.AsyncDuckDB | null>(null);
-  const connRef = useRef<duckdb.AsyncDuckDBConnection | null>(null);
+  const duckdbRef = useRef<DuckDBModule | null>(null);
+  const dbRef = useRef<InstanceType<DuckDBModule['AsyncDuckDB']> | null>(null);
+  const connRef = useRef<Awaited<
+    ReturnType<InstanceType<DuckDBModule['AsyncDuckDB']>['connect']>
+  > | null>(null);
 
   useEffect(() => {
     let cancelled = false;
 
     async function initDuckDB() {
       try {
+        const duckdb = await import('@duckdb/duckdb-wasm/dist/duckdb-browser');
+        duckdbRef.current = duckdb;
         const JSDELIVR_BUNDLES = duckdb.getJsDelivrBundles();
         const bundle = await duckdb.selectBundle(JSDELIVR_BUNDLES);
 
@@ -91,11 +97,16 @@ export function useDuckDB(): UseDuckDBResult {
   }, []);
 
   const loadParquet = useCallback(async (url: string, tableName: string): Promise<void> => {
-    if (!dbRef.current || !connRef.current) {
+    if (!dbRef.current || !connRef.current || !duckdbRef.current) {
       throw new Error('DuckDB not initialized');
     }
 
-    await dbRef.current.registerFileURL(tableName, url, duckdb.DuckDBDataProtocol.HTTP, false);
+    await dbRef.current.registerFileURL(
+      tableName,
+      url,
+      duckdbRef.current.DuckDBDataProtocol.HTTP,
+      false,
+    );
     await connRef.current.query(`
         CREATE OR REPLACE TABLE ${tableName} AS
         SELECT * FROM parquet_scan('${tableName}')
