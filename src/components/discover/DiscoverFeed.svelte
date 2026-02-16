@@ -258,18 +258,18 @@
     <div class="pb-4">
       {#if isInitialLoading}
         <div class="space-y-3">
-          <div class="flex gap-2">
+          <div class="flex gap-1">
             <div class="feed-shimmer h-8 w-16 rounded-full"></div>
             <div class="feed-shimmer h-8 w-20 rounded-full"></div>
           </div>
-          <div class="flex gap-2">
+          <div class="flex gap-1">
             <div class="feed-shimmer h-8 w-28 rounded-full"></div>
             <div class="feed-shimmer h-8 w-36 rounded-full"></div>
             <div class="feed-shimmer h-8 w-20 rounded-full"></div>
           </div>
         </div>
       {:else}
-        <div class="flex flex-wrap gap-2">
+        <div class="flex flex-wrap gap-1">
           {#each FILTER_OPTIONS.filter((option) => ['latest', 'upcoming'].includes(option.value)) as option (option.value)}
             <button
               type="button"
@@ -281,7 +281,7 @@
           {/each}
         </div>
 
-        <div class="mt-2 flex flex-wrap gap-2">
+        <div class="mt-2 flex flex-wrap gap-1">
           {#each FILTER_OPTIONS.filter((option) => !['latest', 'upcoming'].includes(option.value)) as option (option.value)}
             <button
               type="button"
