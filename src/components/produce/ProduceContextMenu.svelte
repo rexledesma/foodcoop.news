@@ -125,6 +125,10 @@
       : `left: ${x}px; top: ${y}px; visibility: hidden;`
   }
 >
+  <div class="border-b border-zinc-100 px-4 py-2 text-xs font-medium text-zinc-500" title={itemName}>
+    <span class="block max-w-[240px] truncate">{itemName}</span>
+  </div>
+
   {#if specialtyUrl}
     <a
       href={specialtyUrl}
