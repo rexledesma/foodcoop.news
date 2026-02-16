@@ -38,6 +38,7 @@ function readFavoritesCache(): Set<string> | null {
 function writeFavoritesCache(favorites: string[]) {
   try {
     localStorage.setItem(CACHE_KEY, JSON.stringify(favorites));
+    window.dispatchEvent(new Event(CACHE_KEY));
   } catch {
     // Silently ignore quota errors
   }
@@ -45,6 +46,9 @@ function writeFavoritesCache(favorites: string[]) {
 
 function clearFavoritesCache() {
   localStorage.removeItem(CACHE_KEY);
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new Event(CACHE_KEY));
+  }
 }
 
 export function useProduceFavorites(): {

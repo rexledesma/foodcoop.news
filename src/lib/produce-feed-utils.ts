@@ -1,6 +1,6 @@
 import type { ProduceRow } from '@/lib/use-produce-data';
 import type { ProduceEvent, ProduceEventItem } from '@/lib/types';
-import type { FeedItem } from '@/lib/discover-feed-context';
+import type { FeedItem } from '@/lib/discover-feed';
 
 function toProduceEventItem(row: ProduceRow): ProduceEventItem {
   return {

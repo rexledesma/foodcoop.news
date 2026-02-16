@@ -9,12 +9,8 @@ import type {
   EventbriteEvent,
   FoodcoopEvent,
 } from '@/lib/types';
-import {
-  DiscoverFeedContext,
-  getFeedItemKey,
-  type FeedItem,
-  type DiscoverFeedState,
-} from '@/lib/discover-feed-context';
+import { DiscoverFeedContext, type DiscoverFeedState } from '@/lib/discover-feed-context';
+import { getFeedItemKey, type FeedItem } from '@/lib/discover-feed';
 import { useProduceDataContext } from '@/lib/produce-data-context';
 import { produceRowsToFeedItems } from '@/lib/produce-feed-utils';
 

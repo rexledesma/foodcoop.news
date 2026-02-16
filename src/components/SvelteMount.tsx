@@ -3,14 +3,14 @@
 import { useEffect, useRef } from 'react';
 import { mount, unmount, type Component, type ComponentProps } from 'svelte';
 
-type SvelteComponent = Component<Record<string, unknown>>;
+type AnySvelteComponent = Component<any, any, any>;
 
-type SvelteMountProps<TComponent extends SvelteComponent> = {
+type SvelteMountProps<TComponent extends AnySvelteComponent> = {
   component: TComponent;
   props: ComponentProps<TComponent>;
 };
 
-export default function SvelteMount<TComponent extends SvelteComponent>({
+export default function SvelteMount<TComponent extends AnySvelteComponent>({
   component,
   props,
 }: SvelteMountProps<TComponent>) {

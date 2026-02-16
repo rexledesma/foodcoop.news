@@ -1,5 +1,4 @@
 import { DiscoverFeed } from '@/components/DiscoverFeed';
-import { ScrollAwarePageShell } from '@/components/ScrollAwarePageShell';
 
 export const metadata = {
   title: 'Discover',
@@ -11,9 +10,5 @@ export const metadata = {
 };
 
 export default function DiscoverPage() {
-  return (
-    <ScrollAwarePageShell>
-      <DiscoverFeed />
-    </ScrollAwarePageShell>
-  );
+  return <DiscoverFeed />;
 }
