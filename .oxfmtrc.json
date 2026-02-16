@@ -9,7 +9,6 @@
   "experimentalSortPackageJson": false,
   "ignorePatterns": [
     "node_modules",
-    ".next",
     "out",
     "build",
     "dist",
