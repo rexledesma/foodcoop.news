@@ -1021,7 +1021,7 @@
             {@const showHighLow = getPeriodPointCount(rowHistory, dateRange, timePeriod) >= 3}
             {@const specialtyUrl = getSpecialtyProduceUrl(row.name)}
             <tr
-              class={`group border-b border-zinc-100 ${favorites.has(row.name) ? 'bg-amber-50' : 'hover:bg-zinc-50'}`}
+              class={`group select-none border-b border-zinc-100 ${favorites.has(row.name) ? 'bg-amber-50' : 'hover:bg-zinc-50'}`}
               oncontextmenu={(e) => handleContextMenu(e, row.name)}
               ontouchstart={(e) => handleTouchStart(e, row.name)}
               ontouchmove={(e) => handleTouchMove(e, row.name)}
