@@ -15,10 +15,12 @@
     onClose: () => void;
   } = $props();
 
-  const MENU_GAP = 8;
+  const MENU_GAP = 18;
+  const DISMISS_GUARD_MS = 400;
 
   let copied = $state(false);
   let menuRef = $state<HTMLDivElement | null>(null);
+  let openedAt = $state(0);
   let pos = $state<{
     left: number;
     top: number;
@@ -45,10 +47,30 @@
   }
 
   async function handleCopyLink() {
+    if (isWithinDismissGuard()) return;
     const url = `${window.location.origin}${produceItemUrl(itemName)}`;
     await navigator.clipboard.writeText(url);
     copied = true;
     setTimeout(() => onClose(), 600);
+  }
+
+  function handleSpecialtyLinkClick(event: MouseEvent) {
+    if (!isWithinDismissGuard()) return;
+    event.preventDefault();
+    event.stopPropagation();
+  }
+
+  function isWithinDismissGuard(): boolean {
+    return Date.now() - openedAt < DISMISS_GUARD_MS;
+  }
+
+  function handleBackdropClick(event: MouseEvent) {
+    if (isWithinDismissGuard()) {
+      event.preventDefault();
+      event.stopPropagation();
+      return;
+    }
+    onClose();
   }
 
   $effect(() => {
@@ -56,15 +78,21 @@
   });
 
   onMount(() => {
+    openedAt = Date.now();
+
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose();
     };
     const handleClickOutside = (e: MouseEvent | TouchEvent) => {
+      if (isWithinDismissGuard()) return;
       if (menuRef && !menuRef.contains(e.target as Node)) {
         onClose();
       }
     };
-    const handleScroll = () => onClose();
+    const handleScroll = () => {
+      if (isWithinDismissGuard()) return;
+      onClose();
+    };
 
     document.addEventListener('keydown', handleKeyDown);
     document.addEventListener('mousedown', handleClickOutside);
@@ -79,6 +107,12 @@
     };
   });
 </script>
+
+<div
+  class="fixed inset-0 z-40 bg-black/25 select-none"
+  onclick={handleBackdropClick}
+  aria-hidden="true"
+></div>
 
 <div
   bind:this={menuRef}
@@ -96,6 +130,7 @@
       href={specialtyUrl}
       target="_blank"
       rel="noreferrer"
+      onclick={handleSpecialtyLinkClick}
       class="flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm text-zinc-700 transition-colors hover:bg-zinc-100"
     >
       <span>View on Specialty Produce</span>
