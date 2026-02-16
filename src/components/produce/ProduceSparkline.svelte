@@ -5,13 +5,9 @@
     | '1D'
     | '1W'
     | '1M'
-    | '3M'
-    | '6M'
     | '1Y'
-    | '2Y'
     | '5Y'
-    | '10Y'
-    | 'SINCE_2013'
+    | 'MAX'
     | 'YTD';
 
   type PositionY = 'above' | 'baseline' | 'below';
@@ -49,19 +45,11 @@
         return endMs - 7 * DAY_MS;
       case '1M':
         return endMs - 30 * DAY_MS;
-      case '3M':
-        return endMs - 90 * DAY_MS;
-      case '6M':
-        return endMs - 180 * DAY_MS;
       case '1Y':
         return endMs - 365 * DAY_MS;
-      case '2Y':
-        return endMs - 730 * DAY_MS;
       case '5Y':
         return endMs - 1825 * DAY_MS;
-      case '10Y':
-        return endMs - 3650 * DAY_MS;
-      case 'SINCE_2013':
+      case 'MAX':
         return SINCE_2013_START_MS;
       case 'YTD': {
         const endDate = new Date(endMs);
@@ -78,17 +66,11 @@
       case '1W':
       case '1M':
         return endMs - 30 * DAY_MS;
-      case '3M':
-      case '6M':
       case '1Y':
         return endMs - 365 * DAY_MS;
-      case '2Y':
-        return endMs - 730 * DAY_MS;
       case '5Y':
         return endMs - 1825 * DAY_MS;
-      case '10Y':
-        return endMs - 3650 * DAY_MS;
-      case 'SINCE_2013':
+      case 'MAX':
         return SINCE_2013_START_MS;
       case 'YTD': {
         const endDate = new Date(endMs);
@@ -105,8 +87,8 @@
   ): ProduceHistoryPoint[] {
     if (inputPoints.length < 2) return inputPoints;
 
-    if (period === '5Y' || period === '10Y') {
-      const bucketSizeMs = (period === '5Y' ? 7 : 14) * DAY_MS;
+    if (period === '5Y') {
+      const bucketSizeMs = 7 * DAY_MS;
       const sampled: ProduceHistoryPoint[] = [];
       let activeBucket: number | null = null;
 
@@ -124,7 +106,7 @@
       return sampled;
     }
 
-    if (period === 'SINCE_2013') {
+    if (period === 'MAX') {
       const sampled: ProduceHistoryPoint[] = [];
       let activeMonthKey: string | null = null;
 
@@ -147,9 +129,7 @@
     switch (period) {
       case '5Y':
         return 7 * DAY_MS;
-      case '10Y':
-        return 14 * DAY_MS;
-      case 'SINCE_2013':
+      case 'MAX':
         return 31 * DAY_MS;
       default:
         return MAX_CONNECTED_GAP_DAYS * DAY_MS;

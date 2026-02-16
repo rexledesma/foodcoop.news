@@ -51,4 +51,4 @@ export interface ProduceDateRange {
   end: string;
 }
 
-export type ProduceSWRPeriod = '3M' | '6M' | '1Y' | '2Y' | '5Y' | '10Y' | 'SINCE_2013' | 'YTD';
+export type ProduceSWRPeriod = '1Y' | '5Y' | 'SINCE_2013' | 'YTD';

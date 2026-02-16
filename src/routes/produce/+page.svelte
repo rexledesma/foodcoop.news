@@ -13,12 +13,8 @@
 
   const SWR_REVALIDATE_INTERVAL_MS = 5 * 60 * 1000;
   const SWR_PERIODS = new Set<ProduceSWRPeriod>([
-    '3M',
-    '6M',
     '1Y',
-    '2Y',
     '5Y',
-    '10Y',
     'SINCE_2013',
     'YTD',
   ]);
@@ -72,7 +68,11 @@
     );
   }
 
-  async function loadProduce({ refreshing }: { refreshing: boolean }) {
+  function shouldIncludeLongRange(period?: ProduceSWRPeriod): boolean {
+    return period === '5Y' || period === 'SINCE_2013';
+  }
+
+  async function loadProduce({ refreshing, period }: { refreshing: boolean; period?: ProduceSWRPeriod }) {
     if (isFetching) return;
     isFetching = true;
 
@@ -85,7 +85,7 @@
     dispatchState();
 
     try {
-      const data = await loadProduceData();
+      const data = await loadProduceData({ includeLongRange: shouldIncludeLongRange(period) });
 
       state = {
         ...state,
@@ -100,7 +100,7 @@
     } catch (error) {
       try {
         clearProduceCache();
-        const retryData = await loadProduceData();
+        const retryData = await loadProduceData({ includeLongRange: shouldIncludeLongRange(period) });
         state = {
           ...state,
           data: retryData.data,
@@ -131,7 +131,7 @@
     const lastRefreshAt = periodRefreshAt.get(period) ?? 0;
     if (now - lastRefreshAt < SWR_REVALIDATE_INTERVAL_MS) return;
     periodRefreshAt.set(period, now);
-    await loadProduce({ refreshing: true });
+    await loadProduce({ refreshing: true, period });
   }
 
   onMount(() => {

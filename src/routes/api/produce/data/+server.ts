@@ -4,6 +4,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { DuckDBInstance, type DuckDBConnection } from '@duckdb/node-api';
 import { list } from '@vercel/blob';
+import type { RequestHandler } from './$types';
 import type { ProduceDateRange, ProduceHistoryPoint, ProduceRow } from '@/lib/produce-types';
 
 const CACHE_DURATION_MS = 5 * 60 * 1000;
@@ -28,8 +29,13 @@ type ProduceDataPayload = {
   dateRange: ProduceDateRange | null;
 };
 
-let cachedPayload: ProduceDataPayload | null = null;
-let cachedAt = 0;
+const cachedPayloadByVariant: Record<
+  'core' | 'withLongRange',
+  { payload: ProduceDataPayload | null; cachedAt: number }
+> = {
+  core: { payload: null, cachedAt: 0 },
+  withLongRange: { payload: null, cachedAt: 0 },
+};
 
 function getCurrentYear() {
   return new Date()
@@ -458,7 +464,11 @@ const DATA_SQL = `
   ORDER BY b.name
 `;
 
-async function computePayload(): Promise<ProduceDataPayload> {
+async function computePayload({
+  includeLongRange,
+}: {
+  includeLongRange: boolean;
+}): Promise<ProduceDataPayload> {
   const meta = await loadProduceMetadata();
   if (meta.years.length === 0) {
     return { data: [], history: [], dateRange: null };
@@ -468,14 +478,14 @@ async function computePayload(): Promise<ProduceDataPayload> {
   const currentYear = currentYearEntry
     ? Number.parseInt(currentYearEntry.year, 10)
     : Number.parseInt(meta.years[0].year, 10);
-  const previousTwoYearEntries = meta.years.filter((entry) => {
+  const previousYearEntries = meta.years.filter((entry) => {
     const yearNum = Number.parseInt(entry.year, 10);
-    return yearNum === currentYear - 1 || yearNum === currentYear - 2;
+    return yearNum === currentYear - 1;
   });
 
   const coreParquets = [
     meta.derived.ytd?.url ? { tableName: 'produce_ytd', url: meta.derived.ytd.url } : null,
-    ...previousTwoYearEntries.map((entry) => ({
+    ...previousYearEntries.map((entry) => ({
       tableName: `produce_${entry.year}`,
       url: entry.url,
     })),
@@ -484,7 +494,7 @@ async function computePayload(): Promise<ProduceDataPayload> {
   const fallbackCoreParquets = meta.years
     .filter(
       (entry) =>
-        entry.isCurrentYear || previousTwoYearEntries.some((prev) => prev.year === entry.year),
+        entry.isCurrentYear || previousYearEntries.some((prev) => prev.year === entry.year),
     )
     .map((entry) => ({ tableName: `produce_${entry.year}`, url: entry.url }));
 
@@ -493,14 +503,15 @@ async function computePayload(): Promise<ProduceDataPayload> {
     throw new Error('No core produce parquet files available');
   }
 
-  const backgroundParquets = meta.derived.longRangeDownsampled?.url
-    ? [
-        {
-          tableName: 'produce_long_range_downsampled',
-          url: meta.derived.longRangeDownsampled.url,
-        },
-      ]
-    : [];
+  const backgroundParquets =
+    includeLongRange && meta.derived.longRangeDownsampled?.url
+      ? [
+          {
+            tableName: 'produce_long_range_downsampled',
+            url: meta.derived.longRangeDownsampled.url,
+          },
+        ]
+      : [];
 
   const descriptors = [...effectiveCoreParquets, ...backgroundParquets];
   const stagedFiles: string[] = [];
@@ -578,19 +589,21 @@ async function computePayload(): Promise<ProduceDataPayload> {
   }
 }
 
-export async function GET() {
+export const GET: RequestHandler = async ({ url }) => {
   try {
+    const includeLongRange = url.searchParams.get('includeLongRange') === '1';
+    const cacheKey = includeLongRange ? 'withLongRange' : 'core';
     const now = Date.now();
-    if (cachedPayload && now - cachedAt < CACHE_DURATION_MS) {
-      return Response.json(cachedPayload);
+    const cached = cachedPayloadByVariant[cacheKey];
+    if (cached.payload && now - cached.cachedAt < CACHE_DURATION_MS) {
+      return Response.json(cached.payload);
     }
 
-    const payload = await computePayload();
-    cachedPayload = payload;
-    cachedAt = now;
+    const payload = await computePayload({ includeLongRange });
+    cachedPayloadByVariant[cacheKey] = { payload, cachedAt: now };
     return Response.json(payload);
   } catch (error) {
     console.error('Produce data API error:', error);
     return Response.json({ error: 'Failed to load produce data' }, { status: 500 });
   }
-}
+};

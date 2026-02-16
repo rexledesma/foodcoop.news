@@ -6,12 +6,16 @@ type ProduceDataApiResponse = {
   dateRange: ProduceDateRange | null;
 };
 
-export async function loadProduceData(): Promise<{
+export async function loadProduceData(options?: { includeLongRange?: boolean }): Promise<{
   data: ProduceRow[];
   history: Map<string, ProduceHistoryPoint[]>;
   dateRange: ProduceDateRange | null;
 }> {
-  const response = await fetch('/api/produce/data');
+  const params = new URLSearchParams();
+  if (options?.includeLongRange) params.set('includeLongRange', '1');
+  const response = await fetch(
+    params.size > 0 ? `/api/produce/data?${params.toString()}` : '/api/produce/data',
+  );
   if (!response.ok) {
     throw new Error(`Failed to fetch server produce data: HTTP ${response.status}`);
   }

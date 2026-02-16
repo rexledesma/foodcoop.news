@@ -17,13 +17,9 @@
     | '1D'
     | '1W'
     | '1M'
-    | '3M'
-    | '6M'
     | '1Y'
-    | '2Y'
     | '5Y'
-    | '10Y'
-    | 'SINCE_2013'
+    | 'MAX'
     | 'YTD';
   type SortField = 'name' | 'price' | 'change' | 'first_seen' | 'last_seen';
   type SortDirection = 'asc' | 'desc' | null;
@@ -55,48 +51,32 @@
     '1D',
     '1W',
     '1M',
-    '3M',
-    '6M',
     '1Y',
-    '2Y',
-    '5Y',
-    '10Y',
-    'SINCE_2013',
     'YTD',
+    '5Y',
+    'MAX',
   ];
   const PERIOD_LABELS: Record<TimePeriod, string> = {
     '1D': '1D',
     '1W': '1W',
     '1M': '1M',
-    '3M': '3M',
-    '6M': '6M',
     '1Y': '1Y',
-    '2Y': '2Y',
-    '5Y': '5Y',
-    '10Y': '10Y',
-    SINCE_2013: 'Since 2013',
     YTD: 'YTD',
+    '5Y': '5Y',
+    MAX: 'Max',
   };
   const PERIOD_METRIC_LABELS: Record<TimePeriod, string> = {
     '1D': 'Past day',
     '1W': 'Past week',
     '1M': 'Past month',
-    '3M': 'Past 3 months',
-    '6M': 'Past 6 months',
     '1Y': 'Past year',
-    '2Y': 'Past 2 years',
-    '5Y': 'Past 5 years',
-    '10Y': 'Past 10 years',
-    SINCE_2013: 'Since 2013',
     YTD: 'Year to date',
+    '5Y': 'Past 5 years',
+    MAX: 'Max range',
   };
   const SWR_PERIODS = new Set<ProduceSWRPeriod>([
-    '3M',
-    '6M',
     '1Y',
-    '2Y',
     '5Y',
-    '10Y',
     'SINCE_2013',
     'YTD',
   ]);
@@ -320,19 +300,11 @@
         return endMs - 7 * day;
       case '1M':
         return endMs - 30 * day;
-      case '3M':
-        return endMs - 90 * day;
-      case '6M':
-        return endMs - 180 * day;
       case '1Y':
         return endMs - 365 * day;
-      case '2Y':
-        return endMs - 730 * day;
       case '5Y':
         return endMs - 1825 * day;
-      case '10Y':
-        return endMs - 3650 * day;
-      case 'SINCE_2013':
+      case 'MAX':
         return new Date('2013-01-01T00:00:00').getTime();
       case 'YTD': {
         const endDate = new Date(endMs);
@@ -381,19 +353,12 @@
         return row.prev_week_price;
       case '1M':
         return row.prev_month_price;
-      case '3M':
-        return row.prev_3_month_price;
-      case '6M':
-        return row.prev_6_month_price;
       case '1Y':
         return row.prev_year_price;
-      case '2Y':
-        return row.prev_2_year_price;
       case 'YTD':
         return row.prev_ytd_price;
       case '5Y':
-      case '10Y':
-      case 'SINCE_2013':
+      case 'MAX':
         return historyPrev(points, activeRange, period);
       default:
         return row.prev_day_price;
@@ -412,14 +377,8 @@
       return { prev: row.prev_week_price, high: row.week_high, low: row.week_low };
     if (period === '1M')
       return { prev: row.prev_month_price, high: row.month_high, low: row.month_low };
-    if (period === '3M')
-      return { prev: row.prev_3_month_price, high: row.three_month_high, low: row.three_month_low };
-    if (period === '6M')
-      return { prev: row.prev_6_month_price, high: row.six_month_high, low: row.six_month_low };
     if (period === '1Y')
       return { prev: row.prev_year_price, high: row.year_high, low: row.year_low };
-    if (period === '2Y')
-      return { prev: row.prev_2_year_price, high: row.two_year_high, low: row.two_year_low };
     if (period === 'YTD')
       return { prev: row.prev_ytd_price, high: row.ytd_high, low: row.ytd_low };
 
@@ -648,9 +607,13 @@
   }
 
   $effect(() => {
-    if (SWR_PERIODS.has(timePeriod as ProduceSWRPeriod)) {
-      revalidateForPeriod(timePeriod as ProduceSWRPeriod);
-    }
+    const swrPeriod: ProduceSWRPeriod | null =
+      timePeriod === 'MAX'
+        ? 'SINCE_2013'
+        : timePeriod === '1Y' || timePeriod === '5Y' || timePeriod === 'YTD'
+          ? timePeriod
+          : null;
+    if (swrPeriod && SWR_PERIODS.has(swrPeriod)) revalidateForPeriod(swrPeriod);
   });
 
   $effect(() => {
@@ -690,7 +653,9 @@
             persistedQuickFilter === 'recently_unavailable'
               ? persistedQuickFilter
               : quickFilter;
-          timePeriod = parsed.timePeriod ?? timePeriod;
+          if (parsed.timePeriod && TIME_PERIODS.includes(parsed.timePeriod)) {
+            timePeriod = parsed.timePeriod;
+          }
           sortField = parsed.sortField ?? sortField;
           sortDirection = parsed.sortDirection ?? sortDirection;
         }
