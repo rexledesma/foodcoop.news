@@ -805,7 +805,7 @@
       </div>
     </div>
 
-    <div class="mb-4 flex flex-col gap-1">
+    <div class="mb-4 flex flex-col gap-2">
       <div class="flex flex-wrap items-center gap-1">
         <button
           type="button"
