@@ -3,7 +3,7 @@ import { convex } from '@convex-dev/better-auth/plugins';
 import { v } from 'convex/values';
 import type { GenericActionCtx } from 'convex/server';
 import { components, internal } from './_generated/api';
-import { DataModel } from './_generated/dataModel';
+import type { DataModel } from './_generated/dataModel';
 import { internalMutation, query } from './_generated/server';
 import { betterAuth } from 'better-auth/minimal';
 import authConfig from './auth.config';
