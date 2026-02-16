@@ -35,6 +35,35 @@
     return local ?? cache ?? '[]';
   }
 
+  function writeFavoritesSnapshot(favorites: string[]) {
+    try {
+      const snapshot = JSON.stringify(favorites);
+      localStorage.setItem('produce-favorites', snapshot);
+      localStorage.setItem('produce-favorites-cache', snapshot);
+      state = { ...state, favoritesSnapshot: snapshot };
+      dispatchState();
+      window.dispatchEvent(new Event('produce-favorites'));
+      window.dispatchEvent(new Event('produce-favorites-cache'));
+    } catch {
+      // Ignore local storage errors.
+    }
+  }
+
+  async function syncFavoritesFromServer() {
+    try {
+      const response = await fetch('/api/me/produce-favorites', {
+        method: 'GET',
+        cache: 'no-store',
+      });
+      if (!response.ok) return;
+      const data = (await response.json()) as { favorites?: string[] };
+      if (!Array.isArray(data.favorites)) return;
+      writeFavoritesSnapshot(data.favorites);
+    } catch {
+      // Ignore sync failures and keep local favorites.
+    }
+  }
+
   function dispatchState() {
     window.dispatchEvent(new CustomEvent(`discover-feed-state:update:${channel}`, { detail: state }));
   }
@@ -231,6 +260,7 @@
 
     state = { ...state, favoritesSnapshot: readFavoritesSnapshot() };
     dispatchState();
+    void syncFavoritesFromServer();
     void loadFeeds();
 
     window.addEventListener('sticky-visibility', stickyVisibilityHandler as EventListener);

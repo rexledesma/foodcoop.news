@@ -22,6 +22,86 @@
   const channel = `produce-${Math.random().toString(36).slice(2)}`;
   const periodRefreshAt = new Map<ProduceSWRPeriod, number>();
   let isFetching = false;
+  let isSyncingFavorites = false;
+
+  function parseFavorites(stored: string | null): string[] {
+    if (!stored) return [];
+    try {
+      const parsed = JSON.parse(stored);
+      if (!Array.isArray(parsed)) return [];
+      return parsed.filter((item): item is string => typeof item === 'string');
+    } catch {
+      return [];
+    }
+  }
+
+  function writeFavorites(favorites: string[]) {
+    try {
+      const snapshot = JSON.stringify(favorites);
+      localStorage.setItem('produce-favorites', snapshot);
+      localStorage.setItem('produce-favorites-cache', snapshot);
+      state = { ...state, favoritesSnapshot: snapshot };
+      window.dispatchEvent(new Event('produce-favorites'));
+      window.dispatchEvent(new Event('produce-favorites-cache'));
+      dispatchState();
+    } catch {
+      // Ignore local storage errors.
+    }
+  }
+
+  async function syncFavoritesFromServer() {
+    if (isSyncingFavorites) return;
+    isSyncingFavorites = true;
+
+    try {
+      const response = await fetch('/api/me/produce-favorites', {
+        method: 'GET',
+        cache: 'no-store',
+      });
+      if (!response.ok) return;
+      const data = (await response.json()) as { favorites?: string[] };
+      if (!Array.isArray(data.favorites)) return;
+      writeFavorites(data.favorites);
+    } catch {
+      // Ignore sync failures and use local favorites.
+    } finally {
+      isSyncingFavorites = false;
+    }
+  }
+
+  async function toggleFavorite(name: string) {
+    const current = new Set(
+      (() => {
+        try {
+          return parseFavorites(localStorage.getItem('produce-favorites'));
+        } catch {
+          return [] as string[];
+        }
+      })(),
+    );
+    if (current.has(name)) {
+      current.delete(name);
+    } else {
+      current.add(name);
+    }
+    writeFavorites(Array.from(current));
+
+    try {
+      const response = await fetch('/api/me/produce-favorites', {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+        },
+        body: JSON.stringify({ itemName: name }),
+      });
+      if (!response.ok) return;
+      const data = (await response.json()) as { favorites?: string[] };
+      if (!Array.isArray(data.favorites)) return;
+      writeFavorites(data.favorites);
+    } catch {
+      // Ignore server failures and keep local state.
+    }
+  }
 
   let state = {
     data: [] as ProduceRow[],
@@ -39,22 +119,7 @@
     showSticky: getCurrentStickyVisibility(),
     favoritesSnapshot: '[]',
     toggleFavorite: (name: string) => {
-      try {
-        const stored = localStorage.getItem('produce-favorites');
-        const parsed = stored ? (JSON.parse(stored) as string[]) : [];
-        const set = new Set(parsed);
-        if (set.has(name)) {
-          set.delete(name);
-        } else {
-          set.add(name);
-        }
-        localStorage.setItem('produce-favorites', JSON.stringify(Array.from(set)));
-        state = { ...state, favoritesSnapshot: JSON.stringify(Array.from(set)) };
-        window.dispatchEvent(new Event('produce-favorites'));
-        dispatchState();
-      } catch {
-        // Ignore local storage errors.
-      }
+      void toggleFavorite(name);
     },
   };
 
@@ -160,6 +225,7 @@
       isRefreshing: Boolean(cached) && shouldRefreshImmediately,
     };
     dispatchState();
+    void syncFavoritesFromServer();
 
     window.addEventListener('sticky-visibility', stickyVisibilityHandler as EventListener);
 
