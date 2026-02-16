@@ -51,6 +51,9 @@ export function writeProduceCache(
       cachedAt: Date.now(),
     };
     localStorage.setItem(CACHE_KEY, JSON.stringify(payload));
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new Event('produce-cache-updated'));
+    }
   } catch {
     // Silently ignore quota errors
   }

@@ -11,6 +11,17 @@ import authConfig from './auth.config';
 const siteUrl = process.env.SITE_URL!;
 export const authComponent = createClient<DataModel>(components.betterAuth);
 
+function parseTrustedOriginsEnv(): string[] {
+  return (process.env.TRUSTED_ORIGINS ?? '')
+    .split(',')
+    .map((origin) => origin.trim())
+    .filter(Boolean);
+}
+
+function isLocalhostOrigin(origin: string): boolean {
+  return /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i.test(origin);
+}
+
 // Internal mutation to create member profile, called from database hook
 export const createMemberProfileForUser = internalMutation({
   args: {
@@ -50,6 +61,14 @@ export const createAuth = (ctx: GenericCtx<DataModel>) => {
 
   return betterAuth({
     baseURL: siteUrl,
+    trustedOrigins: async (request) => {
+      const origins = new Set<string>([siteUrl, ...parseTrustedOriginsEnv()]);
+      const requestOrigin = request?.headers.get('origin');
+      if (requestOrigin && isLocalhostOrigin(requestOrigin)) {
+        origins.add(requestOrigin);
+      }
+      return Array.from(origins);
+    },
     database: authComponent.adapter(ctx),
     emailAndPassword: {
       enabled: true,

@@ -1,0 +1,68 @@
+import { put } from '@vercel/blob';
+import { parseProduceHtml } from '@/lib/produce-parser';
+import { invalidateProduceMetadataCache } from '@/lib/produce-metadata-cache';
+import { regenerateYtdDerivedParquet, upsertYearParquetForDate } from '@/lib/produce-parquet-utils';
+
+// https://vercel.com/docs/cron-jobs/manage-cron-jobs#securing-cron-jobs
+export async function GET({ request }: { request: Request }) {
+  const authHeader = request.headers.get('authorization');
+  if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+    return Response.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  try {
+    const maxRetries = 3;
+    let lastError: unknown;
+    let html: string | undefined;
+
+    for (let attempt = 0; attempt < maxRetries; attempt++) {
+      try {
+        const response = await fetch('https://www.foodcoop.com/produce');
+        if (!response.ok) {
+          lastError = new Error(`HTTP ${response.status}`);
+          continue;
+        }
+        html = await response.text();
+        break;
+      } catch (error) {
+        lastError = error;
+      }
+    }
+
+    if (!html) {
+      console.error('Failed to fetch produce page after retries:', lastError);
+      return Response.json({ error: 'Failed to fetch produce page' }, { status: 502 });
+    }
+
+    const date = new Date().toLocaleDateString('en-CA', {
+      timeZone: 'America/New_York',
+    }); // "YYYY-MM-DD"
+    const year = date.slice(0, 4);
+
+    // Store HTML snapshot
+    const htmlBlob = await put(`produce/${date}.html`, html, {
+      contentType: 'text/html',
+      access: 'public',
+      allowOverwrite: true,
+      token: process.env.VERCEL_BLOB_READ_WRITE_TOKEN,
+    });
+
+    // Upsert today's rows into the current year parquet.
+    const { items } = parseProduceHtml(html, date);
+    const parquetResult = await upsertYearParquetForDate(year, date, items);
+    const ytdParquet = await regenerateYtdDerivedParquet();
+
+    invalidateProduceMetadataCache();
+
+    return Response.json({
+      success: true,
+      htmlUrl: htmlBlob.url,
+      htmlSize: html.length,
+      parquet: parquetResult,
+      ytd: ytdParquet,
+    });
+  } catch (error) {
+    console.error('Scrape produce error:', error);
+    return Response.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}

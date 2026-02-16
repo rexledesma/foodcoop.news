@@ -125,6 +125,7 @@
   let showSticky = $state(true);
   let favoritesSnapshot = $state('[]');
   let toggleFavorite = $state<(name: string) => void>(() => {});
+  let stickyHeaderRef = $state<HTMLDivElement | null>(null);
   let contextMenu = $state<{ itemName: string; x: number; y: number } | null>(null);
   let longPressTimer = $state<ReturnType<typeof setTimeout> | null>(null);
   let longPressStart = $state<{ itemName: string; x: number; y: number } | null>(null);
@@ -715,10 +716,26 @@
       }
     }
   });
+
+  $effect(() => {
+    const element = stickyHeaderRef;
+    if (!element || typeof ResizeObserver === 'undefined') return;
+
+    const updateHeight = () => {
+      window.dispatchEvent(new CustomEvent('sticky-threshold', { detail: element.offsetHeight }));
+    };
+
+    updateHeight();
+    const observer = new ResizeObserver(updateHeight);
+    observer.observe(element);
+
+    return () => observer.disconnect();
+  });
 </script>
 
-<div>
+<div class="mx-auto max-w-3xl px-4 pb-6">
   <div
+    bind:this={stickyHeaderRef}
     class={`sticky top-24 z-20 bg-white transition-opacity duration-300 ease-in-out motion-reduce:transition-none md:top-14 ${
       stickyVisible ? 'opacity-100' : 'pointer-events-none opacity-0'
     }`}
@@ -791,19 +808,6 @@
           placeholder="Search produce..."
           class="min-w-0 flex-1 bg-transparent text-zinc-900 placeholder-zinc-500 outline-none"
         />
-
-        <button
-          type="button"
-          onclick={() => {
-            search = '';
-          }}
-          aria-label="Clear search"
-          class={`shrink-0 rounded-full p-1 text-sm text-zinc-500 transition hover:text-zinc-700 ${
-            search ? 'visible' : 'invisible'
-          }`}
-        >
-          ✕
-        </button>
       </div>
 
       <div class="p-2 text-sm text-zinc-500">
@@ -1154,10 +1158,10 @@
                 </div>
               </td>
 
-              <td class={`relative p-2 font-mono text-zinc-900 ${DATA_COL_CLASS} box-border`}>
+              <td class={`relative p-2 text-zinc-900 ${DATA_COL_CLASS} box-border`}>
                 <div>
                   <span
-                    class={`font-bold ${
+                    class={`font-mono font-bold ${
                       prev !== null && row.price < prev
                         ? 'text-green-600'
                         : prev !== null && row.price > prev
@@ -1165,11 +1169,11 @@
                           : ''
                     }`}
                     >${row.price.toFixed(2)}</span
-                  >{#if prev !== null && prev !== row.price}<sup class="ml-1 text-[0.65em] text-zinc-400 line-through"
+                  >{#if prev !== null && prev !== row.price}<sup class="ml-1 font-mono text-[0.65em] text-zinc-400 line-through"
                     >${prev.toFixed(2)}</sup
                   >{/if}
                 </div>
-                <div class="text-xs text-zinc-500">/{row.unit}</div>
+                <div class="text-xs text-zinc-500 font-mono">/{row.unit}</div>
                 <div class="mt-1">
                   <ProduceSparkline
                     points={rowHistory}

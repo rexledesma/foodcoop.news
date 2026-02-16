@@ -283,7 +283,7 @@
                   <input
                     type="text"
                     id="cardMemberName"
-                    value={fullName}
+                    value={displayFullName}
                     oninput={(event) => onMemberNameChange((event.currentTarget as HTMLInputElement).value)}
                     placeholder="Your Name"
                     class="w-full rounded-t border-b border-dashed bg-transparent px-1 py-0.5 text-xl font-semibold transition-colors placeholder:text-zinc-400 focus:outline-none"

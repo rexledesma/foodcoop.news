@@ -9,6 +9,9 @@
   --background: #ffffff;
   --foreground: #171717;
   --nav-offset: 6rem;
+  --font-geist-mono:
+    ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New',
+    monospace;
 }
 
 @theme inline {
