@@ -83,6 +83,7 @@
   const NAME_COL_CLASS =
     'w-1/3 min-w-[33.333%] max-w-[33.333%] md:w-2/5 md:min-w-0 md:max-w-none';
   const DATA_COL_CLASS = 'w-1/3 min-w-[33.333%] max-w-[33.333%] md:w-auto md:min-w-0 md:max-w-none';
+  const METRIC_VALUE_CLASS = 'w-[7ch] shrink-0 text-right font-mono';
 
   let {
     channel,
@@ -1164,13 +1165,13 @@
                 {:else}
                   <div class="flex items-baseline gap-2 rounded bg-transparent px-1">
                     <span class="w-10 shrink-0 text-zinc-500">% Diff</span>
-                    <span class={`w-20 text-right font-mono ${change > 0 ? 'text-red-600' : change < 0 ? 'text-green-600' : 'text-zinc-500'}`}>
+                    <span class={`${METRIC_VALUE_CLASS} ${change > 0 ? 'text-red-600' : change < 0 ? 'text-green-600' : 'text-zinc-500'}`}>
                       {change > 0 ? '+' : change < 0 ? '-' : ''}{Math.abs(pct).toFixed(1)}%
                     </span>
                   </div>
                   <div class="flex items-baseline gap-2 rounded bg-transparent px-1">
                     <span class="w-10 shrink-0 text-zinc-500">$ Diff</span>
-                    <span class={`w-20 text-right font-mono ${change > 0 ? 'text-red-600' : change < 0 ? 'text-green-600' : 'text-zinc-500'}`}>
+                    <span class={`${METRIC_VALUE_CLASS} ${change > 0 ? 'text-red-600' : change < 0 ? 'text-green-600' : 'text-zinc-500'}`}>
                       {change > 0 ? '+' : change < 0 ? '-' : ''}${Math.abs(change).toFixed(2)}
                     </span>
                   </div>
@@ -1183,7 +1184,7 @@
                       : 'bg-transparent text-zinc-500'
                   }`}>
                     <span class="w-10 shrink-0">High</span>
-                    <span class="w-20 text-right font-mono">
+                    <span class={METRIC_VALUE_CLASS}>
                       {showHighLow && periodData.high !== null ? `$${periodData.high.toFixed(2)}` : '—'}
                     </span>
                   </div>
@@ -1193,7 +1194,7 @@
                       : 'bg-transparent text-zinc-500'
                   }`}>
                     <span class="w-10 shrink-0">Low</span>
-                    <span class="w-20 text-right font-mono">
+                    <span class={METRIC_VALUE_CLASS}>
                       {showHighLow && periodData.low !== null ? `$${periodData.low.toFixed(2)}` : '—'}
                     </span>
                   </div>
