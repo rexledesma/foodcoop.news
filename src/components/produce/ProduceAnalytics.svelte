@@ -519,6 +519,10 @@
     return target instanceof Element && target.closest('[data-sparkline-interactive=\"true\"]') !== null;
   }
 
+  function isProduceNameTarget(target: EventTarget | null): boolean {
+    return target instanceof Element && target.closest('[data-produce-name=\"true\"]') !== null;
+  }
+
   function clearLongPress() {
     if (longPressTimer !== null) {
       clearTimeout(longPressTimer);
@@ -528,11 +532,13 @@
   }
 
   function handleContextMenu(event: MouseEvent, itemName: string) {
+    if (isProduceNameTarget(event.target)) return;
     event.preventDefault();
     contextMenu = { itemName, x: event.clientX, y: event.clientY };
   }
 
   function handleTouchStart(event: TouchEvent, itemName: string) {
+    if (isProduceNameTarget(event.target)) return;
     if (isSparklineTarget(event.target)) return;
     clearLongPress();
     const touch = event.touches[0];
@@ -1050,7 +1056,10 @@
                   </button>
 
                   <div class="min-w-0">
-                    <div class="line-clamp-3 text-sm font-medium text-zinc-900 md:line-clamp-none">
+                    <div
+                      class="line-clamp-3 text-sm font-medium text-zinc-900 md:line-clamp-none"
+                      data-produce-name="true"
+                    >
                       {#if specialtyUrl}
                         <a href={specialtyUrl} target="_blank" rel="noreferrer" class="hover:underline">
                           <span class={row.is_unavailable ? 'line-through' : undefined}>
