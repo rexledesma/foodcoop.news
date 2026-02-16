@@ -8,19 +8,19 @@ import { PKPass } from 'passkit-generator';
 import sharp from 'sharp';
 
 async function loadIconAsset(): Promise<Buffer> {
-  const sourcePath = path.join(process.cwd(), 'public', 'assets', 'coop.png');
+  const sourcePath = path.join(process.cwd(), 'static', 'assets', 'coop.png');
 
   return readFile(sourcePath);
 }
 
 async function loadLogoAsset(): Promise<Buffer> {
-  const sourcePath = path.join(process.cwd(), 'public', 'assets', 'coop-padded.png');
+  const sourcePath = path.join(process.cwd(), 'static', 'assets', 'coop-padded.png');
 
   return readFile(sourcePath);
 }
 
 async function loadStripAsset(): Promise<Buffer> {
-  const sourcePath = path.join(process.cwd(), 'public', 'assets', 'coop-strip.png');
+  const sourcePath = path.join(process.cwd(), 'static', 'assets', 'coop-strip.png');
 
   return readFile(sourcePath);
 }

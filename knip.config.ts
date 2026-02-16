@@ -1,7 +1,7 @@
 const config = {
   ignoreFiles: [
     '.svelte-kit/**',
-    'public/sw.js',
+    'static/sw.js',
     'src/lib/produce-metadata-cache.ts',
     'src/routes/api/**',
   ],
