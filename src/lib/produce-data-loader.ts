@@ -1,5 +1,5 @@
 import type { DuckDBClient } from '@/lib/duckdb-client';
-import type { ProduceDateRange, ProduceHistoryPoint, ProduceRow } from '@/lib/use-produce-data';
+import type { ProduceDateRange, ProduceHistoryPoint, ProduceRow } from '@/lib/produce-types';
 
 const LONG_RANGE_HISTORY_START = '2013-01-01';
 

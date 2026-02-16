@@ -1,4 +1,4 @@
-import type { ProduceDateRange, ProduceHistoryPoint, ProduceRow } from '@/lib/use-produce-data';
+import type { ProduceDateRange, ProduceHistoryPoint, ProduceRow } from '@/lib/produce-types';
 
 const CACHE_KEY = 'produce-cache-v2';
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000;

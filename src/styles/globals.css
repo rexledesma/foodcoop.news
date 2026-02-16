@@ -1,9 +1,8 @@
 @import 'tailwindcss';
 
-@source '*.{tsx,ts}';
-@source '../components/*.tsx';
-@source '../lib/*.ts';
-@source './**/*.tsx';
+@source '../routes/**/*.{svelte,ts}';
+@source '../components/**/*.{svelte,ts}';
+@source '../lib/**/*.ts';
 
 :root {
   --background: #ffffff;

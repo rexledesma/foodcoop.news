@@ -100,22 +100,6 @@ export async function fetchAuthMutationFromHeaders<Mutation extends FunctionRefe
   });
 }
 
-export async function fetchAuthQuery<Query extends FunctionReference<'query'>>(
-  query: Query,
-  ...args: OptionalRestArgs<Query>
-): Promise<FunctionReturnType<Query>> {
-  const headers = await (await import('next/headers.js')).headers();
-  return fetchAuthQueryFromHeaders(headers, query, ...args);
-}
-
-export async function fetchAuthMutation<Mutation extends FunctionReference<'mutation'>>(
-  mutation: Mutation,
-  ...args: OptionalRestArgs<Mutation>
-): Promise<FunctionReturnType<Mutation>> {
-  const headers = await (await import('next/headers.js')).headers();
-  return fetchAuthMutationFromHeaders(headers, mutation, ...args);
-}
-
 export function isUnauthenticatedError(error: unknown): boolean {
   if (!error || typeof error !== 'object') return false;
 

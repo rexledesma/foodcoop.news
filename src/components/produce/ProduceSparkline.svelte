@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { ProduceDateRange, ProduceHistoryPoint } from '@/lib/use-produce-data';
+  import type { ProduceDateRange, ProduceHistoryPoint } from '@/lib/produce-types';
 
   type TimePeriod =
     | '1D'

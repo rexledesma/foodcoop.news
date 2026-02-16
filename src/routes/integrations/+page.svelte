@@ -18,7 +18,7 @@
   const DRAFT_STORAGE_KEY = 'integrations:draft';
   const NOTIFICATIONS_ALLOWED_EMAILS = (import.meta.env.NEXT_PUBLIC_NOTIFICATIONS_ALLOWED_EMAILS ?? '')
     .split(',')
-    .map((email) => email.trim())
+    .map((email: string) => email.trim())
     .filter(Boolean);
   const SHIFT_JOB_OPTIONS = [
     '🚽 Bathroom',

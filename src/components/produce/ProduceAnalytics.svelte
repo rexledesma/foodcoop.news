@@ -11,7 +11,7 @@
     ProduceHistoryPoint,
     ProduceRow,
     ProduceSWRPeriod,
-  } from '@/lib/use-produce-data';
+  } from '@/lib/produce-types';
 
   type TimePeriod =
     | '1D'

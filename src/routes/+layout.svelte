@@ -1,5 +1,5 @@
 <script lang="ts">
-  import '../app/globals.css';
+  import '../styles/globals.css';
   import { onMount } from 'svelte';
   import { page } from '$app/stores';
   import Navigation from '@/components/Navigation.svelte';
@@ -14,6 +14,12 @@
 
   const channel = `nav-${Math.random().toString(36).slice(2)}`;
   const initialPathname = typeof window === 'undefined' ? '/' : window.location.pathname;
+  type MemberProfileResponse = {
+    profile: {
+      memberName: string;
+      memberId: string;
+    } | null;
+  };
 
   let state = {
     pathname: initialPathname,
@@ -54,19 +60,12 @@
         ? ((await sessionResponse.json()) as { user?: { name?: string; email?: string } } | null)
         : null;
 
-      let memberProfile:
-        | {
-            profile: {
-              memberName: string;
-              memberId: string;
-            } | null;
-          }
-        | null = null;
+      let memberProfile: MemberProfileResponse | null = null;
 
       if (session?.user) {
         const profileResponse = await fetch('/api/me/profile');
         if (profileResponse.ok) {
-          memberProfile = (await profileResponse.json()) as typeof memberProfile;
+          memberProfile = (await profileResponse.json()) as MemberProfileResponse;
         }
       }
 

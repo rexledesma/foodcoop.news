@@ -5,7 +5,12 @@
   import { loadProduceData } from '@/lib/produce-data-loader';
   import ProduceAnalytics from '@/components/produce/ProduceAnalytics.svelte';
   import { getCurrentStickyVisibility } from '@/lib/sticky-visibility';
-  import type { ProduceSWRPeriod } from '@/lib/use-produce-data';
+  import type {
+    ProduceDateRange,
+    ProduceHistoryMap,
+    ProduceRow,
+    ProduceSWRPeriod,
+  } from '@/lib/produce-types';
 
   const SWR_REVALIDATE_INTERVAL_MS = 5 * 60 * 1000;
   const SWR_PERIODS = new Set<ProduceSWRPeriod>([
@@ -25,9 +30,9 @@
   let isFetching = false;
 
   let state = {
-    data: [] as unknown[],
-    history: new Map<string, Array<{ name: string; date: string; price: number }>>(),
-    dateRange: null as { start: string; end: string } | null,
+    data: [] as ProduceRow[],
+    history: new Map<string, Array<{ name: string; date: string; price: number }>>() as ProduceHistoryMap,
+    dateRange: null as ProduceDateRange | null,
     isLoading: true,
     isRefreshing: false,
     error: '',

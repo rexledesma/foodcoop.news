@@ -1,5 +1,4 @@
 const config = {
-  ignoreDependencies: ['svelte-loader'],
   ignoreFiles: [
     '.svelte-kit/**',
     'public/sw.js',
@@ -7,7 +6,7 @@ const config = {
     'src/routes/api/**',
   ],
   ignoreIssues: {
-    'src/app/globals.css': ['unresolved'],
+    'src/styles/globals.css': ['unresolved'],
     'src/lib/auth.ts': ['exports'],
   },
 };

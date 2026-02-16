@@ -5,9 +5,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Development Commands
 
 ```bash
-pnpm dev              # Development server
-pnpm build            # Production build (Webpack)
-pnpm start            # Start production server
+pnpm dev              # Development server (Vite/SvelteKit)
+pnpm build            # Production build
+pnpm start            # Preview built app locally
 pnpm check            # Run lint, svelte-check, knip, format, and TypeScript checks
 pnpm lint             # Run Oxlint only
 pnpm svelte:check     # Run svelte-check only
@@ -21,26 +21,26 @@ npx convex dev        # Start Convex development server
 
 ## Architecture
 
-This is a Next.js 16 App Router application for Park Slope Food Coop members, using Convex as the backend database.
+This is a SvelteKit application for Park Slope Food Coop members, using Convex as the backend database.
 
-**Stack:** Next.js 16.1.1, React 19.2.3, TypeScript (strict mode), Tailwind CSS 4, Convex, Better Auth, DuckDB WASM, Vercel Blob
+**Stack:** SvelteKit 2, Svelte 5, TypeScript (strict mode), Tailwind CSS 4, Convex, Better Auth, DuckDB WASM, Vercel Blob
 
 **Path alias:** `@/*` → `./src/*`
 
 ### Project Structure
 
-- `src/app/` - Pages and API routes (App Router)
-- `src/app/api/` - Backend endpoints: auth, feed, gazette, foodcoop, foodcoopcooks, events, calendar, wallet, produce, cron
-- `src/components/` - Client-side React components
-- `src/lib/` - Utilities, types, auth client, feed/produce helpers, wallet utilities
+- `src/routes/` - Pages and API routes
+- `src/routes/api/` - Backend endpoints: auth, feed, gazette, foodcoop, foodcoopcooks, events, calendar, wallet, produce, cron
+- `src/components/` - Svelte components
+- `src/lib/` - Utilities, shared types, auth client, feed/produce helpers, wallet utilities
 - `convex/` - Convex schema, functions, and auth configuration
 
 ### Data Flow
 
-1. **Authentication**: Better Auth with Convex adapter (`convex/auth.ts`, `src/lib/auth.ts`, `src/app/api/auth/[...all]/route.ts`)
+1. **Authentication**: Better Auth with Convex adapter (`convex/auth.ts`, `src/lib/auth.ts`, `src/routes/api/auth/[...all]/+server.ts`)
 2. **Member Profiles**: Stored in Convex (`convex/memberProfiles.ts`) with member ID, name, calendar ID, job filters, and pass serial number
 3. **Discover Feed**: Aggregates RSS (foodcoop.com, Gazette, Food Coop Cooks), Bluesky posts, and Eventbrite/GM events with 5-minute caching
-4. **Calendar Syncing**: Proxies Google Calendar iCal feed, filters events by member job filters via `src/app/api/calendar/[calendarId]/route.ts`
+4. **Calendar Syncing**: Proxies Google Calendar iCal feed, filters events by member job filters via `src/routes/api/calendar/[calendarId]/+server.ts`
 5. **Wallet Passes**: Generates Apple Wallet `.pkpass` and Google Wallet save URLs from member profiles
 6. **Produce Pipeline**: Cron scrapes the Coop produce page, stores HTML + monthly Parquet in Vercel Blob, client loads via DuckDB WASM for analytics
 

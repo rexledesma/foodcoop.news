@@ -1,8 +1,8 @@
 import { createAuthClient } from 'better-auth/react';
 import { convexClient } from '@convex-dev/better-auth/client/plugins';
 
-export const authClient = createAuthClient({
+const client = createAuthClient({
   plugins: [convexClient()],
 });
 
-export const { signIn, signUp, signOut, useSession } = authClient;
+export const { signIn, signUp, signOut } = client;
