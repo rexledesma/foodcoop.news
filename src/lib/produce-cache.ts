@@ -14,6 +14,7 @@ interface ProduceCacheResult {
   data: ProduceRow[];
   history: Map<string, ProduceHistoryPoint[]>;
   dateRange: ProduceDateRange | null;
+  cachedAt: number;
 }
 
 export function readProduceCache(): ProduceCacheResult | null {
@@ -32,6 +33,7 @@ export function readProduceCache(): ProduceCacheResult | null {
       data: payload.data,
       history: new Map(payload.history),
       dateRange: payload.dateRange,
+      cachedAt: payload.cachedAt,
     };
   } catch {
     return null;

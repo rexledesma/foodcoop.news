@@ -1,8 +1,7 @@
 <script lang="ts">
-  import { onDestroy, onMount } from 'svelte';
+  import { onMount } from 'svelte';
   import { clearProduceCache, readProduceCache, writeProduceCache } from '@/lib/produce-cache';
-  import { DuckDBClient } from '@/lib/duckdb-client';
-  import { loadProduceData } from '@/lib/produce-data-loader';
+  import { loadProduceData } from '@/lib/produce-data-api-loader';
   import ProduceAnalytics from '@/components/produce/ProduceAnalytics.svelte';
   import { getCurrentStickyVisibility } from '@/lib/sticky-visibility';
   import type {
@@ -26,7 +25,6 @@
 
   const channel = `produce-${Math.random().toString(36).slice(2)}`;
   const periodRefreshAt = new Map<ProduceSWRPeriod, number>();
-  let dbClient: DuckDBClient | null = null;
   let isFetching = false;
 
   let state = {
@@ -75,7 +73,7 @@
   }
 
   async function loadProduce({ refreshing }: { refreshing: boolean }) {
-    if (!dbClient || isFetching) return;
+    if (isFetching) return;
     isFetching = true;
 
     state = {
@@ -87,7 +85,7 @@
     dispatchState();
 
     try {
-      const data = await loadProduceData(dbClient);
+      const data = await loadProduceData();
 
       state = {
         ...state,
@@ -102,7 +100,7 @@
     } catch (error) {
       try {
         clearProduceCache();
-        const retryData = await loadProduceData(dbClient);
+        const retryData = await loadProduceData();
         state = {
           ...state,
           data: retryData.data,
@@ -146,7 +144,8 @@
     const params = new URLSearchParams(window.location.search);
     const favorites = localStorage.getItem('produce-favorites') ?? '[]';
     const cached = readProduceCache();
-    dbClient = new DuckDBClient();
+    const shouldRefreshImmediately =
+      !cached || Date.now() - cached.cachedAt >= SWR_REVALIDATE_INTERVAL_MS;
 
     state = {
       ...state,
@@ -158,37 +157,28 @@
       history: cached?.history ?? state.history,
       dateRange: cached?.dateRange ?? state.dateRange,
       isLoading: !cached,
-      isRefreshing: Boolean(cached),
+      isRefreshing: Boolean(cached) && shouldRefreshImmediately,
     };
     dispatchState();
 
     window.addEventListener('sticky-visibility', stickyVisibilityHandler as EventListener);
 
     void (async () => {
-      try {
-        await dbClient?.init();
-      } catch (error) {
+      if (shouldRefreshImmediately) {
+        await loadProduce({ refreshing: Boolean(cached) });
+      } else {
         state = {
           ...state,
           isLoading: false,
           isRefreshing: false,
-          error: error instanceof Error ? error.message : 'Failed to initialize DuckDB',
         };
         dispatchState();
-        return;
       }
-
-      await loadProduce({ refreshing: Boolean(cached) });
     })();
 
     return () => {
       window.removeEventListener('sticky-visibility', stickyVisibilityHandler as EventListener);
     };
-  });
-
-  onDestroy(() => {
-    void dbClient?.close();
-    dbClient = null;
   });
 </script>
 

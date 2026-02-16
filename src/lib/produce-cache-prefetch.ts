@@ -1,4 +1,5 @@
 import { readProduceCache, writeProduceCache } from '@/lib/produce-cache';
+import { loadProduceData } from '@/lib/produce-data-api-loader';
 
 let prefetchPromise: Promise<void> | null = null;
 
@@ -17,19 +18,8 @@ export function prefetchProduceCache(): Promise<void> {
 
   prefetchPromise = (async () => {
     try {
-      const [{ DuckDBClient }, { loadProduceData }] = await Promise.all([
-        import('@/lib/duckdb-client'),
-        import('@/lib/produce-data-loader'),
-      ]);
-
-      const client = new DuckDBClient();
-      try {
-        await client.init();
-        const loaded = await loadProduceData(client);
-        writeProduceCache(loaded.data, loaded.history, loaded.dateRange);
-      } finally {
-        await client.close();
-      }
+      const loaded = await loadProduceData();
+      writeProduceCache(loaded.data, loaded.history, loaded.dateRange);
     } catch (error) {
       console.error('Failed to prefetch produce cache:', error);
     } finally {
