@@ -56,28 +56,6 @@ async function callWithToken<FnResult>(
   }
 }
 
-async function proxyAuthRequest(request: Request) {
-  const requestUrl = new URL(request.url);
-  const targetUrl = `${siteUrl}${requestUrl.pathname}${requestUrl.search}`;
-  const headers = new Headers(request.headers);
-  headers.set('accept-encoding', 'application/json');
-  headers.set('host', new URL(siteUrl).host);
-
-  return fetch(targetUrl, {
-    method: request.method,
-    headers,
-    redirect: 'manual',
-    body: request.body,
-    // @ts-expect-error Required by Undici for streamed request bodies.
-    duplex: 'half',
-  });
-}
-
-export const handler = {
-  GET: (request: Request) => proxyAuthRequest(request),
-  POST: (request: Request) => proxyAuthRequest(request),
-};
-
 export async function fetchAuthQueryFromHeaders<Query extends FunctionReference<'query'>>(
   headers: Headers,
   query: Query,
