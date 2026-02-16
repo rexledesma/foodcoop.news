@@ -118,6 +118,7 @@
   let sortDirection = $state<SortDirection>('asc');
   let dateFilter = $state<string | null>(null);
   let itemFilter = $state<string | null>(null);
+  let didApplyInitialQueryFilters = $state(false);
 
   const favorites = $derived(parseFavorites(favoritesSnapshot));
   const stickyVisible = $derived(showSticky);
@@ -153,6 +154,13 @@
     return new Map(hits.map((hit) => [hit.item.id, hit.score ?? Number.MAX_VALUE]));
   });
 
+  function rowMatchesDateFilter(row: ProduceRow, targetDate: string): boolean {
+    const arrivedOnDate = row.is_new && row.first_seen_date === targetDate;
+    const becameUnavailableOnDate =
+      row.is_unavailable && row.unavailable_since_date === targetDate;
+    return arrivedOnDate || becameUnavailableOnDate;
+  }
+
   const filteredRows = $derived.by(() => {
     let result = data;
 
@@ -160,10 +168,9 @@
       result = result.filter((row) => produceHash(row.name) === itemFilter);
     }
 
-    if (dateFilter) {
-      result = result.filter(
-        (row) => row.first_seen_date === dateFilter || row.unavailable_since_date === dateFilter,
-      );
+    const selectedDate = dateFilter;
+    if (selectedDate) {
+      result = result.filter((row) => rowMatchesDateFilter(row, selectedDate));
     }
 
     if (searchScores) {
@@ -218,10 +225,9 @@
 
   const quickFilterCount = $derived.by(() => {
     let base = data;
-    if (dateFilter) {
-      base = base.filter(
-        (row) => row.first_seen_date === dateFilter || row.unavailable_since_date === dateFilter,
-      );
+    const selectedDate = dateFilter;
+    if (selectedDate) {
+      base = base.filter((row) => rowMatchesDateFilter(row, selectedDate));
     }
     if (!quickFilter || quickFilter === 'drops' || quickFilter === 'increases') {
       return base.length;
@@ -448,7 +454,8 @@
     return 'bg-zinc-100 text-zinc-700';
   }
 
-  function activeViewFilter(): 'favorites' | 'new' | 'recently_unavailable' | null {
+  function activeViewFilter(): 'favorites' | 'new' | 'recently_unavailable' | 'date' | null {
+    if (dateFilter) return 'date';
     if (quickFilter === 'favorites') return 'favorites';
     if (quickFilter === 'new') return 'new';
     if (quickFilter === 'recently_unavailable') return 'recently_unavailable';
@@ -457,16 +464,18 @@
 
   function activeFilterPillLabel(): string {
     const filter = activeViewFilter();
+    if (filter === 'date' && dateFilter) return formatShortDate(dateFilter);
+    if (filter === 'date') return 'All';
     return filter ? quickFilterPillLabel(filter) : 'All';
   }
 
   function activeFilterPillClass(): string {
     const filter = activeViewFilter();
+    if (filter === 'date') return 'bg-blue-100 text-blue-800';
     return filter ? quickFilterPillClass(filter) : 'bg-zinc-900 text-white';
   }
 
   function shouldShowViewFilterPill(): boolean {
-    if (dateFilter) return false;
     if (produceFilterDisplayName) return false;
     return true;
   }
@@ -608,6 +617,22 @@
     toggleFavorite = next.toggleFavorite;
   }
 
+  function applyInitialQueryFilters() {
+    if (didApplyInitialQueryFilters) return;
+    if (!(initialItemFilter || initialProduceFilter || initialDateFilter)) return;
+
+    quickFilter = null;
+    dateFilter = initialDateFilter;
+    itemFilter = initialItemFilter ?? null;
+    if (!itemFilter && initialProduceFilter) {
+      const isHashParam = /^[a-f0-9]{7}$/i.test(initialProduceFilter.trim());
+      itemFilter = isHashParam ? initialProduceFilter.trim().toLowerCase() : null;
+    }
+    sortField = initialDateFilter ? null : 'name';
+    sortDirection = initialDateFilter ? null : 'asc';
+    didApplyInitialQueryFilters = true;
+  }
+
   function handleStateUpdate(event: Event) {
     if (!(event instanceof CustomEvent)) return;
     applyState(event.detail as ProduceAnalyticsClientState);
@@ -632,18 +657,9 @@
 
   onMount(() => {
     applyState(initialState);
+    applyInitialQueryFilters();
 
-    if (initialItemFilter || initialProduceFilter || initialDateFilter) {
-      quickFilter = null;
-      dateFilter = initialDateFilter;
-      itemFilter = initialItemFilter ?? null;
-      if (!itemFilter && initialProduceFilter) {
-        const isHashParam = /^[a-f0-9]{7}$/i.test(initialProduceFilter.trim());
-        itemFilter = isHashParam ? initialProduceFilter.trim().toLowerCase() : null;
-      }
-      sortField = initialDateFilter ? null : 'name';
-      sortDirection = initialDateFilter ? null : 'asc';
-    } else {
+    if (!didApplyInitialQueryFilters) {
       try {
         const stored = localStorage.getItem('produce-filters');
         if (stored) {
@@ -678,6 +694,10 @@
       window.removeEventListener(`produce-analytics-state:update:${channel}`, handler as EventListener);
       clearLongPress();
     };
+  });
+
+  $effect(() => {
+    applyInitialQueryFilters();
   });
 
   $effect(() => {
@@ -733,29 +753,24 @@
           </span>
         {/if}
 
-        {#if dateFilter}
-          <span class="inline-flex shrink-0 items-center gap-1 rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-800">
-            <span class="max-w-[120px] truncate">{formatShortDate(dateFilter)}</span>
-            <button
-              type="button"
-              aria-label="Remove date filter"
-              onclick={(e) => {
-                e.stopPropagation();
-                clearDateFilter();
-              }}
-              class="ml-0.5 rounded-full p-0.5 transition hover:opacity-70"
-            >
-              ✕
-            </button>
-          </span>
-        {/if}
-
         {#if shouldShowViewFilterPill()}
           <span
             class={`inline-flex shrink-0 items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium ${activeFilterPillClass()}`}
           >
             <span class="max-w-[120px] truncate">{activeFilterPillLabel()}</span>
-            {#if activeViewFilter()}
+            {#if activeViewFilter() === 'date'}
+              <button
+                type="button"
+                aria-label="Remove date filter"
+                onclick={(e) => {
+                  e.stopPropagation();
+                  clearDateFilter();
+                }}
+                class="ml-0.5 rounded-full p-0.5 transition hover:opacity-70"
+              >
+                ✕
+              </button>
+            {:else if activeViewFilter()}
               <button
                 type="button"
                 aria-label="Remove quick filter"
