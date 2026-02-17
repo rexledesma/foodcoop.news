@@ -1,21 +1,21 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import DiscoverFeed from '@/components/discover/DiscoverFeed.svelte';
-  import type {
-    EventbriteEvent,
-    FeedPost,
-    FoodCoopAnnouncement,
-    FoodCoopCooksArticle,
-    FoodcoopEvent,
-    GazetteArticle,
-    ProduceEvent,
-  } from '@/lib/types';
   import type { FeedItem } from '@/lib/discover-feed';
   import { getFeedItemKey } from '@/lib/discover-feed';
   import { getCurrentStickyVisibility } from '@/lib/sticky-visibility';
 
   const channel = `discover-${Math.random().toString(36).slice(2)}`;
-  const COOP_BLUESKY_HANDLE = 'foodcoop.bsky.social';
+
+  type SerializedFeedItem = Omit<FeedItem, 'date'> & { date: string };
+
+  type FeedAggregatorResponse = {
+    items?: SerializedFeedItem[];
+    successfulSources?: string[];
+    failedSources?: string[];
+    isPartial?: boolean;
+    pendingSources?: number;
+  };
 
   let state = {
     items: [] as FeedItem[],
@@ -80,170 +80,87 @@
   }
 
   async function loadFeeds() {
-    const sources = [
-      {
-        url: '/api/gazette',
-        map: (data: { articles: GazetteArticle[] }) =>
-          data.articles.map(
-            (article) =>
-              ({
-                type: 'gazette',
-                data: article,
-                date: new Date(article.pubDate),
-              }) as FeedItem,
-          ),
-      },
-      {
-        url: '/api/feed',
-        map: (data: { posts: FeedPost[] }) =>
-          data.posts
-            .filter((post) => {
-              if (!post.repostedBy) return true;
-              if (post.repostedBy.handle !== COOP_BLUESKY_HANDLE) return false;
-              return post.author.handle !== COOP_BLUESKY_HANDLE;
-            })
-            .map(
-              (post) =>
-                ({
-                  type: 'bluesky',
-                  data: post,
-                  date: new Date(post.createdAt),
-                }) as FeedItem,
-            ),
-      },
-      {
-        url: '/api/foodcoop',
-        map: (data: { articles: FoodCoopAnnouncement[] }) =>
-          data.articles.map(
-            (article) =>
-              ({
-                type: 'foodcoop',
-                data: article,
-                date: new Date(article.pubDate),
-              }) as FeedItem,
-          ),
-      },
-      {
-        url: '/api/foodcoopcooks',
-        map: (data: { articles: FoodCoopCooksArticle[] }) =>
-          data.articles.map(
-            (article) =>
-              ({
-                type: 'foodcoopcooks',
-                data: article,
-                date: new Date(article.pubDate),
-              }) as FeedItem,
-          ),
-      },
-      {
-        url: '/api/foodcoopcooks/events',
-        map: (data: { events: EventbriteEvent[] }) =>
-          data.events.map(
-            (event) =>
-              ({
-                type: 'foodcoopcooks-events',
-                data: event,
-                date: new Date(event.startUtc),
-              }) as FeedItem,
-          ),
-      },
-      {
-        url: '/api/wordsprouts/events',
-        map: (data: { events: EventbriteEvent[] }) =>
-          data.events.map(
-            (event) =>
-              ({
-                type: 'wordsprouts-events',
-                data: event,
-                date: new Date(event.startUtc),
-              }) as FeedItem,
-          ),
-      },
-      {
-        url: '/api/concert-series/events',
-        map: (data: { events: EventbriteEvent[] }) =>
-          data.events.map(
-            (event) =>
-              ({
-                type: 'concert-series-events',
-                data: event,
-                date: new Date(event.startUtc),
-              }) as FeedItem,
-          ),
-      },
-      {
-        url: '/api/foodcoop/gm-events',
-        map: (data: { events: FoodcoopEvent[] }) =>
-          data.events.map(
-            (event) =>
-              ({
-                type: 'gm-events',
-                data: event,
-                date: new Date(event.startUtc),
-              }) as FeedItem,
-          ),
-      },
-      {
-        url: '/api/produce/updates',
-        map: (data: { events: ProduceEvent[] }) =>
-          data.events.map(
-            (event) =>
-              ({
-                type: 'produce',
-                data: event,
-                date: new Date(`${event.date}T07:00:00`),
-              }) as FeedItem,
-          ),
-      },
-    ];
+    const parseAndDedupe = (payload: FeedAggregatorResponse): FeedItem[] => {
+      const parsedItems = (payload.items ?? [])
+        .map(
+          (item) =>
+            ({
+              ...item,
+              date: new Date(item.date),
+            }) as FeedItem,
+        )
+        .filter((item) => !Number.isNaN(item.date.getTime()));
+
+      const deduped: FeedItem[] = [];
+      const seen = new Set<string>();
+      for (const item of parsedItems) {
+        const key = getFeedItemKey(item);
+        if (seen.has(key)) continue;
+        seen.add(key);
+        deduped.push(item);
+      }
+      return deduped;
+    };
 
     state = {
       ...state,
       loading: true,
       error: '',
-      pendingSources: sources.length,
+      pendingSources: 2,
       items: [],
     };
     dispatchState();
 
-    const appendItems = (incoming: FeedItem[]) => {
-      const seen = new Set(state.items.map(getFeedItemKey));
-      const merged = [...state.items];
-      for (const item of incoming) {
-        if (!seen.has(getFeedItemKey(item))) {
-          merged.push(item);
-        }
+    let hasAnySuccess = false;
+
+    try {
+      const firstResponse = await fetch('/api/feed?mode=first');
+      const firstPayload = (await firstResponse.json().catch(() => ({}))) as FeedAggregatorResponse;
+      const firstSuccessCount = firstPayload.successfulSources?.length ?? 0;
+      const firstItems = parseAndDedupe(firstPayload);
+
+      if (firstSuccessCount > 0 || firstItems.length > 0) {
+        hasAnySuccess = true;
+        state = {
+          ...state,
+          items: sortAndPrune(firstItems),
+          loading: false,
+          pendingSources: 1,
+          error: '',
+        };
+        dispatchState();
       }
-      state = { ...state, items: sortAndPrune(merged) };
+
+      const fullResponse = await fetch('/api/feed');
+      const fullPayload = (await fullResponse.json().catch(() => ({}))) as FeedAggregatorResponse;
+      const fullItems = parseAndDedupe(fullPayload);
+      const fullSuccessCount = fullPayload.successfulSources?.length ?? 0;
+      const fullHasResponseError = !fullResponse.ok;
+      if (fullSuccessCount > 0 || fullItems.length > 0) {
+        hasAnySuccess = true;
+      }
+
+      state = {
+        ...state,
+        items: sortAndPrune(fullItems),
+        loading: false,
+        pendingSources: 0,
+        error:
+          fullHasResponseError && fullSuccessCount === 0 && fullItems.length === 0 && !hasAnySuccess
+            ? 'Failed to load feed'
+            : '',
+      };
       dispatchState();
-    };
-
-    let successCount = 0;
-    await Promise.all(
-      sources.map(async (source) => {
-        try {
-          const response = await fetch(source.url);
-          if (response.ok) {
-            successCount += 1;
-            const data = await response.json();
-            appendItems(source.map(data));
-          }
-        } catch {
-          // Ignore per-source failures.
-        } finally {
-          state = { ...state, pendingSources: Math.max(0, state.pendingSources - 1) };
-          dispatchState();
-        }
-      }),
-    );
-
-    state = {
-      ...state,
-      items: sortAndPrune(state.items),
-      loading: false,
-      error: successCount === 0 && state.items.length === 0 ? 'Failed to load feed' : '',
-    };
-    dispatchState();
+    } catch {
+      state = {
+        ...state,
+        items: state.items,
+        loading: false,
+        pendingSources: 0,
+        error: hasAnySuccess || state.items.length > 0 ? '' : 'Failed to load feed',
+      };
+      dispatchState();
+    }
   }
 
   onMount(() => {

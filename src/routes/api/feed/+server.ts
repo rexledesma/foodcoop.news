@@ -1,243 +1,306 @@
-import type { FeedPost } from '@/lib/types';
+import type {
+  EventbriteEvent,
+  FeedPost,
+  FoodCoopAnnouncement,
+  FoodCoopCooksArticle,
+  FoodcoopEvent,
+  GazetteArticle,
+  ProduceEvent,
+} from '@/lib/types';
+import type { FeedItem } from '@/lib/discover-feed';
+import { getFeedItemKey } from '@/lib/discover-feed';
 
-const BLUESKY_HANDLE = 'foodcoop.bsky.social';
-const BLUESKY_API = 'https://public.api.bsky.app/xrpc/app.bsky.feed.getAuthorFeed';
+const COOP_BLUESKY_HANDLE = 'foodcoop.bsky.social';
 
-// Cache feed data for 5 minutes
-let cachedFeed: FeedPost[] | null = null;
-let cacheTime = 0;
-const CACHE_DURATION = 5 * 60 * 1000;
+type SourceName =
+  | 'gazette'
+  | 'bluesky'
+  | 'foodcoop'
+  | 'foodcoopcooks'
+  | 'foodcoopcooks-events'
+  | 'wordsprouts-events'
+  | 'concert-series-events'
+  | 'gm-events'
+  | 'produce';
 
-interface BlueskyImage {
-  thumb: string;
-  fullsize: string;
-  alt: string;
-}
+type SourceResponse = {
+  lastUpdated?: string;
+};
 
-interface BlueskyEmbedRecord {
-  $type: string;
-  uri: string;
-  cid: string;
-  author: {
-    handle: string;
-    displayName?: string;
-    avatar?: string;
-  };
-  value: {
-    text: string;
-    createdAt: string;
-  };
-  embeds?: BlueskyEmbed[];
-}
+type SourceDefinition = {
+  name: SourceName;
+  path: string;
+  map: (payload: SourceResponse) => FeedItem[];
+};
 
-interface BlueskyEmbed {
-  $type: string;
-  images?: BlueskyImage[];
-  media?: {
-    $type: string;
-    images?: BlueskyImage[];
-  };
-  // For app.bsky.embed.record#view, record is BlueskyEmbedRecord directly
-  // For app.bsky.embed.recordWithMedia#view, record is { record: BlueskyEmbedRecord }
-  record?: BlueskyEmbedRecord | { record: BlueskyEmbedRecord };
-}
-
-function extractImages(embed?: BlueskyEmbed): BlueskyImage[] | undefined {
-  if (!embed) return undefined;
-
-  // Direct images embed
-  if (embed.$type === 'app.bsky.embed.images#view' && embed.images) {
-    return embed.images;
-  }
-
-  // Record with media (quote post with images)
-  if (embed.$type === 'app.bsky.embed.recordWithMedia#view' && embed.media?.images) {
-    return embed.media.images;
-  }
-
-  return undefined;
-}
-
-interface QuotedPost {
-  uri: string;
-  text: string;
-  createdAt: string;
-  author: {
-    handle: string;
-    displayName: string;
-    avatar?: string;
-  };
-  images?: BlueskyImage[];
-}
-
-function extractQuotedPost(embed?: BlueskyEmbed): QuotedPost | undefined {
-  if (!embed) return undefined;
-
-  // Direct record embed (quote post without media)
-  if (embed.$type === 'app.bsky.embed.record#view' && embed.record) {
-    // For this type, record is BlueskyEmbedRecord directly
-    const record = embed.record as BlueskyEmbedRecord;
-    // Only handle view records, not blocked/notFound/etc
-    if (record.$type !== 'app.bsky.embed.record#viewRecord') {
-      return undefined;
+type SourceResult =
+  | {
+      source: SourceName;
+      ok: true;
+      items: FeedItem[];
+      lastUpdated?: string;
     }
-    // Extract images from the quoted post's embeds if any
-    const quotedImages = record.embeds?.[0] ? extractImages(record.embeds[0]) : undefined;
-
-    return {
-      uri: record.uri,
-      text: record.value.text,
-      createdAt: record.value.createdAt,
-      author: {
-        handle: record.author.handle,
-        displayName: record.author.displayName || record.author.handle,
-        avatar: record.author.avatar,
-      },
-      images: quotedImages,
+  | {
+      source: SourceName;
+      ok: false;
+      error: string;
     };
+
+type SerializedFeedItem = Omit<FeedItem, 'date'> & { date: string };
+
+const SOURCE_DEFINITIONS: SourceDefinition[] = [
+  {
+    name: 'gazette',
+    path: '/api/gazette',
+    map: (payload) => {
+      const data = payload as SourceResponse & { articles?: GazetteArticle[] };
+      return (data.articles ?? []).map((article) => ({
+        type: 'gazette',
+        data: article,
+        date: new Date(article.pubDate),
+      }));
+    },
+  },
+  {
+    name: 'bluesky',
+    path: '/api/feed/bluesky',
+    map: (payload) => {
+      const data = payload as SourceResponse & { posts?: FeedPost[] };
+      return (data.posts ?? [])
+        .filter((post) => {
+          if (!post.repostedBy) return true;
+          if (post.repostedBy.handle !== COOP_BLUESKY_HANDLE) return false;
+          return post.author.handle !== COOP_BLUESKY_HANDLE;
+        })
+        .map((post) => ({
+          type: 'bluesky',
+          data: post,
+          date: new Date(post.createdAt),
+        }));
+    },
+  },
+  {
+    name: 'foodcoop',
+    path: '/api/foodcoop',
+    map: (payload) => {
+      const data = payload as SourceResponse & { articles?: FoodCoopAnnouncement[] };
+      return (data.articles ?? []).map((article) => ({
+        type: 'foodcoop',
+        data: article,
+        date: new Date(article.pubDate),
+      }));
+    },
+  },
+  {
+    name: 'foodcoopcooks',
+    path: '/api/foodcoopcooks',
+    map: (payload) => {
+      const data = payload as SourceResponse & { articles?: FoodCoopCooksArticle[] };
+      return (data.articles ?? []).map((article) => ({
+        type: 'foodcoopcooks',
+        data: article,
+        date: new Date(article.pubDate),
+      }));
+    },
+  },
+  {
+    name: 'foodcoopcooks-events',
+    path: '/api/foodcoopcooks/events',
+    map: (payload) => {
+      const data = payload as SourceResponse & { events?: EventbriteEvent[] };
+      return (data.events ?? []).map((event) => ({
+        type: 'foodcoopcooks-events',
+        data: event,
+        date: new Date(event.startUtc),
+      }));
+    },
+  },
+  {
+    name: 'wordsprouts-events',
+    path: '/api/wordsprouts/events',
+    map: (payload) => {
+      const data = payload as SourceResponse & { events?: EventbriteEvent[] };
+      return (data.events ?? []).map((event) => ({
+        type: 'wordsprouts-events',
+        data: event,
+        date: new Date(event.startUtc),
+      }));
+    },
+  },
+  {
+    name: 'concert-series-events',
+    path: '/api/concert-series/events',
+    map: (payload) => {
+      const data = payload as SourceResponse & { events?: EventbriteEvent[] };
+      return (data.events ?? []).map((event) => ({
+        type: 'concert-series-events',
+        data: event,
+        date: new Date(event.startUtc),
+      }));
+    },
+  },
+  {
+    name: 'gm-events',
+    path: '/api/foodcoop/gm-events',
+    map: (payload) => {
+      const data = payload as SourceResponse & { events?: FoodcoopEvent[] };
+      return (data.events ?? []).map((event) => ({
+        type: 'gm-events',
+        data: event,
+        date: new Date(event.startUtc),
+      }));
+    },
+  },
+  {
+    name: 'produce',
+    path: '/api/produce/updates',
+    map: (payload) => {
+      const data = payload as SourceResponse & { events?: ProduceEvent[] };
+      return (data.events ?? []).map((event) => ({
+        type: 'produce',
+        data: event,
+        date: new Date(`${event.date}T07:00:00`),
+      }));
+    },
+  },
+];
+
+function dedupeAndSort(items: FeedItem[]) {
+  const byKey = new Map<string, FeedItem>();
+  for (const item of items) {
+    byKey.set(getFeedItemKey(item), item);
   }
 
-  // Record with media (quote post with images on the quoting post)
-  // For this type, the actual record is nested: embed.record.record
-  if (embed.$type === 'app.bsky.embed.recordWithMedia#view' && embed.record) {
-    const wrapper = embed.record as { record: BlueskyEmbedRecord };
-    const record = wrapper.record;
-    if (!record || record.$type !== 'app.bsky.embed.record#viewRecord') {
-      return undefined;
-    }
-    const quotedImages = record.embeds?.[0] ? extractImages(record.embeds[0]) : undefined;
+  return Array.from(byKey.values()).sort((a, b) => b.date.getTime() - a.date.getTime());
+}
 
-    return {
-      uri: record.uri,
-      text: record.value.text,
-      createdAt: record.value.createdAt,
-      author: {
-        handle: record.author.handle,
-        displayName: record.author.displayName || record.author.handle,
-        avatar: record.author.avatar,
-      },
-      images: quotedImages,
-    };
+function parseSourceFilter(rawSources: string | null): SourceDefinition[] {
+  if (!rawSources) {
+    return SOURCE_DEFINITIONS;
   }
 
-  return undefined;
-}
+  const requestedNames = rawSources
+    .split(',')
+    .map((name) => name.trim())
+    .filter(Boolean);
 
-interface BlueskyPost {
-  uri: string;
-  cid: string;
-  author: {
-    handle: string;
-    displayName?: string;
-    avatar?: string;
-  };
-  record: {
-    text: string;
-    createdAt: string;
-  };
-  embed?: BlueskyEmbed;
-  likeCount?: number;
-  repostCount?: number;
-  replyCount?: number;
-}
-
-interface BlueskyRepostReason {
-  $type: 'app.bsky.feed.defs#reasonRepost';
-  by: {
-    did: string;
-    handle: string;
-    displayName?: string;
-    avatar?: string;
-  };
-  indexedAt: string;
-}
-
-interface BlueskyFeedItem {
-  post: BlueskyPost;
-  reply?: {
-    parent: BlueskyPost;
-    root: BlueskyPost;
-  };
-  reason?: BlueskyRepostReason;
-}
-
-interface BlueskyResponse {
-  feed: BlueskyFeedItem[];
-}
-
-async function fetchBlueskyFeed(): Promise<FeedPost[]> {
-  const url = `${BLUESKY_API}?actor=${BLUESKY_HANDLE}&limit=30`;
-  const response = await fetch(url);
-
-  if (!response.ok) {
-    throw new Error(`Bluesky API error: ${response.status}`);
+  if (requestedNames.length === 0) {
+    return SOURCE_DEFINITIONS;
   }
 
-  const data: BlueskyResponse = await response.json();
-
-  return data.feed.map((item) => {
-    const post = item.post;
-    const images = extractImages(post.embed);
-    const quotedPost = extractQuotedPost(post.embed);
-
-    const parent = item.reply?.parent
-      ? {
-          uri: item.reply.parent.uri,
-          text: item.reply.parent.record.text,
-          createdAt: item.reply.parent.record.createdAt,
-          author: {
-            handle: item.reply.parent.author.handle,
-            displayName: item.reply.parent.author.displayName || item.reply.parent.author.handle,
-            avatar: item.reply.parent.author.avatar,
-          },
-        }
-      : undefined;
-
-    const repostedBy =
-      item.reason?.$type === 'app.bsky.feed.defs#reasonRepost'
-        ? {
-            handle: item.reason.by.handle,
-            displayName: item.reason.by.displayName || item.reason.by.handle,
-            avatar: item.reason.by.avatar,
-          }
-        : undefined;
-
-    return {
-      id: post.cid,
-      uri: post.uri,
-      text: post.record.text,
-      createdAt: post.record.createdAt,
-      author: {
-        handle: post.author.handle,
-        displayName: post.author.displayName || post.author.handle,
-        avatar: post.author.avatar,
-      },
-      images,
-      likeCount: post.likeCount || 0,
-      repostCount: post.repostCount || 0,
-      replyCount: post.replyCount || 0,
-      parent,
-      quotedPost,
-      repostedBy,
-    };
-  });
+  const allowed = new Set(requestedNames);
+  const filtered = SOURCE_DEFINITIONS.filter((source) => allowed.has(source.name));
+  return filtered.length > 0 ? filtered : SOURCE_DEFINITIONS;
 }
 
-export async function GET() {
+function parseLimit(rawLimit: string | null): number | null {
+  if (!rawLimit) return null;
+  const parsed = Number.parseInt(rawLimit, 10);
+  if (!Number.isFinite(parsed) || parsed <= 0) return null;
+  return parsed;
+}
+
+function isFirstMode(rawMode: string | null): boolean {
+  return rawMode === 'first';
+}
+
+async function fetchSource(
+  source: SourceDefinition,
+  fetchFn: typeof globalThis.fetch,
+  signal?: AbortSignal,
+): Promise<SourceResult> {
   try {
-    const now = Date.now();
-    if (!cachedFeed || now - cacheTime > CACHE_DURATION) {
-      cachedFeed = await fetchBlueskyFeed();
-      cacheTime = now;
+    const response = await fetchFn(source.path, signal ? { signal } : undefined);
+    if (!response.ok) {
+      return {
+        source: source.name,
+        ok: false,
+        error: `HTTP ${response.status}`,
+      };
     }
 
-    return Response.json({
-      posts: cachedFeed,
-      total: cachedFeed.length,
-      lastUpdated: new Date(cacheTime).toISOString(),
-    });
-  } catch (error) {
-    console.error('Feed API error:', error);
-    return Response.json({ error: 'Failed to fetch feed data' }, { status: 500 });
+    const payload = (await response.json()) as SourceResponse;
+
+    return {
+      source: source.name,
+      ok: true,
+      items: source.map(payload),
+      lastUpdated: payload.lastUpdated,
+    };
+  } catch {
+    return {
+      source: source.name,
+      ok: false,
+      error: 'Request failed',
+    };
   }
+}
+
+export async function GET({ fetch, url }: { fetch: typeof globalThis.fetch; url: URL }) {
+  const selectedSources = parseSourceFilter(url.searchParams.get('sources'));
+  const limit = parseLimit(url.searchParams.get('limit'));
+  const firstMode = isFirstMode(url.searchParams.get('mode'));
+  const blueskySource = SOURCE_DEFINITIONS.find((source) => source.name === 'bluesky');
+
+  const sourceResults: SourceResult[] = firstMode
+    ? await (async () => {
+        if (!blueskySource) return [];
+        const result = await fetchSource(blueskySource, fetch);
+        return [result];
+      })()
+    : await Promise.all(selectedSources.map((source) => fetchSource(source, fetch)));
+
+  const errorsBySource: Partial<Record<SourceName, string>> = {};
+  const successfulSources: SourceName[] = [];
+  const failedSources: SourceName[] = [];
+  const allItems: FeedItem[] = [];
+  const lastUpdatedTimestamps: number[] = [];
+
+  for (const result of sourceResults) {
+    if (!result.ok) {
+      failedSources.push(result.source);
+      errorsBySource[result.source] = result.error;
+      continue;
+    }
+
+    successfulSources.push(result.source);
+    allItems.push(...result.items);
+
+    if (result.lastUpdated) {
+      const ts = Date.parse(result.lastUpdated);
+      if (!Number.isNaN(ts)) lastUpdatedTimestamps.push(ts);
+    }
+  }
+
+  const dedupedItems = dedupeAndSort(allItems);
+  const limitedItems = limit ? dedupedItems.slice(0, limit) : dedupedItems;
+  const serializedItems: SerializedFeedItem[] = limitedItems.map((item) => ({
+    ...item,
+    date: item.date.toISOString(),
+  }));
+
+  const maxLastUpdated =
+    lastUpdatedTimestamps.length > 0
+      ? new Date(Math.max(...lastUpdatedTimestamps)).toISOString()
+      : new Date().toISOString();
+
+  const hasAnySuccess = successfulSources.length > 0;
+  const isPartial = firstMode && hasAnySuccess;
+
+  return Response.json(
+    {
+      items: serializedItems,
+      total: serializedItems.length,
+      isPartial,
+      pendingSources: isPartial ? Math.max(0, selectedSources.length - 1) : 0,
+      requestedSources: selectedSources.map((source) => source.name),
+      successfulSources,
+      failedSources,
+      errorsBySource,
+      lastUpdated: maxLastUpdated,
+    },
+    {
+      status: hasAnySuccess ? 200 : 500,
+    },
+  );
 }
