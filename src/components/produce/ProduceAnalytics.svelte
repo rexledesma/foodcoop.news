@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { goto } from '$app/navigation';
   import Fuse from 'fuse.js';
   import { onMount } from 'svelte';
   import ProduceContextMenu from '@/components/produce/ProduceContextMenu.svelte';
@@ -501,7 +502,7 @@
     dateFilter = null;
     const url = new URL(window.location.href);
     url.searchParams.delete('date');
-    window.history.replaceState(null, '', url.pathname + url.search);
+    void goto(url.pathname + url.search, { keepFocus: true, noScroll: true, replaceState: true });
   }
 
   function clearQueryFilters() {
@@ -513,7 +514,7 @@
     url.searchParams.delete('item');
     url.searchParams.delete('produce');
     url.searchParams.delete('name');
-    window.history.replaceState(null, '', url.pathname + url.search);
+    void goto(url.pathname + url.search, { keepFocus: true, noScroll: true, replaceState: true });
   }
 
   function clearItemFilter() {
@@ -523,7 +524,7 @@
     url.searchParams.delete('item');
     url.searchParams.delete('produce');
     url.searchParams.delete('name');
-    window.history.replaceState(null, '', url.pathname + url.search);
+    void goto(url.pathname + url.search, { keepFocus: true, noScroll: true, replaceState: true });
   }
 
   function isSparklineTarget(target: EventTarget | null): boolean {
