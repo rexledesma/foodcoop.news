@@ -23,6 +23,7 @@
   const DISMISS_GUARD_MS = 400;
 
   let copied = $state(false);
+  let supportsNativeShare = $state(false);
   let menuRef = $state<HTMLDivElement | null>(null);
   let openedAt = $state(0);
   let pos = $state<{
@@ -50,9 +51,21 @@
     pos = { left, top, originX, originY };
   }
 
-  async function handleCopyLink() {
+  async function handleShareOrCopy() {
     if (isWithinDismissGuard()) return;
     const url = `${window.location.origin}${produceItemUrl(itemName)}`;
+    const shareData = { title: itemName, url };
+
+    if (supportsNativeShare && typeof navigator.share === 'function') {
+      try {
+        await navigator.share(shareData);
+      } catch {
+        // Ignore share cancellation/errors and keep menu state unchanged.
+      }
+      onClose();
+      return;
+    }
+
     await navigator.clipboard.writeText(url);
     copied = true;
     setTimeout(() => onClose(), 600);
@@ -89,6 +102,13 @@
 
   onMount(() => {
     openedAt = Date.now();
+    if (typeof navigator !== 'undefined' && typeof navigator.share === 'function') {
+      const shareData = { title: itemName, url: `${window.location.origin}${produceItemUrl(itemName)}` };
+      supportsNativeShare =
+        typeof navigator.canShare !== 'function' || navigator.canShare(shareData);
+    } else {
+      supportsNativeShare = false;
+    }
 
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose();
@@ -166,11 +186,13 @@
   <button
     type="button"
     onclick={() => {
-      void handleCopyLink();
+      void handleShareOrCopy();
     }}
     class="flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm text-zinc-700 transition-colors hover:bg-zinc-100"
   >
-    <span class="inline-flex h-5 w-5 items-center justify-center">{copied ? '✅' : '🔗'}</span>
-    <span>{copied ? 'Copied!' : 'Copy Link'}</span>
+    <span class="inline-flex h-5 w-5 items-center justify-center"
+      >{supportsNativeShare ? '📤' : copied ? '✅' : '🔗'}</span
+    >
+    <span>{supportsNativeShare ? 'Share' : copied ? 'Copied!' : 'Copy Link'}</span>
   </button>
 </div>
