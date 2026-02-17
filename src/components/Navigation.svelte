@@ -146,53 +146,59 @@
       </a>
     </div>
 
-    {#if !isPending}
-      <div class="relative hidden md:block" bind:this={desktopDropdownRef}>
-        {#if isAuthenticated}
-          <button
-            type="button"
-            onclick={onToggleDropdown}
-            class={`flex flex-row items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
-              isDropdownOpen ? 'text-black' : 'text-zinc-500 hover:text-black'
-            }`}
-          >
-            <span class="text-xl md:text-lg">{getNavIcon('carrot')}</span>
-            <span>Account</span>
-          </button>
+    <div class="relative hidden md:block" bind:this={desktopDropdownRef}>
+      {#if isPending}
+        <div
+          class="flex flex-row items-center justify-center gap-2 rounded-lg px-4 py-2 text-zinc-400"
+          aria-busy="true"
+        >
+          <span class="text-xl md:text-lg">{getNavIcon('carrot')}</span>
+          <span class="text-sm font-medium">Sign In</span>
+        </div>
+      {:else if isAuthenticated}
+        <button
+          type="button"
+          onclick={onToggleDropdown}
+          class={`flex flex-row items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
+            isDropdownOpen ? 'text-black' : 'text-zinc-500 hover:text-black'
+          }`}
+        >
+          <span class="text-xl md:text-lg">{getNavIcon('carrot')}</span>
+          <span>Account</span>
+        </button>
 
-          {#if isDropdownOpen}
-            <div class="absolute top-full right-0 z-50 mt-2 w-64 overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-lg">
-              <div class="border-b border-zinc-200 p-4">
-                <p class="font-medium text-zinc-900">{memberName}</p>
-                {#if memberId}
-                  <p class="mt-1 text-sm text-zinc-500">
-                    Member ID: <span class="font-mono">{memberId}</span>
-                  </p>
-                {/if}
-                <p class="mt-1 truncate text-sm text-zinc-500">{userEmail}</p>
-              </div>
-              <button
-                type="button"
-                onclick={onSignOut}
-                class="w-full px-4 py-3 text-left text-sm text-zinc-700 transition-colors hover:bg-zinc-100"
-              >
-                Sign Out
-              </button>
+        {#if isDropdownOpen}
+          <div class="absolute top-full right-0 z-50 mt-2 w-64 overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-lg">
+            <div class="border-b border-zinc-200 p-4">
+              <p class="font-medium text-zinc-900">{memberName}</p>
+              {#if memberId}
+                <p class="mt-1 text-sm text-zinc-500">
+                  Member ID: <span class="font-mono">{memberId}</span>
+                </p>
+              {/if}
+              <p class="mt-1 truncate text-sm text-zinc-500">{userEmail}</p>
             </div>
-          {/if}
-        {:else}
-          <a
-            href={loginHref}
-            class={`flex flex-row items-center justify-center gap-2 rounded-lg px-4 py-2 transition-colors ${
-              pathname === '/login' ? 'text-black' : 'text-zinc-500 hover:text-black'
-            }`}
-          >
-            <span class="text-xl md:text-lg">{getNavIcon('carrot')}</span>
-            <span class="text-sm font-medium">Sign In</span>
-          </a>
+            <button
+              type="button"
+              onclick={onSignOut}
+              class="w-full px-4 py-3 text-left text-sm text-zinc-700 transition-colors hover:bg-zinc-100"
+            >
+              Sign Out
+            </button>
+          </div>
         {/if}
-      </div>
-    {/if}
+      {:else}
+        <a
+          href={loginHref}
+          class={`flex flex-row items-center justify-center gap-2 rounded-lg px-4 py-2 transition-colors ${
+            pathname === '/login' ? 'text-black' : 'text-zinc-500 hover:text-black'
+          }`}
+        >
+          <span class="text-xl md:text-lg">{getNavIcon('carrot')}</span>
+          <span class="text-sm font-medium">Sign In</span>
+        </a>
+      {/if}
+    </div>
   </div>
 
   <div class="mx-auto -ml-2 flex max-w-3xl items-center px-4 pb-2 md:hidden">
@@ -206,52 +212,55 @@
       <span class="text-sm font-medium">{aboutItem.label}</span>
     </a>
 
-    {#if !isPending}
-      {#if isAuthenticated}
-        <div class="relative" bind:this={mobileDropdownRef}>
-          <button
-            type="button"
-            onclick={onToggleDropdown}
-            class={`flex flex-row items-center justify-center gap-2 rounded-lg px-2 py-1 text-sm font-medium transition-colors ${
-              isDropdownOpen ? 'text-black' : 'text-zinc-500 hover:text-black'
-            }`}
-          >
-            <span class="text-xl md:text-lg">{getNavIcon('carrot')}</span>
-            <span>Account</span>
-          </button>
-
-          {#if isDropdownOpen}
-            <div class="absolute top-full left-0 z-50 mt-2 w-64 overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-lg">
-              <div class="border-b border-zinc-200 p-4">
-                <p class="font-medium text-zinc-900">{memberName}</p>
-                {#if memberId}
-                  <p class="mt-1 text-sm text-zinc-500">
-                    Member ID: <span class="font-mono">{memberId}</span>
-                  </p>
-                {/if}
-                <p class="mt-1 truncate text-sm text-zinc-500">{userEmail}</p>
-              </div>
-              <button
-                type="button"
-                onclick={onSignOut}
-                class="w-full px-4 py-3 text-left text-sm text-zinc-700 transition-colors hover:bg-zinc-100"
-              >
-                Sign Out
-              </button>
-            </div>
-          {/if}
-        </div>
-      {:else}
-        <a
-          href={loginHref}
-          class={`flex flex-row items-center justify-center gap-2 rounded-lg px-2 py-1 transition-colors ${
-            pathname === '/login' ? 'text-black' : 'text-zinc-500 hover:text-black'
+    {#if isPending}
+      <div class="flex flex-row items-center justify-center gap-2 rounded-lg px-2 py-1 text-zinc-400" aria-busy="true">
+        <span class="text-xl md:text-lg">{getNavIcon('carrot')}</span>
+        <span class="text-sm font-medium">Sign In</span>
+      </div>
+    {:else if isAuthenticated}
+      <div class="relative" bind:this={mobileDropdownRef}>
+        <button
+          type="button"
+          onclick={onToggleDropdown}
+          class={`flex flex-row items-center justify-center gap-2 rounded-lg px-2 py-1 text-sm font-medium transition-colors ${
+            isDropdownOpen ? 'text-black' : 'text-zinc-500 hover:text-black'
           }`}
         >
           <span class="text-xl md:text-lg">{getNavIcon('carrot')}</span>
-          <span class="text-sm font-medium">Sign In</span>
-        </a>
-      {/if}
+          <span>Account</span>
+        </button>
+
+        {#if isDropdownOpen}
+          <div class="absolute top-full left-0 z-50 mt-2 w-64 overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-lg">
+            <div class="border-b border-zinc-200 p-4">
+              <p class="font-medium text-zinc-900">{memberName}</p>
+              {#if memberId}
+                <p class="mt-1 text-sm text-zinc-500">
+                  Member ID: <span class="font-mono">{memberId}</span>
+                </p>
+              {/if}
+              <p class="mt-1 truncate text-sm text-zinc-500">{userEmail}</p>
+            </div>
+            <button
+              type="button"
+              onclick={onSignOut}
+              class="w-full px-4 py-3 text-left text-sm text-zinc-700 transition-colors hover:bg-zinc-100"
+            >
+              Sign Out
+            </button>
+          </div>
+        {/if}
+      </div>
+    {:else}
+      <a
+        href={loginHref}
+        class={`flex flex-row items-center justify-center gap-2 rounded-lg px-2 py-1 transition-colors ${
+          pathname === '/login' ? 'text-black' : 'text-zinc-500 hover:text-black'
+        }`}
+      >
+        <span class="text-xl md:text-lg">{getNavIcon('carrot')}</span>
+        <span class="text-sm font-medium">Sign In</span>
+      </a>
     {/if}
   </div>
 </nav>
