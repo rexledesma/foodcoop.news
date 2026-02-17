@@ -15,6 +15,7 @@
   const faviconHref = `data:image/svg+xml,${encodeURIComponent(
     '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y="0.9em" font-size="90">📰</text></svg>',
   )}`;
+  const SITE_NAME = 'foodcoop.news';
 
   const channel = `nav-${Math.random().toString(36).slice(2)}`;
   const initialPathname = typeof window === 'undefined' ? '/' : window.location.pathname;
@@ -51,10 +52,53 @@
   };
 
   const initialState = state;
+  let documentTitle = SITE_NAME;
 
   function dispatchState() {
     if (typeof window === 'undefined') return;
     window.dispatchEvent(new CustomEvent(`navigation-state:update:${channel}`, { detail: state }));
+  }
+
+  function decodeParam(value: string | null): string {
+    if (!value) return '';
+    try {
+      return decodeURIComponent(value).trim();
+    } catch {
+      return value.trim();
+    }
+  }
+
+  function formatProduceDate(value: string | null): string {
+    if (!value) return '';
+    const match = value.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (!match) return '';
+    const [, year, month, day] = match;
+    return `${month}-${day}-${year}`;
+  }
+
+  function computePageTitle(pathname: string, searchParams: URLSearchParams): string {
+    if (pathname === '/produce') {
+      const produceName = decodeParam(searchParams.get('name'));
+      const isHashedProduceId = /^[a-f0-9]{7}$/i.test(produceName);
+      if (produceName && !isHashedProduceId) {
+        return `${produceName} · ${SITE_NAME}`;
+      }
+
+      const formattedDate = formatProduceDate(searchParams.get('date'));
+      if (formattedDate) {
+        return `Produce (${formattedDate}) · ${SITE_NAME}`;
+      }
+
+      return `Produce · ${SITE_NAME}`;
+    }
+
+    if (pathname === '/discover' || pathname === '/') return `Discover · ${SITE_NAME}`;
+    if (pathname === '/integrations') return `Integrations · ${SITE_NAME}`;
+    if (pathname === '/about') return `About · ${SITE_NAME}`;
+    if (pathname === '/login') return `Login · ${SITE_NAME}`;
+    if (pathname === '/signup') return `Signup · ${SITE_NAME}`;
+
+    return SITE_NAME;
   }
 
   async function hydrateNavState() {
@@ -129,9 +173,12 @@
   $: if (typeof window !== 'undefined') {
     setStickyVisibilityRoute($page.url.pathname);
   }
+
+  $: documentTitle = computePageTitle($page.url.pathname, $page.url.searchParams);
 </script>
 
 <svelte:head>
+  <title>{documentTitle}</title>
   <link rel="icon" href={faviconHref} />
 </svelte:head>
 
