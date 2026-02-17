@@ -16,6 +16,8 @@
     '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y="0.9em" font-size="90">📰</text></svg>',
   )}`;
   const SITE_NAME = 'foodcoop.news';
+  const SITE_DESCRIPTION = 'Stay in the loop with the Park Slope Food Coop.';
+  const OG_IMAGE_PATH = '/og.png';
 
   const channel = `nav-${Math.random().toString(36).slice(2)}`;
   const initialPathname = typeof window === 'undefined' ? '/' : window.location.pathname;
@@ -180,6 +182,13 @@
 <svelte:head>
   <title>{documentTitle}</title>
   <link rel="icon" href={faviconHref} />
+  <meta name="description" content={SITE_DESCRIPTION} />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content={SITE_NAME} />
+  <meta property="og:title" content={documentTitle} />
+  <meta property="og:description" content={SITE_DESCRIPTION} />
+  <meta property="og:url" content={$page.url.href} />
+  <meta property="og:image" content={OG_IMAGE_PATH} />
 </svelte:head>
 
 <Navigation {channel} {initialState} />

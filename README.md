@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="public/og.png" alt="Foodcoop News preview" width="960" />
+  <img src="static/og.png" alt="Foodcoop News preview" width="960" />
 </p>
 
 # foodcoop.news
