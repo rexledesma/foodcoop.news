@@ -87,6 +87,7 @@
     visible: boolean;
   };
 
+
   let session: SessionData = null;
   let profile: MemberProfile = null;
 
@@ -556,13 +557,61 @@
     window.addEventListener('sticky-visibility', stickyVisibilityHandler as EventListener);
 
     void (async () => {
+      const finalizeInitialPaint = (canManageNotifications: boolean) => {
+        state = {
+          ...state,
+          sessionPending: false,
+          isInitialLoading: false,
+          isSignedIn: Boolean(session?.user),
+          canManageNotifications,
+        };
+        dispatchState();
+      };
+
+      const initializePushInBackground = async (canManageNotifications: boolean) => {
+        if (!canManageNotifications || !session?.user) return;
+        try {
+          if (!isPushSupported()) return;
+          await registerServiceWorker();
+          const [subscriptions, existing] = await Promise.all([
+            fetchPushSubscriptions(),
+            getExistingSubscription(),
+          ]);
+          state = {
+            ...state,
+            pushSupported: true,
+            pushEnabled: !!existing && subscriptions.length > 0,
+          };
+          dispatchState();
+        } catch (error) {
+          console.error('Failed to initialize push notifications:', error);
+          state = {
+            ...state,
+            pushSupported: false,
+            pushEnabled: false,
+          };
+          dispatchState();
+        }
+      };
+
       try {
         session = await fetchSession();
+        const canManageNotifications = NOTIFICATIONS_ALLOWED_EMAILS.includes(
+          session?.user?.email ?? '',
+        );
+        finalizeInitialPaint(canManageNotifications);
 
         if (session?.user) {
-          profile = await fetchProfile();
-          syncProfileToState();
-          clearDraft();
+          void (async () => {
+            try {
+              profile = await fetchProfile();
+              syncProfileToState();
+              clearDraft();
+              dispatchState();
+            } catch (error) {
+              console.error('Failed to load integrations profile:', error);
+            }
+          })();
         } else {
           const draft = loadDraft();
           if (draft) {
@@ -573,43 +622,14 @@
               selectedJobs: sortJobs(draft.selectedJobs),
               displayFullName: draft.fullName.trim(),
             };
+            dispatchState();
           }
         }
 
-        if (isPushSupported()) {
-          try {
-            await registerServiceWorker();
-            const subscriptions = await fetchPushSubscriptions();
-            const existing = await getExistingSubscription();
-            state = {
-              ...state,
-              pushSupported: true,
-              pushEnabled: !!existing && subscriptions.length > 0,
-            };
-          } catch (error) {
-            console.error('Failed to initialize push notifications:', error);
-            state = {
-              ...state,
-              pushSupported: false,
-              pushEnabled: false,
-            };
-          }
-        }
+        void initializePushInBackground(canManageNotifications);
       } catch (error) {
         console.error('Failed to initialize integrations page:', error);
-      } finally {
-        const canManageNotifications = NOTIFICATIONS_ALLOWED_EMAILS.includes(
-          session?.user?.email ?? '',
-        );
-
-        state = {
-          ...state,
-          sessionPending: false,
-          isInitialLoading: false,
-          isSignedIn: Boolean(session?.user),
-          canManageNotifications,
-        };
-        dispatchState();
+        finalizeInitialPaint(false);
       }
     })();
 
