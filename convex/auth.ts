@@ -10,6 +10,11 @@ import authConfig from './auth.config';
 
 const siteUrl = process.env.SITE_URL!;
 export const authComponent = createClient<DataModel>(components.betterAuth);
+const resendApiUrl = 'https://api.resend.com/emails';
+
+type SignupNotificationUser = {
+  email: string;
+};
 
 function parseTrustedOriginsEnv(): string[] {
   return (process.env.TRUSTED_ORIGINS ?? '')
@@ -20,6 +25,51 @@ function parseTrustedOriginsEnv(): string[] {
 
 function isLocalhostOrigin(origin: string): boolean {
   return /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i.test(origin);
+}
+
+async function sendSignupNotificationEmail(user: SignupNotificationUser): Promise<void> {
+  const apiKey = process.env.RESEND_API_KEY;
+  const from = process.env.RESEND_SIGNUP_NOTIFICATION_EMAIL_FROM;
+  const toRaw = process.env.RESEND_SIGNUP_NOTIFICATION_EMAIL_TO;
+  if (!apiKey || !from || !toRaw) {
+    return;
+  }
+
+  const to = toRaw
+    .split(',')
+    .map((email) => email.trim())
+    .filter(Boolean);
+  if (to.length === 0) {
+    return;
+  }
+
+  const occurredAt = new Date().toISOString();
+  const subject = `[foodcoop.news] New signup: ${user.email}`;
+  const text = [
+    'A new user signed up for foodcoop.news.',
+    '',
+    `Time: ${occurredAt}`,
+    `Email: ${user.email}`,
+  ].join('\n');
+
+  const response = await fetch(resendApiUrl, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      from,
+      to,
+      subject,
+      text,
+    }),
+  });
+
+  if (!response.ok) {
+    const responseText = await response.text();
+    throw new Error(`Resend signup notification failed (${response.status}): ${responseText}`);
+  }
 }
 
 // Internal mutation to create member profile, called from database hook
@@ -87,6 +137,12 @@ export const createAuth = (ctx: GenericCtx<DataModel>) => {
               userId: user.id,
               memberId: (user as { memberId?: string }).memberId ?? '',
               memberName: user.name,
+            });
+
+            void sendSignupNotificationEmail({
+              email: user.email,
+            }).catch((error) => {
+              console.error('Signup notification email failed:', error);
             });
           },
         },
