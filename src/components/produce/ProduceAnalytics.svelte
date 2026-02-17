@@ -1232,6 +1232,8 @@
       itemName={contextMenu.itemName}
       x={contextMenu.x}
       y={contextMenu.y}
+      isFavorite={favorites.has(contextMenu.itemName)}
+      onToggleFavorite={toggleFavorite}
       onClose={closeContextMenu}
     />
   {/if}

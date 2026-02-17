@@ -7,11 +7,15 @@
     itemName,
     x,
     y,
+    isFavorite,
+    onToggleFavorite,
     onClose,
   }: {
     itemName: string;
     x: number;
     y: number;
+    isFavorite: boolean;
+    onToggleFavorite: (itemName: string) => void;
     onClose: () => void;
   } = $props();
 
@@ -70,6 +74,12 @@
       event.stopPropagation();
       return;
     }
+    onClose();
+  }
+
+  function handleToggleFavorite() {
+    if (isWithinDismissGuard()) return;
+    onToggleFavorite(itemName);
     onClose();
   }
 
@@ -142,6 +152,15 @@
   {:else}
     <div class="px-4 py-2.5 text-sm text-zinc-400">No Specialty Produce link yet</div>
   {/if}
+
+  <button
+    type="button"
+    onclick={handleToggleFavorite}
+    class="flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm text-zinc-700 transition-colors hover:bg-zinc-100"
+  >
+    <span>{isFavorite ? '💔' : '⭐'}</span>
+    <span>{isFavorite ? 'Remove Favorite' : 'Add Favorite'}</span>
+  </button>
 
   <button
     type="button"
