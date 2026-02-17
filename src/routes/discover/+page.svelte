@@ -17,6 +17,17 @@
     pendingSources?: number;
   };
 
+  const FEED_SOURCE_GROUPS = [
+    ['bluesky'],
+    ['produce'],
+    ['gazette', 'foodcoop', 'gm-events'],
+    ['foodcoopcooks-events', 'wordsprouts-events', 'concert-series-events'],
+    // Isolated because this request spuriously times out when batched with other sources.
+    ['foodcoopcooks'],
+  ] as const;
+
+  let loadFeedToken = 0;
+
   let state = {
     items: [] as FeedItem[],
     loading: true,
@@ -80,6 +91,8 @@
   }
 
   async function loadFeeds() {
+    const token = ++loadFeedToken;
+
     const parseAndDedupe = (payload: FeedAggregatorResponse): FeedItem[] => {
       const parsedItems = (payload.items ?? [])
         .map(
@@ -102,65 +115,60 @@
       return deduped;
     };
 
+    const isStale = () => token !== loadFeedToken;
+
     state = {
       ...state,
       loading: true,
       error: '',
-      pendingSources: 2,
+      pendingSources: FEED_SOURCE_GROUPS.length,
       items: [],
     };
     dispatchState();
 
     let hasAnySuccess = false;
+    const mergedItems = new Map<string, FeedItem>();
+    let pendingGroups: number = FEED_SOURCE_GROUPS.length;
 
-    try {
-      const firstResponse = await fetch('/api/feed?mode=first');
-      const firstPayload = (await firstResponse.json().catch(() => ({}))) as FeedAggregatorResponse;
-      const firstSuccessCount = firstPayload.successfulSources?.length ?? 0;
-      const firstItems = parseAndDedupe(firstPayload);
+    const groupRequests = FEED_SOURCE_GROUPS.map(async (group) => {
+      const params = new URLSearchParams();
+      params.set('sources', group.join(','));
 
-      if (firstSuccessCount > 0 || firstItems.length > 0) {
-        hasAnySuccess = true;
-        state = {
-          ...state,
-          items: sortAndPrune(firstItems),
-          loading: false,
-          pendingSources: 1,
-          error: '',
-        };
-        dispatchState();
+      try {
+        const response = await fetch(`/api/feed?${params.toString()}`);
+        const payload = (await response.json().catch(() => ({}))) as FeedAggregatorResponse;
+        const items = parseAndDedupe(payload);
+        const successCount = payload.successfulSources?.length ?? 0;
+
+        if (successCount > 0 || items.length > 0) {
+          hasAnySuccess = true;
+        }
+
+        for (const item of items) {
+          mergedItems.set(getFeedItemKey(item), item);
+        }
+      } catch {
+        // Ignore request failures and continue updating from available groups.
+      } finally {
+        pendingGroups = Math.max(0, pendingGroups - 1);
+        if (!isStale()) {
+          const nextItems = sortAndPrune(Array.from(mergedItems.values()));
+          state = {
+            ...state,
+            items: nextItems,
+            loading: pendingGroups > 0 && nextItems.length === 0,
+            pendingSources: pendingGroups,
+            error:
+              pendingGroups === 0 && !hasAnySuccess && nextItems.length === 0
+                ? 'Failed to load feed'
+                : '',
+          };
+          dispatchState();
+        }
       }
+    });
 
-      const fullResponse = await fetch('/api/feed');
-      const fullPayload = (await fullResponse.json().catch(() => ({}))) as FeedAggregatorResponse;
-      const fullItems = parseAndDedupe(fullPayload);
-      const fullSuccessCount = fullPayload.successfulSources?.length ?? 0;
-      const fullHasResponseError = !fullResponse.ok;
-      if (fullSuccessCount > 0 || fullItems.length > 0) {
-        hasAnySuccess = true;
-      }
-
-      state = {
-        ...state,
-        items: sortAndPrune(fullItems),
-        loading: false,
-        pendingSources: 0,
-        error:
-          fullHasResponseError && fullSuccessCount === 0 && fullItems.length === 0 && !hasAnySuccess
-            ? 'Failed to load feed'
-            : '',
-      };
-      dispatchState();
-    } catch {
-      state = {
-        ...state,
-        items: state.items,
-        loading: false,
-        pendingSources: 0,
-        error: hasAnySuccess || state.items.length > 0 ? '' : 'Failed to load feed',
-      };
-      dispatchState();
-    }
+    await Promise.allSettled(groupRequests);
   }
 
   onMount(() => {

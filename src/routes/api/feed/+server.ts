@@ -11,6 +11,7 @@ import type { FeedItem } from '@/lib/discover-feed';
 import { getFeedItemKey } from '@/lib/discover-feed';
 
 const COOP_BLUESKY_HANDLE = 'foodcoop.bsky.social';
+const SOURCE_FETCH_TIMEOUT_MS = 4500;
 
 type SourceName =
   | 'gazette'
@@ -200,17 +201,16 @@ function parseLimit(rawLimit: string | null): number | null {
   return parsed;
 }
 
-function isFirstMode(rawMode: string | null): boolean {
-  return rawMode === 'first';
-}
-
 async function fetchSource(
   source: SourceDefinition,
   fetchFn: typeof globalThis.fetch,
-  signal?: AbortSignal,
+  timeoutMs = SOURCE_FETCH_TIMEOUT_MS,
 ): Promise<SourceResult> {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
   try {
-    const response = await fetchFn(source.path, signal ? { signal } : undefined);
+    const response = await fetchFn(source.path, { signal: controller.signal });
     if (!response.ok) {
       return {
         source: source.name,
@@ -227,28 +227,31 @@ async function fetchSource(
       items: source.map(payload),
       lastUpdated: payload.lastUpdated,
     };
-  } catch {
+  } catch (error) {
+    if (error instanceof Error && error.name === 'AbortError') {
+      return {
+        source: source.name,
+        ok: false,
+        error: `Timed out after ${timeoutMs}ms`,
+      };
+    }
+
     return {
       source: source.name,
       ok: false,
       error: 'Request failed',
     };
+  } finally {
+    clearTimeout(timeoutId);
   }
 }
 
 export async function GET({ fetch, url }: { fetch: typeof globalThis.fetch; url: URL }) {
   const selectedSources = parseSourceFilter(url.searchParams.get('sources'));
   const limit = parseLimit(url.searchParams.get('limit'));
-  const firstMode = isFirstMode(url.searchParams.get('mode'));
-  const blueskySource = SOURCE_DEFINITIONS.find((source) => source.name === 'bluesky');
-
-  const sourceResults: SourceResult[] = firstMode
-    ? await (async () => {
-        if (!blueskySource) return [];
-        const result = await fetchSource(blueskySource, fetch);
-        return [result];
-      })()
-    : await Promise.all(selectedSources.map((source) => fetchSource(source, fetch)));
+  const sourceResults = await Promise.all(
+    selectedSources.map((source) => fetchSource(source, fetch)),
+  );
 
   const errorsBySource: Partial<Record<SourceName, string>> = {};
   const successfulSources: SourceName[] = [];
@@ -285,14 +288,13 @@ export async function GET({ fetch, url }: { fetch: typeof globalThis.fetch; url:
       : new Date().toISOString();
 
   const hasAnySuccess = successfulSources.length > 0;
-  const isPartial = firstMode && hasAnySuccess;
 
   return Response.json(
     {
       items: serializedItems,
       total: serializedItems.length,
-      isPartial,
-      pendingSources: isPartial ? Math.max(0, selectedSources.length - 1) : 0,
+      isPartial: false,
+      pendingSources: 0,
       requestedSources: selectedSources.map((source) => source.name),
       successfulSources,
       failedSources,
