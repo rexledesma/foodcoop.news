@@ -147,7 +147,8 @@
       onclick={handleSpecialtyLinkClick}
       class="flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm text-zinc-700 transition-colors hover:bg-zinc-100"
     >
-      <span>View on Specialty Produce</span>
+      <span class="inline-flex h-5 w-5 items-center justify-center">↗</span>
+      <span>View Produce</span>
     </a>
   {:else}
     <div class="px-4 py-2.5 text-sm text-zinc-400">No Specialty Produce link yet</div>
@@ -158,7 +159,7 @@
     onclick={handleToggleFavorite}
     class="flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm text-zinc-700 transition-colors hover:bg-zinc-100"
   >
-    <span>{isFavorite ? '💔' : '⭐'}</span>
+    <span class="inline-flex h-5 w-5 items-center justify-center">{isFavorite ? '💔' : '⭐'}</span>
     <span>{isFavorite ? 'Remove Favorite' : 'Add Favorite'}</span>
   </button>
 
@@ -169,7 +170,7 @@
     }}
     class="flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm text-zinc-700 transition-colors hover:bg-zinc-100"
   >
-    <span>{copied ? '✅' : '🔗'}</span>
+    <span class="inline-flex h-5 w-5 items-center justify-center">{copied ? '✅' : '🔗'}</span>
     <span>{copied ? 'Copied!' : 'Copy Link'}</span>
   </button>
 </div>
