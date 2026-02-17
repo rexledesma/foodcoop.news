@@ -72,7 +72,10 @@
   }
 
   function handleSpecialtyLinkClick(event: MouseEvent) {
-    if (!isWithinDismissGuard()) return;
+    if (!isWithinDismissGuard()) {
+      onClose();
+      return;
+    }
     event.preventDefault();
     event.stopPropagation();
   }
@@ -81,7 +84,7 @@
     return Date.now() - openedAt < DISMISS_GUARD_MS;
   }
 
-  function handleBackdropClick(event: MouseEvent) {
+  function handleBackdropPointerDown(event: PointerEvent) {
     if (isWithinDismissGuard()) {
       event.preventDefault();
       event.stopPropagation();
@@ -140,7 +143,7 @@
 
 <div
   class="fixed inset-0 z-40 bg-black/25 select-none"
-  onclick={handleBackdropClick}
+  onpointerdown={handleBackdropPointerDown}
   aria-hidden="true"
 ></div>
 
