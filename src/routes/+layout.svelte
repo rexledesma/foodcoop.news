@@ -12,6 +12,10 @@
     setStickyVisibilityRoute,
   } from '@/lib/sticky-visibility';
 
+  const faviconHref = `data:image/svg+xml,${encodeURIComponent(
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y="0.9em" font-size="90">📰</text></svg>',
+  )}`;
+
   const channel = `nav-${Math.random().toString(36).slice(2)}`;
   const initialPathname = typeof window === 'undefined' ? '/' : window.location.pathname;
   type MemberProfileResponse = {
@@ -126,6 +130,10 @@
     setStickyVisibilityRoute($page.url.pathname);
   }
 </script>
+
+<svelte:head>
+  <link rel="icon" href={faviconHref} />
+</svelte:head>
 
 <Navigation {channel} {initialState} />
 
