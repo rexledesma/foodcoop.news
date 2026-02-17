@@ -527,11 +527,11 @@
   }
 
   function isSparklineTarget(target: EventTarget | null): boolean {
-    return target instanceof Element && target.closest('[data-sparkline-interactive=\"true\"]') !== null;
+    return target instanceof Element && target.closest('[data-sparkline-interactive="true"]') !== null;
   }
 
   function isProduceNameTarget(target: EventTarget | null): boolean {
-    return target instanceof Element && target.closest('[data-produce-name=\"true\"]') !== null;
+    return target instanceof Element && target.closest('[data-produce-name="true"]') !== null;
   }
 
   function clearLongPress() {
