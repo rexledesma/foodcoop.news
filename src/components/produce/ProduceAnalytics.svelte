@@ -85,7 +85,6 @@
     'w-1/3 min-w-[33.333%] max-w-[33.333%] md:w-2/5 md:min-w-0 md:max-w-none';
   const DATA_COL_CLASS = 'w-1/3 min-w-[33.333%] max-w-[33.333%] md:w-auto md:min-w-0 md:max-w-none';
   const METRIC_VALUE_CLASS = 'w-[7ch] shrink-0 text-right font-mono';
-  const LONG_PRESS_DELAY_MS = 250;
 
   let {
     channel,
@@ -110,8 +109,7 @@
   let toggleFavorite = $state<(name: string) => void>(() => {});
   let stickyHeaderRef = $state<HTMLDivElement | null>(null);
   let contextMenu = $state<{ itemName: string; x: number; y: number } | null>(null);
-  let longPressTimer = $state<ReturnType<typeof setTimeout> | null>(null);
-  let longPressStart = $state<{ itemName: string; x: number; y: number } | null>(null);
+  let touchStart = $state<{ itemName: string; x: number; y: number } | null>(null);
 
   let search = $state('');
   let quickFilter = $state<QuickFilter>(null);
@@ -535,12 +533,8 @@
     return target instanceof Element && target.closest('[data-produce-name="true"]') !== null;
   }
 
-  function clearLongPress() {
-    if (longPressTimer !== null) {
-      clearTimeout(longPressTimer);
-      longPressTimer = null;
-    }
-    longPressStart = null;
+  function clearTouchStart() {
+    touchStart = null;
   }
 
   function handleContextMenu(event: MouseEvent, itemName: string) {
@@ -552,34 +546,35 @@
   function handleTouchStart(event: TouchEvent, itemName: string) {
     if (isProduceNameTarget(event.target)) return;
     if (isSparklineTarget(event.target)) return;
-    clearLongPress();
+    if (event.touches.length === 0) return;
     const touch = event.touches[0];
-    const x = touch.clientX;
-    const y = touch.clientY;
-    longPressStart = { itemName, x, y };
-    longPressTimer = setTimeout(() => {
-      longPressTimer = null;
-      navigator.vibrate?.(10);
-      contextMenu = { itemName, x, y };
-    }, LONG_PRESS_DELAY_MS);
+    touchStart = { itemName, x: touch.clientX, y: touch.clientY };
   }
 
   function handleTouchMove(event: TouchEvent, itemName: string) {
-    if (!longPressStart || longPressStart.itemName !== itemName || event.touches.length === 0) return;
+    if (!touchStart || touchStart.itemName !== itemName || event.touches.length === 0) return;
     const touch = event.touches[0];
-    const dx = touch.clientX - longPressStart.x;
-    const dy = touch.clientY - longPressStart.y;
+    const dx = touch.clientX - touchStart.x;
+    const dy = touch.clientY - touchStart.y;
     if (Math.abs(dx) > 8 || Math.abs(dy) > 8) {
-      clearLongPress();
+      clearTouchStart();
     }
   }
 
   function handleTouchEnd(event: TouchEvent, itemName: string) {
-    if (contextMenu?.itemName === itemName) {
-      event.preventDefault();
-      event.stopPropagation();
-    }
-    clearLongPress();
+    if (!touchStart || touchStart.itemName !== itemName || event.changedTouches.length === 0) return;
+    const touch = event.changedTouches[0];
+    const dx = touch.clientX - touchStart.x;
+    const dy = touch.clientY - touchStart.y;
+    clearTouchStart();
+    if (Math.abs(dx) > 8 || Math.abs(dy) > 8) return;
+    event.preventDefault();
+    event.stopPropagation();
+    contextMenu = { itemName, x: touch.clientX, y: touch.clientY };
+  }
+
+  function handleTouchCancel() {
+    clearTouchStart();
   }
 
   function closeContextMenu() {
@@ -698,7 +693,7 @@
 
     return () => {
       window.removeEventListener(`produce-analytics-state:update:${channel}`, handler as EventListener);
-      clearLongPress();
+      clearTouchStart();
     };
   });
 
@@ -1054,7 +1049,7 @@
               ontouchstart={(e) => handleTouchStart(e, row.name)}
               ontouchmove={(e) => handleTouchMove(e, row.name)}
               ontouchend={(e) => handleTouchEnd(e, row.name)}
-              ontouchcancel={(e) => handleTouchEnd(e, row.name)}
+              ontouchcancel={handleTouchCancel}
             >
               <td
                 class={`${NAME_COL_CLASS} sticky left-0 z-10 box-border border-r border-zinc-200 p-2 md:w-auto md:border-r-0 ${
