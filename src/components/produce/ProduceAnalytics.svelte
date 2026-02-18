@@ -491,7 +491,16 @@
     return date.toLocaleDateString('en-US', { month: 'short', day: '2-digit' });
   }
 
-  function setPriceTrendFilter(next: 'drops' | 'increases') {
+  function togglePriceTrendFilter(next: 'drops' | 'increases') {
+    const isActive =
+      sortField === 'change' &&
+      ((next === 'drops' && sortDirection === 'asc') ||
+        (next === 'increases' && sortDirection === 'desc'));
+    if (isActive) {
+      sortField = 'name';
+      sortDirection = 'asc';
+      return;
+    }
     sortField = 'change';
     sortDirection = next === 'drops' ? 'asc' : 'desc';
   }
@@ -897,7 +906,7 @@
           type="button"
           onclick={() => {
             clearQueryFilters();
-            setPriceTrendFilter('drops');
+            togglePriceTrendFilter('drops');
           }}
           class={`rounded-full px-3 py-1.5 text-sm font-medium whitespace-nowrap transition-colors ${
             sortField === 'change' && sortDirection === 'asc'
@@ -912,7 +921,7 @@
           type="button"
           onclick={() => {
             clearQueryFilters();
-            setPriceTrendFilter('increases');
+            togglePriceTrendFilter('increases');
           }}
           class={`rounded-full px-3 py-1.5 text-sm font-medium whitespace-nowrap transition-colors ${
             sortField === 'change' && sortDirection === 'desc'
