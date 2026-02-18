@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { injectAnalytics } from '@vercel/analytics/sveltekit';
   import '../styles/globals.css';
   import { onMount } from 'svelte';
   import { page } from '$app/stores';
@@ -152,6 +153,7 @@
   }
 
   onMount(() => {
+    injectAnalytics();
     initStickyVisibility($page.url.pathname);
     void prefetchProduceCache();
 
