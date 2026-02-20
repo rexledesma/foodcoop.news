@@ -1087,7 +1087,12 @@
                       data-produce-name="true"
                     >
                       {#if specialtyUrl}
-                        <a href={specialtyUrl} target="_blank" rel="noreferrer" class="hover:underline">
+                        <a
+                          href={specialtyUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          class="underline decoration-current underline-offset-2 hover:decoration-2"
+                        >
                           <span class={row.is_unavailable ? 'line-through' : undefined}>
                             {row.name} ↗
                           </span>
