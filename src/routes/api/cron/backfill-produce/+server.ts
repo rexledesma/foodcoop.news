@@ -1,4 +1,4 @@
-import { list } from '@vercel/blob';
+import { list } from '@/lib/s3-storage';
 import { invalidateProduceMetadataCache } from '@/lib/produce-metadata-cache';
 import {
   regenerateDerivedProduceParquets,
@@ -17,7 +17,6 @@ export async function POST({ request }: { request: Request }) {
     // List all HTML blobs
     const { blobs } = await list({
       prefix: 'produce/',
-      token: process.env.VERCEL_BLOB_READ_WRITE_TOKEN,
     });
 
     // Extract unique months from filenames (produce/YYYY-MM-DD.html → YYYY-MM)

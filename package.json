@@ -18,12 +18,13 @@
     "backfill": "curl -X POST \"$SITE_URL/api/cron/backfill-produce\" -H \"Authorization: Bearer $CRON_SECRET\""
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.994.0",
+    "@aws-sdk/s3-request-presigner": "^3.994.0",
     "@convex-dev/better-auth": "^0.10.10",
     "@dsnp/parquetjs": "^1.8.7",
     "@duckdb/node-api": "1.4.4-r.1",
     "@mmailaender/convex-better-auth-svelte": "^0.5.0",
     "@vercel/analytics": "^1.6.1",
-    "@vercel/blob": "^2.0.1",
     "better-auth": "^1.4.9",
     "cheerio": "^1.1.2",
     "convex": "^1.31.6",

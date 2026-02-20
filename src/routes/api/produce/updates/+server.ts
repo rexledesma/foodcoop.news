@@ -1,4 +1,4 @@
-import { list } from '@vercel/blob';
+import { list } from '@/lib/s3-storage';
 import { ParquetReader } from '@dsnp/parquetjs';
 import type { ProduceEvent } from '@/lib/types';
 
@@ -87,7 +87,6 @@ export async function GET() {
 
     const { blobs } = await list({
       prefix: 'produce-data-yearly/',
-      token: process.env.VERCEL_BLOB_READ_WRITE_TOKEN,
     });
 
     const latestByYear = new Map<string, (typeof blobs)[number]>();

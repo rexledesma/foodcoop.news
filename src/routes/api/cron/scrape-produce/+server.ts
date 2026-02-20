@@ -1,4 +1,4 @@
-import { put } from '@vercel/blob';
+import { put } from '@/lib/s3-storage';
 import { parseProduceHtml } from '@/lib/produce-parser';
 import { invalidateProduceMetadataCache } from '@/lib/produce-metadata-cache';
 import { regenerateYtdDerivedParquet, upsertYearParquetForDate } from '@/lib/produce-parquet-utils';
@@ -44,7 +44,6 @@ export async function GET({ request }: { request: Request }) {
       contentType: 'text/html',
       access: 'public',
       allowOverwrite: true,
-      token: process.env.VERCEL_BLOB_READ_WRITE_TOKEN,
     });
 
     // Upsert today's rows into the current year parquet.

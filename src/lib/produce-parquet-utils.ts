@@ -1,4 +1,4 @@
-import { del, list, put } from '@vercel/blob';
+import { del, list, put } from '@/lib/s3-storage';
 import { ParquetReader } from '@dsnp/parquetjs';
 import { randomBytes } from 'crypto';
 import { parseProduceHtml } from '@/lib/produce-parser';
@@ -20,7 +20,6 @@ export async function regenerateMonthParquet(month: string): Promise<{
   // List all HTML files for this month
   const { blobs } = await list({
     prefix: `produce/${month}`,
-    token: process.env.VERCEL_BLOB_READ_WRITE_TOKEN,
   });
 
   for (const blob of blobs) {
@@ -44,13 +43,11 @@ export async function regenerateMonthParquet(month: string): Promise<{
   const parquetBlob = await put(`produce-data/${month}-${version}.parquet`, buffer, {
     contentType: 'application/octet-stream',
     access: 'public',
-    token: process.env.VERCEL_BLOB_READ_WRITE_TOKEN,
   });
 
   // Keep exactly one parquet per month to avoid stale canonical URLs.
   const { blobs: monthParquetBlobs } = await list({
     prefix: `produce-data/${month}`,
-    token: process.env.VERCEL_BLOB_READ_WRITE_TOKEN,
   });
 
   const monthParquetPathsToDelete = monthParquetBlobs
@@ -62,9 +59,7 @@ export async function regenerateMonthParquet(month: string): Promise<{
     );
 
   if (monthParquetPathsToDelete.length > 0) {
-    await del(monthParquetPathsToDelete, {
-      token: process.env.VERCEL_BLOB_READ_WRITE_TOKEN,
-    });
+    await del(monthParquetPathsToDelete, {});
   }
 
   return {
@@ -239,7 +234,6 @@ function downsampleMonthlyFirst(items: ProduceItem[]): ProduceItem[] {
 async function loadAllYearlyProduceItems(): Promise<ProduceItem[]> {
   const { blobs } = await list({
     prefix: 'produce-data-yearly/',
-    token: process.env.VERCEL_BLOB_READ_WRITE_TOKEN,
   });
 
   const byYear = new Map<string, (typeof blobs)[number]>();
@@ -283,12 +277,10 @@ async function putDerivedParquet(
   const parquetBlob = await put(pathname, buffer, {
     contentType: 'application/octet-stream',
     access: 'public',
-    token: process.env.VERCEL_BLOB_READ_WRITE_TOKEN,
   });
 
   const { blobs } = await list({
     prefix: `${DERIVED_PREFIX}${slug}`,
-    token: process.env.VERCEL_BLOB_READ_WRITE_TOKEN,
   });
 
   const stalePathnames = blobs
@@ -300,9 +292,7 @@ async function putDerivedParquet(
     );
 
   if (stalePathnames.length > 0) {
-    await del(stalePathnames, {
-      token: process.env.VERCEL_BLOB_READ_WRITE_TOKEN,
-    });
+    await del(stalePathnames, {});
   }
 
   return { url: parquetBlob.url, rows: items.length };
@@ -385,7 +375,6 @@ export async function upsertYearParquetForDate(
 }> {
   const { blobs } = await list({
     prefix: `produce-data-yearly/${year}`,
-    token: process.env.VERCEL_BLOB_READ_WRITE_TOKEN,
   });
 
   const yearParquetBlobs = blobs.filter((blob) =>
@@ -407,7 +396,6 @@ export async function upsertYearParquetForDate(
   const parquetBlob = await put(`produce-data-yearly/${year}-${version}.parquet`, nextBuffer, {
     contentType: 'application/octet-stream',
     access: 'public',
-    token: process.env.VERCEL_BLOB_READ_WRITE_TOKEN,
   });
 
   const stalePathnames = yearParquetBlobs
@@ -415,9 +403,7 @@ export async function upsertYearParquetForDate(
     .filter((pathname) => pathname !== parquetBlob.pathname);
 
   if (stalePathnames.length > 0) {
-    await del(stalePathnames, {
-      token: process.env.VERCEL_BLOB_READ_WRITE_TOKEN,
-    });
+    await del(stalePathnames, {});
   }
 
   return {

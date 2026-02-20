@@ -1,4 +1,4 @@
-import { list } from '@vercel/blob';
+import { list } from '@/lib/s3-storage';
 import { getCachedProduceMetadata } from '@/lib/produce-metadata-cache';
 
 function getCurrentYear() {
@@ -26,11 +26,9 @@ async function loadProduceMetadata() {
   const [{ blobs: yearlyBlobs }, { blobs: derivedBlobs }] = await Promise.all([
     list({
       prefix: 'produce-data-yearly/',
-      token: process.env.VERCEL_BLOB_READ_WRITE_TOKEN,
     }),
     list({
       prefix: 'produce-data-derived/',
-      token: process.env.VERCEL_BLOB_READ_WRITE_TOKEN,
     }),
   ]);
 

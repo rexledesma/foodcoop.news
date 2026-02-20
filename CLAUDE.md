@@ -23,7 +23,7 @@ npx convex dev        # Start Convex development server
 
 This is a SvelteKit application for Park Slope Food Coop members, using Convex as the backend database.
 
-**Stack:** SvelteKit 2, Svelte 5, TypeScript (strict mode), Tailwind CSS 4, Convex, Better Auth, DuckDB WASM, Vercel Blob
+**Stack:** SvelteKit 2, Svelte 5, TypeScript (strict mode), Tailwind CSS 4, Convex, Better Auth, DuckDB WASM, Amazon S3
 
 **Path alias:** `@/*` → `./src/*`
 
@@ -42,7 +42,7 @@ This is a SvelteKit application for Park Slope Food Coop members, using Convex a
 3. **Discover Feed**: Aggregates RSS (foodcoop.com, Gazette, Food Coop Cooks), Bluesky posts, and Eventbrite/GM events with 5-minute caching
 4. **Calendar Syncing**: Proxies Google Calendar iCal feed, filters events by member job filters via `src/routes/api/calendar/[calendarId]/+server.ts`
 5. **Wallet Passes**: Generates Apple Wallet `.pkpass` and Google Wallet save URLs from member profiles
-6. **Produce Pipeline**: Cron scrapes the Coop produce page, stores HTML + monthly Parquet in Vercel Blob, client loads via DuckDB WASM for analytics
+6. **Produce Pipeline**: Cron scrapes the Coop produce page, stores HTML + monthly Parquet in Amazon S3, client loads via DuckDB WASM for analytics
 
 ### Key Technical Details
 
@@ -63,7 +63,10 @@ Required environment variables (set in `.env.local` and Convex dashboard):
 - `SITE_URL` - Production site URL for auth callbacks
 - `EVENTBRITE_API_KEY` - Eventbrite API token for event feeds
 - `CRON_SECRET` - Authorization secret for cron scraping endpoints
-- `VERCEL_BLOB_READ_WRITE_TOKEN` - Vercel Blob access token for produce data
+- `AWS_ACCESS_KEY_ID` - IAM access key ID for S3 access
+- `AWS_SECRET_ACCESS_KEY` - IAM secret access key for S3 access
+- `AWS_REGION` - AWS region for the S3 bucket
+- `S3_BUCKET_NAME` - S3 bucket name for produce data
 - `GOOGLE_WALLET_ISSUER_ID` - Google Wallet issuer ID
 - `GOOGLE_APPLICATION_CREDENTIALS` - Base64-encoded Google service account JSON
 - `APPLE_WWDR_CERT_BASE64` - Apple WWDR certificate (base64)

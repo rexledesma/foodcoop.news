@@ -3,7 +3,7 @@ import { unlink, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { DuckDBInstance, type DuckDBConnection } from '@duckdb/node-api';
-import { list } from '@vercel/blob';
+import { list } from '@/lib/s3-storage';
 import type { RequestHandler } from './$types';
 import type { ProduceDateRange, ProduceHistoryPoint, ProduceRow } from '@/lib/produce-types';
 
@@ -55,11 +55,9 @@ async function loadProduceMetadata(): Promise<ProduceMetadata> {
   const [{ blobs: yearlyBlobs }, { blobs: derivedBlobs }] = await Promise.all([
     list({
       prefix: 'produce-data-yearly/',
-      token: process.env.VERCEL_BLOB_READ_WRITE_TOKEN,
     }),
     list({
       prefix: 'produce-data-derived/',
-      token: process.env.VERCEL_BLOB_READ_WRITE_TOKEN,
     }),
   ]);
 
