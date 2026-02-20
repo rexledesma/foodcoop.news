@@ -2,6 +2,8 @@ import { decode } from 'html-entities';
 import type { FoodCoopCooksArticle } from '@/lib/types';
 
 const FOODCOOP_COOKS_RSS_URL = 'https://foodcoopcooks.org/feed/';
+const FOODCOOP_COOKS_YOUTUBE_FEED_URL =
+  'https://www.youtube.com/feeds/videos.xml?channel_id=UCwuJ5np4xoZbx9CuGxnaz2w';
 
 // Cache feed data for 5 minutes
 let cachedArticles: FoodCoopCooksArticle[] | null = null;
@@ -18,6 +20,23 @@ function extractTextContent(xml: string, tagName: string): string {
     return (match[1] || match[2] || '').trim();
   }
   return '';
+}
+
+function extractAttributeValue(xml: string, tagName: string, attributeName: string): string {
+  const regex = new RegExp(
+    `<${tagName}[^>]*${attributeName}=["']([^"']+)["'][^>]*>|<${tagName}[^>]*>`,
+    'i',
+  );
+  const match = xml.match(regex);
+  if (match?.[1]) return match[1];
+  return '';
+}
+
+function extractAlternateLinkHref(xml: string): string {
+  const match =
+    xml.match(/<link[^>]+rel=["']alternate["'][^>]+href=["']([^"']+)["'][^>]*\/?>/i) ||
+    xml.match(/<link[^>]+href=["']([^"']+)["'][^>]+rel=["']alternate["'][^>]*\/?>/i);
+  return match?.[1] ?? '';
 }
 
 async function fetchTwitterImage(url: string): Promise<string | undefined> {
@@ -43,7 +62,7 @@ async function fetchTwitterImage(url: string): Promise<string | undefined> {
   }
 }
 
-async function fetchFoodCoopCooksFeed(): Promise<FoodCoopCooksArticle[]> {
+async function fetchFoodCoopCooksWordPressFeed(): Promise<FoodCoopCooksArticle[]> {
   const response = await fetch(FOODCOOP_COOKS_RSS_URL);
 
   if (!response.ok) {
@@ -102,6 +121,74 @@ async function fetchFoodCoopCooksFeed(): Promise<FoodCoopCooksArticle[]> {
     pubDate: item.pubDate,
     image: images[index],
   }));
+}
+
+async function fetchFoodCoopCooksYouTubeFeed(): Promise<FoodCoopCooksArticle[]> {
+  const response = await fetch(FOODCOOP_COOKS_YOUTUBE_FEED_URL);
+
+  if (!response.ok) {
+    throw new Error(`Food Coop Cooks YouTube feed error: ${response.status}`);
+  }
+
+  const xml = await response.text();
+  const items: FoodCoopCooksArticle[] = [];
+  const entryRegex = /<entry>([\s\S]*?)<\/entry>/gi;
+  let match: RegExpExecArray | null = null;
+
+  while (true) {
+    match = entryRegex.exec(xml);
+    if (!match) break;
+
+    const entryXml = match[1];
+    const videoId = extractTextContent(entryXml, 'yt:videoId');
+    const title = decode(extractTextContent(entryXml, 'title'));
+    const description = decode(extractTextContent(entryXml, 'media:description')).trim();
+    const link = extractAlternateLinkHref(entryXml);
+    const pubDate = extractTextContent(entryXml, 'published');
+    const image = extractAttributeValue(entryXml, 'media:thumbnail', 'url');
+
+    if (!videoId || !title || !link || !pubDate) continue;
+
+    items.push({
+      id: `youtube-${videoId}`,
+      title,
+      description: description || undefined,
+      link,
+      pubDate,
+      image: image || undefined,
+    });
+  }
+
+  return items;
+}
+
+async function fetchFoodCoopCooksFeed(): Promise<FoodCoopCooksArticle[]> {
+  const [wordpressResult, youtubeResult] = await Promise.allSettled([
+    fetchFoodCoopCooksWordPressFeed(),
+    fetchFoodCoopCooksYouTubeFeed(),
+  ]);
+
+  const items: FoodCoopCooksArticle[] = [];
+
+  if (wordpressResult.status === 'fulfilled') {
+    items.push(...wordpressResult.value);
+  } else {
+    console.error('Food Coop Cooks WordPress feed error:', wordpressResult.reason);
+  }
+
+  if (youtubeResult.status === 'fulfilled') {
+    items.push(...youtubeResult.value);
+  } else {
+    console.error('Food Coop Cooks YouTube feed error:', youtubeResult.reason);
+  }
+
+  if (items.length === 0) {
+    throw new Error('No Food Coop Cooks feeds available');
+  }
+
+  return items.sort((a, b) => {
+    return new Date(b.pubDate).getTime() - new Date(a.pubDate).getTime();
+  });
 }
 
 export async function GET() {
