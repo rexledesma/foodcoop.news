@@ -31,6 +31,20 @@
     origin: string;
     attributes: string;
   };
+  type LinkPreviewData = {
+    url: string;
+    title: string;
+    description?: string;
+    siteName?: string;
+    image?: string;
+  };
+  type LinkPreviewState = {
+    url: string;
+    left: number;
+    top: number;
+    loading: boolean;
+    data: LinkPreviewData | null;
+  };
 
   type ProduceAnalyticsClientState = {
     data: ProduceRow[];
@@ -110,6 +124,10 @@
   let stickyHeaderRef = $state<HTMLDivElement | null>(null);
   let contextMenu = $state<{ itemName: string; x: number; y: number } | null>(null);
   let touchStart = $state<{ itemName: string; x: number; y: number } | null>(null);
+  let linkPreview = $state<LinkPreviewState | null>(null);
+  let linkPreviewHoverTimeout = $state<number | null>(null);
+  let linkPreviewRequestToken = $state(0);
+  const linkPreviewCache = new Map<string, LinkPreviewData>();
 
   let search = $state('');
   let quickFilter = $state<QuickFilter>(null);
@@ -546,6 +564,92 @@
     touchStart = null;
   }
 
+  function clearLinkPreviewTimer() {
+    if (linkPreviewHoverTimeout === null) return;
+    window.clearTimeout(linkPreviewHoverTimeout);
+    linkPreviewHoverTimeout = null;
+  }
+
+  function hideLinkPreview() {
+    clearLinkPreviewTimer();
+    linkPreview = null;
+  }
+
+  function computeLinkPreviewPosition(clientX: number, clientY: number): { left: number; top: number } {
+    if (typeof window === 'undefined') return { left: 0, top: 0 };
+
+    const cardWidth = 340;
+    const cardHeight = 260;
+    const gap = 14;
+    const margin = 12;
+
+    const roomRight = window.innerWidth - clientX;
+    const preferredLeft = roomRight >= cardWidth + gap ? clientX + gap : clientX - cardWidth - gap;
+    const left = Math.max(margin, Math.min(preferredLeft, window.innerWidth - cardWidth - margin));
+
+    const preferredTop = clientY + gap;
+    const top = Math.max(margin, Math.min(preferredTop, window.innerHeight - cardHeight - margin));
+
+    return { left, top };
+  }
+
+  async function fetchLinkPreview(url: string, left: number, top: number) {
+    const currentToken = ++linkPreviewRequestToken;
+
+    const cached = linkPreviewCache.get(url);
+    if (cached) {
+      linkPreview = { url, left, top, loading: false, data: cached };
+      return;
+    }
+
+    linkPreview = { url, left, top, loading: true, data: null };
+
+    try {
+      const response = await fetch(`/api/produce/link-preview?url=${encodeURIComponent(url)}`);
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+      const payload = (await response.json()) as LinkPreviewData;
+      linkPreviewCache.set(url, payload);
+
+      if (currentToken !== linkPreviewRequestToken) return;
+      linkPreview = { url, left, top, loading: false, data: payload };
+    } catch {
+      if (currentToken !== linkPreviewRequestToken) return;
+      linkPreview = null;
+    }
+  }
+
+  function queueLinkPreview(url: string, clientX: number, clientY: number) {
+    clearLinkPreviewTimer();
+    const { left, top } = computeLinkPreviewPosition(clientX, clientY);
+
+    linkPreviewHoverTimeout = window.setTimeout(() => {
+      linkPreviewHoverTimeout = null;
+      void fetchLinkPreview(url, left, top);
+    }, 180);
+  }
+
+  function handleProduceLinkEnter(event: MouseEvent, url: string) {
+    queueLinkPreview(url, event.clientX, event.clientY);
+  }
+
+  function handleProduceLinkMove(event: MouseEvent) {
+    if (!linkPreview) return;
+    const { left, top } = computeLinkPreviewPosition(event.clientX, event.clientY);
+    linkPreview = { ...linkPreview, left, top };
+  }
+
+  function handleProduceLinkLeave() {
+    hideLinkPreview();
+  }
+
+  function handleProduceLinkFocus(event: FocusEvent, url: string) {
+    const target = event.currentTarget;
+    if (!(target instanceof HTMLElement)) return;
+    const rect = target.getBoundingClientRect();
+    queueLinkPreview(url, rect.left + rect.width / 2, rect.bottom);
+  }
+
   function handleContextMenu(event: MouseEvent, itemName: string) {
     if (isProduceNameTarget(event.target)) return;
     event.preventDefault();
@@ -703,6 +807,7 @@
     return () => {
       window.removeEventListener(`produce-analytics-state:update:${channel}`, handler as EventListener);
       clearTouchStart();
+      hideLinkPreview();
     };
   });
 
@@ -1091,6 +1196,11 @@
                           href={specialtyUrl}
                           target="_blank"
                           rel="noreferrer"
+                          onmouseenter={(event) => handleProduceLinkEnter(event, specialtyUrl)}
+                          onmousemove={handleProduceLinkMove}
+                          onmouseleave={handleProduceLinkLeave}
+                          onfocus={(event) => handleProduceLinkFocus(event, specialtyUrl)}
+                          onblur={handleProduceLinkLeave}
                           class="underline decoration-current underline-offset-2 hover:decoration-2"
                         >
                           <span class={row.is_unavailable ? 'line-through' : undefined}>
@@ -1246,5 +1356,41 @@
       onToggleFavorite={toggleFavorite}
       onClose={closeContextMenu}
     />
+  {/if}
+
+  {#if linkPreview}
+    <aside
+      class="pointer-events-none fixed z-50 w-[340px] overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-[0_16px_50px_-24px_rgba(0,0,0,0.65)]"
+      style={`left:${linkPreview.left}px;top:${linkPreview.top}px;`}
+      aria-live="polite"
+    >
+      {#if linkPreview.loading}
+        <div class="space-y-2 p-3">
+          <div class="feed-shimmer h-4 w-4/5 rounded"></div>
+          <div class="feed-shimmer h-3 w-full rounded"></div>
+          <div class="feed-shimmer h-3 w-11/12 rounded"></div>
+        </div>
+      {:else if linkPreview.data}
+        {#if linkPreview.data.image}
+          <img
+            src={linkPreview.data.image}
+            alt=""
+            class="h-44 w-full border-b border-zinc-100 object-cover"
+            loading="lazy"
+          />
+        {/if}
+        <div class="space-y-1 p-3">
+          <div class="text-[11px] font-medium tracking-wide text-zinc-500 uppercase">
+            {linkPreview.data.siteName ?? 'Specialty Produce'}
+          </div>
+          <div class="line-clamp-2 text-sm font-semibold text-zinc-900">{linkPreview.data.title}</div>
+          {#if linkPreview.data.description}
+            <p class="line-clamp-4 text-xs leading-relaxed text-zinc-600">
+              {linkPreview.data.description}
+            </p>
+          {/if}
+        </div>
+      {/if}
+    </aside>
   {/if}
 </div>
