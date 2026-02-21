@@ -1437,10 +1437,26 @@
       onmouseleave={handlePreviewMouseLeave}
     >
       {#if linkPreview.loading}
-        <div class="space-y-2 p-3">
-          <div class="feed-shimmer h-4 w-4/5 rounded"></div>
-          <div class="feed-shimmer h-3 w-full rounded"></div>
-          <div class="feed-shimmer h-3 w-11/12 rounded"></div>
+        <div>
+          <div class="feed-shimmer h-44 w-full border-b border-zinc-100"></div>
+          <div class="space-y-2 p-3">
+            <div class="feed-shimmer h-3 w-28 rounded"></div>
+            <div class="feed-shimmer h-4 w-4/5 rounded"></div>
+            <div class="feed-shimmer h-3 w-full rounded"></div>
+            <div class="feed-shimmer h-3 w-11/12 rounded"></div>
+            <div class="feed-shimmer h-3 w-3/4 rounded"></div>
+          </div>
+          <div class="border-t border-zinc-100 py-1">
+            <div class="px-4 py-2.5">
+              <div class="feed-shimmer h-4 w-32 rounded"></div>
+            </div>
+            <div class="px-4 py-2.5">
+              <div class="feed-shimmer h-4 w-36 rounded"></div>
+            </div>
+            <div class="px-4 py-2.5">
+              <div class="feed-shimmer h-4 w-28 rounded"></div>
+            </div>
+          </div>
         </div>
       {:else if linkPreview.data}
         {#if linkPreview.data.image}
