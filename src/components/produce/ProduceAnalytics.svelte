@@ -1288,21 +1288,6 @@
                 }`}
               >
                 <div class="flex items-start gap-2">
-                  <button
-                    type="button"
-                    class={`hidden h-3.5 w-3.5 shrink-0 self-center items-center justify-center rounded-sm border text-[9px] font-bold md:inline-flex ${
-                      favorites.has(row.name)
-                        ? 'border-zinc-200 bg-amber-100 text-amber-700'
-                        : 'border-zinc-200 bg-white text-zinc-400 hover:bg-amber-100 hover:text-amber-700'
-                    }`}
-                    onclick={() => toggleFavorite(row.name)}
-                    aria-label={favorites.has(row.name)
-                      ? `Remove ${row.name} from favorites`
-                      : `Add ${row.name} to favorites`}
-                  >
-                    {favorites.has(row.name) ? '⭐' : '+'}
-                  </button>
-
                   <div class="min-w-0">
                     <div
                       class="line-clamp-3 text-sm font-medium text-zinc-900 md:line-clamp-none"
