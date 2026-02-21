@@ -583,19 +583,21 @@
     const rect = anchorEl.getBoundingClientRect();
 
     const cardWidth = 340;
-    const cardHeight = 260;
+    const cardHeight = 440;
     const gap = 14;
     const margin = 12;
 
     const anchorX = rect.left + rect.width / 2;
-    const anchorY = rect.bottom;
 
     const roomRight = window.innerWidth - anchorX;
     const preferredLeft =
       roomRight >= cardWidth + gap ? anchorX + gap : anchorX - cardWidth - gap;
     const left = Math.max(margin, Math.min(preferredLeft, window.innerWidth - cardWidth - margin));
 
-    const preferredTop = anchorY + gap;
+    const roomBelow = window.innerHeight - rect.bottom - margin;
+    const roomAbove = rect.top - margin;
+    const shouldRenderAbove = roomBelow < cardHeight + gap && roomAbove > roomBelow;
+    const preferredTop = shouldRenderAbove ? rect.top - cardHeight - gap : rect.bottom + gap;
     const top = Math.max(margin, Math.min(preferredTop, window.innerHeight - cardHeight - margin));
 
     return { left, top };
