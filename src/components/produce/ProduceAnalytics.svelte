@@ -2,9 +2,8 @@
   import { goto } from '$app/navigation';
   import Fuse from 'fuse.js';
   import { onMount } from 'svelte';
-  import ProduceContextMenu from '@/components/produce/ProduceContextMenu.svelte';
   import ProduceSparkline from '@/components/produce/ProduceSparkline.svelte';
-  import { produceHash } from '@/lib/produce-hash';
+  import { produceHash, produceItemUrl } from '@/lib/produce-hash';
   import { getSpecialtyProduceUrl } from '@/lib/specialty-produce-map';
   import type {
     ProduceDateRange,
@@ -39,11 +38,13 @@
     image?: string;
   };
   type LinkPreviewState = {
+    itemName: string;
     url: string;
     left: number;
     top: number;
     loading: boolean;
     data: LinkPreviewData | null;
+    pinned: boolean;
   };
 
   type ProduceAnalyticsClientState = {
@@ -99,6 +100,7 @@
     'w-1/3 min-w-[33.333%] max-w-[33.333%] md:w-2/5 md:min-w-0 md:max-w-none';
   const DATA_COL_CLASS = 'w-1/3 min-w-[33.333%] max-w-[33.333%] md:w-auto md:min-w-0 md:max-w-none';
   const METRIC_VALUE_CLASS = 'w-[7ch] shrink-0 text-right font-mono';
+  const MAX_PREVIEW_SCROLL_DRIFT_PX = 180;
 
   let {
     channel,
@@ -122,11 +124,14 @@
   let favoritesSnapshot = $state('[]');
   let toggleFavorite = $state<(name: string) => void>(() => {});
   let stickyHeaderRef = $state<HTMLDivElement | null>(null);
-  let contextMenu = $state<{ itemName: string; x: number; y: number } | null>(null);
-  let touchStart = $state<{ itemName: string; x: number; y: number } | null>(null);
   let linkPreview = $state<LinkPreviewState | null>(null);
   let linkPreviewHoverTimeout = $state<number | null>(null);
+  let linkPreviewHideTimeout = $state<number | null>(null);
   let linkPreviewRequestToken = $state(0);
+  let linkPreviewCopied = $state(false);
+  let supportsNativeShare = $state(false);
+  let linkPreviewAnchorEl = $state<HTMLElement | null>(null);
+  let linkPreviewAnchorStartTop = $state<number | null>(null);
   const linkPreviewCache = new Map<string, LinkPreviewData>();
 
   let search = $state('');
@@ -552,57 +557,66 @@
     void goto(url.pathname + url.search, { keepFocus: true, noScroll: true, replaceState: true });
   }
 
-  function isSparklineTarget(target: EventTarget | null): boolean {
-    return target instanceof Element && target.closest('[data-sparkline-interactive="true"]') !== null;
-  }
-
-  function isProduceNameTarget(target: EventTarget | null): boolean {
-    return target instanceof Element && target.closest('[data-produce-name="true"]') !== null;
-  }
-
-  function clearTouchStart() {
-    touchStart = null;
-  }
-
   function clearLinkPreviewTimer() {
     if (linkPreviewHoverTimeout === null) return;
     window.clearTimeout(linkPreviewHoverTimeout);
     linkPreviewHoverTimeout = null;
   }
 
-  function hideLinkPreview() {
-    clearLinkPreviewTimer();
-    linkPreview = null;
+  function clearLinkPreviewHideTimer() {
+    if (linkPreviewHideTimeout === null) return;
+    window.clearTimeout(linkPreviewHideTimeout);
+    linkPreviewHideTimeout = null;
   }
 
-  function computeLinkPreviewPosition(clientX: number, clientY: number): { left: number; top: number } {
+  function hideLinkPreview() {
+    clearLinkPreviewTimer();
+    clearLinkPreviewHideTimer();
+    linkPreview = null;
+    linkPreviewCopied = false;
+    linkPreviewAnchorEl = null;
+    linkPreviewAnchorStartTop = null;
+  }
+
+  function computeLinkPreviewPosition(anchorEl: HTMLElement): { left: number; top: number } {
     if (typeof window === 'undefined') return { left: 0, top: 0 };
+    const rect = anchorEl.getBoundingClientRect();
 
     const cardWidth = 340;
     const cardHeight = 260;
     const gap = 14;
     const margin = 12;
 
-    const roomRight = window.innerWidth - clientX;
-    const preferredLeft = roomRight >= cardWidth + gap ? clientX + gap : clientX - cardWidth - gap;
+    const anchorX = rect.left + rect.width / 2;
+    const anchorY = rect.bottom;
+
+    const roomRight = window.innerWidth - anchorX;
+    const preferredLeft =
+      roomRight >= cardWidth + gap ? anchorX + gap : anchorX - cardWidth - gap;
     const left = Math.max(margin, Math.min(preferredLeft, window.innerWidth - cardWidth - margin));
 
-    const preferredTop = clientY + gap;
+    const preferredTop = anchorY + gap;
     const top = Math.max(margin, Math.min(preferredTop, window.innerHeight - cardHeight - margin));
 
     return { left, top };
   }
 
-  async function fetchLinkPreview(url: string, left: number, top: number) {
+  async function fetchLinkPreview(
+    itemName: string,
+    url: string,
+    left: number,
+    top: number,
+    pinned: boolean,
+  ) {
     const currentToken = ++linkPreviewRequestToken;
 
     const cached = linkPreviewCache.get(url);
     if (cached) {
-      linkPreview = { url, left, top, loading: false, data: cached };
+      linkPreview = { itemName, url, left, top, loading: false, data: cached, pinned };
       return;
     }
 
-    linkPreview = { url, left, top, loading: true, data: null };
+    linkPreview = { itemName, url, left, top, loading: true, data: null, pinned };
 
     try {
       const response = await fetch(`/api/produce/link-preview?url=${encodeURIComponent(url)}`);
@@ -612,86 +626,121 @@
       linkPreviewCache.set(url, payload);
 
       if (currentToken !== linkPreviewRequestToken) return;
-      linkPreview = { url, left, top, loading: false, data: payload };
+      linkPreview = { itemName, url, left, top, loading: false, data: payload, pinned };
     } catch {
       if (currentToken !== linkPreviewRequestToken) return;
       linkPreview = null;
     }
   }
 
-  function queueLinkPreview(url: string, clientX: number, clientY: number) {
+  function queueLinkPreview(itemName: string, url: string, anchorEl: HTMLElement, pinned = false) {
     clearLinkPreviewTimer();
-    const { left, top } = computeLinkPreviewPosition(clientX, clientY);
+    clearLinkPreviewHideTimer();
+    const { left, top } = computeLinkPreviewPosition(anchorEl);
+    linkPreviewAnchorEl = anchorEl;
+    linkPreviewAnchorStartTop = anchorEl.getBoundingClientRect().top;
 
     linkPreviewHoverTimeout = window.setTimeout(() => {
       linkPreviewHoverTimeout = null;
-      void fetchLinkPreview(url, left, top);
+      void fetchLinkPreview(itemName, url, left, top, pinned);
     }, 180);
   }
 
-  function handleProduceLinkEnter(event: MouseEvent, url: string) {
-    queueLinkPreview(url, event.clientX, event.clientY);
+  function syncLinkPreviewPositionOrClose() {
+    if (!linkPreview || !linkPreviewAnchorEl) return;
+    const rect = linkPreviewAnchorEl.getBoundingClientRect();
+
+    if (linkPreviewAnchorStartTop !== null) {
+      const drift = Math.abs(rect.top - linkPreviewAnchorStartTop);
+      if (drift > MAX_PREVIEW_SCROLL_DRIFT_PX) {
+        hideLinkPreview();
+        return;
+      }
+    }
+
+    if (rect.bottom < 0 || rect.top > window.innerHeight) {
+      hideLinkPreview();
+      return;
+    }
+
+    const { left, top } = computeLinkPreviewPosition(linkPreviewAnchorEl);
+    linkPreview = { ...linkPreview, left, top };
   }
 
-  function handleProduceLinkMove(event: MouseEvent) {
+  function scheduleLinkPreviewHide() {
+    clearLinkPreviewHideTimer();
+    if (linkPreview?.pinned) return;
+    linkPreviewHideTimeout = window.setTimeout(() => {
+      linkPreviewHideTimeout = null;
+      if (!linkPreview?.pinned) hideLinkPreview();
+    }, 160);
+  }
+
+  function handleProduceLinkEnter(event: MouseEvent, itemName: string, url: string) {
+    const target = event.currentTarget;
+    if (!(target instanceof HTMLElement)) return;
+    queueLinkPreview(itemName, url, target);
+  }
+
+  function handleProduceLinkMove() {
     if (!linkPreview) return;
-    const { left, top } = computeLinkPreviewPosition(event.clientX, event.clientY);
+    if (linkPreview.pinned || !linkPreviewAnchorEl) return;
+    const { left, top } = computeLinkPreviewPosition(linkPreviewAnchorEl);
     linkPreview = { ...linkPreview, left, top };
   }
 
   function handleProduceLinkLeave() {
-    hideLinkPreview();
+    scheduleLinkPreviewHide();
   }
 
-  function handleProduceLinkFocus(event: FocusEvent, url: string) {
+  function handleProduceLinkFocus(event: FocusEvent, itemName: string, url: string) {
     const target = event.currentTarget;
     if (!(target instanceof HTMLElement)) return;
-    const rect = target.getBoundingClientRect();
-    queueLinkPreview(url, rect.left + rect.width / 2, rect.bottom);
+    queueLinkPreview(itemName, url, target);
   }
 
-  function handleContextMenu(event: MouseEvent, itemName: string) {
-    if (isProduceNameTarget(event.target)) return;
-    event.preventDefault();
-    contextMenu = { itemName, x: event.clientX, y: event.clientY };
-  }
-
-  function handleTouchStart(event: TouchEvent, itemName: string) {
-    if (isProduceNameTarget(event.target)) return;
-    if (isSparklineTarget(event.target)) return;
-    if (event.touches.length === 0) return;
-    const touch = event.touches[0];
-    touchStart = { itemName, x: touch.clientX, y: touch.clientY };
-  }
-
-  function handleTouchMove(event: TouchEvent, itemName: string) {
-    if (!touchStart || touchStart.itemName !== itemName || event.touches.length === 0) return;
-    const touch = event.touches[0];
-    const dx = touch.clientX - touchStart.x;
-    const dy = touch.clientY - touchStart.y;
-    if (Math.abs(dx) > 8 || Math.abs(dy) > 8) {
-      clearTouchStart();
+  function handleProduceLinkClick(event: MouseEvent, itemName: string, url: string) {
+    if (linkPreview?.url === url && linkPreview.pinned) {
+      return;
     }
-  }
-
-  function handleTouchEnd(event: TouchEvent, itemName: string) {
-    if (!touchStart || touchStart.itemName !== itemName || event.changedTouches.length === 0) return;
-    const touch = event.changedTouches[0];
-    const dx = touch.clientX - touchStart.x;
-    const dy = touch.clientY - touchStart.y;
-    clearTouchStart();
-    if (Math.abs(dx) > 8 || Math.abs(dy) > 8) return;
     event.preventDefault();
-    event.stopPropagation();
-    contextMenu = { itemName, x: touch.clientX, y: touch.clientY };
+    const target = event.currentTarget;
+    if (!(target instanceof HTMLElement)) return;
+    queueLinkPreview(itemName, url, target, true);
   }
 
-  function handleTouchCancel() {
-    clearTouchStart();
+  function handlePreviewMouseEnter() {
+    clearLinkPreviewHideTimer();
   }
 
-  function closeContextMenu() {
-    contextMenu = null;
+  function handlePreviewMouseLeave() {
+    scheduleLinkPreviewHide();
+  }
+
+  function closePinnedLinkPreview() {
+    if (linkPreview?.pinned) hideLinkPreview();
+  }
+
+  function handlePreviewFavoriteToggle() {
+    if (!linkPreview) return;
+    toggleFavorite(linkPreview.itemName);
+  }
+
+  async function handlePreviewShareOrCopy() {
+    if (!linkPreview) return;
+    const url = `${window.location.origin}${produceItemUrl(linkPreview.itemName)}`;
+    const shareData = { title: linkPreview.itemName, url };
+    if (supportsNativeShare && typeof navigator.share === 'function') {
+      try {
+        await navigator.share(shareData);
+      } catch {
+        // Ignore share cancellations.
+      }
+      return;
+    }
+
+    await navigator.clipboard.writeText(url);
+    linkPreviewCopied = true;
   }
 
   function handleSort(field: SortField) {
@@ -803,10 +852,42 @@
 
     const handler = (event: Event) => handleStateUpdate(event);
     window.addEventListener(`produce-analytics-state:update:${channel}`, handler as EventListener);
+    if (typeof navigator !== 'undefined' && typeof navigator.share === 'function') {
+      supportsNativeShare = true;
+    }
+
+    const handlePointerDown = (event: MouseEvent | TouchEvent) => {
+      if (!linkPreview?.pinned) return;
+      const target = event.target;
+      if (!(target instanceof Element)) return;
+      if (
+        target.closest('[data-produce-preview-card="true"]') ||
+        target.closest('[data-produce-preview-link="true"]')
+      ) {
+        return;
+      }
+      hideLinkPreview();
+    };
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return;
+      closePinnedLinkPreview();
+    };
+    const handleViewportChange = () => {
+      syncLinkPreviewPositionOrClose();
+    };
+    document.addEventListener('mousedown', handlePointerDown);
+    document.addEventListener('touchstart', handlePointerDown, { passive: true });
+    document.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('scroll', handleViewportChange, true);
+    window.addEventListener('resize', handleViewportChange);
 
     return () => {
       window.removeEventListener(`produce-analytics-state:update:${channel}`, handler as EventListener);
-      clearTouchStart();
+      document.removeEventListener('mousedown', handlePointerDown);
+      document.removeEventListener('touchstart', handlePointerDown);
+      document.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('scroll', handleViewportChange, true);
+      window.removeEventListener('resize', handleViewportChange);
       hideLinkPreview();
     };
   });
@@ -1159,11 +1240,6 @@
             {@const specialtyUrl = getSpecialtyProduceUrl(row.name)}
             <tr
               class={`group select-none border-b border-zinc-100 ${favorites.has(row.name) ? 'bg-amber-50' : 'hover:bg-zinc-50'}`}
-              oncontextmenu={(e) => handleContextMenu(e, row.name)}
-              ontouchstart={(e) => handleTouchStart(e, row.name)}
-              ontouchmove={(e) => handleTouchMove(e, row.name)}
-              ontouchend={(e) => handleTouchEnd(e, row.name)}
-              ontouchcancel={handleTouchCancel}
             >
               <td
                 class={`${NAME_COL_CLASS} sticky left-0 z-10 box-border border-r border-zinc-200 p-2 md:w-auto md:border-r-0 ${
@@ -1196,11 +1272,13 @@
                           href={specialtyUrl}
                           target="_blank"
                           rel="noreferrer"
-                          onmouseenter={(event) => handleProduceLinkEnter(event, specialtyUrl)}
+                          onmouseenter={(event) => handleProduceLinkEnter(event, row.name, specialtyUrl)}
                           onmousemove={handleProduceLinkMove}
                           onmouseleave={handleProduceLinkLeave}
-                          onfocus={(event) => handleProduceLinkFocus(event, specialtyUrl)}
+                          onfocus={(event) => handleProduceLinkFocus(event, row.name, specialtyUrl)}
                           onblur={handleProduceLinkLeave}
+                          onclick={(event) => handleProduceLinkClick(event, row.name, specialtyUrl)}
+                          data-produce-preview-link="true"
                           class="underline decoration-current underline-offset-2 hover:decoration-2"
                         >
                           <span class={row.is_unavailable ? 'line-through' : undefined}>
@@ -1347,22 +1425,14 @@
     </table>
   </div>
 
-  {#if contextMenu}
-    <ProduceContextMenu
-      itemName={contextMenu.itemName}
-      x={contextMenu.x}
-      y={contextMenu.y}
-      isFavorite={favorites.has(contextMenu.itemName)}
-      onToggleFavorite={toggleFavorite}
-      onClose={closeContextMenu}
-    />
-  {/if}
-
   {#if linkPreview}
     <aside
-      class="pointer-events-none fixed z-50 w-[340px] overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-[0_16px_50px_-24px_rgba(0,0,0,0.65)]"
+      class="fixed z-50 w-[340px] overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-[0_16px_50px_-24px_rgba(0,0,0,0.65)]"
       style={`left:${linkPreview.left}px;top:${linkPreview.top}px;`}
       aria-live="polite"
+      data-produce-preview-card="true"
+      onmouseenter={handlePreviewMouseEnter}
+      onmouseleave={handlePreviewMouseLeave}
     >
       {#if linkPreview.loading}
         <div class="space-y-2 p-3">
@@ -1380,8 +1450,18 @@
           />
         {/if}
         <div class="space-y-1 p-3">
-          <div class="text-[11px] font-medium tracking-wide text-zinc-500 uppercase">
+          <div class="flex items-center justify-between gap-2 text-[11px] font-medium tracking-wide text-zinc-500 uppercase">
             {linkPreview.data.siteName ?? 'Specialty Produce'}
+            <button
+              type="button"
+              onclick={hideLinkPreview}
+              class={`rounded p-1 text-zinc-400 transition-colors hover:bg-zinc-100 hover:text-zinc-700 ${
+                linkPreview.pinned ? 'visible' : 'pointer-events-none invisible'
+              }`}
+              aria-label="Close produce preview"
+            >
+              ✕
+            </button>
           </div>
           <div class="line-clamp-2 text-sm font-semibold text-zinc-900">{linkPreview.data.title}</div>
           {#if linkPreview.data.description}
@@ -1389,6 +1469,39 @@
               {linkPreview.data.description}
             </p>
           {/if}
+        </div>
+        <div class="border-t border-zinc-100 py-1">
+          <a
+            href={linkPreview.url}
+            target="_blank"
+            rel="noreferrer"
+            class="flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm text-zinc-700 transition-colors hover:bg-zinc-100"
+          >
+            <span class="inline-flex h-5 w-5 items-center justify-center">↗</span>
+            <span>View Produce</span>
+          </a>
+          <button
+            type="button"
+            onclick={handlePreviewFavoriteToggle}
+            class="flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm text-zinc-700 transition-colors hover:bg-zinc-100"
+          >
+            <span class="inline-flex h-5 w-5 items-center justify-center"
+              >{favorites.has(linkPreview.itemName) ? '💔' : '⭐'}</span
+            >
+            <span>{favorites.has(linkPreview.itemName) ? 'Remove Favorite' : 'Add Favorite'}</span>
+          </button>
+          <button
+            type="button"
+            onclick={() => {
+              void handlePreviewShareOrCopy();
+            }}
+            class="flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm text-zinc-700 transition-colors hover:bg-zinc-100"
+          >
+            <span class="inline-flex h-5 w-5 items-center justify-center"
+              >{supportsNativeShare ? '📤' : linkPreviewCopied ? '✅' : '🔗'}</span
+            >
+            <span>{supportsNativeShare ? 'Share' : linkPreviewCopied ? 'Copied!' : 'Copy Link'}</span>
+          </button>
         </div>
       {/if}
     </aside>
