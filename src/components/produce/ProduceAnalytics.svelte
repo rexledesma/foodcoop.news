@@ -39,7 +39,7 @@
   };
   type LinkPreviewState = {
     itemName: string;
-    url: string;
+    url: string | null;
     left: number;
     top: number;
     loading: boolean;
@@ -132,6 +132,7 @@
   let supportsNativeShare = $state(false);
   let linkPreviewAnchorEl = $state<HTMLElement | null>(null);
   let linkPreviewAnchorStartTop = $state<number | null>(null);
+  let linkPreviewCardRef = $state<HTMLElement | null>(null);
   const linkPreviewCache = new Map<string, LinkPreviewData>();
 
   let search = $state('');
@@ -578,12 +579,25 @@
     linkPreviewAnchorStartTop = null;
   }
 
-  function computeLinkPreviewPosition(anchorEl: HTMLElement): { left: number; top: number } {
+  function getPreviewHeightFallback(url: string | null): number {
+    return url ? 440 : 230;
+  }
+
+  function getCurrentPreviewCardHeight(url: string | null): number {
+    const measured = linkPreviewCardRef?.offsetHeight ?? 0;
+    if (measured > 0) return measured;
+    return getPreviewHeightFallback(url);
+  }
+
+  function computeLinkPreviewPosition(
+    anchorEl: HTMLElement,
+    previewUrl: string | null,
+  ): { left: number; top: number } {
     if (typeof window === 'undefined') return { left: 0, top: 0 };
     const rect = anchorEl.getBoundingClientRect();
 
     const cardWidth = 340;
-    const cardHeight = 440;
+    const cardHeight = getCurrentPreviewCardHeight(previewUrl);
     const gap = 14;
     const margin = 12;
 
@@ -635,12 +649,22 @@
     }
   }
 
-  function queueLinkPreview(itemName: string, url: string, anchorEl: HTMLElement, pinned = false) {
+  function queueLinkPreview(
+    itemName: string,
+    url: string | null,
+    anchorEl: HTMLElement,
+    pinned = false,
+  ) {
     clearLinkPreviewTimer();
     clearLinkPreviewHideTimer();
-    const { left, top } = computeLinkPreviewPosition(anchorEl);
+    const { left, top } = computeLinkPreviewPosition(anchorEl, url);
     linkPreviewAnchorEl = anchorEl;
     linkPreviewAnchorStartTop = anchorEl.getBoundingClientRect().top;
+
+    if (!url) {
+      linkPreview = { itemName, url: null, left, top, loading: false, data: null, pinned };
+      return;
+    }
 
     linkPreviewHoverTimeout = window.setTimeout(() => {
       linkPreviewHoverTimeout = null;
@@ -665,7 +689,8 @@
       return;
     }
 
-    const { left, top } = computeLinkPreviewPosition(linkPreviewAnchorEl);
+    const { left, top } = computeLinkPreviewPosition(linkPreviewAnchorEl, linkPreview.url);
+    if (linkPreview.left === left && linkPreview.top === top) return;
     linkPreview = { ...linkPreview, left, top };
   }
 
@@ -678,7 +703,7 @@
     }, 160);
   }
 
-  function handleProduceLinkEnter(event: MouseEvent, itemName: string, url: string) {
+  function handleProduceLinkEnter(event: MouseEvent, itemName: string, url: string | null) {
     const target = event.currentTarget;
     if (!(target instanceof HTMLElement)) return;
     queueLinkPreview(itemName, url, target);
@@ -687,7 +712,8 @@
   function handleProduceLinkMove() {
     if (!linkPreview) return;
     if (linkPreview.pinned || !linkPreviewAnchorEl) return;
-    const { left, top } = computeLinkPreviewPosition(linkPreviewAnchorEl);
+    const { left, top } = computeLinkPreviewPosition(linkPreviewAnchorEl, linkPreview.url);
+    if (linkPreview.left === left && linkPreview.top === top) return;
     linkPreview = { ...linkPreview, left, top };
   }
 
@@ -695,13 +721,21 @@
     scheduleLinkPreviewHide();
   }
 
-  function handleProduceLinkFocus(event: FocusEvent, itemName: string, url: string) {
+  function handleProduceLinkFocus(event: FocusEvent, itemName: string, url: string | null) {
     const target = event.currentTarget;
     if (!(target instanceof HTMLElement)) return;
     queueLinkPreview(itemName, url, target);
   }
 
-  function handleProduceLinkClick(event: MouseEvent, itemName: string, url: string) {
+  function handleProduceLinkClick(event: MouseEvent, itemName: string, url: string | null) {
+    if (!url) {
+      event.preventDefault();
+      const target = event.currentTarget;
+      if (!(target instanceof HTMLElement)) return;
+      queueLinkPreview(itemName, null, target, true);
+      return;
+    }
+
     if (linkPreview?.url === url && linkPreview.pinned) {
       return;
     }
@@ -864,7 +898,7 @@
       if (!(target instanceof Element)) return;
       if (
         target.closest('[data-produce-preview-card="true"]') ||
-        target.closest('[data-produce-preview-link="true"]')
+        target.closest('[data-produce-preview-trigger="true"]')
       ) {
         return;
       }
@@ -920,6 +954,11 @@
     observer.observe(element);
 
     return () => observer.disconnect();
+  });
+
+  $effect(() => {
+    if (!linkPreview || !linkPreviewAnchorEl || !linkPreviewCardRef) return;
+    syncLinkPreviewPositionOrClose();
   });
 </script>
 
@@ -1280,7 +1319,7 @@
                           onfocus={(event) => handleProduceLinkFocus(event, row.name, specialtyUrl)}
                           onblur={handleProduceLinkLeave}
                           onclick={(event) => handleProduceLinkClick(event, row.name, specialtyUrl)}
-                          data-produce-preview-link="true"
+                          data-produce-preview-trigger="true"
                           class="underline decoration-current underline-offset-2 hover:decoration-2"
                         >
                           <span class={row.is_unavailable ? 'line-through' : undefined}>
@@ -1288,9 +1327,21 @@
                           </span>
                         </a>
                       {:else}
-                        <span class={row.is_unavailable ? 'line-through' : undefined}>
-                          {row.name}
-                        </span>
+                        <button
+                          type="button"
+                          onmouseenter={(event) => handleProduceLinkEnter(event, row.name, null)}
+                          onmousemove={handleProduceLinkMove}
+                          onmouseleave={handleProduceLinkLeave}
+                          onfocus={(event) => handleProduceLinkFocus(event, row.name, null)}
+                          onblur={handleProduceLinkLeave}
+                          onclick={(event) => handleProduceLinkClick(event, row.name, null)}
+                          data-produce-preview-trigger="true"
+                          class="text-left underline decoration-current underline-offset-2 hover:decoration-2"
+                        >
+                          <span class={row.is_unavailable ? 'line-through' : undefined}>
+                            {row.name}
+                          </span>
+                        </button>
                       {/if}
                     </div>
 
@@ -1429,6 +1480,7 @@
 
   {#if linkPreview}
     <aside
+      bind:this={linkPreviewCardRef}
       class="fixed z-50 w-[340px] overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-[0_16px_50px_-24px_rgba(0,0,0,0.65)]"
       style={`left:${linkPreview.left}px;top:${linkPreview.top}px;`}
       aria-live="polite"
@@ -1488,16 +1540,37 @@
             </p>
           {/if}
         </div>
+      {:else}
+        <div class="space-y-1 p-3">
+          <div class="flex items-center justify-between gap-2 text-[11px] font-medium tracking-wide text-zinc-500 uppercase">
+            Produce
+            <button
+              type="button"
+              onclick={hideLinkPreview}
+              class={`rounded p-1 text-zinc-400 transition-colors hover:bg-zinc-100 hover:text-zinc-700 ${
+                linkPreview.pinned ? 'visible' : 'pointer-events-none invisible'
+              }`}
+              aria-label="Close produce preview"
+            >
+              ✕
+            </button>
+          </div>
+          <div class="line-clamp-2 text-sm font-semibold text-zinc-900">{linkPreview.itemName}</div>
+        </div>
+      {/if}
+      {#if linkPreview && !linkPreview.loading}
         <div class="border-t border-zinc-100 py-1">
-          <a
-            href={linkPreview.url}
-            target="_blank"
-            rel="noreferrer"
-            class="flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm text-zinc-700 transition-colors hover:bg-zinc-100"
-          >
-            <span class="inline-flex h-5 w-5 items-center justify-center">↗</span>
-            <span>View Produce</span>
-          </a>
+          {#if linkPreview.url}
+            <a
+              href={linkPreview.url}
+              target="_blank"
+              rel="noreferrer"
+              class="flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm text-zinc-700 transition-colors hover:bg-zinc-100"
+            >
+              <span class="inline-flex h-5 w-5 items-center justify-center">↗</span>
+              <span>View Produce</span>
+            </a>
+          {/if}
           <button
             type="button"
             onclick={handlePreviewFavoriteToggle}
