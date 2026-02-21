@@ -12,6 +12,8 @@ import { getFeedItemKey } from '@/lib/discover-feed';
 
 const COOP_BLUESKY_HANDLE = 'foodcoop.bsky.social';
 const SOURCE_FETCH_TIMEOUT_MS = 4500;
+const BLUESKY_FEED_CACHE_CONTROL = 'public, max-age=60, s-maxage=300, stale-while-revalidate=3600';
+const SLOW_FEED_CACHE_CONTROL = 'public, max-age=300, s-maxage=14400, stale-while-revalidate=86400';
 
 type SourceName =
   | 'gazette'
@@ -201,6 +203,11 @@ function parseLimit(rawLimit: string | null): number | null {
   return parsed;
 }
 
+function resolveCacheControl(selectedSources: SourceDefinition[]): string {
+  const hasBluesky = selectedSources.some((source) => source.name === 'bluesky');
+  return hasBluesky ? BLUESKY_FEED_CACHE_CONTROL : SLOW_FEED_CACHE_CONTROL;
+}
+
 async function fetchSource(
   source: SourceDefinition,
   fetchFn: typeof globalThis.fetch,
@@ -248,6 +255,7 @@ async function fetchSource(
 
 export async function GET({ fetch, url }: { fetch: typeof globalThis.fetch; url: URL }) {
   const selectedSources = parseSourceFilter(url.searchParams.get('sources'));
+  const cacheControl = resolveCacheControl(selectedSources);
   const limit = parseLimit(url.searchParams.get('limit'));
   const sourceResults = await Promise.all(
     selectedSources.map((source) => fetchSource(source, fetch)),
@@ -303,6 +311,9 @@ export async function GET({ fetch, url }: { fetch: typeof globalThis.fetch; url:
     },
     {
       status: hasAnySuccess ? 200 : 500,
+      headers: {
+        'cache-control': cacheControl,
+      },
     },
   );
 }
