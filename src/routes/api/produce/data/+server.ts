@@ -7,8 +7,10 @@ import { list } from '@/lib/s3-storage';
 import type { RequestHandler } from './$types';
 import type { ProduceDateRange, ProduceHistoryPoint, ProduceRow } from '@/lib/produce-types';
 
-const CACHE_DURATION_MS = 5 * 60 * 1000;
+const FRESH_CACHE_DURATION_MS = 5 * 60 * 1000;
+const STALE_CACHE_DURATION_MS = 60 * 60 * 1000;
 const LONG_RANGE_HISTORY_START = '2013-01-01';
+const PRODUCE_CACHE_CONTROL = 'public, max-age=60, s-maxage=300, stale-while-revalidate=3600';
 
 interface ProduceMetadata {
   years: {
@@ -29,13 +31,27 @@ type ProduceDataPayload = {
   dateRange: ProduceDateRange | null;
 };
 
-const cachedPayloadByVariant: Record<
-  'core' | 'withLongRange',
-  { payload: ProduceDataPayload | null; cachedAt: number }
-> = {
-  core: { payload: null, cachedAt: 0 },
-  withLongRange: { payload: null, cachedAt: 0 },
+type CacheKey = 'core' | 'withLongRange';
+
+type CachedVariant = {
+  payload: ProduceDataPayload | null;
+  cachedAt: number;
+  revalidation: Promise<void> | null;
 };
+
+const cachedPayloadByVariant: Record<CacheKey, CachedVariant> = {
+  core: { payload: null, cachedAt: 0, revalidation: null },
+  withLongRange: { payload: null, cachedAt: 0, revalidation: null },
+};
+
+function withCacheHeaders(init?: ResponseInit) {
+  const headers = new Headers(init?.headers);
+  headers.set('cache-control', PRODUCE_CACHE_CONTROL);
+  return {
+    ...init,
+    headers,
+  } satisfies ResponseInit;
+}
 
 function getCurrentYear() {
   return new Date()
@@ -588,20 +604,75 @@ async function computePayload({
 }
 
 export const GET: RequestHandler = async ({ url }) => {
+  const includeLongRange = url.searchParams.get('includeLongRange') === '1';
+  const cacheKey: CacheKey = includeLongRange ? 'withLongRange' : 'core';
+  const cached = cachedPayloadByVariant[cacheKey];
+  const now = Date.now();
+  const age = cached.payload ? now - cached.cachedAt : Number.POSITIVE_INFINITY;
+
+  const startRevalidation = () => {
+    if (cached.revalidation) return cached.revalidation;
+    cached.revalidation = (async () => {
+      const payload = await computePayload({ includeLongRange });
+      cached.payload = payload;
+      cached.cachedAt = Date.now();
+    })()
+      .catch((error) => {
+        console.error(`Produce data API revalidation error (${cacheKey}):`, error);
+      })
+      .finally(() => {
+        cached.revalidation = null;
+      });
+    return cached.revalidation;
+  };
+
   try {
-    const includeLongRange = url.searchParams.get('includeLongRange') === '1';
-    const cacheKey = includeLongRange ? 'withLongRange' : 'core';
-    const now = Date.now();
-    const cached = cachedPayloadByVariant[cacheKey];
-    if (cached.payload && now - cached.cachedAt < CACHE_DURATION_MS) {
-      return Response.json(cached.payload);
+    if (cached.payload && age < FRESH_CACHE_DURATION_MS) {
+      return Response.json(
+        cached.payload,
+        withCacheHeaders({ headers: { 'x-produce-cache': 'hit' } }),
+      );
     }
 
-    const payload = await computePayload({ includeLongRange });
-    cachedPayloadByVariant[cacheKey] = { payload, cachedAt: now };
-    return Response.json(payload);
+    if (cached.payload && age < STALE_CACHE_DURATION_MS) {
+      void startRevalidation();
+      return Response.json(
+        cached.payload,
+        withCacheHeaders({ headers: { 'x-produce-cache': 'stale' } }),
+      );
+    }
+
+    if (cached.revalidation) {
+      await cached.revalidation;
+      if (cached.payload) {
+        return Response.json(
+          cached.payload,
+          withCacheHeaders({ headers: { 'x-produce-cache': 'refresh-hit' } }),
+        );
+      }
+    }
+
+    await startRevalidation();
+    if (cached.payload) {
+      return Response.json(
+        cached.payload,
+        withCacheHeaders({ headers: { 'x-produce-cache': 'miss' } }),
+      );
+    }
+
+    throw new Error('No produce data available after revalidation');
   } catch (error) {
     console.error('Produce data API error:', error);
-    return Response.json({ error: 'Failed to load produce data' }, { status: 500 });
+    if (cached.payload) {
+      return Response.json(
+        cached.payload,
+        withCacheHeaders({ headers: { 'x-produce-cache': 'error-stale' } }),
+      );
+    }
+
+    return Response.json(
+      { error: 'Failed to load produce data' },
+      withCacheHeaders({ status: 500, headers: { 'x-produce-cache': 'error' } }),
+    );
   }
 };
