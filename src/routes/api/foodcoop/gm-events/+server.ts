@@ -10,6 +10,61 @@ let cachedEvents: FoodcoopEvent[] | null = null;
 let cacheTime = 0;
 const CACHE_DURATION = 5 * 60 * 1000;
 
+function normalizeWhitespace(text: string): string {
+  return text
+    .replace(/\u00a0/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function dateKeyInTimezone(date: Date, timeZone: string): string {
+  const formatter = new Intl.DateTimeFormat('en-US', {
+    timeZone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  });
+
+  const parts = formatter.formatToParts(date);
+  const year = parts.find((part) => part.type === 'year')?.value ?? '0000';
+  const month = parts.find((part) => part.type === 'month')?.value ?? '01';
+  const day = parts.find((part) => part.type === 'day')?.value ?? '01';
+  return `${year}-${month}-${day}`;
+}
+
+function parseGMAgendaDetails(html: string): {
+  date: Date | null;
+  agendaLines: string[];
+} {
+  const $ = cheerio.load(html);
+  const contentRoot = $('div.col-md-7.content').first();
+  const textRoot = contentRoot.length ? contentRoot : $('body');
+  const romanHeaderPattern = /^[IVXLCDM]+\.\s+/i;
+
+  const date = parseGMDateTime(textRoot.text());
+
+  const blocks = textRoot
+    .find('p, li')
+    .toArray()
+    .map((el) => {
+      const rawHtml = $(el).html() ?? '';
+      const beforeBreakHtml = rawHtml.split(/<br\s*\/?>/i)[0] ?? rawHtml;
+      const fragment = cheerio.load(`<div>${beforeBreakHtml}</div>`);
+      return normalizeWhitespace(fragment('div').text());
+    })
+    .filter(Boolean);
+
+  const firstRomanHeaderIndex = blocks.findIndex((text) => romanHeaderPattern.test(text));
+  const agendaLines = firstRomanHeaderIndex >= 0 ? blocks.slice(firstRomanHeaderIndex) : [];
+  return { date, agendaLines };
+}
+
+function formatGMDescription(agendaLines: string[]): string {
+  if (agendaLines.length === 0) return '';
+
+  return agendaLines.map((line) => (/^Item\s+\d+:/i.test(line) ? `\t${line}` : line)).join('\n');
+}
+
 function parseGMDateTime(text: string): Date | null {
   // Match patterns like:
   // "Tuesday, January 27, 2026 7:00 p.m."
@@ -107,13 +162,14 @@ async function fetchGMEvents(): Promise<FoodcoopEvent[]> {
     return events;
   }
 
-  const title = 'PSFC General Meeting';
-
   // Parse the date/time from the General Meeting section
   const eventDate = parseGMDateTime(sectionText);
   if (!eventDate) {
     return events;
   }
+
+  const month = eventDate.toLocaleString('en-US', { month: 'long', timeZone: TIMEZONE });
+  const title = `PSFC ${month} General Meeting`;
 
   // Only return future events
   if (eventDate < now) {
@@ -134,10 +190,29 @@ async function fetchGMEvents(): Promise<FoodcoopEvent[]> {
   const id = `gm-${dateStr}`;
 
   const startUtc = eventDate.toISOString();
+  let description: string | undefined;
+
+  try {
+    const agendaResponse = await fetch(GM_AGENDA_URL);
+    if (agendaResponse.ok) {
+      const agendaHtml = await agendaResponse.text();
+      const agendaDetails = parseGMAgendaDetails(agendaHtml);
+
+      if (
+        agendaDetails.date &&
+        dateKeyInTimezone(agendaDetails.date, TIMEZONE) === dateKeyInTimezone(eventDate, TIMEZONE)
+      ) {
+        description = formatGMDescription(agendaDetails.agendaLines);
+      }
+    }
+  } catch (error) {
+    console.warn('GM agenda page parse failed:', error);
+  }
 
   events.push({
     id,
     title,
+    description,
     url: GM_AGENDA_URL,
     startUtc,
     timezone: TIMEZONE,

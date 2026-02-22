@@ -468,7 +468,13 @@
         </div>
         <p class="mt-2 font-medium text-zinc-700">{event.title}</p>
         {#if event.description}
-          <p class="mt-1 line-clamp-3 text-sm text-zinc-500">{event.description}</p>
+          <p
+            class={label === 'General Meeting'
+              ? 'mt-1 text-sm whitespace-pre-wrap text-zinc-500 [tab-size:4]'
+              : 'mt-1 line-clamp-3 text-sm text-zinc-500'}
+          >
+            {event.description}
+          </p>
         {/if}
         {#if event.venueName || event.venueAddress}
           <p class="mt-2 text-sm text-zinc-500">{[event.venueName, event.venueAddress].filter(Boolean).join(' • ')}</p>
