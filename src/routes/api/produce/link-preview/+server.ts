@@ -1,6 +1,9 @@
 import { decode } from 'html-entities';
 
-const PREVIEW_CACHE_MS = 30 * 60 * 1000;
+const PREVIEW_BROWSER_MAX_AGE_SECONDS = 300;
+const PREVIEW_CDN_S_MAXAGE_SECONDS = 7 * 24 * 60 * 60;
+const PREVIEW_STALE_WHILE_REVALIDATE_SECONDS = 30 * 24 * 60 * 60;
+const PREVIEW_CACHE_CONTROL = `public, max-age=${PREVIEW_BROWSER_MAX_AGE_SECONDS}, s-maxage=${PREVIEW_CDN_S_MAXAGE_SECONDS}, stale-while-revalidate=${PREVIEW_STALE_WHILE_REVALIDATE_SECONDS}`;
 const FETCH_TIMEOUT_MS = 4500;
 const MAX_DESCRIPTION_LENGTH = 240;
 
@@ -11,13 +14,6 @@ type LinkPreview = {
   siteName?: string;
   image?: string;
 };
-
-type CachedPreview = {
-  expiresAt: number;
-  data: LinkPreview;
-};
-
-const previewCache = new Map<string, CachedPreview>();
 
 function isAllowedPreviewHost(hostname: string): boolean {
   const normalized = hostname.toLowerCase();
@@ -139,25 +135,9 @@ export async function GET({ url }: { url: URL }) {
     return Response.json({ error: 'Preview host is not allowed' }, { status: 400 });
   }
 
-  const cacheKey = targetUrl.toString();
-  const cached = previewCache.get(cacheKey);
-  const now = Date.now();
-  if (cached && cached.expiresAt > now) {
-    return Response.json(cached.data, {
-      headers: { 'cache-control': 'public, max-age=1800' },
-    });
-  }
-
   try {
     const preview = await fetchPreview(targetUrl);
-    previewCache.set(cacheKey, {
-      data: preview,
-      expiresAt: now + PREVIEW_CACHE_MS,
-    });
-
-    return Response.json(preview, {
-      headers: { 'cache-control': 'public, max-age=1800' },
-    });
+    return Response.json(preview, { headers: { 'cache-control': PREVIEW_CACHE_CONTROL } });
   } catch (error) {
     console.error('Produce link preview API error:', error);
     return Response.json({ error: 'Failed to fetch link preview' }, { status: 502 });
