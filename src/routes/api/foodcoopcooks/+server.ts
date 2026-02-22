@@ -39,29 +39,6 @@ function extractAlternateLinkHref(xml: string): string {
   return match?.[1] ?? '';
 }
 
-async function fetchTwitterImage(url: string): Promise<string | undefined> {
-  try {
-    const response = await fetch(url);
-    if (!response.ok) return undefined;
-
-    const html = await response.text();
-    // Look for twitter:image or og:image meta tag
-    const match =
-      html.match(/<meta[^>]+name=["']twitter:image["'][^>]+content=["']([^"']+)["']/i) ||
-      html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+name=["']twitter:image["']/i) ||
-      html.match(/<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)["']/i) ||
-      html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:image["']/i);
-
-    if (match) {
-      // Decode HTML entities in URL
-      return match[1].replace(/&#038;/g, '&').replace(/&amp;/g, '&');
-    }
-    return undefined;
-  } catch {
-    return undefined;
-  }
-}
-
 async function fetchFoodCoopCooksWordPressFeed(): Promise<FoodCoopCooksArticle[]> {
   const response = await fetch(FOODCOOP_COOKS_RSS_URL);
 
@@ -109,17 +86,12 @@ async function fetchFoodCoopCooksWordPressFeed(): Promise<FoodCoopCooksArticle[]
     });
   }
 
-  // Fetch twitter:image for all articles in parallel
-  const images = await Promise.all(parsedItems.map((item) => fetchTwitterImage(item.link)));
-
-  // Combine parsed items with images
-  return parsedItems.map((item, index) => ({
+  return parsedItems.map((item) => ({
     id: item.id,
     title: item.title,
     description: item.description,
     link: item.link,
     pubDate: item.pubDate,
-    image: images[index],
   }));
 }
 
