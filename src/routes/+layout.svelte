@@ -230,6 +230,7 @@
   <title>{documentTitle}</title>
   <link rel="icon" href={faviconHref} />
   <link rel="canonical" href={canonicalUrl} />
+  <link rel="alternate" hreflang="en" href={canonicalUrl} />
   <meta name="description" content={pageDescription} />
   <meta property="og:type" content="website" />
   <meta property="og:site_name" content={SITE_NAME} />
