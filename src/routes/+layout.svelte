@@ -57,6 +57,7 @@
   const initialState = state;
   let documentTitle = SITE_NAME;
   let canonicalUrl = '';
+  let ogImageUrl = '';
 
   function dispatchState() {
     if (typeof window === 'undefined') return;
@@ -181,6 +182,7 @@
 
   $: documentTitle = computePageTitle($page.url.pathname, $page.url.searchParams);
   $: canonicalUrl = `${$page.url.origin}${$page.url.pathname}`;
+  $: ogImageUrl = `${$page.url.origin}${OG_IMAGE_PATH}`;
 </script>
 
 <svelte:head>
@@ -193,7 +195,7 @@
   <meta property="og:title" content={documentTitle} />
   <meta property="og:description" content={SITE_DESCRIPTION} />
   <meta property="og:url" content={$page.url.href} />
-  <meta property="og:image" content={OG_IMAGE_PATH} />
+  <meta property="og:image" content={ogImageUrl} />
 </svelte:head>
 
 <Navigation {channel} {initialState} />
