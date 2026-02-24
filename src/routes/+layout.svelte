@@ -56,6 +56,7 @@
 
   const initialState = state;
   let documentTitle = SITE_NAME;
+  let canonicalUrl = '';
 
   function dispatchState() {
     if (typeof window === 'undefined') return;
@@ -179,11 +180,13 @@
   }
 
   $: documentTitle = computePageTitle($page.url.pathname, $page.url.searchParams);
+  $: canonicalUrl = `${$page.url.origin}${$page.url.pathname}`;
 </script>
 
 <svelte:head>
   <title>{documentTitle}</title>
   <link rel="icon" href={faviconHref} />
+  <link rel="canonical" href={canonicalUrl} />
   <meta name="description" content={SITE_DESCRIPTION} />
   <meta property="og:type" content="website" />
   <meta property="og:site_name" content={SITE_NAME} />
