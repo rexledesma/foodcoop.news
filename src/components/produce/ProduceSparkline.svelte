@@ -87,6 +87,24 @@
   ): ProduceHistoryPoint[] {
     if (inputPoints.length < 2) return inputPoints;
 
+    const ensureIncludesLatestPoint = (
+      sampledPoints: ProduceHistoryPoint[],
+      sourcePoints: ProduceHistoryPoint[],
+    ): ProduceHistoryPoint[] => {
+      const latestSourcePoint = sourcePoints[sourcePoints.length - 1];
+      if (!latestSourcePoint) return sampledPoints;
+      if (sampledPoints.length === 0) return [latestSourcePoint];
+
+      const lastIndex = sampledPoints.length - 1;
+      if (sampledPoints[lastIndex].date === latestSourcePoint.date) {
+        sampledPoints[lastIndex] = latestSourcePoint;
+        return sampledPoints;
+      }
+
+      sampledPoints.push(latestSourcePoint);
+      return sampledPoints;
+    };
+
     if (period === '5Y') {
       const bucketSizeMs = 7 * DAY_MS;
       const sampled: ProduceHistoryPoint[] = [];
@@ -103,7 +121,7 @@
         }
       }
 
-      return sampled;
+      return ensureIncludesLatestPoint(sampled, inputPoints);
     }
 
     if (period === 'MAX') {
@@ -119,7 +137,7 @@
         }
       }
 
-      return sampled;
+      return ensureIncludesLatestPoint(sampled, inputPoints);
     }
 
     return inputPoints;
