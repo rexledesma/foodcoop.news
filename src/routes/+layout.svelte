@@ -56,6 +56,7 @@
 
   const initialState = state;
   let documentTitle = SITE_NAME;
+  let pageDescription = SITE_DESCRIPTION;
   let canonicalUrl = '';
   let ogImageUrl = '';
 
@@ -104,6 +105,45 @@
     if (pathname === '/signup') return `Signup · ${SITE_NAME}`;
 
     return SITE_NAME;
+  }
+
+  function computePageDescription(pathname: string, searchParams: URLSearchParams): string {
+    if (pathname === '/produce') {
+      const produceName = decodeParam(searchParams.get('name'));
+      const isHashedProduceId = /^[a-f0-9]{7}$/i.test(produceName);
+      if (produceName && !isHashedProduceId) {
+        return `Track ${produceName} prices over time from Park Slope Food Coop produce inventory.`;
+      }
+
+      const formattedDate = formatProduceDate(searchParams.get('date'));
+      if (formattedDate) {
+        return `Explore Park Slope Food Coop produce prices and trends for ${formattedDate}.`;
+      }
+
+      return 'Explore price history, trends, and updates from Park Slope Food Coop produce inventory.';
+    }
+
+    if (pathname === '/discover' || pathname === '/') {
+      return 'Discover Park Slope Food Coop news, events, produce, and community updates in one feed.';
+    }
+
+    if (pathname === '/integrations') {
+      return 'Set up personalized integrations for your Park Slope Food Coop membership.';
+    }
+
+    if (pathname === '/about') {
+      return 'Learn how foodcoop.news helps Park Slope Food Coop members stay informed.';
+    }
+
+    if (pathname === '/login') {
+      return 'Log in to foodcoop.news.';
+    }
+
+    if (pathname === '/signup') {
+      return 'Create an account on foodcoop.news.';
+    }
+
+    return SITE_DESCRIPTION;
   }
 
   async function hydrateNavState() {
@@ -181,6 +221,7 @@
   }
 
   $: documentTitle = computePageTitle($page.url.pathname, $page.url.searchParams);
+  $: pageDescription = computePageDescription($page.url.pathname, $page.url.searchParams);
   $: canonicalUrl = `${$page.url.origin}${$page.url.pathname}`;
   $: ogImageUrl = `${$page.url.origin}${OG_IMAGE_PATH}`;
 </script>
@@ -189,11 +230,11 @@
   <title>{documentTitle}</title>
   <link rel="icon" href={faviconHref} />
   <link rel="canonical" href={canonicalUrl} />
-  <meta name="description" content={SITE_DESCRIPTION} />
+  <meta name="description" content={pageDescription} />
   <meta property="og:type" content="website" />
   <meta property="og:site_name" content={SITE_NAME} />
   <meta property="og:title" content={documentTitle} />
-  <meta property="og:description" content={SITE_DESCRIPTION} />
+  <meta property="og:description" content={pageDescription} />
   <meta property="og:url" content={$page.url.href} />
   <meta property="og:image" content={ogImageUrl} />
 </svelte:head>
