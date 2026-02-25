@@ -9,6 +9,7 @@ pnpm dev              # Development server (Vite/SvelteKit)
 pnpm build            # Production build
 pnpm start            # Preview built app locally
 pnpm check            # Run lint, svelte-check, knip, format, and TypeScript checks
+pnpm typecheck        # Run tsgo --noEmit (TypeScript Go)
 pnpm lint             # Run Oxlint only
 pnpm svelte:check     # Run svelte-check only
 pnpm knip             # Run knip unused code/deps checks

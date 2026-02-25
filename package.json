@@ -14,7 +14,8 @@
     "knip": "knip",
     "format": "pnpm exec oxfmt .",
     "format:check": "pnpm exec oxfmt . --check",
-    "check": "pnpm lint && pnpm svelte:check && pnpm knip && pnpm format && pnpm exec tsc --noEmit",
+    "typecheck": "pnpm exec tsgo --noEmit",
+    "check": "pnpm lint && pnpm svelte:check && pnpm knip && pnpm format && pnpm typecheck",
     "backfill": "curl -X POST \"$SITE_URL/api/cron/backfill-produce\" -H \"Authorization: Bearer $CRON_SECRET\""
   },
   "dependencies": {
@@ -45,6 +46,7 @@
     "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^20",
     "@types/web-push": "^3.6.4",
+    "@typescript/native-preview": "7.0.0-dev.20260225.1",
     "knip": "^5.83.1",
     "oxfmt": "^0.31.0",
     "oxlint": "^1.46.0",
