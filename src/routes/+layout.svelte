@@ -61,6 +61,7 @@
   let websiteJsonLd = '';
   let organizationJsonLd = '';
   let isPwaInstallReady = false;
+  let pwaInstallElement: (HTMLElement & { showDialog?: () => void }) | null = null;
 
   function serializeJsonLd(payload: unknown): string {
     return JSON.stringify(payload).replaceAll('<', '\\u003c');
@@ -221,8 +222,15 @@
     dispatchState();
     void hydrateNavState();
 
+    const showPwaInstallDialog = () => {
+      pwaInstallElement?.showDialog?.();
+    };
+
+    window.addEventListener('pwa-install:show', showPwaInstallDialog);
+
     return () => {
       window.removeEventListener('sticky-visibility', stickyVisibilityHandler as EventListener);
+      window.removeEventListener('pwa-install:show', showPwaInstallDialog);
     };
   });
 
@@ -281,6 +289,7 @@
 
 {#if isPwaInstallReady}
   <pwa-install
+    bind:this={pwaInstallElement}
     use-local-storage
     manifest-url="/manifest.json"
     install-description="Add foodcoop.news to your home screen."

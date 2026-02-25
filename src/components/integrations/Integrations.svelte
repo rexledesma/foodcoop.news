@@ -192,6 +192,10 @@
     }
   }
 
+  function openInstallPrompt() {
+    window.dispatchEvent(new CustomEvent('pwa-install:show'));
+  }
+
   onMount(() => {
     applyState(initialState);
 
@@ -371,6 +375,31 @@
       </form>
 
       <section class="mt-10">
+        <h2 class="text-lg font-semibold text-zinc-900">App</h2>
+        <p class="mt-2 text-sm text-zinc-600">
+          Install foodcoop.news for quick access from your home screen.
+        </p>
+
+        <div class="mt-6 rounded-xl border border-zinc-200 bg-white p-4">
+          <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h3 class="text-base font-semibold text-zinc-900">Add to Home Screen</h3>
+              <p class="mt-1 text-sm text-zinc-600">
+                Re-open the install prompt if you previously dismissed it.
+              </p>
+            </div>
+            <button
+              type="button"
+              onclick={openInstallPrompt}
+              class="rounded-xl bg-green-600 px-4 py-2 font-medium text-white transition-colors hover:bg-green-700"
+            >
+              Install app
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <section class="mt-10">
         <h2 class="text-lg font-semibold text-zinc-900">Calendar</h2>
         <p class="mt-2 text-sm text-zinc-600">
           Link your account to your calendar to view your prospective shifts.
@@ -509,6 +538,7 @@
           </div>
         </section>
       {/if}
+
     {/if}
   </div>
 
