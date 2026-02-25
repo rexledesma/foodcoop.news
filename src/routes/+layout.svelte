@@ -16,6 +16,7 @@
   const SITE_NAME = 'foodcoop.news';
   const SITE_DESCRIPTION = 'Stay in the loop with the Park Slope Food Coop.';
   const OG_IMAGE_PATH = '/og.png';
+  const NEW_ARRIVALS_AMBER = 'rgb(255,246,220)';
 
   const channel = `nav-${Math.random().toString(36).slice(2)}`;
   const initialPathname = typeof window === 'undefined' ? '/' : window.location.pathname;
@@ -283,5 +284,6 @@
     use-local-storage
     manifest-url="/manifest.json"
     install-description="Add foodcoop.news to your home screen."
+    styles={JSON.stringify({ '--tint-color': NEW_ARRIVALS_AMBER })}
   ></pwa-install>
 {/if}
