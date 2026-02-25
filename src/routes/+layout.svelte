@@ -13,9 +13,6 @@
     setStickyVisibilityRoute,
   } from '@/lib/sticky-visibility';
 
-  const faviconHref = `data:image/svg+xml,${encodeURIComponent(
-    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y="0.9em" font-size="90">📰</text></svg>',
-  )}`;
   const SITE_NAME = 'foodcoop.news';
   const SITE_DESCRIPTION = 'Stay in the loop with the Park Slope Food Coop.';
   const OG_IMAGE_PATH = '/og.png';
@@ -249,7 +246,12 @@
 
 <svelte:head>
   <title>{documentTitle}</title>
-  <link rel="icon" href={faviconHref} />
+  <link rel="icon" href="/favicon.ico" sizes="any" />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
+  <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+  <link rel="manifest" href="/manifest.json" />
   <link rel="canonical" href={canonicalUrl} />
   <link rel="alternate" hreflang="en" href={canonicalUrl} />
   <meta name="description" content={pageDescription} />
