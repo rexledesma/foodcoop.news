@@ -17,7 +17,7 @@
   const SITE_DESCRIPTION = 'Stay in the loop with the Park Slope Food Coop.';
   const OG_IMAGE_PATH = '/og.png';
   const NEW_ARRIVALS_AMBER = 'rgb(255,246,220)';
-  const PWA_INTERACTION_THRESHOLD = 2;
+  const PWA_INTERACTION_THRESHOLD = 3;
 
   const channel = `nav-${Math.random().toString(36).slice(2)}`;
   const initialPathname = typeof window === 'undefined' ? '/' : window.location.pathname;
@@ -234,6 +234,7 @@
       (window.navigator as Navigator & { standalone?: boolean }).standalone === true;
 
     let interactionCount = 0;
+    let hasCountedScrollInteraction = false;
 
     const showPwaInstallDialog = () => {
       if (isStandaloneMode()) return;
@@ -244,8 +245,13 @@
       hasPendingPwaDialog = true;
     };
 
-    const handleInteraction = () => {
+    const handleInteraction = (event: Event) => {
       if (hasAutoShownPwaInstall) return;
+      if (event.type === 'scroll') {
+        if (hasCountedScrollInteraction) return;
+        hasCountedScrollInteraction = true;
+        window.removeEventListener('scroll', handleInteraction);
+      }
       interactionCount += 1;
       if (interactionCount < PWA_INTERACTION_THRESHOLD) return;
       hasAutoShownPwaInstall = true;
