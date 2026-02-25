@@ -131,7 +131,7 @@ function createGenericObject(params: {
     appLinkData: {
       uri: {
         uri: 'https://foodcoop.news',
-        description: 'foodcoop.news',
+        description: 'Park Slope Food Coop News',
       },
     },
     wideLogo: {

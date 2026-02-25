@@ -13,7 +13,7 @@
     setStickyVisibilityRoute,
   } from '@/lib/sticky-visibility';
 
-  const SITE_NAME = 'foodcoop.news';
+  const SITE_NAME = 'Park Slope Food Coop News';
   const SITE_DESCRIPTION = 'Stay in the loop with the Park Slope Food Coop.';
   const OG_IMAGE_PATH = '/og.png';
   const NEW_ARRIVALS_AMBER = 'rgb(255,246,220)';
