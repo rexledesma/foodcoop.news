@@ -18,6 +18,9 @@
   const OG_IMAGE_PATH = '/og.png';
   const NEW_ARRIVALS_AMBER = 'rgb(255,246,220)';
   const PWA_INTERACTION_THRESHOLD = 3;
+  const PWA_DISMISSED_STORAGE_KEY = 'foodcoop:pwa-install-dismissed';
+  const PWA_INSTALL_DESCRIPTION =
+    'This site has app functionality. Install foodcoop.news on your device for easy access.';
 
   const channel = `nav-${Math.random().toString(36).slice(2)}`;
   const initialPathname = typeof window === 'undefined' ? '/' : window.location.pathname;
@@ -65,6 +68,7 @@
   let pwaInstallElement: (HTMLElement & { showDialog?: () => void }) | null = null;
   let hasAutoShownPwaInstall = false;
   let hasPendingPwaDialog = false;
+  let hasDismissedPwaInstall = false;
 
   function serializeJsonLd(payload: unknown): string {
     return JSON.stringify(payload).replaceAll('<', '\\u003c');
@@ -205,9 +209,11 @@
   }
 
   onMount(() => {
+    hasDismissedPwaInstall = localStorage.getItem(PWA_DISMISSED_STORAGE_KEY) === 'true';
+
     void import('@khmyznikov/pwa-install').then(() => {
       isPwaInstallReady = true;
-      if (hasPendingPwaDialog) {
+      if (hasPendingPwaDialog && !hasDismissedPwaInstall) {
         hasPendingPwaDialog = false;
         pwaInstallElement?.showDialog?.();
       }
@@ -238,6 +244,7 @@
 
     const showPwaInstallDialog = () => {
       if (isStandaloneMode()) return;
+      if (hasDismissedPwaInstall) return;
       if (pwaInstallElement?.showDialog) {
         pwaInstallElement.showDialog();
         return;
@@ -274,6 +281,14 @@
       window.removeEventListener('pwa-install:show', showPwaInstallDialog);
     };
   });
+
+  function handlePwaUserChoiceResult(event: Event) {
+    if (!(event instanceof CustomEvent)) return;
+    if (event.detail?.message !== 'dismissed') return;
+
+    hasDismissedPwaInstall = true;
+    localStorage.setItem(PWA_DISMISSED_STORAGE_KEY, 'true');
+  }
 
   $: if (typeof window !== 'undefined') {
     setStickyVisibilityRoute($page.url.pathname);
@@ -331,10 +346,11 @@
 {#if isPwaInstallReady}
   <pwa-install
     bind:this={pwaInstallElement}
+    on:pwa-user-choice-result-event={handlePwaUserChoiceResult}
+    install-description={PWA_INSTALL_DESCRIPTION}
     manual-apple
     manual-chrome
     use-local-storage
-    disable-install-description
     manifest-url="/manifest.json"
     styles={JSON.stringify({ '--tint-color': NEW_ARRIVALS_AMBER })}
   ></pwa-install>
