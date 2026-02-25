@@ -59,6 +59,7 @@
   let siteOrigin = '';
   let websiteJsonLd = '';
   let organizationJsonLd = '';
+  let isPwaInstallReady = false;
 
   function serializeJsonLd(payload: unknown): string {
     return JSON.stringify(payload).replaceAll('<', '\\u003c');
@@ -199,6 +200,10 @@
   }
 
   onMount(() => {
+    void import('@khmyznikov/pwa-install').then(() => {
+      isPwaInstallReady = true;
+    });
+
     injectAnalytics();
     initStickyVisibility($page.url.pathname);
     void prefetchProduceCache();
@@ -272,3 +277,11 @@
 <div class="pt-24 md:pt-14">
   <slot />
 </div>
+
+{#if isPwaInstallReady}
+  <pwa-install
+    use-local-storage
+    manifest-url="/manifest.json"
+    install-description="Add foodcoop.news to your home screen."
+  ></pwa-install>
+{/if}

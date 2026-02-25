@@ -23,6 +23,7 @@
     "@convex-dev/better-auth": "^0.10.10",
     "@dsnp/parquetjs": "^1.8.7",
     "@duckdb/node-api": "1.4.4-r.1",
+    "@khmyznikov/pwa-install": "^0.6.3",
     "@mmailaender/convex-better-auth-svelte": "^0.5.0",
     "@vercel/analytics": "^1.6.1",
     "better-auth": "^1.4.9",
