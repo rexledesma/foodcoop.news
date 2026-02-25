@@ -385,7 +385,13 @@
         </div>
         <p class="mt-2 text-zinc-700">{article.title}</p>
         {#if article.image}
-          <img src={article.image} alt={`${article.title} cover`} class="mt-3 w-full rounded-lg" />
+          <img
+            src={article.image}
+            alt={`${article.title} cover`}
+            loading="lazy"
+            decoding="async"
+            class="mt-3 w-full rounded-lg"
+          />
         {/if}
       </div>
     </div>
@@ -411,7 +417,13 @@
           <p class="mt-1 line-clamp-3 text-sm text-zinc-500">{article.description}</p>
         {/if}
         {#if article.image}
-          <img src={article.image} alt={`${article.title} cover`} class="mt-3 w-full rounded-lg" />
+          <img
+            src={article.image}
+            alt={`${article.title} cover`}
+            loading="lazy"
+            decoding="async"
+            class="mt-3 w-full rounded-lg"
+          />
         {/if}
       </div>
     </div>
@@ -437,7 +449,13 @@
           <p class="mt-1 line-clamp-3 text-sm text-zinc-500">{article.description}</p>
         {/if}
         {#if article.image}
-          <img src={article.image} alt={`${article.title} cover`} class="mt-3 w-full rounded-lg" />
+          <img
+            src={article.image}
+            alt={`${article.title} cover`}
+            loading="lazy"
+            decoding="async"
+            class="mt-3 w-full rounded-lg"
+          />
         {/if}
       </div>
     </div>
@@ -480,7 +498,13 @@
           <p class="mt-2 text-sm text-zinc-500">{[event.venueName, event.venueAddress].filter(Boolean).join(' • ')}</p>
         {/if}
         {#if event.image}
-          <img src={event.image} alt={`Poster for ${event.title}`} class="mt-3 w-full rounded-lg" />
+          <img
+            src={event.image}
+            alt={`Poster for ${event.title}`}
+            loading="lazy"
+            decoding="async"
+            class="mt-3 w-full rounded-lg"
+          />
         {/if}
       </div>
     </div>
@@ -513,7 +537,13 @@
       <div class="mb-3 border-b border-zinc-200 pb-3">
         <div class="flex items-start gap-3">
           {#if post.parent.author.avatar}
-            <img src={post.parent.author.avatar} alt={post.parent.author.displayName} class="h-10 w-10 shrink-0 rounded-full" />
+            <img
+              src={post.parent.author.avatar}
+              alt={post.parent.author.displayName}
+              loading="lazy"
+              decoding="async"
+              class="h-10 w-10 shrink-0 rounded-full"
+            />
           {/if}
           <div class="min-w-0 flex-1">
             <div class="flex items-center gap-2">
@@ -528,7 +558,13 @@
 
     <div class="flex items-start gap-3">
       {#if post.author.avatar}
-        <img src={post.author.avatar} alt={post.author.displayName} class="h-10 w-10 shrink-0 rounded-full" />
+        <img
+          src={post.author.avatar}
+          alt={post.author.displayName}
+          loading="lazy"
+          decoding="async"
+          class="h-10 w-10 shrink-0 rounded-full"
+        />
       {/if}
       <div class="min-w-0 flex-1">
         <div class="flex flex-wrap items-center gap-2">
@@ -545,7 +581,13 @@
         {#if post.images && post.images.length > 0}
           <div class="mt-3 grid grid-cols-2 gap-2">
             {#each post.images as img, idx (`${img.fullsize}-${idx}`)}
-              <img src={img.fullsize} alt={img.alt || 'Post media'} class="w-full rounded-lg" />
+              <img
+                src={img.thumb || img.fullsize}
+                alt={img.alt || 'Post media'}
+                loading="lazy"
+                decoding="async"
+                class="w-full rounded-lg"
+              />
             {/each}
           </div>
         {/if}
@@ -557,6 +599,8 @@
                 <img
                   src={post.quotedPost.author.avatar}
                   alt={post.quotedPost.author.displayName}
+                  loading="lazy"
+                  decoding="async"
                   class="h-5 w-5 rounded-full"
                 />
               {/if}
@@ -569,7 +613,13 @@
             {#if post.quotedPost.images && post.quotedPost.images.length > 0}
               <div class="mt-2 grid grid-cols-2 gap-2">
                 {#each post.quotedPost.images as img, idx (`${img.fullsize}-${idx}`)}
-                  <img src={img.fullsize} alt={img.alt || 'Quoted post media'} class="w-full rounded-lg" />
+                  <img
+                    src={img.thumb || img.fullsize}
+                    alt={img.alt || 'Quoted post media'}
+                    loading="lazy"
+                    decoding="async"
+                    class="w-full rounded-lg"
+                  />
                 {/each}
               </div>
             {/if}
