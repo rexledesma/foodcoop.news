@@ -580,9 +580,9 @@
 
         {#if post.images && post.images.length > 0}
           <div class="mt-3 grid grid-cols-2 gap-2">
-            {#each post.images as img, idx (`${img.fullsize}-${idx}`)}
+            {#each post.images as img, idx (`${img.thumb}-${idx}`)}
               <img
-                src={img.thumb || img.fullsize}
+                src={img.thumb}
                 alt={img.alt || 'Post media'}
                 loading="lazy"
                 decoding="async"
@@ -612,9 +612,9 @@
             {/if}
             {#if post.quotedPost.images && post.quotedPost.images.length > 0}
               <div class="mt-2 grid grid-cols-2 gap-2">
-                {#each post.quotedPost.images as img, idx (`${img.fullsize}-${idx}`)}
+                {#each post.quotedPost.images as img, idx (`${img.thumb}-${idx}`)}
                   <img
-                    src={img.thumb || img.fullsize}
+                    src={img.thumb}
                     alt={img.alt || 'Quoted post media'}
                     loading="lazy"
                     decoding="async"
