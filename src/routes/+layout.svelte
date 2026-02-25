@@ -17,6 +17,7 @@
   const SITE_DESCRIPTION = 'Stay in the loop with the Park Slope Food Coop.';
   const OG_IMAGE_PATH = '/og.png';
   const NEW_ARRIVALS_AMBER = 'rgb(255,246,220)';
+  const PWA_INTERACTION_THRESHOLD = 2;
 
   const channel = `nav-${Math.random().toString(36).slice(2)}`;
   const initialPathname = typeof window === 'undefined' ? '/' : window.location.pathname;
@@ -62,6 +63,8 @@
   let organizationJsonLd = '';
   let isPwaInstallReady = false;
   let pwaInstallElement: (HTMLElement & { showDialog?: () => void }) | null = null;
+  let hasAutoShownPwaInstall = false;
+  let hasPendingPwaDialog = false;
 
   function serializeJsonLd(payload: unknown): string {
     return JSON.stringify(payload).replaceAll('<', '\\u003c');
@@ -204,6 +207,10 @@
   onMount(() => {
     void import('@khmyznikov/pwa-install').then(() => {
       isPwaInstallReady = true;
+      if (hasPendingPwaDialog) {
+        hasPendingPwaDialog = false;
+        pwaInstallElement?.showDialog?.();
+      }
     });
 
     injectAnalytics();
@@ -222,14 +229,42 @@
     dispatchState();
     void hydrateNavState();
 
+    const isStandaloneMode = () =>
+      window.matchMedia('(display-mode: standalone)').matches ||
+      (window.navigator as Navigator & { standalone?: boolean }).standalone === true;
+
+    let interactionCount = 0;
+
     const showPwaInstallDialog = () => {
-      pwaInstallElement?.showDialog?.();
+      if (isStandaloneMode()) return;
+      if (pwaInstallElement?.showDialog) {
+        pwaInstallElement.showDialog();
+        return;
+      }
+      hasPendingPwaDialog = true;
     };
 
+    const handleInteraction = () => {
+      if (hasAutoShownPwaInstall) return;
+      interactionCount += 1;
+      if (interactionCount < PWA_INTERACTION_THRESHOLD) return;
+      hasAutoShownPwaInstall = true;
+      showPwaInstallDialog();
+      window.removeEventListener('pointerdown', handleInteraction);
+      window.removeEventListener('keydown', handleInteraction);
+      window.removeEventListener('scroll', handleInteraction);
+    };
+
+    window.addEventListener('pointerdown', handleInteraction);
+    window.addEventListener('keydown', handleInteraction);
+    window.addEventListener('scroll', handleInteraction, { passive: true });
     window.addEventListener('pwa-install:show', showPwaInstallDialog);
 
     return () => {
       window.removeEventListener('sticky-visibility', stickyVisibilityHandler as EventListener);
+      window.removeEventListener('pointerdown', handleInteraction);
+      window.removeEventListener('keydown', handleInteraction);
+      window.removeEventListener('scroll', handleInteraction);
       window.removeEventListener('pwa-install:show', showPwaInstallDialog);
     };
   });
@@ -290,6 +325,8 @@
 {#if isPwaInstallReady}
   <pwa-install
     bind:this={pwaInstallElement}
+    manual-apple
+    manual-chrome
     use-local-storage
     manifest-url="/manifest.json"
     install-description="Add foodcoop.news to your home screen."
