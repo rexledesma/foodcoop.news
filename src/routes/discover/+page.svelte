@@ -4,8 +4,10 @@
   import type { FeedItem } from '@/lib/discover-feed';
   import { getFeedItemKey } from '@/lib/discover-feed';
   import { getCurrentStickyVisibility } from '@/lib/sticky-visibility';
+  import type { PageData } from './$types';
 
   const channel = `discover-${Math.random().toString(36).slice(2)}`;
+  let { data }: { data: PageData } = $props();
 
   type SerializedFeedItem = Omit<FeedItem, 'date'> & { date: string };
 
@@ -16,6 +18,8 @@
     isPartial?: boolean;
     pendingSources?: number;
   };
+  type DiscoverJsonLdNews = PageData['latestNews'][number];
+  type DiscoverJsonLdEvent = PageData['upcomingEvents'][number];
 
   const FEED_SOURCE_GROUPS = [
     ['bluesky'],
@@ -39,6 +43,62 @@
   };
 
   const initialState = state;
+
+  function serializeJsonLd(payload: unknown): string {
+    return JSON.stringify(payload).replaceAll('<', '\\u003c');
+  }
+
+  function buildEventItemList(listName: string, events: DiscoverJsonLdEvent[]) {
+    return {
+      '@context': 'https://schema.org',
+      '@type': 'ItemList',
+      name: listName,
+      numberOfItems: events.length,
+      itemListElement: events.map((event, index) => {
+        const location =
+          event.venueName || event.venueAddress
+            ? {
+                '@type': 'Place',
+                ...(event.venueName ? { name: event.venueName } : {}),
+                ...(event.venueAddress ? { address: event.venueAddress } : {}),
+              }
+            : undefined;
+
+        return {
+          '@type': 'ListItem',
+          position: index + 1,
+          item: {
+            '@type': 'Event',
+            name: event.title,
+            startDate: event.startUtc,
+            url: event.url,
+            ...(event.description ? { description: event.description } : {}),
+            ...(location ? { location } : {}),
+          },
+        };
+      }),
+    };
+  }
+
+  function buildNewsItemList(listName: string, newsItems: DiscoverJsonLdNews[]) {
+    return {
+      '@context': 'https://schema.org',
+      '@type': 'ItemList',
+      name: listName,
+      numberOfItems: newsItems.length,
+      itemListElement: newsItems.map((newsItem, index) => ({
+        '@type': 'ListItem',
+        position: index + 1,
+        item: {
+          '@type': 'NewsArticle',
+          headline: newsItem.title,
+          datePublished: newsItem.publishedAt,
+          url: newsItem.url,
+          ...(newsItem.description ? { description: newsItem.description } : {}),
+        },
+      })),
+    };
+  }
 
   function readFavoritesSnapshot() {
     const local = localStorage.getItem('produce-favorites');
@@ -200,6 +260,20 @@
       window.removeEventListener('storage', syncFavorites);
     };
   });
+
+  const latestEventsJsonLd = $derived(
+    serializeJsonLd(buildNewsItemList('Latest Coop News', data.latestNews)),
+  );
+  const upcomingEventsJsonLd = $derived(
+    serializeJsonLd(buildEventItemList('Upcoming Coop Events', data.upcomingEvents)),
+  );
 </script>
+
+<svelte:head>
+  <svelte:element this={'script'} type="application/ld+json">{latestEventsJsonLd}</svelte:element>
+  <svelte:element this={'script'} type="application/ld+json">
+    {upcomingEventsJsonLd}
+  </svelte:element>
+</svelte:head>
 
 <DiscoverFeed {channel} {initialState} />

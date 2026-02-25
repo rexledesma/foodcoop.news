@@ -4,6 +4,7 @@
   import { loadProduceData } from '@/lib/produce-data-api-loader';
   import ProduceAnalytics from '@/components/produce/ProduceAnalytics.svelte';
   import { getCurrentStickyVisibility } from '@/lib/sticky-visibility';
+  import type { PageData } from './$types';
   import type {
     ProduceDateRange,
     ProduceHistoryMap,
@@ -20,6 +21,7 @@
   ]);
 
   const channel = `produce-${Math.random().toString(36).slice(2)}`;
+  let { data }: { data: PageData } = $props();
   const periodRefreshAt = new Map<ProduceSWRPeriod, number>();
   let isFetching = false;
   let isSyncingFavorites = false;
@@ -124,6 +126,33 @@
   };
 
   const initialState = state;
+
+  function serializeJsonLd(payload: unknown): string {
+    return JSON.stringify(payload).replaceAll('<', '\\u003c');
+  }
+
+  function buildProduceItemList(
+    listName: string,
+    items: PageData['newArrivals'],
+    changeLabel: 'available' | 'unavailable',
+  ) {
+    return {
+      '@context': 'https://schema.org',
+      '@type': 'ItemList',
+      name: listName,
+      numberOfItems: items.length,
+      itemListElement: items.map((item, index) => ({
+        '@type': 'ListItem',
+        position: index + 1,
+        item: {
+          '@type': 'Thing',
+          name: item.name,
+          url: item.url,
+          description: `First seen ${changeLabel} on ${item.date}`,
+        },
+      })),
+    };
+  }
 
   function dispatchState() {
     window.dispatchEvent(
@@ -246,6 +275,18 @@
       window.removeEventListener('sticky-visibility', stickyVisibilityHandler as EventListener);
     };
   });
+
+  const newArrivalsJsonLd = $derived(
+    serializeJsonLd(buildProduceItemList('Produce New Arrivals', data.newArrivals, 'available')),
+  );
+  const outOfStockJsonLd = $derived(
+    serializeJsonLd(buildProduceItemList('Produce Out of Stock', data.outOfStock, 'unavailable')),
+  );
 </script>
+
+<svelte:head>
+  <svelte:element this={'script'} type="application/ld+json">{newArrivalsJsonLd}</svelte:element>
+  <svelte:element this={'script'} type="application/ld+json">{outOfStockJsonLd}</svelte:element>
+</svelte:head>
 
 <ProduceAnalytics {channel} {initialState} />

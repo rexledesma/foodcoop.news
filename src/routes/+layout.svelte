@@ -59,6 +59,13 @@
   let pageDescription = SITE_DESCRIPTION;
   let canonicalUrl = '';
   let ogImageUrl = '';
+  let siteOrigin = '';
+  let websiteJsonLd = '';
+  let organizationJsonLd = '';
+
+  function serializeJsonLd(payload: unknown): string {
+    return JSON.stringify(payload).replaceAll('<', '\\u003c');
+  }
 
   function dispatchState() {
     if (typeof window === 'undefined') return;
@@ -224,6 +231,20 @@
   $: pageDescription = computePageDescription($page.url.pathname, $page.url.searchParams);
   $: canonicalUrl = `${$page.url.origin}${$page.url.pathname}`;
   $: ogImageUrl = `${$page.url.origin}${OG_IMAGE_PATH}`;
+  $: siteOrigin = $page.url.origin;
+  $: websiteJsonLd = serializeJsonLd({
+    '@context': 'https://schema.org',
+    '@type': 'WebSite',
+    name: SITE_NAME,
+    url: siteOrigin,
+  });
+  $: organizationJsonLd = serializeJsonLd({
+    '@context': 'https://schema.org',
+    '@type': 'Organization',
+    name: SITE_NAME,
+    url: siteOrigin,
+    logo: `${siteOrigin}${OG_IMAGE_PATH}`,
+  });
 </script>
 
 <svelte:head>
@@ -238,6 +259,10 @@
   <meta property="og:description" content={pageDescription} />
   <meta property="og:url" content={$page.url.href} />
   <meta property="og:image" content={ogImageUrl} />
+  <svelte:element this={'script'} type="application/ld+json">{websiteJsonLd}</svelte:element>
+  <svelte:element this={'script'} type="application/ld+json">
+    {organizationJsonLd}
+  </svelte:element>
 </svelte:head>
 
 <Navigation {channel} {initialState} />
