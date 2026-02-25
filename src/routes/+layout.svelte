@@ -328,8 +328,8 @@
     manual-apple
     manual-chrome
     use-local-storage
+    disable-install-description
     manifest-url="/manifest.json"
-    install-description="Add foodcoop.news to your home screen."
     styles={JSON.stringify({ '--tint-color': NEW_ARRIVALS_AMBER })}
   ></pwa-install>
 {/if}
