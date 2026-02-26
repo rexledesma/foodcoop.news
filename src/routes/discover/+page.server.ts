@@ -38,6 +38,12 @@ type FeedResponse = {
   items?: SerializedFeedItem[];
 };
 
+function isGooglebotUserAgent(userAgent: string): boolean {
+  const value = userAgent.toLowerCase();
+  if (!value) return false;
+  return value.includes('googlebot');
+}
+
 function isEventType(value: string): boolean {
   return EVENT_ITEM_TYPES.has(value);
 }
@@ -155,7 +161,15 @@ function sortNewsByDateDesc(a: DiscoverNewsItem, b: DiscoverNewsItem): number {
   return new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime();
 }
 
-export const load: PageServerLoad = async ({ fetch, url }) => {
+export const load: PageServerLoad = async ({ fetch, request, url }) => {
+  const userAgent = request.headers.get('user-agent') ?? '';
+  if (!isGooglebotUserAgent(userAgent)) {
+    return {
+      latestNews: [] as DiscoverNewsItem[],
+      upcomingEvents: [] as DiscoverEventItem[],
+    };
+  }
+
   try {
     const eventParams = new URLSearchParams();
     eventParams.set('sources', DISCOVER_EVENT_SOURCES);
