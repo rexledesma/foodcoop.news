@@ -11,6 +11,12 @@ type ProduceUpdatesResponse = {
   events?: ProduceEvent[];
 };
 
+function isGooglebotUserAgent(userAgent: string): boolean {
+  const value = userAgent.toLowerCase();
+  if (!value) return false;
+  return value.includes('googlebot');
+}
+
 function toProduceItemUrl(origin: string, date: string, produceName: string): string {
   const baseUrl = new URL('/produce', origin);
   baseUrl.searchParams.set('date', date);
@@ -23,7 +29,15 @@ function sortProduceItems(a: ProduceJsonLdItem, b: ProduceJsonLdItem): number {
   return a.name.localeCompare(b.name);
 }
 
-export const load: PageServerLoad = async ({ fetch, url }) => {
+export const load: PageServerLoad = async ({ fetch, request, url }) => {
+  const userAgent = request.headers.get('user-agent') ?? '';
+  if (!isGooglebotUserAgent(userAgent)) {
+    return {
+      newArrivals: [] as ProduceJsonLdItem[],
+      outOfStock: [] as ProduceJsonLdItem[],
+    };
+  }
+
   try {
     const response = await fetch('/api/produce/updates');
     if (!response.ok) {
