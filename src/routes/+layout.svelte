@@ -21,6 +21,7 @@
   const PWA_DISMISSED_STORAGE_KEY = 'foodcoop:pwa-install-dismissed';
   const PWA_INSTALL_DESCRIPTION =
     'This site has app functionality. Install foodcoop.news on your device for easy access.';
+  const DOUBLE_TAP_DELAY_MS = 350;
 
   const channel = `nav-${Math.random().toString(36).slice(2)}`;
   const initialPathname = typeof window === 'undefined' ? '/' : window.location.pathname;
@@ -273,12 +274,30 @@
     window.addEventListener('scroll', handleInteraction, { passive: true });
     window.addEventListener('pwa-install:show', showPwaInstallDialog);
 
+    let lastTouchEndAt = 0;
+    const preventDoubleTapZoom = (event: TouchEvent) => {
+      if (event.touches.length > 0) return;
+      const now = Date.now();
+      if (now - lastTouchEndAt <= DOUBLE_TAP_DELAY_MS) {
+        event.preventDefault();
+      }
+      lastTouchEndAt = now;
+    };
+    const preventDoubleClickZoom = (event: MouseEvent) => {
+      event.preventDefault();
+    };
+
+    document.addEventListener('touchend', preventDoubleTapZoom, { passive: false });
+    document.addEventListener('dblclick', preventDoubleClickZoom);
+
     return () => {
       window.removeEventListener('sticky-visibility', stickyVisibilityHandler as EventListener);
       window.removeEventListener('pointerdown', handleInteraction);
       window.removeEventListener('keydown', handleInteraction);
       window.removeEventListener('scroll', handleInteraction);
       window.removeEventListener('pwa-install:show', showPwaInstallDialog);
+      document.removeEventListener('touchend', preventDoubleTapZoom);
+      document.removeEventListener('dblclick', preventDoubleClickZoom);
     };
   });
 
