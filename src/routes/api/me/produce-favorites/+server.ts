@@ -5,8 +5,9 @@ import {
 } from '@/lib/auth';
 import { api } from '../../../../../convex/_generated/api';
 
-type ToggleFavoriteBody = {
+type SetFavoriteBody = {
   itemName?: string;
+  favorited?: boolean;
 };
 
 function isNotAuthenticated(error: unknown): boolean {
@@ -31,15 +32,19 @@ export async function GET({ request }: { request: Request }) {
   }
 }
 
-export async function POST({ request }: { request: Request }) {
+export async function PUT({ request }: { request: Request }) {
   try {
-    const body = (await request.json()) as ToggleFavoriteBody;
+    const body = (await request.json()) as SetFavoriteBody;
     if (!body.itemName?.trim()) {
       return Response.json({ error: 'itemName is required' }, { status: 400 });
     }
+    if (typeof body.favorited !== 'boolean') {
+      return Response.json({ error: 'favorited must be a boolean' }, { status: 400 });
+    }
 
-    await fetchAuthMutationFromHeaders(request.headers, api.produceFavorites.toggleFavorite, {
+    await fetchAuthMutationFromHeaders(request.headers, api.produceFavorites.setFavorite, {
       itemName: body.itemName.trim(),
+      favorited: body.favorited,
     });
 
     const favorites = await fetchAuthQueryFromHeaders(
@@ -52,7 +57,7 @@ export async function POST({ request }: { request: Request }) {
     if (isNotAuthenticated(error)) {
       return Response.json({ error: 'Not authenticated' }, { status: 401 });
     }
-    console.error('Failed to toggle produce favorite:', error);
-    return Response.json({ error: 'Failed to toggle produce favorite' }, { status: 500 });
+    console.error('Failed to set produce favorite:', error);
+    return Response.json({ error: 'Failed to set produce favorite' }, { status: 500 });
   }
 }

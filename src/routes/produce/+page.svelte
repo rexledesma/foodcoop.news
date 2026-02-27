@@ -40,6 +40,7 @@
   function writeFavorites(favorites: string[]) {
     try {
       const snapshot = JSON.stringify(favorites);
+      if (snapshot === state.favoritesSnapshot) return;
       localStorage.setItem('produce-favorites', snapshot);
       localStorage.setItem('produce-favorites-cache', snapshot);
       state = { ...state, favoritesSnapshot: snapshot };
@@ -81,25 +82,23 @@
         }
       })(),
     );
-    if (current.has(name)) {
-      current.delete(name);
-    } else {
+    const nextFavorited = !current.has(name);
+    if (nextFavorited) {
       current.add(name);
+    } else {
+      current.delete(name);
     }
     writeFavorites(Array.from(current));
 
     try {
       const response = await fetch('/api/me/produce-favorites', {
-        method: 'POST',
+        method: 'PUT',
         headers: {
           'content-type': 'application/json',
         },
-        body: JSON.stringify({ itemName: name }),
+        body: JSON.stringify({ itemName: name, favorited: nextFavorited }),
       });
       if (!response.ok) return;
-      const data = (await response.json()) as { favorites?: string[] };
-      if (!Array.isArray(data.favorites)) return;
-      writeFavorites(data.favorites);
     } catch {
       // Ignore server failures and keep local state.
     }

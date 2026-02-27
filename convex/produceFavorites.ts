@@ -2,9 +2,10 @@ import { v } from 'convex/values';
 import { mutation, query } from './_generated/server';
 import { authComponent } from './auth';
 
-export const toggleFavorite = mutation({
+export const setFavorite = mutation({
   args: {
     itemName: v.string(),
+    favorited: v.boolean(),
   },
   handler: async (ctx, args) => {
     const user = await authComponent.getAuthUser(ctx);
@@ -19,17 +20,24 @@ export const toggleFavorite = mutation({
       )
       .first();
 
+    if (args.favorited) {
+      if (existing) {
+        return { favorited: true };
+      }
+      await ctx.db.insert('produceFavorites', {
+        userId: user._id,
+        itemName: args.itemName,
+        createdAt: Date.now(),
+      });
+      return { favorited: true };
+    }
+
     if (existing) {
       await ctx.db.delete(existing._id);
       return { favorited: false };
     }
 
-    await ctx.db.insert('produceFavorites', {
-      userId: user._id,
-      itemName: args.itemName,
-      createdAt: Date.now(),
-    });
-    return { favorited: true };
+    return { favorited: false };
   },
 });
 
