@@ -46,6 +46,25 @@
     data: LinkPreviewData | null;
     pinned: boolean;
   };
+  type FavoriteBurst = {
+    id: number;
+    x: number;
+    y: number;
+    emoji: '⭐' | '💔';
+    xMid: number;
+    yMid: number;
+    xEnd: number;
+    yEnd: number;
+    rotateStart: number;
+    rotateEnd: number;
+    durationMs: number;
+  };
+  type RowTapState = {
+    rowName: string;
+    time: number;
+    x: number;
+    y: number;
+  };
 
   type ProduceAnalyticsClientState = {
     data: ProduceRow[];
@@ -101,6 +120,11 @@
   const DATA_COL_CLASS = 'w-1/3 min-w-[33.333%] max-w-[33.333%] md:w-auto md:min-w-0 md:max-w-none';
   const METRIC_VALUE_CLASS = 'w-[7ch] shrink-0 text-right font-mono';
   const MAX_PREVIEW_SCROLL_DRIFT_PX = 180;
+  const DOUBLE_TAP_WINDOW_MS = 320;
+  const DOUBLE_TAP_MAX_DRIFT_PX = 36;
+  const SUPPRESS_DBLCLICK_AFTER_TOUCH_MS = 700;
+  const FAVORITE_BURST_MIN_LIFETIME_MS = 500;
+  const FAVORITE_BURST_MAX_LIFETIME_MS = 1000;
 
   let {
     channel,
@@ -133,6 +157,10 @@
   let linkPreviewAnchorEl = $state<HTMLElement | null>(null);
   let linkPreviewAnchorStartTop = $state<number | null>(null);
   let linkPreviewCardRef = $state<HTMLElement | null>(null);
+  let favoriteBursts = $state<FavoriteBurst[]>([]);
+  let lastRowTap = $state<RowTapState | null>(null);
+  let lastTouchDoubleTapAt = $state(0);
+  let nextFavoriteBurstId = $state(0);
   const linkPreviewCache = new Map<string, LinkPreviewData>();
 
   let search = $state('');
@@ -762,6 +790,100 @@
     toggleFavorite(linkPreview.itemName);
   }
 
+  function randomInRange(min: number, max: number): number {
+    return min + Math.random() * (max - min);
+  }
+
+  function createFavoriteBurstAtRowCenter(rowElement: HTMLTableRowElement, emoji: '⭐' | '💔') {
+    const rect = rowElement.getBoundingClientRect();
+    const angle = randomInRange(210, 330) * (Math.PI / 180);
+    const launchDistance = randomInRange(34, 78);
+    const endDistance = launchDistance + randomInRange(52, 110);
+    const xMid = Math.cos(angle) * launchDistance;
+    const yMid = Math.sin(angle) * launchDistance;
+    const xEnd = Math.cos(angle) * endDistance + randomInRange(-22, 22);
+    const yEnd = Math.abs(yMid) + randomInRange(18, 54);
+    const durationMs = Math.round(
+      randomInRange(FAVORITE_BURST_MIN_LIFETIME_MS, FAVORITE_BURST_MAX_LIFETIME_MS),
+    );
+    const burst = {
+      id: ++nextFavoriteBurstId,
+      x: rect.left + rect.width / 2,
+      y: rect.top + rect.height / 2,
+      emoji,
+      xMid,
+      yMid,
+      xEnd,
+      yEnd,
+      rotateStart: randomInRange(-35, 35),
+      rotateEnd: randomInRange(-220, 220),
+      durationMs,
+    };
+    favoriteBursts = [...favoriteBursts, burst];
+  }
+
+  function removeFavoriteBurst(id: number) {
+    favoriteBursts = favoriteBursts.filter((item) => item.id !== id);
+  }
+
+  function toggleFavoriteWithBurst(rowName: string, rowElement: HTMLTableRowElement) {
+    const wasFavorite = favorites.has(rowName);
+    toggleFavorite(rowName);
+    createFavoriteBurstAtRowCenter(rowElement, wasFavorite ? '💔' : '⭐');
+  }
+
+  function handleRowTouchEnd(event: TouchEvent, rowName: string) {
+    if (event.changedTouches.length !== 1) {
+      lastRowTap = null;
+      return;
+    }
+
+    const touch = event.changedTouches[0];
+    const now = Date.now();
+    const previousTap = lastRowTap;
+
+    if (previousTap && previousTap.rowName === rowName && now - previousTap.time <= DOUBLE_TAP_WINDOW_MS) {
+      const drift = Math.hypot(touch.clientX - previousTap.x, touch.clientY - previousTap.y);
+      if (drift <= DOUBLE_TAP_MAX_DRIFT_PX) {
+        event.preventDefault();
+        const currentTarget = event.currentTarget;
+        if (currentTarget instanceof HTMLTableRowElement) {
+          toggleFavoriteWithBurst(rowName, currentTarget);
+        }
+        lastTouchDoubleTapAt = now;
+        lastRowTap = null;
+        return;
+      }
+    }
+
+    lastRowTap = {
+      rowName,
+      time: now,
+      x: touch.clientX,
+      y: touch.clientY,
+    };
+  }
+
+  function handleRowDoubleClick(event: MouseEvent, rowName: string) {
+    if (Date.now() - lastTouchDoubleTapAt <= SUPPRESS_DBLCLICK_AFTER_TOUCH_MS) {
+      return;
+    }
+
+    const target = event.target;
+    if (!(target instanceof Element)) return;
+    if (
+      target.closest('a, button, input, textarea, select, [role="button"], [data-produce-preview-trigger="true"]')
+    ) {
+      return;
+    }
+
+    event.preventDefault();
+    const currentTarget = event.currentTarget;
+    if (currentTarget instanceof HTMLTableRowElement) {
+      toggleFavoriteWithBurst(rowName, currentTarget);
+    }
+  }
+
   async function handlePreviewShareOrCopy() {
     if (!linkPreview) return;
     const url = `${window.location.origin}${produceItemUrl(linkPreview.itemName)}`;
@@ -924,6 +1046,8 @@
       document.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('scroll', handleViewportChange, true);
       window.removeEventListener('resize', handleViewportChange);
+      favoriteBursts = [];
+      lastRowTap = null;
       hideLinkPreview();
     };
   });
@@ -1281,6 +1405,8 @@
             {@const specialtyUrl = getSpecialtyProduceUrl(row.name)}
             <tr
               class={`group select-none border-b border-zinc-100 ${favorites.has(row.name) ? 'bg-amber-50' : 'hover:bg-zinc-50'}`}
+              ontouchend={(event) => handleRowTouchEnd(event, row.name)}
+              ondblclick={(event) => handleRowDoubleClick(event, row.name)}
             >
               <td
                 class={`${NAME_COL_CLASS} sticky left-0 z-10 box-border border-r border-zinc-200 p-2 md:w-auto md:border-r-0 ${
@@ -1582,4 +1708,53 @@
       {/if}
     </aside>
   {/if}
+
+  <div class="favorite-burst-layer" aria-hidden="true">
+    {#each favoriteBursts as burst (burst.id)}
+      <span
+        class="favorite-burst"
+        style={`left:${burst.x}px;top:${burst.y}px;--burst-x-mid:${burst.xMid}px;--burst-y-mid:${burst.yMid}px;--burst-x-end:${burst.xEnd}px;--burst-y-end:${burst.yEnd}px;--burst-rotate-start:${burst.rotateStart}deg;--burst-rotate-end:${burst.rotateEnd}deg;--burst-duration:${burst.durationMs}ms;`}
+        onanimationend={() => removeFavoriteBurst(burst.id)}
+      >
+        {burst.emoji}
+      </span>
+    {/each}
+  </div>
 </div>
+
+<style>
+  .favorite-burst-layer {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 70;
+  }
+
+  .favorite-burst {
+    position: fixed;
+    transform: translate(-50%, -50%) translate3d(0, 0, 0);
+    font-size: 1.35rem;
+    line-height: 1;
+    filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.24));
+    animation: favoriteBurst var(--burst-duration) cubic-bezier(0.18, 0.74, 0.22, 1) forwards;
+    will-change: transform, opacity;
+  }
+
+  @keyframes favoriteBurst {
+    0% {
+      opacity: 0;
+      transform: translate(-50%, -50%) translate3d(0, 0, 0) rotate(var(--burst-rotate-start))
+        scale(0.42);
+    }
+    22% {
+      opacity: 1;
+      transform: translate(-50%, -50%) translate3d(var(--burst-x-mid), var(--burst-y-mid), 0)
+        rotate(calc(var(--burst-rotate-start) * 0.45)) scale(1.08);
+    }
+    100% {
+      opacity: 0;
+      transform: translate(-50%, -50%) translate3d(var(--burst-x-end), var(--burst-y-end), 0)
+        rotate(var(--burst-rotate-end)) scale(0.78);
+    }
+  }
+</style>
