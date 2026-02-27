@@ -162,6 +162,9 @@
   let lastTouchDoubleTapAt = $state(0);
   let nextFavoriteBurstId = $state(0);
   const linkPreviewCache = new Map<string, LinkPreviewData>();
+  const linkPreviewRequests = new Map<string, Promise<LinkPreviewData>>();
+  const linkPreviewObserverTargets = new Map<HTMLElement, string>();
+  let linkPreviewViewportObserver = $state<IntersectionObserver | null>(null);
 
   let search = $state('');
   let quickFilter = $state<QuickFilter>(null);
@@ -654,20 +657,10 @@
   ) {
     const currentToken = ++linkPreviewRequestToken;
 
-    const cached = linkPreviewCache.get(url);
-    if (cached) {
-      linkPreview = { itemName, url, left, top, loading: false, data: cached, pinned };
-      return;
-    }
-
     linkPreview = { itemName, url, left, top, loading: true, data: null, pinned };
 
     try {
-      const response = await fetch(`/api/produce/link-preview?url=${encodeURIComponent(url)}`);
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
-
-      const payload = (await response.json()) as LinkPreviewData;
-      linkPreviewCache.set(url, payload);
+      const payload = await requestLinkPreview(url);
 
       if (currentToken !== linkPreviewRequestToken) return;
       linkPreview = { itemName, url, left, top, loading: false, data: payload, pinned };
@@ -675,6 +668,67 @@
       if (currentToken !== linkPreviewRequestToken) return;
       linkPreview = null;
     }
+  }
+
+  async function requestLinkPreview(url: string): Promise<LinkPreviewData> {
+    const cached = linkPreviewCache.get(url);
+    if (cached) {
+      return cached;
+    }
+
+    const pendingRequest = linkPreviewRequests.get(url);
+    if (pendingRequest) {
+      return pendingRequest;
+    }
+
+    const request = (async () => {
+      const response = await fetch(`/api/produce/link-preview?url=${encodeURIComponent(url)}`);
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const payload = (await response.json()) as LinkPreviewData;
+      linkPreviewCache.set(url, payload);
+      return payload;
+    })();
+
+    linkPreviewRequests.set(url, request);
+    try {
+      return await request;
+    } finally {
+      if (linkPreviewRequests.get(url) === request) {
+        linkPreviewRequests.delete(url);
+      }
+    }
+  }
+
+  function prefetchLinkPreview(url: string) {
+    if (linkPreviewCache.has(url)) return;
+    void requestLinkPreview(url).catch(() => {});
+  }
+
+  function observeLinkPreviewTrigger(
+    node: HTMLElement,
+    { url }: { url: string | null },
+  ): { update: ({ url }: { url: string | null }) => void; destroy: () => void } {
+    const observeNode = (nextUrl: string | null) => {
+      linkPreviewViewportObserver?.unobserve(node);
+      if (!nextUrl || linkPreviewCache.has(nextUrl)) {
+        linkPreviewObserverTargets.delete(node);
+        return;
+      }
+      linkPreviewObserverTargets.set(node, nextUrl);
+      linkPreviewViewportObserver?.observe(node);
+    };
+
+    observeNode(url);
+
+    return {
+      update(next) {
+        observeNode(next.url);
+      },
+      destroy() {
+        linkPreviewViewportObserver?.unobserve(node);
+        linkPreviewObserverTargets.delete(node);
+      },
+    };
   }
 
   function queueLinkPreview(
@@ -1033,6 +1087,29 @@
     const handleViewportChange = () => {
       syncLinkPreviewPositionOrClose();
     };
+    if (typeof IntersectionObserver !== 'undefined') {
+      linkPreviewViewportObserver = new IntersectionObserver(
+        (entries) => {
+          for (const entry of entries) {
+            if (!entry.isIntersecting) continue;
+            if (!(entry.target instanceof HTMLElement)) continue;
+            const previewUrl = linkPreviewObserverTargets.get(entry.target);
+            if (!previewUrl) continue;
+            linkPreviewViewportObserver?.unobserve(entry.target);
+            prefetchLinkPreview(previewUrl);
+          }
+        },
+        {
+          root: null,
+          rootMargin: '120px 0px',
+          threshold: 0.01,
+        },
+      );
+
+      for (const node of linkPreviewObserverTargets.keys()) {
+        linkPreviewViewportObserver.observe(node);
+      }
+    }
     document.addEventListener('mousedown', handlePointerDown);
     document.addEventListener('touchstart', handlePointerDown, { passive: true });
     document.addEventListener('keydown', handleKeyDown);
@@ -1046,6 +1123,9 @@
       document.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('scroll', handleViewportChange, true);
       window.removeEventListener('resize', handleViewportChange);
+      linkPreviewViewportObserver?.disconnect();
+      linkPreviewViewportObserver = null;
+      linkPreviewObserverTargets.clear();
       favoriteBursts = [];
       lastRowTap = null;
       hideLinkPreview();
@@ -1424,6 +1504,7 @@
                           href={specialtyUrl}
                           target="_blank"
                           rel="noreferrer"
+                          use:observeLinkPreviewTrigger={{ url: specialtyUrl }}
                           onmouseenter={(event) => handleProduceLinkEnter(event, row.name, specialtyUrl)}
                           onmousemove={handleProduceLinkMove}
                           onmouseleave={handleProduceLinkLeave}
