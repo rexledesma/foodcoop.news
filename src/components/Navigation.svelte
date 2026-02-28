@@ -67,6 +67,7 @@
   let activeIndicatorTop = $state(0);
   let activeIndicatorWidth = $state(0);
   let showActiveIndicator = $state(false);
+  let shouldReplaceHistoryOnMobile = $state(false);
 
   function getNavIcon(icon: NavIconName): string {
     switch (icon) {
@@ -211,6 +212,13 @@
   }
 
   onMount(() => {
+    const coarsePointerMedia = window.matchMedia('(pointer: coarse)');
+    const updateHistoryReplaceMode = () => {
+      shouldReplaceHistoryOnMobile = coarsePointerMedia.matches || navigator.maxTouchPoints > 0;
+    };
+    updateHistoryReplaceMode();
+    coarsePointerMedia.addEventListener('change', updateHistoryReplaceMode);
+
     applyState(initialState);
 
     const handler = (event: Event) => handleStateUpdate(event);
@@ -225,6 +233,7 @@
     requestAnimationFrame(updateActiveRouteIndicator);
 
     return () => {
+      coarsePointerMedia.removeEventListener('change', updateHistoryReplaceMode);
       window.removeEventListener(`navigation-state:update:${channel}`, handler as EventListener);
       document.removeEventListener('mousedown', handleClickOutside);
       container?.removeEventListener('scroll', handleScroll);
@@ -263,6 +272,7 @@
       {#each navItems as item (item.href)}
         <a
           href={item.href}
+          data-sveltekit-replacestate={shouldReplaceHistoryOnMobile ? 'true' : undefined}
           data-nav-href={item.href}
           class={`shrink-0 flex flex-row items-center justify-center rounded-lg px-2 py-2 transition-colors md:px-4 ${
             pathname === item.href ? 'text-black' : 'text-zinc-500 hover:text-black'
@@ -277,6 +287,7 @@
 
       <a
         href={aboutItem.href}
+        data-sveltekit-replacestate={shouldReplaceHistoryOnMobile ? 'true' : undefined}
         data-nav-href={aboutItem.href}
         class={`shrink-0 flex flex-row items-center justify-center rounded-lg px-2 py-2 transition-colors md:hidden ${
           pathname === aboutItem.href ? 'text-black' : 'text-zinc-500 hover:text-black'
@@ -290,6 +301,7 @@
 
       <a
         href={aboutItem.href}
+        data-sveltekit-replacestate={shouldReplaceHistoryOnMobile ? 'true' : undefined}
         data-nav-href={aboutItem.href}
         class={`hidden flex-row items-center justify-center rounded-lg px-2 py-2 transition-colors md:flex md:px-4 ${
           pathname === aboutItem.href ? 'text-black' : 'text-zinc-500 hover:text-black'
@@ -346,6 +358,7 @@
       {:else}
         <a
           href={loginHref}
+          data-sveltekit-replacestate={shouldReplaceHistoryOnMobile ? 'true' : undefined}
           data-nav-href="/login"
           class={`shrink-0 flex flex-row items-center justify-center rounded-lg px-2 py-1 transition-colors md:hidden ${
             pathname === '/login' ? 'text-black' : 'text-zinc-500 hover:text-black'
@@ -411,6 +424,7 @@
       {:else}
         <a
           href={loginHref}
+          data-sveltekit-replacestate={shouldReplaceHistoryOnMobile ? 'true' : undefined}
           data-nav-href="/login"
           class={`flex flex-row items-center justify-center rounded-lg px-4 py-2 transition-colors ${
             pathname === '/login' ? 'text-black' : 'text-zinc-500 hover:text-black'

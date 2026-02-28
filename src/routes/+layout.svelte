@@ -473,7 +473,11 @@
         clearSwipeCommitTimer();
         swipeCommitTimer = setTimeout(() => {
           swipeCommitTimer = null;
-          void goto(route, { keepFocus: true, noScroll: true }).finally(() => {
+          void goto(route, {
+            keepFocus: true,
+            noScroll: true,
+            replaceState: isMobileTouchInput(),
+          }).finally(() => {
             isSwipeNavigationInFlight = false;
             resetSwipeVisualState();
           });
