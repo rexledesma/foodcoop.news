@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { goto, preloadData } from '$app/navigation';
   import { injectAnalytics } from '@vercel/analytics/sveltekit';
   import '../styles/globals.css';
   import { onMount } from 'svelte';
@@ -12,6 +13,7 @@
     initStickyVisibility,
     setStickyVisibilityRoute,
   } from '@/lib/sticky-visibility';
+  import { createSwipeNavigator } from '@/lib/swipe-navigator';
 
   const SITE_NAME = 'Park Slope Food Coop News';
   const SITE_DESCRIPTION = 'Stay in the loop with the Park Slope Food Coop.';
@@ -22,6 +24,12 @@
   const PWA_INSTALL_DESCRIPTION =
     'This site has app functionality. Install foodcoop.news on your device for easy access.';
   const DOUBLE_TAP_DELAY_MS = 350;
+  const SWIPE_NAV_ROUTES = ['/about', '/integrations', '/produce', '/discover'] as const;
+  const SWIPE_CAPTURE_THRESHOLD_PX = 14;
+  const SWIPE_MAX_VERTICAL_DRIFT_PX = 90;
+  const SWIPE_PEEK_MAX_TRAVEL_RATIO = 0.88;
+  const SWIPE_COMMIT_RATIO = 0.5;
+  const SWIPE_SNAP_DURATION_MS = 220;
 
   const channel = `nav-${Math.random().toString(36).slice(2)}`;
   const initialPathname = typeof window === 'undefined' ? '/' : window.location.pathname;
@@ -70,6 +78,14 @@
   let hasAutoShownPwaInstall = false;
   let hasPendingPwaDialog = false;
   let hasDismissedPwaInstall = false;
+  let isSwipePreviewMode = false;
+  let swipePreviewUrl = '';
+  let swipePreviewOffsetX = 0;
+  let swipeForegroundOffsetX = 0;
+  let isSwipeDragging = false;
+  let isSwipeSnapAnimating = false;
+  let swipeSnapTimer: ReturnType<typeof setTimeout> | null = null;
+  let swipeCommitTimer: ReturnType<typeof setTimeout> | null = null;
 
   function serializeJsonLd(payload: unknown): string {
     return JSON.stringify(payload).replaceAll('<', '\\u003c');
@@ -87,6 +103,73 @@
     } catch {
       return value.trim();
     }
+  }
+
+  function normalizePathname(pathname: string): string {
+    if (pathname === '/') return '/discover';
+    if (pathname.length > 1 && pathname.endsWith('/')) return pathname.slice(0, -1);
+    return pathname;
+  }
+
+  function isEditableElement(target: EventTarget | null): boolean {
+    if (!(target instanceof HTMLElement)) return false;
+    if (target.isContentEditable) return true;
+
+    const tagName = target.tagName.toLowerCase();
+    return tagName === 'input' || tagName === 'textarea' || tagName === 'select';
+  }
+
+  function getSwipeTarget(step: 1 | -1): string | null {
+    const currentPathname = normalizePathname(window.location.pathname);
+    const currentIndex = SWIPE_NAV_ROUTES.indexOf(
+      currentPathname as (typeof SWIPE_NAV_ROUTES)[number],
+    );
+    if (currentIndex === -1) return null;
+    return SWIPE_NAV_ROUTES[currentIndex + step] ?? null;
+  }
+
+  function getSwipePreviewRouteUrl(route: string): string {
+    return `${route}?swipePreview=1`;
+  }
+
+  function getSwipeTransitionDurationMs(): number {
+    if (isSwipeDragging) return 0;
+    return isSwipeSnapAnimating ? SWIPE_SNAP_DURATION_MS : 0;
+  }
+
+  function clearSwipeSnapTimer() {
+    if (!swipeSnapTimer) return;
+    clearTimeout(swipeSnapTimer);
+    swipeSnapTimer = null;
+  }
+
+  function clearSwipeCommitTimer() {
+    if (!swipeCommitTimer) return;
+    clearTimeout(swipeCommitTimer);
+    swipeCommitTimer = null;
+  }
+
+  function resetSwipeVisualState() {
+    clearSwipeSnapTimer();
+    clearSwipeCommitTimer();
+    isSwipeDragging = false;
+    isSwipeSnapAnimating = false;
+    swipePreviewUrl = '';
+    swipeForegroundOffsetX = 0;
+    swipePreviewOffsetX = 0;
+  }
+
+  function animateSwipeBack() {
+    isSwipeDragging = false;
+    isSwipeSnapAnimating = true;
+    swipeForegroundOffsetX = 0;
+    swipePreviewOffsetX = 0;
+    clearSwipeSnapTimer();
+    swipeSnapTimer = setTimeout(() => {
+      isSwipeSnapAnimating = false;
+      swipePreviewUrl = '';
+      swipeSnapTimer = null;
+    }, SWIPE_SNAP_DURATION_MS);
   }
 
   function formatProduceDate(value: string | null): string {
@@ -209,7 +292,13 @@
     dispatchState();
   }
 
+  $: isSwipePreviewMode = $page.url.searchParams.get('swipePreview') === '1';
+
   onMount(() => {
+    if (isSwipePreviewMode) {
+      return;
+    }
+
     hasDismissedPwaInstall = localStorage.getItem(PWA_DISMISSED_STORAGE_KEY) === 'true';
 
     void import('@khmyznikov/pwa-install').then(() => {
@@ -290,14 +379,85 @@
     document.addEventListener('touchend', preventDoubleTapZoom, { passive: false });
     document.addEventListener('dblclick', preventDoubleClickZoom);
 
+    const isMobileTouchInput = () =>
+      window.matchMedia('(pointer: coarse)').matches || navigator.maxTouchPoints > 0;
+
+    let isSwipeNavigationInFlight = false;
+    const swipeNavigator = createSwipeNavigator({
+      captureThresholdPx: SWIPE_CAPTURE_THRESHOLD_PX,
+      maxVerticalDriftPx: SWIPE_MAX_VERTICAL_DRIFT_PX,
+      peekMaxTravelRatio: SWIPE_PEEK_MAX_TRAVEL_RATIO,
+      commitRatio: SWIPE_COMMIT_RATIO,
+      getViewportWidth: () => Math.max(window.innerWidth, 1),
+      canStart: () => !isSwipeNavigationInFlight,
+      isMobileTouchInput,
+      isEditableElement,
+      getSwipeTarget,
+      preloadRoute: (route) => {
+        void preloadData(route);
+      },
+      onStart: () => {
+        clearSwipeSnapTimer();
+        clearSwipeCommitTimer();
+        isSwipeDragging = false;
+        isSwipeSnapAnimating = false;
+        swipeForegroundOffsetX = 0;
+        swipePreviewOffsetX = 0;
+      },
+      onPreviewRoute: (route) => {
+        const nextPreviewUrl = getSwipePreviewRouteUrl(route);
+        if (swipePreviewUrl === nextPreviewUrl) return;
+        swipePreviewUrl = nextPreviewUrl;
+      },
+      onDrag: ({ step, travelPx, progress }) => {
+        isSwipeDragging = true;
+        swipeForegroundOffsetX = step * travelPx;
+        swipePreviewOffsetX = step === 1 ? -24 * (1 - progress) : 24 * (1 - progress);
+      },
+      onNoTarget: () => {
+        isSwipeDragging = false;
+        swipeForegroundOffsetX = 0;
+        swipePreviewOffsetX = 0;
+      },
+      onCommit: ({ step, route }) => {
+        isSwipeDragging = false;
+        isSwipeSnapAnimating = true;
+        swipePreviewOffsetX = 0;
+        swipeForegroundOffsetX = step * Math.max(window.innerWidth, 1);
+        isSwipeNavigationInFlight = true;
+        clearSwipeCommitTimer();
+        swipeCommitTimer = setTimeout(() => {
+          swipeCommitTimer = null;
+          void goto(route, { keepFocus: true, noScroll: true }).finally(() => {
+            isSwipeNavigationInFlight = false;
+            resetSwipeVisualState();
+          });
+        }, SWIPE_SNAP_DURATION_MS);
+      },
+      onCancel: () => {
+        animateSwipeBack();
+      },
+    });
+
+    const { handleTouchStart, handleTouchMove, handleTouchEnd, handleTouchCancel } = swipeNavigator;
+    document.addEventListener('touchstart', handleTouchStart, { passive: true });
+    document.addEventListener('touchmove', handleTouchMove, { passive: false });
+    document.addEventListener('touchend', handleTouchEnd, { passive: false });
+    document.addEventListener('touchcancel', handleTouchCancel, { passive: true });
+
     return () => {
       window.removeEventListener('sticky-visibility', stickyVisibilityHandler as EventListener);
       window.removeEventListener('pointerdown', handleInteraction);
       window.removeEventListener('keydown', handleInteraction);
       window.removeEventListener('scroll', handleInteraction);
       window.removeEventListener('pwa-install:show', showPwaInstallDialog);
+      resetSwipeVisualState();
       document.removeEventListener('touchend', preventDoubleTapZoom);
       document.removeEventListener('dblclick', preventDoubleClickZoom);
+      document.removeEventListener('touchstart', handleTouchStart);
+      document.removeEventListener('touchmove', handleTouchMove);
+      document.removeEventListener('touchend', handleTouchEnd);
+      document.removeEventListener('touchcancel', handleTouchCancel);
     };
   });
 
@@ -356,13 +516,35 @@
   </svelte:element>
 </svelte:head>
 
-<Navigation {channel} {initialState} />
+{#if !isSwipePreviewMode}
+  <Navigation {channel} {initialState} />
+{/if}
 
-<div class="pt-24 md:pt-14">
-  <slot />
+<div class={`relative overflow-x-clip ${isSwipePreviewMode ? '' : 'pt-24 md:pt-14'}`}>
+  {#if swipePreviewUrl}
+    <div
+      class="pointer-events-none absolute inset-0 z-0 overflow-hidden bg-white transition-transform ease-out motion-reduce:transition-none"
+      style={`transform: translate3d(${swipePreviewOffsetX}px, 0, 0); transition-duration: ${getSwipeTransitionDurationMs()}ms;`}
+    >
+      <iframe
+        title="Swipe preview"
+        src={swipePreviewUrl}
+        class="h-full w-full border-0"
+        sandbox="allow-same-origin"
+        tabindex="-1"
+      ></iframe>
+      <div class="absolute inset-0 bg-white/8"></div>
+    </div>
+  {/if}
+  <div
+    class="relative z-10 bg-white transition-transform ease-out motion-reduce:transition-none"
+    style={`transform: translate3d(${swipeForegroundOffsetX}px, 0, 0); transition-duration: ${getSwipeTransitionDurationMs()}ms;`}
+  >
+    <slot />
+  </div>
 </div>
 
-{#if isPwaInstallReady}
+{#if isPwaInstallReady && !isSwipePreviewMode}
   <pwa-install
     bind:this={pwaInstallElement}
     on:pwa-user-choice-result-event={handlePwaUserChoiceResult}

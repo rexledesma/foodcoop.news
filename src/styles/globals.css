@@ -57,8 +57,13 @@ body {
 html {
   color-scheme: light;
   overscroll-behavior: none;
+  overscroll-behavior-x: none;
   scroll-behavior: smooth;
   scrollbar-gutter: stable;
+}
+
+body {
+  touch-action: pan-y;
 }
 
 /* Remove tap highlight on mobile */
