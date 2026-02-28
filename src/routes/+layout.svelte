@@ -28,7 +28,7 @@
   const SWIPE_CAPTURE_THRESHOLD_PX = 14;
   const SWIPE_MAX_VERTICAL_DRIFT_PX = 90;
   const SWIPE_PEEK_MAX_TRAVEL_RATIO = 0.88;
-  const SWIPE_COMMIT_RATIO = 0.5;
+  const SWIPE_COMMIT_RATIO = 0.3;
   const SWIPE_SNAP_DURATION_MS = 220;
 
   const channel = `nav-${Math.random().toString(36).slice(2)}`;
