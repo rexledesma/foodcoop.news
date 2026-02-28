@@ -250,6 +250,7 @@
 </script>
 
 <nav
+  data-swipe-interactive="true"
   class={`safe-area-pt fixed top-0 right-0 left-0 z-40 bg-gradient-to-b from-[#e6f3fc] via-[#e6f9f0] to-white transition-opacity duration-300 ease-in-out motion-reduce:transition-none ${
     showSticky ? 'opacity-100' : 'pointer-events-none opacity-0'
   }`}

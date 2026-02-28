@@ -118,7 +118,9 @@
   function isEditableElement(target: EventTarget | null): boolean {
     const element = target instanceof Element ? target : null;
     if (!element) return false;
-    if (element.closest('[data-sparkline-interactive="true"]')) return true;
+    if (element.closest('[data-sparkline-interactive="true"], [data-swipe-interactive="true"]')) {
+      return true;
+    }
     if (element instanceof HTMLElement && element.isContentEditable) return true;
 
     const tagName = element.tagName.toLowerCase();
