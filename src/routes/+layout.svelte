@@ -116,10 +116,12 @@
   }
 
   function isEditableElement(target: EventTarget | null): boolean {
-    if (!(target instanceof HTMLElement)) return false;
-    if (target.isContentEditable) return true;
+    const element = target instanceof Element ? target : null;
+    if (!element) return false;
+    if (element.closest('[data-sparkline-interactive="true"]')) return true;
+    if (element instanceof HTMLElement && element.isContentEditable) return true;
 
-    const tagName = target.tagName.toLowerCase();
+    const tagName = element.tagName.toLowerCase();
     return tagName === 'input' || tagName === 'textarea' || tagName === 'select';
   }
 
