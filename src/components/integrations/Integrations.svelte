@@ -229,7 +229,9 @@
   <div
     bind:this={headerRef}
     class={`sticky top-16 z-20 bg-white transition-opacity duration-300 ease-in-out motion-reduce:transition-none md:top-14 ${showSticky ? 'opacity-100' : 'pointer-events-none opacity-0'}`}
-  ></div>
+  >
+    <h1 class="mx-auto max-w-3xl px-4 pt-6 pb-6 text-2xl font-bold text-zinc-900">Integrations</h1>
+  </div>
 
   <div class="mx-auto max-w-3xl px-4 pb-6">
     {#if isInitialLoading}

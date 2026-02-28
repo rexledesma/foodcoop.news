@@ -254,6 +254,7 @@
     bind:this={filtersRef}
     class={`sticky top-16 z-20 bg-white transition-opacity duration-300 ease-in-out motion-reduce:transition-none md:top-14 ${showSticky ? 'opacity-100' : 'pointer-events-none opacity-0'}`}
   >
+    <h1 class="py-6 text-2xl font-bold text-zinc-900">Discover</h1>
     <div class="pb-4">
       {#if isInitialLoading}
         <div class="space-y-3">
