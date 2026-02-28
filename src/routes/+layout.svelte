@@ -50,6 +50,10 @@
     memberName: '',
     memberId: '',
     userEmail: '',
+    swipeFromPath: null as string | null,
+    swipeToPath: null as string | null,
+    swipeProgress: 0,
+    isSwipeActive: false,
     onToggleDropdown: () => {
       state = { ...state, isDropdownOpen: !state.isDropdownOpen };
       dispatchState();
@@ -149,6 +153,18 @@
     swipeCommitTimer = null;
   }
 
+  function resetNavSwipeState() {
+    if (!state.isSwipeActive && state.swipeFromPath === null && state.swipeToPath === null) return;
+    state = {
+      ...state,
+      swipeFromPath: null,
+      swipeToPath: null,
+      swipeProgress: 0,
+      isSwipeActive: false,
+    };
+    dispatchState();
+  }
+
   function resetSwipeVisualState() {
     clearSwipeSnapTimer();
     clearSwipeCommitTimer();
@@ -157,6 +173,7 @@
     swipePreviewUrl = '';
     swipeForegroundOffsetX = 0;
     swipePreviewOffsetX = 0;
+    resetNavSwipeState();
   }
 
   function animateSwipeBack() {
@@ -383,6 +400,7 @@
       window.matchMedia('(pointer: coarse)').matches || navigator.maxTouchPoints > 0;
 
     let isSwipeNavigationInFlight = false;
+    let swipeActiveTargetRoute: string | null = null;
     const swipeNavigator = createSwipeNavigator({
       captureThresholdPx: SWIPE_CAPTURE_THRESHOLD_PX,
       maxVerticalDriftPx: SWIPE_MAX_VERTICAL_DRIFT_PX,
@@ -403,27 +421,50 @@
         isSwipeSnapAnimating = false;
         swipeForegroundOffsetX = 0;
         swipePreviewOffsetX = 0;
+        swipeActiveTargetRoute = null;
+        resetNavSwipeState();
       },
       onPreviewRoute: (route) => {
         const nextPreviewUrl = getSwipePreviewRouteUrl(route);
         if (swipePreviewUrl === nextPreviewUrl) return;
         swipePreviewUrl = nextPreviewUrl;
+        swipeActiveTargetRoute = normalizePathname(route);
       },
       onDrag: ({ step, travelPx, progress }) => {
         isSwipeDragging = true;
         swipeForegroundOffsetX = step * travelPx;
         swipePreviewOffsetX = step === 1 ? -24 * (1 - progress) : 24 * (1 - progress);
+        const swipeFromPath = normalizePathname(window.location.pathname);
+        const swipeToPath = swipeActiveTargetRoute ?? getSwipeTarget(step);
+        if (!swipeToPath) return;
+        state = {
+          ...state,
+          swipeFromPath,
+          swipeToPath: normalizePathname(swipeToPath),
+          swipeProgress: progress,
+          isSwipeActive: true,
+        };
+        dispatchState();
       },
       onNoTarget: () => {
         isSwipeDragging = false;
         swipeForegroundOffsetX = 0;
         swipePreviewOffsetX = 0;
+        resetNavSwipeState();
       },
       onCommit: ({ step, route }) => {
         isSwipeDragging = false;
         isSwipeSnapAnimating = true;
         swipePreviewOffsetX = 0;
         swipeForegroundOffsetX = step * Math.max(window.innerWidth, 1);
+        state = {
+          ...state,
+          swipeFromPath: normalizePathname(window.location.pathname),
+          swipeToPath: normalizePathname(route),
+          swipeProgress: 1,
+          isSwipeActive: true,
+        };
+        dispatchState();
         isSwipeNavigationInFlight = true;
         clearSwipeCommitTimer();
         swipeCommitTimer = setTimeout(() => {
@@ -436,6 +477,7 @@
       },
       onCancel: () => {
         animateSwipeBack();
+        resetNavSwipeState();
       },
     });
 
@@ -520,7 +562,7 @@
   <Navigation {channel} {initialState} />
 {/if}
 
-<div class={`relative overflow-x-clip ${isSwipePreviewMode ? '' : 'pt-24 md:pt-14'}`}>
+<div class={`relative overflow-x-clip ${isSwipePreviewMode ? '' : 'pt-16 md:pt-14'}`}>
   {#if swipePreviewUrl}
     <div
       class="pointer-events-none absolute inset-0 z-0 overflow-hidden bg-white transition-transform ease-out motion-reduce:transition-none"
