@@ -1236,30 +1236,34 @@
         />
       </div>
 
-      <div class="p-2 text-sm text-zinc-500">
+      <div class="px-2 pt-2 pb-0 text-sm leading-5 text-zinc-500">
         {#if isLoading}
           <div class="feed-shimmer h-5 w-32 rounded"></div>
         {:else}
-          Showing {filteredRows.length} of {quickFilterCount} items
-          {#if dateRange}
-            {' · Last updated '}
-            {new Date(dateRange.end + 'T00:00:00').toLocaleDateString('en-US', {
-              month: 'short',
-              day: 'numeric',
-            })}
-          {/if}
-          <span
-            class={`ml-2 inline-block animate-spin transition-opacity duration-300 ${
-              isRefreshing ? 'opacity-100' : 'opacity-0'
-            }`}
-          >
-            🥕
-          </span>
+          <div class="flex items-center gap-1 overflow-hidden whitespace-nowrap">
+            <span class="truncate">
+              Showing {filteredRows.length} of {quickFilterCount} items
+              {#if dateRange}
+                {' · Last updated '}
+                {new Date(dateRange.end + 'T00:00:00').toLocaleDateString('en-US', {
+                  month: 'short',
+                  day: 'numeric',
+                })}
+              {/if}
+            </span>
+            <span
+              class={`ml-1 inline-block shrink-0 animate-spin transition-opacity duration-300 ${
+                isRefreshing ? 'opacity-100' : 'opacity-0'
+              }`}
+            >
+              🥕
+            </span>
+          </div>
         {/if}
       </div>
     </div>
 
-    <div class="mb-4 flex flex-col gap-2">
+    <div class="mt-2 mb-4 flex flex-col gap-2">
       <div class="flex flex-wrap items-center gap-1">
         <button
           type="button"
