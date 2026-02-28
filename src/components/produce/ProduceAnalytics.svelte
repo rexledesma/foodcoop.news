@@ -1173,8 +1173,6 @@
       stickyVisible ? 'opacity-100' : 'pointer-events-none opacity-0'
     }`}
   >
-    <h1 class="py-6 text-2xl font-bold text-zinc-900">Produce</h1>
-
     <div class="mb-4">
       <div class="flex w-full max-w-md items-center gap-1.5 rounded-lg border border-zinc-300 bg-white px-3 py-2">
         {#if produceFilterDisplayName}
