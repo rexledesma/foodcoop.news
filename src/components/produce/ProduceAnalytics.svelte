@@ -77,6 +77,7 @@
     initialDateFilter: string | null;
     initialItemFilter: string | null;
     initialProduceFilter: string | null;
+    initialQuickFilter: QuickFilter;
     showSticky: boolean;
     favoritesSnapshot: string;
     toggleFavorite: (name: string) => void;
@@ -144,6 +145,7 @@
   let initialDateFilter = $state<string | null>(null);
   let initialItemFilter = $state<string | null>(null);
   let initialProduceFilter = $state<string | null>(null);
+  let initialQuickFilter = $state<QuickFilter>(null);
   let showSticky = $state(true);
   let favoritesSnapshot = $state('[]');
   let toggleFavorite = $state<(name: string) => void>(() => {});
@@ -173,7 +175,7 @@
   let sortDirection = $state<SortDirection>('asc');
   let dateFilter = $state<string | null>(null);
   let itemFilter = $state<string | null>(null);
-  let didApplyInitialQueryFilters = $state(false);
+  let lastAppliedInitialQuerySignature = $state<string | null>(null);
 
   const favorites = $derived(parseFavorites(favoritesSnapshot));
   const stickyVisible = $derived(showSticky);
@@ -572,6 +574,7 @@
     itemFilter = null;
     initialProduceFilter = null;
     const url = new URL(window.location.href);
+    url.searchParams.delete('filter');
     url.searchParams.delete('date');
     url.searchParams.delete('item');
     url.searchParams.delete('produce');
@@ -583,6 +586,7 @@
     itemFilter = null;
     initialProduceFilter = null;
     const url = new URL(window.location.href);
+    url.searchParams.delete('filter');
     url.searchParams.delete('item');
     url.searchParams.delete('produce');
     url.searchParams.delete('name');
@@ -987,16 +991,27 @@
     initialDateFilter = next.initialDateFilter;
     initialItemFilter = next.initialItemFilter;
     initialProduceFilter = next.initialProduceFilter;
+    initialQuickFilter = next.initialQuickFilter;
     showSticky = next.showSticky;
     favoritesSnapshot = next.favoritesSnapshot;
     toggleFavorite = next.toggleFavorite;
   }
 
-  function applyInitialQueryFilters() {
-    if (didApplyInitialQueryFilters) return;
-    if (!(initialItemFilter || initialProduceFilter || initialDateFilter)) return;
+  function applyInitialQueryFilters(): boolean {
+    const querySignature = JSON.stringify({
+      date: initialDateFilter,
+      item: initialItemFilter,
+      produce: initialProduceFilter,
+      filter: initialQuickFilter,
+    });
+    if (querySignature === lastAppliedInitialQuerySignature) return false;
+    lastAppliedInitialQuerySignature = querySignature;
 
-    quickFilter = null;
+    if (!(initialItemFilter || initialProduceFilter || initialDateFilter || initialQuickFilter)) {
+      return false;
+    }
+
+    quickFilter = initialQuickFilter;
     dateFilter = initialDateFilter;
     itemFilter = initialItemFilter ?? null;
     if (!itemFilter && initialProduceFilter) {
@@ -1005,12 +1020,13 @@
     }
     sortField = initialDateFilter ? null : 'name';
     sortDirection = initialDateFilter ? null : 'asc';
-    didApplyInitialQueryFilters = true;
+    return true;
   }
 
   function handleStateUpdate(event: Event) {
     if (!(event instanceof CustomEvent)) return;
     applyState(event.detail as ProduceAnalyticsClientState);
+    applyInitialQueryFilters();
   }
 
   $effect(() => {
@@ -1032,7 +1048,7 @@
 
   onMount(() => {
     applyState(initialState);
-    applyInitialQueryFilters();
+    const didApplyInitialQueryFilters = applyInitialQueryFilters();
 
     if (!didApplyInitialQueryFilters) {
       try {
@@ -1130,10 +1146,6 @@
       lastRowTap = null;
       hideLinkPreview();
     };
-  });
-
-  $effect(() => {
-    applyInitialQueryFilters();
   });
 
   $effect(() => {

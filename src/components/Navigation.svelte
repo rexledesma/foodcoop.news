@@ -498,7 +498,15 @@
             <p class="font-mono text-sm text-zinc-600">{memberId.trim()}</p>
           {/if}
           <p class="mt-2 text-sm text-zinc-700">
-            <span class="font-bold text-black">{produceFavoritesCount}</span> favorites
+            <a
+              href="/produce?filter=favorites"
+              data-sveltekit-replacestate={shouldReplaceHistoryOnMobile ? 'true' : undefined}
+              class="inline-flex items-center gap-1 rounded-sm hover:text-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-800/30"
+              onclick={closeSidebar}
+            >
+              <span class="font-bold text-black">{produceFavoritesCount}</span>
+              <span>favorites</span>
+            </a>
           </p>
         </div>
       {:else}

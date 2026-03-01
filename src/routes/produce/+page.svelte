@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { page } from '$app/state';
   import { onMount } from 'svelte';
   import { clearProduceCache, readProduceCache, writeProduceCache } from '@/lib/produce-cache';
   import { loadProduceData } from '@/lib/produce-data-api-loader';
@@ -11,6 +12,7 @@
     ProduceRow,
     ProduceSWRPeriod,
   } from '@/lib/produce-types';
+  type ProduceQuickFilter = 'favorites' | 'new' | 'recently_unavailable';
 
   const SWR_REVALIDATE_INTERVAL_MS = 5 * 60 * 1000;
   const SWR_PERIODS = new Set<ProduceSWRPeriod>([
@@ -117,6 +119,7 @@
     initialDateFilter: null as string | null,
     initialItemFilter: null as string | null,
     initialProduceFilter: null as string | null,
+    initialQuickFilter: null as ProduceQuickFilter | null,
     showSticky: getCurrentStickyVisibility(),
     favoritesSnapshot: '[]',
     toggleFavorite: (name: string) => {
@@ -159,6 +162,18 @@
         detail: state,
       }),
     );
+  }
+
+  function initialProduceFilterFromParams(params: URLSearchParams): string | null {
+    return params.get('produce');
+  }
+
+  function initialQuickFilterFromParams(params: URLSearchParams): ProduceQuickFilter | null {
+    const filterParam = params.get('filter')?.trim().toLowerCase();
+    if (filterParam === 'favorites') return 'favorites';
+    if (filterParam === 'new') return 'new';
+    if (filterParam === 'recently_unavailable') return 'recently_unavailable';
+    return null;
   }
 
   function shouldIncludeLongRange(period?: ProduceSWRPeriod): boolean {
@@ -245,7 +260,8 @@
       favoritesSnapshot: favorites,
       initialDateFilter: params.get('date'),
       initialItemFilter: params.get('item'),
-      initialProduceFilter: params.get('produce'),
+      initialProduceFilter: initialProduceFilterFromParams(params),
+      initialQuickFilter: initialQuickFilterFromParams(params),
       data: cached?.data ?? state.data,
       history: cached?.history ?? state.history,
       dateRange: cached?.dateRange ?? state.dateRange,
@@ -273,6 +289,33 @@
     return () => {
       window.removeEventListener('sticky-visibility', stickyVisibilityHandler as EventListener);
     };
+  });
+
+  $effect(() => {
+    if (typeof window === 'undefined') return;
+
+    const nextDateFilter = page.url.searchParams.get('date');
+    const nextItemFilter = page.url.searchParams.get('item');
+    const nextProduceFilter = initialProduceFilterFromParams(page.url.searchParams);
+    const nextQuickFilter = initialQuickFilterFromParams(page.url.searchParams);
+
+    if (
+      nextDateFilter === state.initialDateFilter &&
+      nextItemFilter === state.initialItemFilter &&
+      nextProduceFilter === state.initialProduceFilter &&
+      nextQuickFilter === state.initialQuickFilter
+    ) {
+      return;
+    }
+
+    state = {
+      ...state,
+      initialDateFilter: nextDateFilter,
+      initialItemFilter: nextItemFilter,
+      initialProduceFilter: nextProduceFilter,
+      initialQuickFilter: nextQuickFilter,
+    };
+    dispatchState();
   });
 
   const newArrivalsJsonLd = $derived(
