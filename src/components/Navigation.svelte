@@ -225,8 +225,8 @@
     const toLeft = toRect ? toRect.left - containerRect.left + container.scrollLeft : fromLeft;
     const fromWidth = fromRect.width;
     const toWidth = toRect ? toRect.width : fromWidth;
-    const fromTop = fromRect.bottom - containerRect.top + 4;
-    const toTop = toRect ? toRect.bottom - containerRect.top + 4 : fromTop;
+    const fromTop = Math.max(0, container.clientHeight - 2);
+    const toTop = fromTop;
 
     activeIndicatorLeft = fromLeft + (toLeft - fromLeft) * progress;
     activeIndicatorTop = fromTop + (toTop - fromTop) * progress;
@@ -367,9 +367,9 @@
   </div>
   <div
     bind:this={mobileScrollRef}
-    class="relative mx-auto flex h-10 max-w-3xl items-center gap-1 overflow-x-auto overflow-y-hidden px-4 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden md:justify-between md:gap-2 md:overflow-visible"
+    class="relative mx-auto flex h-10 max-w-3xl items-center justify-center gap-1 overflow-x-auto overflow-y-hidden border-b border-zinc-200 px-4 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden md:gap-2 md:overflow-visible"
   >
-    <div class="-ml-2 flex items-center justify-start gap-1 md:-ml-4 md:justify-center md:gap-2">
+    <div class="flex items-center justify-center gap-1 md:gap-2">
       {#each navItems as item (item.href)}
         <a
           href={item.href}
@@ -379,8 +379,7 @@
             pathname === item.href ? 'text-black' : 'text-zinc-500 hover:text-black'
           }`}
         >
-          <span data-nav-label class="inline-flex items-center gap-2">
-            <span class="text-xl md:text-lg">{getNavIcon(item.icon)}</span>
+          <span data-nav-label class="inline-flex items-center">
             <span class="text-sm font-medium">{item.label}</span>
           </span>
         </a>
@@ -394,8 +393,7 @@
           pathname === aboutItem.href ? 'text-black' : 'text-zinc-500 hover:text-black'
         }`}
       >
-        <span data-nav-label class="inline-flex items-center gap-2">
-          <span class="text-xl md:text-lg">{getNavIcon(aboutItem.icon)}</span>
+        <span data-nav-label class="inline-flex items-center">
           <span class="text-sm font-medium">{aboutItem.label}</span>
         </span>
       </a>
@@ -408,8 +406,7 @@
           pathname === aboutItem.href ? 'text-black' : 'text-zinc-500 hover:text-black'
         }`}
       >
-        <span data-nav-label class="inline-flex items-center gap-2">
-          <span class="text-xl md:text-lg">{getNavIcon(aboutItem.icon)}</span>
+        <span data-nav-label class="inline-flex items-center">
           <span class="text-sm font-medium">{aboutItem.label}</span>
         </span>
       </a>
