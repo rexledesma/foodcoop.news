@@ -252,7 +252,7 @@
 <div class="mx-auto max-w-3xl px-4 pb-6">
   <div
     bind:this={filtersRef}
-    class={`sticky top-16 z-20 bg-white transition-opacity duration-300 ease-in-out motion-reduce:transition-none md:top-14 ${showSticky ? 'opacity-100' : 'pointer-events-none opacity-0'}`}
+    class={`sticky top-[5.5rem] z-20 bg-white transition-opacity duration-300 ease-in-out motion-reduce:transition-none ${showSticky ? 'opacity-100' : 'pointer-events-none opacity-0'}`}
   >
     <h1 class="py-6 text-2xl font-bold text-zinc-900">Discover</h1>
     <div class="pb-4">

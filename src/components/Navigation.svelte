@@ -264,9 +264,19 @@
     showSticky ? 'opacity-100' : 'pointer-events-none opacity-0'
   }`}
 >
+  <div class="mx-auto grid h-12 max-w-3xl grid-cols-[2.5rem_1fr_2.5rem] items-center px-4">
+    <div aria-hidden="true" class="h-4 w-7"></div>
+    <p
+      class="text-center text-base leading-none font-bold text-zinc-700"
+      style="font-family: 'DIN 1451 Std Engschrift', 'DIN 1451 Engschrift', Bahnschrift, 'DIN Alternate', 'Franklin Gothic Medium', sans-serif;"
+    >
+      FOODCOOP.NEWS
+    </p>
+    <div aria-hidden="true" class="h-4 w-7"></div>
+  </div>
   <div
     bind:this={mobileScrollRef}
-    class="relative mx-auto flex h-16 max-w-3xl items-center gap-1 overflow-x-auto px-4 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden md:h-14 md:justify-between md:gap-2 md:overflow-visible"
+    class="relative mx-auto flex h-10 max-w-3xl items-center gap-1 overflow-x-auto overflow-y-hidden px-4 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden md:justify-between md:gap-2 md:overflow-visible"
   >
     <div class="-ml-2 flex items-center justify-start gap-1 md:-ml-4 md:justify-center md:gap-2">
       {#each navItems as item (item.href)}

@@ -570,7 +570,7 @@
   <Navigation {channel} {initialState} />
 {/if}
 
-<div class={`relative overflow-x-clip ${isSwipePreviewMode ? '' : 'pt-16 md:pt-14'}`}>
+<div class={`relative overflow-x-clip ${isSwipePreviewMode ? '' : 'pt-[5.5rem]'}`}>
   {#if swipePreviewUrl}
     <div
       class="pointer-events-none absolute inset-0 z-0 overflow-hidden bg-white transition-transform ease-out motion-reduce:transition-none"
