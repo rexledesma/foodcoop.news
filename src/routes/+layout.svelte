@@ -24,7 +24,7 @@
   const PWA_INSTALL_DESCRIPTION =
     'This site has app functionality. Install foodcoop.news on your device for easy access.';
   const DOUBLE_TAP_DELAY_MS = 350;
-  const SWIPE_NAV_ROUTES = ['/about', '/integrations', '/produce', '/discover'] as const;
+  const SWIPE_NAV_ROUTES = ['/about', '/integrations', '/produce', '/'] as const;
   const SWIPE_CAPTURE_THRESHOLD_PX = 14;
   const SWIPE_MAX_VERTICAL_DRIFT_PX = 90;
   const SWIPE_PEEK_MAX_TRAVEL_RATIO = 0.88;
@@ -110,7 +110,6 @@
   }
 
   function normalizePathname(pathname: string): string {
-    if (pathname === '/') return '/discover';
     if (pathname.length > 1 && pathname.endsWith('/')) return pathname.slice(0, -1);
     return pathname;
   }

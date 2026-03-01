@@ -1,4 +1,4 @@
-const ALLOWED_NEXT_PATHS = new Set(['/discover', '/produce', '/integrations', '/about']);
+const ALLOWED_NEXT_PATHS = new Set(['/', '/discover', '/produce', '/integrations', '/about']);
 
 function getPathname(path: string): string {
   try {
@@ -40,7 +40,7 @@ export function withNextParam(url: string, nextPath: string | null | undefined):
 
 export function resolveAuthDestination(
   nextPath: string | null | undefined,
-  fallback = '/discover',
+  fallback = '/',
 ): string {
   return normalizeAuthNext(nextPath) ?? fallback;
 }

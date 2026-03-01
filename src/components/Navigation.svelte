@@ -21,7 +21,7 @@
   type NavIconName = 'compass' | 'produce' | 'carrot' | 'gear' | 'info';
 
   const navItems: { href: string; label: string; icon: NavIconName }[] = [
-    { href: '/discover', label: 'Discover', icon: 'compass' },
+    { href: '/', label: 'Discover', icon: 'compass' },
     { href: '/produce', label: 'Produce', icon: 'produce' },
     { href: '/integrations', label: 'Integrations', icon: 'gear' },
   ];
@@ -156,7 +156,6 @@
 
   function normalizePathname(path: string | null): string {
     if (!path) return '';
-    if (path === '/') return '/discover';
     if (path.length > 1 && path.endsWith('/')) return path.slice(0, -1);
     return path;
   }

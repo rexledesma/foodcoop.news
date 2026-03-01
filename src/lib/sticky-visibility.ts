@@ -1,5 +1,5 @@
-const TRACKED_ROUTES = new Set(['/discover', '/produce', '/integrations']);
-const REVEAL_ON_UP_STOP_ROUTES = new Set(['/discover', '/produce']);
+const TRACKED_ROUTES = new Set(['/', '/produce', '/integrations']);
+const REVEAL_ON_UP_STOP_ROUTES = new Set(['/', '/produce']);
 const SCROLL_THRESHOLD = 8;
 const TOP_THRESHOLD = 4;
 const REVEAL_ON_UP_SCROLL_STOP_DELAY_MS = 250;

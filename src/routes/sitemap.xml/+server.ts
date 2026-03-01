@@ -1,7 +1,7 @@
 import { env } from '$env/dynamic/private';
 import { encode } from 'html-entities';
 
-const INDEXABLE_PATHS = ['/discover', '/produce', '/integrations', '/about'] as const;
+const INDEXABLE_PATHS = ['/', '/produce', '/integrations', '/about'] as const;
 
 function toAbsoluteUrl(origin: string, pathname: string): string {
   const normalizedOrigin = origin.replace(/\/+$/, '');
