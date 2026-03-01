@@ -216,7 +216,7 @@
       return `Produce · ${SITE_NAME}`;
     }
 
-    if (pathname === '/discover' || pathname === '/') return `Discover · ${SITE_NAME}`;
+    if (pathname === '/discover' || pathname === '/') return `News · ${SITE_NAME}`;
     if (pathname === '/integrations') return `Integrations · ${SITE_NAME}`;
     if (pathname === '/about') return `About · ${SITE_NAME}`;
     if (pathname === '/login') return `Login · ${SITE_NAME}`;
@@ -242,7 +242,7 @@
     }
 
     if (pathname === '/discover' || pathname === '/') {
-      return 'Discover Park Slope Food Coop news, events, produce, and community updates in one feed.';
+      return 'News from Park Slope Food Coop, including events, produce, and community updates in one feed.';
     }
 
     if (pathname === '/integrations') {

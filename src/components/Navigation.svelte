@@ -18,10 +18,10 @@
     onSignOut: () => Promise<void>;
   };
 
-  type NavIconName = 'compass' | 'produce' | 'carrot' | 'gear' | 'info';
+  type NavIconName = 'news' | 'produce' | 'carrot' | 'gear' | 'info';
 
   const navItems: { href: string; label: string; icon: NavIconName }[] = [
-    { href: '/', label: 'Discover', icon: 'compass' },
+    { href: '/', label: 'News', icon: 'news' },
     { href: '/produce', label: 'Produce', icon: 'produce' },
     { href: '/integrations', label: 'Integrations', icon: 'gear' },
   ];
@@ -114,8 +114,8 @@
 
   function getNavIcon(icon: NavIconName): string {
     switch (icon) {
-      case 'compass':
-        return '🧭';
+      case 'news':
+        return '🗞️';
       case 'produce':
         return '🥬';
       case 'carrot':
