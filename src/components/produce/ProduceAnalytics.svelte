@@ -159,6 +159,7 @@
   let linkPreviewAnchorEl = $state<HTMLElement | null>(null);
   let linkPreviewAnchorStartTop = $state<number | null>(null);
   let linkPreviewCardRef = $state<HTMLElement | null>(null);
+  let favoriteBurstLayerRef = $state<HTMLDivElement | null>(null);
   let favoriteBursts = $state<FavoriteBurst[]>([]);
   let lastRowTap = $state<RowTapState | null>(null);
   let lastTouchDoubleTapAt = $state(0);
@@ -852,8 +853,41 @@
     return min + Math.random() * (max - min);
   }
 
-  function createFavoriteBurstAtRowCenter(rowElement: HTMLTableRowElement, emoji: '⭐' | '💔') {
-    const rect = rowElement.getBoundingClientRect();
+  function resolveBurstOrigin(
+    rowElement: HTMLTableRowElement,
+    originX?: number,
+    originY?: number,
+  ): { x: number; y: number } {
+    const rowRect = rowElement.getBoundingClientRect();
+    const layerRect = favoriteBurstLayerRef?.getBoundingClientRect();
+    const layerOffsetX = layerRect?.left ?? 0;
+    const layerOffsetY = layerRect?.top ?? 0;
+    const rowLeft = rowRect.left - layerOffsetX;
+    const rowRight = rowRect.right - layerOffsetX;
+    const rowTop = rowRect.top - layerOffsetY;
+    const rowBottom = rowRect.bottom - layerOffsetY;
+
+    if (typeof originX !== 'number' || typeof originY !== 'number') {
+      return {
+        x: rowLeft + rowRect.width / 2,
+        y: rowTop + rowRect.height / 2,
+      };
+    }
+
+    const localX = originX - layerOffsetX;
+    const localY = originY - layerOffsetY;
+    const x = Math.min(Math.max(localX, rowLeft), rowRight);
+    const y = Math.min(Math.max(localY, rowTop), rowBottom);
+    return { x, y };
+  }
+
+  function createFavoriteBurstFromRow(
+    rowElement: HTMLTableRowElement,
+    emoji: '⭐' | '💔',
+    originX?: number,
+    originY?: number,
+  ) {
+    const origin = resolveBurstOrigin(rowElement, originX, originY);
     const angle = randomInRange(210, 330) * (Math.PI / 180);
     const launchDistance = randomInRange(34, 78);
     const endDistance = launchDistance + randomInRange(52, 110);
@@ -866,8 +900,8 @@
     );
     const burst = {
       id: ++nextFavoriteBurstId,
-      x: rect.left + rect.width / 2,
-      y: rect.top + rect.height / 2,
+      x: origin.x,
+      y: origin.y,
       emoji,
       xMid,
       yMid,
@@ -884,10 +918,15 @@
     favoriteBursts = favoriteBursts.filter((item) => item.id !== id);
   }
 
-  function toggleFavoriteWithBurst(rowName: string, rowElement: HTMLTableRowElement) {
+  function toggleFavoriteWithBurst(
+    rowName: string,
+    rowElement: HTMLTableRowElement,
+    originX?: number,
+    originY?: number,
+  ) {
     const wasFavorite = favorites.has(rowName);
     toggleFavorite(rowName);
-    createFavoriteBurstAtRowCenter(rowElement, wasFavorite ? '💔' : '⭐');
+    createFavoriteBurstFromRow(rowElement, wasFavorite ? '💔' : '⭐', originX, originY);
   }
 
   function handleRowTouchEnd(event: TouchEvent, rowName: string) {
@@ -906,7 +945,7 @@
         event.preventDefault();
         const currentTarget = event.currentTarget;
         if (currentTarget instanceof HTMLTableRowElement) {
-          toggleFavoriteWithBurst(rowName, currentTarget);
+          toggleFavoriteWithBurst(rowName, currentTarget, touch.clientX, touch.clientY);
         }
         lastTouchDoubleTapAt = now;
         lastRowTap = null;
@@ -938,7 +977,7 @@
     event.preventDefault();
     const currentTarget = event.currentTarget;
     if (currentTarget instanceof HTMLTableRowElement) {
-      toggleFavoriteWithBurst(rowName, currentTarget);
+      toggleFavoriteWithBurst(rowName, currentTarget, event.clientX, event.clientY);
     }
   }
 
@@ -1806,7 +1845,7 @@
     </aside>
   {/if}
 
-  <div class="favorite-burst-layer" aria-hidden="true">
+  <div bind:this={favoriteBurstLayerRef} class="favorite-burst-layer" aria-hidden="true">
     {#each favoriteBursts as burst (burst.id)}
       <span
         class="favorite-burst"
