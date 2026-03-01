@@ -63,6 +63,8 @@
   let shouldReplaceHistoryOnMobile = $state(false);
   let isSidebarOpen = $state(false);
   let produceFavoritesCount = $state(0);
+  let produceFavoritesInStockCount = $state(0);
+  let produceFavoritesOutOfStockCount = $state(0);
   let showSidebarInstallAppButton = $state(false);
 
   function closeSidebar() {
@@ -98,36 +100,31 @@
     window.dispatchEvent(new CustomEvent('pwa-install:show', { detail: { force: true, expandHowTo: true } }));
   }
 
-  function parseFavoritesCount(raw: string | null): number {
-    if (!raw) return 0;
-    try {
-      const parsed = JSON.parse(raw) as unknown;
-      if (!Array.isArray(parsed)) return 0;
-      return parsed.filter((entry) => typeof entry === 'string').length;
-    } catch {
-      return 0;
-    }
-  }
-
-  function syncProduceFavoritesFromStorage() {
-    if (typeof window === 'undefined') return;
-    const local = localStorage.getItem('produce-favorites');
-    const cache = localStorage.getItem('produce-favorites-cache');
-    produceFavoritesCount = Math.max(parseFavoritesCount(local), parseFavoritesCount(cache));
-  }
-
-  async function hydrateProduceFavoritesCount() {
+  async function hydrateProduceFavoritesSummary() {
     if (typeof window === 'undefined' || !isAuthenticated) return;
     try {
-      const response = await fetch('/api/me/produce-favorites', {
+      const response = await fetch('/api/me/produce-favorites/summary', {
         headers: { accept: 'application/json' },
       });
       if (!response.ok) return;
-      const data = (await response.json()) as { favorites?: unknown };
-      if (!Array.isArray(data.favorites)) return;
-      produceFavoritesCount = data.favorites.filter((entry) => typeof entry === 'string').length;
+
+      const payload = (await response.json()) as {
+        favoritesCount?: unknown;
+        inStockCount?: unknown;
+        outOfStockCount?: unknown;
+      };
+
+      if (typeof payload.favoritesCount === 'number') {
+        produceFavoritesCount = payload.favoritesCount;
+      }
+      if (typeof payload.inStockCount === 'number') {
+        produceFavoritesInStockCount = payload.inStockCount;
+      }
+      if (typeof payload.outOfStockCount === 'number') {
+        produceFavoritesOutOfStockCount = payload.outOfStockCount;
+      }
     } catch {
-      // Ignore failures and keep local snapshot.
+      // Ignore failures and keep current values.
     }
   }
 
@@ -279,7 +276,7 @@
     const handler = (event: Event) => handleStateUpdate(event);
     const syncFavorites = () => {
       if (!isAuthenticated) return;
-      syncProduceFavoritesFromStorage();
+      void hydrateProduceFavoritesSummary();
     };
     const handleEscapeKey = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
@@ -362,10 +359,11 @@
     if (typeof window === 'undefined') return;
     if (!isAuthenticated) {
       produceFavoritesCount = 0;
+      produceFavoritesInStockCount = 0;
+      produceFavoritesOutOfStockCount = 0;
       return;
     }
-    syncProduceFavoritesFromStorage();
-    void hydrateProduceFavoritesCount();
+    void hydrateProduceFavoritesSummary();
   });
 </script>
 
@@ -506,6 +504,13 @@
             >
               <span class="font-bold text-black">{produceFavoritesCount}</span>
               <span>favorites</span>
+              <span aria-hidden="true">•</span>
+              <span><span class="font-bold text-black">{produceFavoritesInStockCount}</span> in stock</span>
+              <span aria-hidden="true">•</span>
+              <span
+                ><span class="font-bold text-black">{produceFavoritesOutOfStockCount}</span> out of
+                stock</span
+              >
             </a>
           </p>
         </div>
