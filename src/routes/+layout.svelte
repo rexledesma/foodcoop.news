@@ -336,8 +336,12 @@
       state = { ...state, showSticky: Boolean(event.detail) };
       dispatchState();
     };
+    const authSessionChangedHandler = () => {
+      void hydrateNavState();
+    };
 
     window.addEventListener('sticky-visibility', stickyVisibilityHandler as EventListener);
+    window.addEventListener('auth:session-changed', authSessionChangedHandler);
 
     state = { ...state, showSticky: getCurrentStickyVisibility() };
     dispatchState();
@@ -497,6 +501,7 @@
 
     return () => {
       window.removeEventListener('sticky-visibility', stickyVisibilityHandler as EventListener);
+      window.removeEventListener('auth:session-changed', authSessionChangedHandler);
       window.removeEventListener('pointerdown', handleInteraction);
       window.removeEventListener('keydown', handleInteraction);
       window.removeEventListener('scroll', handleInteraction);

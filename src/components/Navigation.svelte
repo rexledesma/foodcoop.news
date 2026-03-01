@@ -101,7 +101,7 @@
   }
 
   async function hydrateProduceFavoritesSummary() {
-    if (typeof window === 'undefined' || !isAuthenticated) return;
+    if (typeof window === 'undefined') return;
     try {
       const response = await fetch('/api/me/produce-favorites/summary', {
         headers: { accept: 'application/json' },
@@ -294,6 +294,7 @@
     window.addEventListener('focus', handleDisplayModeChange);
     displayModeMedia.addEventListener('change', handleDisplayModeChange);
     updateSidebarInstallAppButtonVisibility();
+    void hydrateProduceFavoritesSummary();
 
     const container = mobileScrollRef;
     const handleScroll = () => updateActiveRouteIndicator();
