@@ -78,7 +78,9 @@
   let websiteJsonLd = '';
   let organizationJsonLd = '';
   let isPwaInstallReady = false;
-  let pwaInstallElement: (HTMLElement & { showDialog?: () => void }) | null = null;
+  let pwaInstallElement: (HTMLElement & { showDialog?: (force?: boolean) => void; manualHowTo?: boolean }) | null = null;
+  let shouldForcePwaInstallDialog = false;
+  let shouldExpandPwaInstallHowTo = false;
   let hasAutoShownPwaInstall = false;
   let shouldOpenPwaInstallDialog = false;
   let hasDismissedPwaInstall = false;
@@ -349,10 +351,15 @@
     let hasCountedScrollInteraction = false;
 
     const showPwaInstallDialog = (event?: Event) => {
-      const forcePrompt =
-        event instanceof CustomEvent && Boolean((event.detail as { force?: boolean } | null)?.force);
+      const eventDetail =
+        event instanceof CustomEvent
+          ? ((event.detail as { force?: boolean; expandHowTo?: boolean } | null) ?? null)
+          : null;
+      const forcePrompt = Boolean(eventDetail?.force);
       if (isStandaloneMode()) return;
       if (hasDismissedPwaInstall && !forcePrompt) return;
+      shouldForcePwaInstallDialog = forcePrompt;
+      shouldExpandPwaInstallHowTo = Boolean(eventDetail?.expandHowTo);
       shouldOpenPwaInstallDialog = true;
     };
 
@@ -517,8 +524,11 @@
   }
 
   $: if (shouldOpenPwaInstallDialog && isPwaInstallReady && pwaInstallElement?.showDialog) {
-    pwaInstallElement.showDialog();
+    pwaInstallElement.manualHowTo = shouldExpandPwaInstallHowTo;
+    pwaInstallElement.showDialog(shouldForcePwaInstallDialog);
     shouldOpenPwaInstallDialog = false;
+    shouldForcePwaInstallDialog = false;
+    shouldExpandPwaInstallHowTo = false;
   }
 
   $: documentTitle = computePageTitle($page.url.pathname, $page.url.searchParams);

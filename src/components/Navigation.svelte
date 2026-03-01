@@ -63,6 +63,7 @@
   let shouldReplaceHistoryOnMobile = $state(false);
   let isSidebarOpen = $state(false);
   let produceFavoritesCount = $state(0);
+  let showSidebarInstallAppButton = $state(false);
 
   function closeSidebar() {
     isSidebarOpen = false;
@@ -70,6 +71,31 @@
 
   function toggleSidebar() {
     isSidebarOpen = !isSidebarOpen;
+  }
+
+  function isStandaloneMode(): boolean {
+    return (
+      window.matchMedia('(display-mode: standalone)').matches ||
+      (window.navigator as Navigator & { standalone?: boolean }).standalone === true
+    );
+  }
+
+  function isMobileInstallCapableDevice(): boolean {
+    const userAgent = navigator.userAgent || '';
+    const isAppleMobile =
+      /iPhone|iPad|iPod/i.test(userAgent) ||
+      (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    const isAndroidMobile = /Android/i.test(userAgent);
+
+    return (isAppleMobile || isAndroidMobile) && 'serviceWorker' in navigator;
+  }
+
+  function updateSidebarInstallAppButtonVisibility() {
+    showSidebarInstallAppButton = !isStandaloneMode() && isMobileInstallCapableDevice();
+  }
+
+  function openInstallPromptFromSidebar() {
+    window.dispatchEvent(new CustomEvent('pwa-install:show', { detail: { force: true, expandHowTo: true } }));
   }
 
   function parseFavoritesCount(raw: string | null): number {
@@ -260,10 +286,17 @@
         closeSidebar();
       }
     };
+    const displayModeMedia = window.matchMedia('(display-mode: standalone)');
+    const handleDisplayModeChange = () => {
+      updateSidebarInstallAppButtonVisibility();
+    };
     window.addEventListener(`navigation-state:update:${channel}`, handler as EventListener);
     window.addEventListener('produce-favorites', syncFavorites);
     window.addEventListener('produce-favorites-cache', syncFavorites);
     window.addEventListener('keydown', handleEscapeKey);
+    window.addEventListener('focus', handleDisplayModeChange);
+    displayModeMedia.addEventListener('change', handleDisplayModeChange);
+    updateSidebarInstallAppButtonVisibility();
 
     const container = mobileScrollRef;
     const handleScroll = () => updateActiveRouteIndicator();
@@ -278,6 +311,8 @@
       window.removeEventListener('produce-favorites', syncFavorites);
       window.removeEventListener('produce-favorites-cache', syncFavorites);
       window.removeEventListener('keydown', handleEscapeKey);
+      window.removeEventListener('focus', handleDisplayModeChange);
+      displayModeMedia.removeEventListener('change', handleDisplayModeChange);
       container?.removeEventListener('scroll', handleScroll);
       window.removeEventListener('resize', handleResize);
     };
@@ -427,7 +462,7 @@
     data-swipe-interactive="true"
     class="fixed inset-0 z-50 h-[100dvh] min-h-[100svh] bg-zinc-900/35"
     role="presentation"
-    onclick={closeSidebar}
+    onpointerdown={closeSidebar}
   >
     <div
       id="navigation-sidebar"
@@ -503,6 +538,18 @@
           </a>
         {/each}
       </div>
+
+      {#if showSidebarInstallAppButton}
+        <div class="mt-2 border-t border-zinc-200 pt-4">
+          <button
+            type="button"
+            class="inline-flex w-full items-center justify-center rounded-lg bg-black px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-zinc-800"
+            onclick={openInstallPromptFromSidebar}
+          >
+            Add to home screen
+          </button>
+        </div>
+      {/if}
 
       <div class="mt-auto border-t border-zinc-200 pt-4">
         <a
