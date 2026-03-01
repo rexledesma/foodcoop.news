@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
+  import { fly } from 'svelte/transition';
 
   type NavigationClientState = {
     pathname: string;
@@ -7,7 +8,6 @@
     showSticky: boolean;
     isPending: boolean;
     isAuthenticated: boolean;
-    isDropdownOpen: boolean;
     memberName: string;
     memberId: string;
     userEmail: string;
@@ -15,8 +15,6 @@
     swipeToPath: string | null;
     swipeProgress: number;
     isSwipeActive: boolean;
-    onToggleDropdown: () => void;
-    onCloseDropdown: () => void;
     onSignOut: () => Promise<void>;
   };
 
@@ -47,7 +45,6 @@
   let showSticky = $state(true);
   let isPending = $state(true);
   let isAuthenticated = $state(false);
-  let isDropdownOpen = $state(false);
   let memberName = $state('');
   let memberId = $state('');
   let userEmail = $state('');
@@ -56,18 +53,64 @@
   let swipeProgress = $state(0);
   let isSwipeActive = $state(false);
 
-  let onToggleDropdown = $state<() => void>(() => {});
-  let onCloseDropdown = $state<() => void>(() => {});
   let onSignOut = $state<() => Promise<void>>(async () => {});
 
-  let desktopDropdownRef = $state<HTMLDivElement | null>(null);
-  let mobileDropdownRef = $state<HTMLDivElement | null>(null);
   let mobileScrollRef = $state<HTMLDivElement | null>(null);
   let activeIndicatorLeft = $state(0);
   let activeIndicatorTop = $state(0);
   let activeIndicatorWidth = $state(0);
   let showActiveIndicator = $state(false);
   let shouldReplaceHistoryOnMobile = $state(false);
+  let isSidebarOpen = $state(false);
+  let produceFavoritesCount = $state(0);
+
+  function closeSidebar() {
+    isSidebarOpen = false;
+  }
+
+  function toggleSidebar() {
+    isSidebarOpen = !isSidebarOpen;
+  }
+
+  function parseFavoritesCount(raw: string | null): number {
+    if (!raw) return 0;
+    try {
+      const parsed = JSON.parse(raw) as unknown;
+      if (!Array.isArray(parsed)) return 0;
+      return parsed.filter((entry) => typeof entry === 'string').length;
+    } catch {
+      return 0;
+    }
+  }
+
+  function syncProduceFavoritesFromStorage() {
+    if (typeof window === 'undefined') return;
+    const local = localStorage.getItem('produce-favorites');
+    const cache = localStorage.getItem('produce-favorites-cache');
+    produceFavoritesCount = Math.max(parseFavoritesCount(local), parseFavoritesCount(cache));
+  }
+
+  async function hydrateProduceFavoritesCount() {
+    if (typeof window === 'undefined' || !isAuthenticated) return;
+    try {
+      const response = await fetch('/api/me/produce-favorites', {
+        headers: { accept: 'application/json' },
+      });
+      if (!response.ok) return;
+      const data = (await response.json()) as { favorites?: unknown };
+      if (!Array.isArray(data.favorites)) return;
+      produceFavoritesCount = data.favorites.filter((entry) => typeof entry === 'string').length;
+    } catch {
+      // Ignore failures and keep local snapshot.
+    }
+  }
+
+  function getSignupHref(): string {
+    const queryString = loginHref.split('?')[1] ?? '';
+    const next = new URLSearchParams(queryString).get('next');
+    if (!next) return '/signup';
+    return `/signup?next=${encodeURIComponent(next)}`;
+  }
 
   function getNavIcon(icon: NavIconName): string {
     switch (icon) {
@@ -92,7 +135,6 @@
     showSticky = next.showSticky;
     isPending = next.isPending;
     isAuthenticated = next.isAuthenticated;
-    isDropdownOpen = next.isDropdownOpen;
     memberName = next.memberName;
     memberId = next.memberId;
     userEmail = next.userEmail;
@@ -100,24 +142,12 @@
     swipeToPath = next.swipeToPath;
     swipeProgress = next.swipeProgress;
     isSwipeActive = next.isSwipeActive;
-    onToggleDropdown = next.onToggleDropdown;
-    onCloseDropdown = next.onCloseDropdown;
     onSignOut = next.onSignOut;
   }
 
   function handleStateUpdate(event: Event) {
     if (!(event instanceof CustomEvent)) return;
     applyState(event.detail as NavigationClientState);
-  }
-
-  function handleClickOutside(event: MouseEvent) {
-    const target = event.target;
-    if (!(target instanceof Node)) return;
-    const inDesktop = desktopDropdownRef?.contains(target);
-    const inMobile = mobileDropdownRef?.contains(target);
-    if (!inDesktop && !inMobile) {
-      onCloseDropdown();
-    }
   }
 
   function isVisible(node: Element): node is HTMLElement {
@@ -222,8 +252,19 @@
     applyState(initialState);
 
     const handler = (event: Event) => handleStateUpdate(event);
+    const syncFavorites = () => {
+      if (!isAuthenticated) return;
+      syncProduceFavoritesFromStorage();
+    };
+    const handleEscapeKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        closeSidebar();
+      }
+    };
     window.addEventListener(`navigation-state:update:${channel}`, handler as EventListener);
-    document.addEventListener('mousedown', handleClickOutside);
+    window.addEventListener('produce-favorites', syncFavorites);
+    window.addEventListener('produce-favorites-cache', syncFavorites);
+    window.addEventListener('keydown', handleEscapeKey);
 
     const container = mobileScrollRef;
     const handleScroll = () => updateActiveRouteIndicator();
@@ -235,7 +276,9 @@
     return () => {
       coarsePointerMedia.removeEventListener('change', updateHistoryReplaceMode);
       window.removeEventListener(`navigation-state:update:${channel}`, handler as EventListener);
-      document.removeEventListener('mousedown', handleClickOutside);
+      window.removeEventListener('produce-favorites', syncFavorites);
+      window.removeEventListener('produce-favorites-cache', syncFavorites);
+      window.removeEventListener('keydown', handleEscapeKey);
       container?.removeEventListener('scroll', handleScroll);
       window.removeEventListener('resize', handleResize);
     };
@@ -256,6 +299,40 @@
     if (!swipeSignature) return;
     requestAnimationFrame(updateActiveRouteIndicator);
   });
+
+  $effect(() => {
+    if (!pathname) return;
+    closeSidebar();
+  });
+
+  $effect(() => {
+    if (typeof document === 'undefined') return;
+    if (!isSidebarOpen) return;
+
+    const originalHtmlOverflow = document.documentElement.style.overflow;
+    const originalBodyOverflow = document.body.style.overflow;
+    const originalBodyOverscroll = document.body.style.overscrollBehavior;
+
+    document.documentElement.style.overflow = 'hidden';
+    document.body.style.overflow = 'hidden';
+    document.body.style.overscrollBehavior = 'none';
+
+    return () => {
+      document.documentElement.style.overflow = originalHtmlOverflow;
+      document.body.style.overflow = originalBodyOverflow;
+      document.body.style.overscrollBehavior = originalBodyOverscroll;
+    };
+  });
+
+  $effect(() => {
+    if (typeof window === 'undefined') return;
+    if (!isAuthenticated) {
+      produceFavoritesCount = 0;
+      return;
+    }
+    syncProduceFavoritesFromStorage();
+    void hydrateProduceFavoritesCount();
+  });
 </script>
 
 <nav
@@ -265,7 +342,21 @@
   }`}
 >
   <div class="mx-auto grid h-12 max-w-3xl grid-cols-[2.5rem_1fr_2.5rem] items-center px-4">
-    <div aria-hidden="true" class="h-4 w-7"></div>
+    <button
+      type="button"
+      onclick={toggleSidebar}
+      class="flex h-6 w-6 items-center justify-center rounded-md text-zinc-700 transition-colors hover:bg-zinc-200/60 hover:text-black"
+      aria-label={isSidebarOpen ? 'Close menu' : 'Open menu'}
+      aria-expanded={isSidebarOpen}
+      aria-controls="navigation-sidebar"
+    >
+      <span class="sr-only">{isSidebarOpen ? 'Close menu' : 'Open menu'}</span>
+      <span class="inline-flex h-4 w-5 flex-col justify-between" aria-hidden="true">
+        <span class="h-0.5 w-full rounded-full bg-current"></span>
+        <span class="h-0.5 w-full rounded-full bg-current"></span>
+        <span class="h-0.5 w-full rounded-full bg-current"></span>
+      </span>
+    </button>
     <p
       class="text-center text-base leading-none font-bold text-zinc-700"
       style="font-family: 'DIN 1451 Std Engschrift', 'DIN 1451 Engschrift', Bahnschrift, 'DIN Alternate', 'Franklin Gothic Medium', sans-serif;"
@@ -323,63 +414,6 @@
         </span>
       </a>
 
-      {#if isPending}
-        <div
-          class="shrink-0 flex flex-row items-center justify-center gap-2 rounded-lg px-2 py-1 text-zinc-400 md:hidden"
-          aria-busy="true"
-        >
-          <span class="text-xl md:text-lg">{getNavIcon('carrot')}</span>
-          <span class="text-sm font-medium">Sign In</span>
-        </div>
-      {:else if isAuthenticated}
-        <div class="relative shrink-0 md:hidden" bind:this={mobileDropdownRef}>
-          <button
-            type="button"
-            onclick={onToggleDropdown}
-            class={`flex flex-row items-center justify-center gap-2 rounded-lg px-2 py-1 text-sm font-medium transition-colors ${
-              isDropdownOpen ? 'text-black' : 'text-zinc-500 hover:text-black'
-            }`}
-          >
-            <span class="text-xl md:text-lg">{getNavIcon('carrot')}</span>
-            <span>Account</span>
-          </button>
-
-          {#if isDropdownOpen}
-            <div class="absolute top-full left-0 z-50 mt-2 w-64 overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-lg">
-              <div class="border-b border-zinc-200 p-4">
-                <p class="font-medium text-zinc-900">{memberName}</p>
-                {#if memberId}
-                  <p class="mt-1 text-sm text-zinc-500">
-                    Member ID: <span class="font-mono">{memberId}</span>
-                  </p>
-                {/if}
-                <p class="mt-1 truncate text-sm text-zinc-500">{userEmail}</p>
-              </div>
-              <button
-                type="button"
-                onclick={onSignOut}
-                class="w-full px-4 py-3 text-left text-sm text-zinc-700 transition-colors hover:bg-zinc-100"
-              >
-                Sign Out
-              </button>
-            </div>
-          {/if}
-        </div>
-      {:else}
-        <a
-          href={loginHref}
-          data-sveltekit-replacestate={shouldReplaceHistoryOnMobile ? 'true' : undefined}
-          data-nav-href="/login"
-          class={`shrink-0 flex flex-row items-center justify-center rounded-lg px-2 py-1 transition-colors md:hidden ${
-            pathname === '/login' ? 'text-black' : 'text-zinc-500 hover:text-black'
-          }`}
-        >
-          <span data-nav-label class="inline-flex items-center gap-2">
-            <span class="text-xl md:text-lg">{getNavIcon('carrot')}</span>
-            <span class="text-sm font-medium">Sign In</span>
-          </span>
-        </a>
-      {/if}
     </div>
 
     <span
@@ -389,63 +423,90 @@
         showActiveIndicator ? 1 : 0
       };`}
     ></span>
-
-    <div class="relative hidden shrink-0 md:block" bind:this={desktopDropdownRef}>
-      {#if isPending}
-        <div
-          class="flex flex-row items-center justify-center gap-2 rounded-lg px-4 py-2 text-zinc-400"
-          aria-busy="true"
-        >
-          <span class="text-xl md:text-lg">{getNavIcon('carrot')}</span>
-          <span class="text-sm font-medium">Sign In</span>
-        </div>
-      {:else if isAuthenticated}
-        <button
-          type="button"
-          onclick={onToggleDropdown}
-          class={`flex flex-row items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
-            isDropdownOpen ? 'text-black' : 'text-zinc-500 hover:text-black'
-          }`}
-        >
-          <span class="text-xl md:text-lg">{getNavIcon('carrot')}</span>
-          <span>Account</span>
-        </button>
-
-        {#if isDropdownOpen}
-          <div class="absolute top-full right-0 z-50 mt-2 w-64 overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-lg">
-            <div class="border-b border-zinc-200 p-4">
-              <p class="font-medium text-zinc-900">{memberName}</p>
-              {#if memberId}
-                <p class="mt-1 text-sm text-zinc-500">
-                  Member ID: <span class="font-mono">{memberId}</span>
-                </p>
-              {/if}
-              <p class="mt-1 truncate text-sm text-zinc-500">{userEmail}</p>
-            </div>
-            <button
-              type="button"
-              onclick={onSignOut}
-              class="w-full px-4 py-3 text-left text-sm text-zinc-700 transition-colors hover:bg-zinc-100"
-            >
-              Sign Out
-            </button>
-          </div>
-        {/if}
-      {:else}
-        <a
-          href={loginHref}
-          data-sveltekit-replacestate={shouldReplaceHistoryOnMobile ? 'true' : undefined}
-          data-nav-href="/login"
-          class={`flex flex-row items-center justify-center rounded-lg px-4 py-2 transition-colors ${
-            pathname === '/login' ? 'text-black' : 'text-zinc-500 hover:text-black'
-          }`}
-        >
-          <span data-nav-label class="inline-flex items-center gap-2">
-            <span class="text-xl md:text-lg">{getNavIcon('carrot')}</span>
-            <span class="text-sm font-medium">Sign In</span>
-          </span>
-        </a>
-      {/if}
-    </div>
   </div>
 </nav>
+
+{#if isSidebarOpen}
+  <div
+    data-swipe-interactive="true"
+    class="fixed inset-0 z-50 h-[100dvh] min-h-[100svh] bg-zinc-900/35"
+    role="presentation"
+    onclick={closeSidebar}
+  >
+    <div
+      id="navigation-sidebar"
+      class="fixed inset-y-0 left-0 h-[100dvh] min-h-[100svh] w-80 max-w-[calc(100vw-2rem)] border-r border-zinc-200 bg-white px-5 pb-[calc(env(safe-area-inset-bottom)+1.25rem)] pt-[calc(env(safe-area-inset-top)+1.75rem)] shadow-2xl"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Navigation menu"
+      tabindex="-1"
+      onpointerdown={(event) => event.stopPropagation()}
+      in:fly={{ x: -320, duration: 220 }}
+      out:fly={{ x: -320, duration: 180 }}
+    >
+      <div>
+        <p
+          class="text-base leading-tight font-bold text-zinc-800"
+          style="font-family: 'DIN 1451 Std Engschrift', 'DIN 1451 Engschrift', Bahnschrift, 'DIN Alternate', 'Franklin Gothic Medium', sans-serif;"
+        >
+          FOODCOOP.NEWS
+        </p>
+      </div>
+
+      {#if isPending}
+        <p class="mt-5 text-sm text-zinc-500">Loading account…</p>
+      {:else if isAuthenticated}
+        <div class="mt-5">
+          {#if memberName.trim()}
+            <p class="text-base font-semibold text-zinc-900">{memberName.trim()}</p>
+            <p class="text-sm text-zinc-600 break-all">{userEmail || 'Signed in'}</p>
+          {:else}
+            <p class="text-base font-semibold text-zinc-900 break-all">{userEmail || 'Signed in'}</p>
+          {/if}
+          {#if memberId.trim()}
+            <p class="font-mono text-sm text-zinc-600">{memberId.trim()}</p>
+          {/if}
+          <p class="mt-2 text-sm text-zinc-700">
+            <span class="font-bold text-black">{produceFavoritesCount}</span> favorites
+          </p>
+        </div>
+      {:else}
+        <div class="mt-5 space-y-4">
+          <p class="text-2xl leading-tight font-bold text-zinc-900">
+            Stay in the loop with the Park Slope Food Coop
+          </p>
+          <div class="flex flex-wrap gap-2">
+            <a
+              href={getSignupHref()}
+              class="rounded-lg bg-black px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-zinc-800"
+            >
+              Create Account
+            </a>
+            <a
+              href={loginHref}
+              class="rounded-lg border border-zinc-300 px-3 py-2 text-sm font-medium text-zinc-800 transition-colors hover:bg-zinc-100"
+            >
+              Sign in
+            </a>
+          </div>
+        </div>
+      {/if}
+
+      <div class="mt-4 border-t border-zinc-200 pt-4">
+        {#each [...navItems, aboutItem] as item (item.href)}
+          <a
+            href={item.href}
+            data-sveltekit-replacestate={shouldReplaceHistoryOnMobile ? 'true' : undefined}
+            class={`flex items-center gap-3 rounded-md px-1 py-3 text-xl transition-colors hover:text-black ${
+              normalizePathname(pathname) === item.href ? 'font-bold text-black' : 'font-normal text-zinc-700'
+            }`}
+            onclick={closeSidebar}
+          >
+            <span aria-hidden="true">{getNavIcon(item.icon)}</span>
+            <span>{item.label}</span>
+          </a>
+        {/each}
+      </div>
+    </div>
+  </div>
+{/if}
