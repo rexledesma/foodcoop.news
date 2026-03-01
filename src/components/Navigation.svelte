@@ -378,7 +378,7 @@
     <button
       type="button"
       onclick={toggleSidebar}
-      class="flex h-6 w-6 items-center justify-center rounded-md text-zinc-700 transition-colors hover:bg-zinc-200/60 hover:text-black"
+      class="flex h-6 w-6 select-none items-center justify-center rounded-md text-zinc-700 transition-colors hover:bg-zinc-200/60 hover:text-black"
       aria-label={isSidebarOpen ? 'Close menu' : 'Open menu'}
       aria-expanded={isSidebarOpen}
       aria-controls="navigation-sidebar"
@@ -390,12 +390,13 @@
         <span class="h-0.5 w-full rounded-full bg-current"></span>
       </span>
     </button>
-    <p
-      class="text-center text-base leading-none font-bold text-zinc-700"
+    <a
+      href="/"
+      class="select-none text-center text-base leading-none font-bold text-zinc-700"
       style="font-family: 'DIN 1451 Std Engschrift', 'DIN 1451 Engschrift', Bahnschrift, 'DIN Alternate', 'Franklin Gothic Medium', sans-serif;"
     >
       FOODCOOP.NEWS
-    </p>
+    </a>
     <div aria-hidden="true" class="h-4 w-7"></div>
   </div>
   <div
