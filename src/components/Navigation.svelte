@@ -431,7 +431,7 @@
   >
     <div
       id="navigation-sidebar"
-      class="fixed inset-y-0 left-0 h-[100dvh] min-h-[100svh] w-80 max-w-[calc(100vw-2rem)] border-r border-zinc-200 bg-white px-5 pb-[calc(env(safe-area-inset-bottom)+1.25rem)] pt-[calc(env(safe-area-inset-top)+1.75rem)] shadow-2xl"
+      class="fixed inset-y-0 left-0 flex h-[100dvh] min-h-[100svh] w-80 max-w-[calc(100vw-2rem)] flex-col border-r border-zinc-200 bg-white px-5 pb-[calc(env(safe-area-inset-bottom)+1.25rem)] pt-[calc(env(safe-area-inset-top)+1.75rem)] shadow-2xl"
       role="dialog"
       aria-modal="true"
       aria-label="Navigation menu"
@@ -502,6 +502,16 @@
             <span>{item.label}</span>
           </a>
         {/each}
+      </div>
+
+      <div class="mt-auto border-t border-zinc-200 pt-4">
+        <a
+          href="mailto:rex.ledesma1@gmail.com?subject=foodcoop.news%20feedback"
+          class="inline-flex w-full items-center justify-center rounded-lg border border-zinc-300 px-3 py-2 text-sm font-medium text-zinc-800 transition-colors hover:bg-zinc-100"
+          onclick={closeSidebar}
+        >
+          Send feedback
+        </a>
       </div>
     </div>
   </div>
