@@ -80,7 +80,7 @@
   let isPwaInstallReady = false;
   let pwaInstallElement: (HTMLElement & { showDialog?: () => void }) | null = null;
   let hasAutoShownPwaInstall = false;
-  let hasPendingPwaDialog = false;
+  let shouldOpenPwaInstallDialog = false;
   let hasDismissedPwaInstall = false;
   let isSwipePreviewMode = false;
   let swipePreviewUrl = '';
@@ -323,10 +323,6 @@
 
     void import('@khmyznikov/pwa-install').then(() => {
       isPwaInstallReady = true;
-      if (hasPendingPwaDialog && !hasDismissedPwaInstall) {
-        hasPendingPwaDialog = false;
-        pwaInstallElement?.showDialog?.();
-      }
     });
 
     injectAnalytics();
@@ -352,14 +348,12 @@
     let interactionCount = 0;
     let hasCountedScrollInteraction = false;
 
-    const showPwaInstallDialog = () => {
+    const showPwaInstallDialog = (event?: Event) => {
+      const forcePrompt =
+        event instanceof CustomEvent && Boolean((event.detail as { force?: boolean } | null)?.force);
       if (isStandaloneMode()) return;
-      if (hasDismissedPwaInstall) return;
-      if (pwaInstallElement?.showDialog) {
-        pwaInstallElement.showDialog();
-        return;
-      }
-      hasPendingPwaDialog = true;
+      if (hasDismissedPwaInstall && !forcePrompt) return;
+      shouldOpenPwaInstallDialog = true;
     };
 
     const handleInteraction = (event: Event) => {
@@ -520,6 +514,11 @@
 
   $: if (typeof window !== 'undefined') {
     setStickyVisibilityRoute($page.url.pathname);
+  }
+
+  $: if (shouldOpenPwaInstallDialog && isPwaInstallReady && pwaInstallElement?.showDialog) {
+    pwaInstallElement.showDialog();
+    shouldOpenPwaInstallDialog = false;
   }
 
   $: documentTitle = computePageTitle($page.url.pathname, $page.url.searchParams);

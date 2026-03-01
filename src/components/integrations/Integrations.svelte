@@ -193,7 +193,7 @@
   }
 
   function openInstallPrompt() {
-    window.dispatchEvent(new CustomEvent('pwa-install:show'));
+    window.dispatchEvent(new CustomEvent('pwa-install:show', { detail: { force: true } }));
   }
 
   onMount(() => {
