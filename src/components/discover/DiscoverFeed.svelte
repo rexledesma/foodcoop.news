@@ -520,7 +520,7 @@
     class="block rounded-xl border border-zinc-200 bg-white p-4 transition-colors hover:border-green-300"
   >
     {#if post.repostedBy}
-      <div class="mb-3 flex items-center gap-2 text-sm text-zinc-500">
+      <div class="mb-3 flex items-center gap-1 text-sm text-zinc-500">
         <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
           <path
             stroke-linecap="round"
@@ -546,11 +546,11 @@
             />
           {/if}
           <div class="min-w-0 flex-1">
-            <div class="flex items-center gap-2">
+            <div class="flex flex-col gap-0.5">
               <span class="text-sm font-medium text-zinc-600">{post.parent.author.displayName}</span>
               <span class="text-xs text-zinc-400">{formatPublishedAt(new Date(post.parent.createdAt))}</span>
             </div>
-            <p class="line-clamp-2 text-sm break-words whitespace-pre-wrap text-zinc-500">{post.parent.text}</p>
+            <p class="mt-2 line-clamp-2 text-sm break-words whitespace-pre-wrap text-zinc-500">{post.parent.text}</p>
           </div>
         </div>
       </div>
@@ -567,7 +567,7 @@
         />
       {/if}
       <div class="min-w-0 flex-1">
-        <div class="flex flex-wrap items-center gap-2">
+        <div class="flex flex-wrap items-center gap-1">
           <svg class="h-4 w-4 shrink-0 text-[#0085ff]" viewBox="0 0 600 530" fill="currentColor" aria-label="Bluesky">
             <title>Bluesky</title>
             <path d="m135.72 44.03c66.496 49.921 138.02 151.14 164.28 205.46 26.262-54.316 97.782-155.54 164.28-205.46 47.98-36.021 125.72-63.892 125.72 24.795 0 17.712-10.155 148.79-16.111 170.07-20.703 73.984-96.144 92.854-163.25 81.433 117.3 19.964 147.14 86.092 82.697 152.22-122.39 125.59-175.91-31.511-189.63-71.766-2.514-7.3797-6.0634-17.664-8.9824-26.262-2.9191 8.5976-6.4685 18.882-8.9824 26.262-13.723 40.255-67.243 197.36-189.63 71.766-64.444-66.128-34.605-132.26 82.697-152.22-67.108 11.421-142.55-7.4491-163.25-81.433-5.9562-21.282-16.111-152.36-16.111-170.07 0-88.687 77.742-60.816 125.72-24.795z"></path>
@@ -594,7 +594,7 @@
 
         {#if post.quotedPost}
           <div class="mt-3 rounded-lg border border-zinc-200 p-3">
-            <div class="flex items-center gap-2">
+            <div class="flex flex-wrap items-center gap-2">
               {#if post.quotedPost.author.avatar}
                 <img
                   src={post.quotedPost.author.avatar}
