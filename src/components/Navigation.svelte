@@ -488,15 +488,22 @@
         <p class="mt-5 text-sm text-zinc-500">Loading account…</p>
       {:else if isAuthenticated}
         <div class="mt-5">
-          {#if memberName.trim()}
-            <p class="text-base font-semibold text-zinc-900">{memberName.trim()}</p>
-            <p class="text-sm text-zinc-600 break-all">{userEmail || 'Signed in'}</p>
-          {:else}
-            <p class="text-base font-semibold text-zinc-900 break-all">{userEmail || 'Signed in'}</p>
-          {/if}
-          {#if memberId.trim()}
-            <p class="font-mono text-sm text-zinc-600">{memberId.trim()}</p>
-          {/if}
+          <a
+            href="/integrations"
+            data-sveltekit-replacestate={shouldReplaceHistoryOnMobile ? 'true' : undefined}
+            class="block rounded-md p-1 transition-colors hover:bg-zinc-100"
+            onclick={closeSidebar}
+          >
+            {#if memberName.trim()}
+              <p class="text-base font-semibold text-zinc-900">{memberName.trim()}</p>
+              <p class="text-sm text-zinc-600 break-all">{userEmail || 'Signed in'}</p>
+            {:else}
+              <p class="text-base font-semibold text-zinc-900 break-all">{userEmail || 'Signed in'}</p>
+            {/if}
+            {#if memberId.trim()}
+              <p class="font-mono text-sm text-zinc-600">{memberId.trim()}</p>
+            {/if}
+          </a>
           <p class="mt-2 text-sm text-zinc-700">
             <a
               href="/produce?filter=favorites"
