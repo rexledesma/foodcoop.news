@@ -346,6 +346,14 @@
     return periodScopedRows.find((row) => produceHash(row.name) === itemFilter)?.name ?? null;
   });
   const virtualRows = $derived($rowVirtualizer.getVirtualItems());
+  const visibleVirtualRows = $derived.by(() =>
+    virtualRows
+      .map((virtualRow) => {
+        const row = filteredRows[virtualRow.index];
+        return row ? { virtualRow, row } : null;
+      })
+      .filter((entry) => entry !== null),
+  );
   const virtualTotalSize = $derived(Math.max(0, $rowVirtualizer.getTotalSize() - virtualScrollMargin));
   const virtualPaddingTop = $derived.by(() => {
     if (virtualRows.length === 0) return 0;
@@ -1756,8 +1764,9 @@
               <td colspan="3" class="h-0 p-0" style={`height:${virtualPaddingTop}px;`}></td>
             </tr>
           {/if}
-          {#each virtualRows as virtualRow (virtualRow.key)}
-            {@const row = filteredRows[virtualRow.index]!}
+          {#each visibleVirtualRows as entry (entry.virtualRow.key)}
+            {@const virtualRow = entry.virtualRow}
+            {@const row = entry.row}
             {@const rowHistory = history.get(row.name)}
             {@const periodData = getPeriodData(row, timePeriod, rowHistory, dateRange)}
             {@const prev = periodData.prev}
