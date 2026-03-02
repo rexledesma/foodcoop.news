@@ -187,9 +187,12 @@
   const stickyVisible = $derived(showSticky);
   const normalizedSearch = $derived(search.trim().toLowerCase());
   const hasSearchQuery = $derived(normalizedSearch.length > 0);
+  const periodScopedRows = $derived.by(() => {
+    return data.filter((row) => hasPointInPeriod(history.get(row.name), dateRange, timePeriod));
+  });
 
   const searchDocs = $derived(
-    data.map<ProduceSearchDocument>((row) => ({
+    periodScopedRows.map<ProduceSearchDocument>((row) => ({
       id: produceHash(row.name),
       name: row.name,
       origin: row.origin,
@@ -225,7 +228,7 @@
   }
 
   const filteredRows = $derived.by(() => {
-    let result = data;
+    let result = periodScopedRows;
 
     if (itemFilter) {
       result = result.filter((row) => produceHash(row.name) === itemFilter);
@@ -287,8 +290,8 @@
   });
 
   const fullSearchMatchCount = $derived.by(() => {
-    if (!searchScores) return data.length;
-    return data.filter((row) => searchScores.has(produceHash(row.name))).length;
+    if (!searchScores) return periodScopedRows.length;
+    return periodScopedRows.filter((row) => searchScores.has(produceHash(row.name))).length;
   });
 
   const hasActiveResultFilter = $derived.by(() => {
@@ -308,7 +311,7 @@
   });
 
   const quickFilterCount = $derived.by(() => {
-    let base = data;
+    let base = periodScopedRows;
     const selectedDate = dateFilter;
     if (selectedDate) {
       base = base.filter((row) => rowMatchesDateFilter(row, selectedDate));
@@ -327,7 +330,7 @@
 
   const itemFilterName = $derived.by(() => {
     if (!itemFilter) return null;
-    return data.find((row) => produceHash(row.name) === itemFilter)?.name ?? null;
+    return periodScopedRows.find((row) => produceHash(row.name) === itemFilter)?.name ?? null;
   });
   const produceFilterDisplayName = $derived.by(() => {
     if (itemFilterName) return itemFilterName;
@@ -570,6 +573,25 @@
       const pointMs = new Date(point.date + 'T00:00:00').getTime();
       return pointMs >= periodStartMs && pointMs <= endMs;
     }).length;
+  }
+
+  function hasPointInPeriod(
+    points: ProduceHistoryPoint[] | undefined,
+    activeRange: ProduceDateRange | null,
+    period: TimePeriod,
+  ): boolean {
+    if (!points || points.length === 0) return false;
+    const endMs = activeRange
+      ? new Date(activeRange.end + 'T00:00:00').getTime()
+      : new Date(points[points.length - 1].date + 'T00:00:00').getTime();
+    const periodStartMs = getPeriodStartMs(period, endMs);
+    for (const point of points) {
+      const pointMs = new Date(point.date + 'T00:00:00').getTime();
+      if (pointMs >= periodStartMs && pointMs <= endMs) {
+        return true;
+      }
+    }
+    return false;
   }
 
   function metricLabel(period: TimePeriod): string {

@@ -174,11 +174,10 @@ const DATA_SQL = `
     FROM produce
     GROUP BY name
   ),
-  unavailable_recent AS (
+  unavailable_all AS (
     SELECT l.name, l.last_seen_date
     FROM last_seen l, latest_date
     WHERE l.last_seen_date < max_date
-      AND l.last_seen_date >= max_date - INTERVAL '30 days'
   ),
   last_seen_rows AS (
     SELECT
@@ -193,7 +192,7 @@ const DATA_SQL = `
       p.unit,
       u.last_seen_date
     FROM produce p
-    JOIN unavailable_recent u
+    JOIN unavailable_all u
       ON p.name = u.name AND p.date::DATE = u.last_seen_date
   ),
   prev_day AS (
