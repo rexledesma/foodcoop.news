@@ -286,6 +286,27 @@
     });
   });
 
+  const fullSearchMatchCount = $derived.by(() => {
+    if (!searchScores) return data.length;
+    return data.filter((row) => searchScores.has(produceHash(row.name))).length;
+  });
+
+  const hasActiveResultFilter = $derived.by(() => {
+    if (itemFilter || dateFilter) return true;
+    return (
+      quickFilter === 'favorites' || quickFilter === 'new' || quickFilter === 'recently_unavailable'
+    );
+  });
+
+  const shouldShowClearFilterSearchCta = $derived.by(() => {
+    return (
+      filteredRows.length === 0 &&
+      hasSearchQuery &&
+      hasActiveResultFilter &&
+      fullSearchMatchCount > 0
+    );
+  });
+
   const quickFilterCount = $derived.by(() => {
     let base = data;
     const selectedDate = dateFilter;
@@ -593,6 +614,32 @@
   function shouldShowViewFilterPill(): boolean {
     if (produceFilterDisplayName) return false;
     return true;
+  }
+
+  function activeResultFilterLabel(): string {
+    if (produceFilterDisplayName) return produceFilterDisplayName;
+    const filter = activeViewFilter();
+    if (filter === 'date' && dateFilter) return formatShortDate(dateFilter).toLowerCase();
+    if (filter === 'favorites' || filter === 'new' || filter === 'recently_unavailable') {
+      return quickFilterPillLabel(filter).toLowerCase();
+    }
+    return 'current filter';
+  }
+
+  function clearActiveResultFilter() {
+    if (dateFilter) {
+      clearDateFilter();
+      return;
+    }
+    if (itemFilter || initialProduceFilter) {
+      clearItemFilter();
+      return;
+    }
+    clearQuickFilter();
+  }
+
+  function clearSearchQuery() {
+    search = '';
   }
 
   function clearQuickFilter() {
@@ -1571,6 +1618,30 @@
               </td>
             </tr>
           {/each}
+        {:else if shouldShowClearFilterSearchCta}
+          <tr>
+            <td colspan="3" class="px-2 py-12 text-center">
+              <p class="mx-auto max-w-sm text-sm text-zinc-500">
+                No matches in {activeResultFilterLabel()} for "{search.trim()}".
+              </p>
+              <div class="mt-4 flex items-center justify-center gap-2">
+                <button
+                  type="button"
+                  onclick={clearActiveResultFilter}
+                  class="rounded-full bg-zinc-900 px-4 py-1.5 text-sm font-medium text-white transition-colors hover:bg-zinc-700"
+                >
+                  Search all
+                </button>
+                <button
+                  type="button"
+                  onclick={clearSearchQuery}
+                  class="rounded-full bg-zinc-100 px-4 py-1.5 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-200"
+                >
+                  Clear
+                </button>
+              </div>
+            </td>
+          </tr>
         {:else if quickFilter === 'favorites' && favorites.size === 0}
           <tr>
             <td colspan="3" class="px-2 py-12 text-center">
