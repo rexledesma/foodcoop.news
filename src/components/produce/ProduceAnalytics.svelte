@@ -1,7 +1,9 @@
 <script lang="ts">
   import { goto } from '$app/navigation';
+  import { createWindowVirtualizer } from '@tanstack/svelte-virtual';
   import Fuse from 'fuse.js';
   import { onMount } from 'svelte';
+  import { get } from 'svelte/store';
   import ProduceSparkline from '@/components/produce/ProduceSparkline.svelte';
   import { produceHash, produceItemUrl } from '@/lib/produce-hash';
   import { getSpecialtyProduceUrl } from '@/lib/specialty-produce-map';
@@ -161,14 +163,22 @@
   let linkPreviewAnchorStartTop = $state<number | null>(null);
   let linkPreviewCardRef = $state<HTMLElement | null>(null);
   let favoriteBurstLayerRef = $state<HTMLDivElement | null>(null);
+  let virtualRowsAnchorRef = $state<HTMLDivElement | null>(null);
   let favoriteBursts = $state<FavoriteBurst[]>([]);
   let lastRowTap = $state<RowTapState | null>(null);
   let lastTouchDoubleTapAt = $state(0);
   let nextFavoriteBurstId = $state(0);
+  let virtualScrollMargin = $state(0);
   const linkPreviewCache = new Map<string, LinkPreviewData>();
   const linkPreviewRequests = new Map<string, Promise<LinkPreviewData>>();
   const linkPreviewObserverTargets = new Map<HTMLElement, string>();
   let linkPreviewViewportObserver = $state<IntersectionObserver | null>(null);
+  const rowVirtualizer = createWindowVirtualizer<HTMLTableRowElement>({
+    count: 0,
+    estimateSize: () => 140,
+    overscan: 8,
+    getItemKey: (index) => index,
+  });
 
   let search = $state('');
   let quickFilter = $state<QuickFilter>(null);
@@ -331,6 +341,18 @@
   const itemFilterName = $derived.by(() => {
     if (!itemFilter) return null;
     return periodScopedRows.find((row) => produceHash(row.name) === itemFilter)?.name ?? null;
+  });
+  const virtualRows = $derived($rowVirtualizer.getVirtualItems());
+  const virtualTotalSize = $derived(Math.max(0, $rowVirtualizer.getTotalSize() - virtualScrollMargin));
+  const virtualPaddingTop = $derived.by(() => {
+    if (virtualRows.length === 0) return 0;
+    return Math.max(0, virtualRows[0].start - virtualScrollMargin);
+  });
+  const virtualPaddingBottom = $derived.by(() => {
+    if (virtualRows.length === 0) return 0;
+    const lastItem = virtualRows[virtualRows.length - 1];
+    const adjustedLastEnd = Math.max(0, lastItem.end - virtualScrollMargin);
+    return Math.max(0, virtualTotalSize - adjustedLastEnd);
   });
   const produceFilterDisplayName = $derived.by(() => {
     if (itemFilterName) return itemFilterName;
@@ -1107,6 +1129,26 @@
     }
   }
 
+  function updateVirtualScrollMargin() {
+    if (typeof window === 'undefined') return;
+    const anchor = virtualRowsAnchorRef;
+    if (!anchor) return;
+    virtualScrollMargin = anchor.getBoundingClientRect().top + window.scrollY;
+  }
+
+  function measureVirtualRow(
+    node: HTMLTableRowElement,
+    _index: number,
+  ): { update: (nextIndex: number) => void } {
+    const virtualizer = get(rowVirtualizer);
+    virtualizer.measureElement(node);
+    return {
+      update(_nextIndex: number) {
+        virtualizer.measureElement(node);
+      },
+    };
+  }
+
   async function handlePreviewShareOrCopy() {
     if (!linkPreview) return;
     const url = `${window.location.origin}${produceItemUrl(linkPreview.itemName)}`;
@@ -1205,6 +1247,28 @@
   });
 
   $effect(() => {
+    get(rowVirtualizer).setOptions({
+      count: filteredRows.length,
+      estimateSize: () => 140,
+      overscan: 8,
+      scrollMargin: virtualScrollMargin,
+      getItemKey: (index) => filteredRows[index]?.name ?? index,
+    });
+  });
+
+  $effect(() => {
+    if (typeof window === 'undefined') return;
+    void virtualRowsAnchorRef;
+    void filteredRows.length;
+    void timePeriod;
+    const raf = window.requestAnimationFrame(() => {
+      updateVirtualScrollMargin();
+      get(rowVirtualizer).measure();
+    });
+    return () => window.cancelAnimationFrame(raf);
+  });
+
+  $effect(() => {
     localStorage.setItem(
       'produce-filters',
       JSON.stringify({ quickFilter, timePeriod, sortField, sortDirection }),
@@ -1266,6 +1330,7 @@
       closePinnedLinkPreview();
     };
     const handleViewportChange = () => {
+      updateVirtualScrollMargin();
       syncLinkPreviewPositionOrClose();
     };
     if (typeof IntersectionObserver !== 'undefined') {
@@ -1606,7 +1671,10 @@
     </table>
   </div>
 
-  <div class="overflow-x-hidden transition-opacity duration-300 ease-in-out motion-reduce:transition-none">
+  <div
+    bind:this={virtualRowsAnchorRef}
+    class="overflow-x-hidden transition-opacity duration-300 ease-in-out motion-reduce:transition-none"
+  >
     <table class="w-full min-w-full table-fixed text-sm">
       <colgroup>
         <col class={NAME_COL_CLASS} />
@@ -1680,196 +1748,210 @@
             </td>
           </tr>
         {:else}
-          {#each filteredRows as row (row.name)}
-            {@const rowHistory = history.get(row.name)}
-            {@const periodData = getPeriodData(row, timePeriod, rowHistory, dateRange)}
-            {@const prev = periodData.prev}
-            {@const change = prev !== null ? row.price - prev : null}
-            {@const pct = prev !== null && prev !== 0 ? ((row.price - prev) / prev) * 100 : null}
-            {@const showHighLow = getPeriodPointCount(rowHistory, dateRange, timePeriod) >= 3}
-            {@const specialtyUrl = getSpecialtyProduceUrl(row.name)}
-            <tr
-              class={`group select-none border-b border-zinc-100 ${favorites.has(row.name) ? 'bg-amber-50' : 'hover:bg-zinc-50'}`}
-              ontouchend={(event) => handleRowTouchEnd(event, row.name)}
-              ondblclick={(event) => handleRowDoubleClick(event, row.name)}
-            >
-              <td
-                class={`${NAME_COL_CLASS} sticky left-0 z-10 box-border border-r border-zinc-200 p-2 md:w-auto md:border-r-0 ${
-                  favorites.has(row.name) ? 'bg-amber-50' : 'bg-white group-hover:bg-zinc-50'
-                }`}
-              >
-                <div class="flex items-start gap-2">
-                  <div class="min-w-0">
-                    <div
-                      class="line-clamp-3 text-sm font-medium text-zinc-900 md:line-clamp-none"
-                      data-produce-name="true"
-                    >
-                      {#if specialtyUrl}
-                        <a
-                          href={specialtyUrl}
-                          target="_blank"
-                          rel="noreferrer"
-                          use:observeLinkPreviewTrigger={{ url: specialtyUrl }}
-                          onmouseenter={(event) => handleProduceLinkEnter(event, row.name, specialtyUrl)}
-                          onmousemove={handleProduceLinkMove}
-                          onmouseleave={handleProduceLinkLeave}
-                          onfocus={(event) => handleProduceLinkFocus(event, row.name, specialtyUrl)}
-                          onblur={handleProduceLinkLeave}
-                          onclick={(event) => handleProduceLinkClick(event, row.name, specialtyUrl)}
-                          data-produce-preview-trigger="true"
-                          class="underline decoration-current underline-offset-2 hover:decoration-2"
-                        >
-                          <span class={row.is_unavailable ? 'line-through' : undefined}>
-                            {row.name} ↗
-                          </span>
-                        </a>
-                      {:else}
-                        <button
-                          type="button"
-                          onmouseenter={(event) => handleProduceLinkEnter(event, row.name, null)}
-                          onmousemove={handleProduceLinkMove}
-                          onmouseleave={handleProduceLinkLeave}
-                          onfocus={(event) => handleProduceLinkFocus(event, row.name, null)}
-                          onblur={handleProduceLinkLeave}
-                          onclick={(event) => handleProduceLinkClick(event, row.name, null)}
-                          data-produce-preview-trigger="true"
-                          class="text-left underline decoration-current underline-offset-2 hover:decoration-2"
-                        >
-                          <span class={row.is_unavailable ? 'line-through' : undefined}>
-                            {row.name}
-                          </span>
-                        </button>
-                      {/if}
-                    </div>
-
-                    <div class="text-xs text-zinc-500">
-                      {#if row.is_unavailable && row.unavailable_since_date}
-                        <span class="rounded bg-red-100 px-1 text-red-700">
-                          <span class="inline-block">Out of stock</span>{' '}
-                          <span class="inline-block">{formatShortDate(row.unavailable_since_date)}</span>
-                        </span>
-                      {/if}
-                      {#if row.is_unavailable && row.unavailable_since_date && row.is_new}
-                        {' · '}
-                      {/if}
-                      {#if row.is_new}
-                        <span class="rounded bg-[rgb(255,246,220)] px-1 text-[#3F7540]">
-                          <span class="inline-block">New arrival</span>
-                          {#if row.first_seen_date}
-                            {' '}
-                            <span class="inline-block">{formatShortDate(row.first_seen_date)}</span>
-                          {/if}
-                        </span>
-                      {/if}
-                      {#if (row.is_unavailable || row.is_new) && (row.is_hydroponic || row.is_ipm || row.is_local || row.is_organic || row.is_waxed)}
-                        {' · '}
-                      {/if}
-                      {#if row.is_hydroponic}
-                        <span>Hydroponic</span>
-                      {/if}
-                      {#if row.is_hydroponic && (row.is_ipm || row.is_local || row.is_organic || row.is_waxed)}
-                        {' · '}
-                      {/if}
-                      {#if row.is_ipm}
-                        <span>IPM</span>
-                      {/if}
-                      {#if row.is_ipm && (row.is_local || row.is_organic || row.is_waxed)}
-                        {' · '}
-                      {/if}
-                      {#if row.is_local}
-                        <span class="text-blue-600">Local</span>
-                      {/if}
-                      {#if row.is_local && (row.is_organic || row.is_waxed)}
-                        {' · '}
-                      {/if}
-                      {#if row.is_organic}
-                        <span class="text-green-600">Organic</span>
-                      {/if}
-                      {#if row.is_organic && row.is_waxed}
-                        {' · '}
-                      {/if}
-                      {#if row.is_waxed}
-                        <span>Waxed</span>
-                      {/if}
-                    </div>
-
-                    {#if row.origin}
-                      <div class="text-xs text-zinc-400">{row.origin}</div>
-                    {/if}
-                  </div>
-
-                </div>
-              </td>
-
-              <td class={`relative p-2 text-zinc-900 ${DATA_COL_CLASS} box-border`}>
-                <div>
-                  <span
-                    class={`font-mono font-bold ${
-                      prev !== null && row.price < prev
-                        ? 'text-green-600'
-                        : prev !== null && row.price > prev
-                          ? 'text-red-600'
-                          : ''
-                    }`}
-                    >${row.price.toFixed(2)}</span
-                  >{#if prev !== null && prev !== row.price}<sup class="ml-1 font-mono text-[0.65em] text-zinc-400 line-through"
-                    >${prev.toFixed(2)}</sup
-                  >{/if}
-                </div>
-                <div class="text-xs text-zinc-500 font-mono">/{row.unit}</div>
-                <div class="mt-1">
-                  <ProduceSparkline
-                    points={rowHistory}
-                    dateRange={dateRange}
-                    timePeriod={timePeriod}
-                    unavailableSinceDate={row.unavailable_since_date}
-                  />
-                </div>
-              </td>
-
-              <td class={`relative p-2 ${DATA_COL_CLASS} box-border text-xs tabular-nums`}>
-                {#if prev === null || change === null || pct === null}
-                  <span class="text-zinc-400">—</span>
-                {:else}
-                  <div class="flex items-baseline gap-2 rounded bg-transparent px-1">
-                    <span class="w-10 shrink-0 text-zinc-500">% Diff</span>
-                    <span class={`${METRIC_VALUE_CLASS} ${change > 0 ? 'text-red-600' : change < 0 ? 'text-green-600' : 'text-zinc-500'}`}>
-                      {change > 0 ? '+' : change < 0 ? '-' : ''}{Math.abs(pct).toFixed(1)}%
-                    </span>
-                  </div>
-                  <div class="flex items-baseline gap-2 rounded bg-transparent px-1">
-                    <span class="w-10 shrink-0 text-zinc-500">$ Diff</span>
-                    <span class={`${METRIC_VALUE_CLASS} ${change > 0 ? 'text-red-600' : change < 0 ? 'text-green-600' : 'text-zinc-500'}`}>
-                      {change > 0 ? '+' : change < 0 ? '-' : ''}${Math.abs(change).toFixed(2)}
-                    </span>
-                  </div>
-                  <div class={`flex items-baseline gap-2 rounded px-1 ${
-                    showHighLow &&
-                    periodData.high !== null &&
-                    row.price === periodData.high &&
-                    row.price !== periodData.low
-                      ? 'bg-red-100 text-zinc-900'
-                      : 'bg-transparent text-zinc-500'
-                  }`}>
-                    <span class="w-10 shrink-0">High</span>
-                    <span class={METRIC_VALUE_CLASS}>
-                      {showHighLow && periodData.high !== null ? `$${periodData.high.toFixed(2)}` : '—'}
-                    </span>
-                  </div>
-                  <div class={`flex items-baseline gap-2 rounded px-1 ${
-                    showHighLow && periodData.low !== null && row.price === periodData.low
-                      ? 'bg-green-100 text-zinc-900'
-                      : 'bg-transparent text-zinc-500'
-                  }`}>
-                    <span class="w-10 shrink-0">Low</span>
-                    <span class={METRIC_VALUE_CLASS}>
-                      {showHighLow && periodData.low !== null ? `$${periodData.low.toFixed(2)}` : '—'}
-                    </span>
-                  </div>
-                {/if}
-              </td>
+          {#if virtualPaddingTop > 0}
+            <tr aria-hidden="true" class="pointer-events-none border-0">
+              <td colspan="3" class="h-0 p-0" style={`height:${virtualPaddingTop}px;`}></td>
             </tr>
+          {/if}
+          {#each virtualRows as virtualRow (virtualRow.key)}
+            {@const row = filteredRows[virtualRow.index]}
+            {#if row}
+              {@const rowHistory = history.get(row.name)}
+              {@const periodData = getPeriodData(row, timePeriod, rowHistory, dateRange)}
+              {@const prev = periodData.prev}
+              {@const change = prev !== null ? row.price - prev : null}
+              {@const pct = prev !== null && prev !== 0 ? ((row.price - prev) / prev) * 100 : null}
+              {@const showHighLow = getPeriodPointCount(rowHistory, dateRange, timePeriod) >= 3}
+              {@const specialtyUrl = getSpecialtyProduceUrl(row.name)}
+              <tr
+                data-index={virtualRow.index}
+                use:measureVirtualRow={virtualRow.index}
+                class={`group select-none border-b border-zinc-100 ${favorites.has(row.name) ? 'bg-amber-50' : 'hover:bg-zinc-50'}`}
+                ontouchend={(event) => handleRowTouchEnd(event, row.name)}
+                ondblclick={(event) => handleRowDoubleClick(event, row.name)}
+              >
+                <td
+                  class={`${NAME_COL_CLASS} sticky left-0 z-10 box-border border-r border-zinc-200 p-2 md:w-auto md:border-r-0 ${
+                    favorites.has(row.name) ? 'bg-amber-50' : 'bg-white group-hover:bg-zinc-50'
+                  }`}
+                >
+                  <div class="flex items-start gap-2">
+                    <div class="min-w-0">
+                      <div
+                        class="line-clamp-3 text-sm font-medium text-zinc-900 md:line-clamp-none"
+                        data-produce-name="true"
+                      >
+                        {#if specialtyUrl}
+                          <a
+                            href={specialtyUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            use:observeLinkPreviewTrigger={{ url: specialtyUrl }}
+                            onmouseenter={(event) => handleProduceLinkEnter(event, row.name, specialtyUrl)}
+                            onmousemove={handleProduceLinkMove}
+                            onmouseleave={handleProduceLinkLeave}
+                            onfocus={(event) => handleProduceLinkFocus(event, row.name, specialtyUrl)}
+                            onblur={handleProduceLinkLeave}
+                            onclick={(event) => handleProduceLinkClick(event, row.name, specialtyUrl)}
+                            data-produce-preview-trigger="true"
+                            class="underline decoration-current underline-offset-2 hover:decoration-2"
+                          >
+                            <span class={row.is_unavailable ? 'line-through' : undefined}>
+                              {row.name} ↗
+                            </span>
+                          </a>
+                        {:else}
+                          <button
+                            type="button"
+                            onmouseenter={(event) => handleProduceLinkEnter(event, row.name, null)}
+                            onmousemove={handleProduceLinkMove}
+                            onmouseleave={handleProduceLinkLeave}
+                            onfocus={(event) => handleProduceLinkFocus(event, row.name, null)}
+                            onblur={handleProduceLinkLeave}
+                            onclick={(event) => handleProduceLinkClick(event, row.name, null)}
+                            data-produce-preview-trigger="true"
+                            class="text-left underline decoration-current underline-offset-2 hover:decoration-2"
+                          >
+                            <span class={row.is_unavailable ? 'line-through' : undefined}>
+                              {row.name}
+                            </span>
+                          </button>
+                        {/if}
+                      </div>
+
+                      <div class="text-xs text-zinc-500">
+                        {#if row.is_unavailable && row.unavailable_since_date}
+                          <span class="rounded bg-red-100 px-1 text-red-700">
+                            <span class="inline-block">Out of stock</span>{' '}
+                            <span class="inline-block">{formatShortDate(row.unavailable_since_date)}</span>
+                          </span>
+                        {/if}
+                        {#if row.is_unavailable && row.unavailable_since_date && row.is_new}
+                          {' · '}
+                        {/if}
+                        {#if row.is_new}
+                          <span class="rounded bg-[rgb(255,246,220)] px-1 text-[#3F7540]">
+                            <span class="inline-block">New arrival</span>
+                            {#if row.first_seen_date}
+                              {' '}
+                              <span class="inline-block">{formatShortDate(row.first_seen_date)}</span>
+                            {/if}
+                          </span>
+                        {/if}
+                        {#if (row.is_unavailable || row.is_new) && (row.is_hydroponic || row.is_ipm || row.is_local || row.is_organic || row.is_waxed)}
+                          {' · '}
+                        {/if}
+                        {#if row.is_hydroponic}
+                          <span>Hydroponic</span>
+                        {/if}
+                        {#if row.is_hydroponic && (row.is_ipm || row.is_local || row.is_organic || row.is_waxed)}
+                          {' · '}
+                        {/if}
+                        {#if row.is_ipm}
+                          <span>IPM</span>
+                        {/if}
+                        {#if row.is_ipm && (row.is_local || row.is_organic || row.is_waxed)}
+                          {' · '}
+                        {/if}
+                        {#if row.is_local}
+                          <span class="text-blue-600">Local</span>
+                        {/if}
+                        {#if row.is_local && (row.is_organic || row.is_waxed)}
+                          {' · '}
+                        {/if}
+                        {#if row.is_organic}
+                          <span class="text-green-600">Organic</span>
+                        {/if}
+                        {#if row.is_organic && row.is_waxed}
+                          {' · '}
+                        {/if}
+                        {#if row.is_waxed}
+                          <span>Waxed</span>
+                        {/if}
+                      </div>
+
+                      {#if row.origin}
+                        <div class="text-xs text-zinc-400">{row.origin}</div>
+                      {/if}
+                    </div>
+                  </div>
+                </td>
+
+                <td class={`relative p-2 text-zinc-900 ${DATA_COL_CLASS} box-border`}>
+                  <div>
+                    <span
+                      class={`font-mono font-bold ${
+                        prev !== null && row.price < prev
+                          ? 'text-green-600'
+                          : prev !== null && row.price > prev
+                            ? 'text-red-600'
+                            : ''
+                      }`}
+                      >${row.price.toFixed(2)}</span
+                    >{#if prev !== null && prev !== row.price}<sup class="ml-1 font-mono text-[0.65em] text-zinc-400 line-through"
+                      >${prev.toFixed(2)}</sup
+                    >{/if}
+                  </div>
+                  <div class="text-xs text-zinc-500 font-mono">/{row.unit}</div>
+                  <div class="mt-1">
+                    <ProduceSparkline
+                      points={rowHistory}
+                      dateRange={dateRange}
+                      timePeriod={timePeriod}
+                      unavailableSinceDate={row.unavailable_since_date}
+                    />
+                  </div>
+                </td>
+
+                <td class={`relative p-2 ${DATA_COL_CLASS} box-border text-xs tabular-nums`}>
+                  {#if prev === null || change === null || pct === null}
+                    <span class="text-zinc-400">—</span>
+                  {:else}
+                    <div class="flex items-baseline gap-2 rounded bg-transparent px-1">
+                      <span class="w-10 shrink-0 text-zinc-500">% Diff</span>
+                      <span class={`${METRIC_VALUE_CLASS} ${change > 0 ? 'text-red-600' : change < 0 ? 'text-green-600' : 'text-zinc-500'}`}>
+                        {change > 0 ? '+' : change < 0 ? '-' : ''}{Math.abs(pct).toFixed(1)}%
+                      </span>
+                    </div>
+                    <div class="flex items-baseline gap-2 rounded bg-transparent px-1">
+                      <span class="w-10 shrink-0 text-zinc-500">$ Diff</span>
+                      <span class={`${METRIC_VALUE_CLASS} ${change > 0 ? 'text-red-600' : change < 0 ? 'text-green-600' : 'text-zinc-500'}`}>
+                        {change > 0 ? '+' : change < 0 ? '-' : ''}${Math.abs(change).toFixed(2)}
+                      </span>
+                    </div>
+                    <div class={`flex items-baseline gap-2 rounded px-1 ${
+                      showHighLow &&
+                      periodData.high !== null &&
+                      row.price === periodData.high &&
+                      row.price !== periodData.low
+                        ? 'bg-red-100 text-zinc-900'
+                        : 'bg-transparent text-zinc-500'
+                    }`}>
+                      <span class="w-10 shrink-0">High</span>
+                      <span class={METRIC_VALUE_CLASS}>
+                        {showHighLow && periodData.high !== null ? `$${periodData.high.toFixed(2)}` : '—'}
+                      </span>
+                    </div>
+                    <div class={`flex items-baseline gap-2 rounded px-1 ${
+                      showHighLow && periodData.low !== null && row.price === periodData.low
+                        ? 'bg-green-100 text-zinc-900'
+                        : 'bg-transparent text-zinc-500'
+                    }`}>
+                      <span class="w-10 shrink-0">Low</span>
+                      <span class={METRIC_VALUE_CLASS}>
+                        {showHighLow && periodData.low !== null ? `$${periodData.low.toFixed(2)}` : '—'}
+                      </span>
+                    </div>
+                  {/if}
+                </td>
+              </tr>
+            {/if}
           {/each}
+          {#if virtualPaddingBottom > 0}
+            <tr aria-hidden="true" class="pointer-events-none border-0">
+              <td colspan="3" class="h-0 p-0" style={`height:${virtualPaddingBottom}px;`}></td>
+            </tr>
+          {/if}
         {/if}
       </tbody>
     </table>

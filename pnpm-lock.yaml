@@ -29,6 +29,9 @@ importers:
       '@mmailaender/convex-better-auth-svelte':
         specifier: ^0.5.0
         version: 0.5.0(103c83d475307fb2c3d841d6e3c7295b)
+      '@tanstack/svelte-virtual':
+        specifier: ^3.13.19
+        version: 3.13.19(svelte@5.51.2)
       '@vercel/analytics':
         specifier: ^1.6.1
         version: 1.6.1(@sveltejs/kit@2.52.0(@sveltejs/vite-plugin-svelte@6.2.4(svelte@5.51.2)(vite@7.3.1(@types/node@20.19.29)(jiti@2.6.1)(lightningcss@1.30.2)))(svelte@5.51.2)(typescript@5.9.3)(vite@7.3.1(@types/node@20.19.29)(jiti@2.6.1)(lightningcss@1.30.2)))(next@16.1.1(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(react@19.2.3)(svelte@5.51.2)
@@ -1880,6 +1883,14 @@ packages:
 
   '@tailwindcss/postcss@4.1.18':
     resolution: {integrity: sha512-Ce0GFnzAOuPyfV5SxjXGn0CubwGcuDB0zcdaPuCSzAa/2vII24JTkH+I6jcbXLb1ctjZMZZI6OjDaLPJQL1S0g==}
+
+  '@tanstack/svelte-virtual@3.13.19':
+    resolution: {integrity: sha512-BNuogQiu64OIdCOYXfhonxI6a1H5g+DV9WEAmohfsAZmp/wBfBXQQC1iB+lgkxC/LIcyEhFyToC8A/sxriC7cg==}
+    peerDependencies:
+      svelte: ^3.48.0 || ^4.0.0 || ^5.0.0
+
+  '@tanstack/virtual-core@3.13.19':
+    resolution: {integrity: sha512-/BMP7kNhzKOd7wnDeB8NrIRNLwkf5AhCYCvtfZV2GXWbBieFm/el0n6LOAXlTi6ZwHICSNnQcIxRCWHrLzDY+g==}
 
   '@tybys/wasm-util@0.10.1':
     resolution: {integrity: sha512-9tTaPJLSiejZKx+Bmog4uSubteqTvFrVrURwkmHixBo0G4seD0zUxp98E1DzUBJxLQ3NPwXrGKDiVjwx/DpPsg==}
@@ -5025,6 +5036,13 @@ snapshots:
       '@tailwindcss/oxide': 4.1.18
       postcss: 8.5.6
       tailwindcss: 4.1.18
+
+  '@tanstack/svelte-virtual@3.13.19(svelte@5.51.2)':
+    dependencies:
+      '@tanstack/virtual-core': 3.13.19
+      svelte: 5.51.2
+
+  '@tanstack/virtual-core@3.13.19': {}
 
   '@tybys/wasm-util@0.10.1':
     dependencies:

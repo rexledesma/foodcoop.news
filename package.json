@@ -26,6 +26,7 @@
     "@duckdb/node-api": "1.4.4-r.1",
     "@khmyznikov/pwa-install": "^0.6.3",
     "@mmailaender/convex-better-auth-svelte": "^0.5.0",
+    "@tanstack/svelte-virtual": "^3.13.19",
     "@vercel/analytics": "^1.6.1",
     "better-auth": "^1.4.9",
     "cheerio": "^1.1.2",
