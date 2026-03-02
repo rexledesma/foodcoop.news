@@ -614,7 +614,6 @@
         title="Swipe preview"
         src={swipePreviewUrl}
         class="h-full w-full border-0"
-        sandbox="allow-same-origin"
         tabindex="-1"
       ></iframe>
       <div class="absolute inset-0 bg-white/8"></div>

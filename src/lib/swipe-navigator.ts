@@ -93,7 +93,9 @@ export function createSwipeNavigator(config: SwipeNavigatorConfig) {
       isHorizontalSwipe = true;
     }
 
-    event.preventDefault();
+    if (event.cancelable) {
+      event.preventDefault();
+    }
 
     const step: SwipeStep = deltaX > 0 ? 1 : -1;
     const route = config.getSwipeTarget(step);
@@ -117,7 +119,7 @@ export function createSwipeNavigator(config: SwipeNavigatorConfig) {
     const absDeltaX = Math.abs(deltaX);
     const absDeltaY = Math.abs(deltaY);
 
-    if (isHorizontalSwipe) {
+    if (isHorizontalSwipe && event.cancelable) {
       event.preventDefault();
     }
 
