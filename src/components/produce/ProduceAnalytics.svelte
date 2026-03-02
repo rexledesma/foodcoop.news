@@ -126,6 +126,7 @@
   const SUPPRESS_DBLCLICK_AFTER_TOUCH_MS = 700;
   const FAVORITE_BURST_MIN_LIFETIME_MS = 500;
   const FAVORITE_BURST_MAX_LIFETIME_MS = 1000;
+  const WINDOW_TRANSITION_MS = 750;
 
   let {
     channel,
@@ -172,6 +173,10 @@
   let search = $state('');
   let quickFilter = $state<QuickFilter>(null);
   let timePeriod = $state<TimePeriod>('1D');
+  let statsFromPeriod = $state<TimePeriod | null>(null);
+  let statsTransitionProgress = $state(1);
+  let lastStatsPeriod: TimePeriod | null = null;
+  let statsTransitionRaf = 0;
   let sortField = $state<SortField | null>('change');
   let sortDirection = $state<SortDirection>('asc');
   let dateFilter = $state<string | null>(null);
@@ -273,8 +278,8 @@
         return sortDirection === 'asc' ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
       }
 
-      const aPrev = getPreviousPrice(a, timePeriod, history.get(a.name), dateRange);
-      const bPrev = getPreviousPrice(b, timePeriod, history.get(b.name), dateRange);
+      const aPrev = getPreviousPrice(a, timePeriod, history.get(a.name), dateRange, false);
+      const bPrev = getPreviousPrice(b, timePeriod, history.get(b.name), dateRange, false);
       const aChange = aPrev !== null && aPrev !== 0 ? (a.price - aPrev) / aPrev : 0;
       const bChange = bPrev !== null && bPrev !== 0 ? (b.price - bPrev) / bPrev : 0;
       return sortDirection === 'asc' ? aChange - bChange : bChange - aChange;
@@ -380,16 +385,62 @@
     }
   }
 
+  function getAnimatedPeriodStartMs(period: TimePeriod, endMs: number): number {
+    const targetStart = getPeriodStartMs(period, endMs);
+    if (!statsFromPeriod || statsTransitionProgress >= 1) return targetStart;
+    const sourceStart = getPeriodStartMs(statsFromPeriod, endMs);
+    return sourceStart + (targetStart - sourceStart) * statsTransitionProgress;
+  }
+
+  const shouldScrubStats = $derived(statsFromPeriod !== null && statsTransitionProgress < 1);
+
+  $effect(() => {
+    if (lastStatsPeriod === null) {
+      lastStatsPeriod = timePeriod;
+      statsFromPeriod = null;
+      statsTransitionProgress = 1;
+      return;
+    }
+    if (timePeriod === lastStatsPeriod) return;
+
+    cancelAnimationFrame(statsTransitionRaf);
+    statsFromPeriod = lastStatsPeriod;
+    statsTransitionProgress = 0;
+    lastStatsPeriod = timePeriod;
+    const start = performance.now();
+
+    const animate = (now: number) => {
+      const t = Math.min((now - start) / WINDOW_TRANSITION_MS, 1);
+      statsTransitionProgress = (1 - Math.cos(t * Math.PI)) / 2;
+      if (t < 1) {
+        statsTransitionRaf = requestAnimationFrame(animate);
+        return;
+      }
+      statsFromPeriod = null;
+      statsTransitionProgress = 1;
+      statsTransitionRaf = 0;
+    };
+
+    statsTransitionRaf = requestAnimationFrame(animate);
+    return () => {
+      cancelAnimationFrame(statsTransitionRaf);
+      statsTransitionRaf = 0;
+    };
+  });
+
   function historyPrev(
     points: ProduceHistoryPoint[] | undefined,
     activeRange: ProduceDateRange | null,
     period: TimePeriod,
+    useAnimatedStart = true,
   ): number | null {
     if (!points || points.length === 0) return null;
     const endMs = activeRange
       ? new Date(activeRange.end + 'T00:00:00').getTime()
       : new Date(points[points.length - 1].date + 'T00:00:00').getTime();
-    const startMs = getPeriodStartMs(period, endMs);
+    const startMs = useAnimatedStart
+      ? getAnimatedPeriodStartMs(period, endMs)
+      : getPeriodStartMs(period, endMs);
 
     let prev: number | null = null;
     let closest = Number.POSITIVE_INFINITY;
@@ -410,7 +461,11 @@
     period: TimePeriod,
     points?: ProduceHistoryPoint[],
     activeRange: ProduceDateRange | null = null,
+    useAnimatedStart = true,
   ): number | null {
+    if (useAnimatedStart && shouldScrubStats) {
+      return historyPrev(points, activeRange, period, true);
+    }
     switch (period) {
       case '1D':
         return row.prev_day_price;
@@ -424,7 +479,7 @@
         return row.prev_ytd_price;
       case '5Y':
       case 'MAX':
-        return historyPrev(points, activeRange, period);
+        return historyPrev(points, activeRange, period, useAnimatedStart);
       default:
         return row.prev_day_price;
     }
@@ -436,16 +491,18 @@
     points?: ProduceHistoryPoint[],
     activeRange: ProduceDateRange | null = null,
   ): { prev: number | null; high: number | null; low: number | null } {
-    if (period === '1D')
-      return { prev: row.prev_day_price, high: row.day_high, low: row.day_low };
-    if (period === '1W')
-      return { prev: row.prev_week_price, high: row.week_high, low: row.week_low };
-    if (period === '1M')
-      return { prev: row.prev_month_price, high: row.month_high, low: row.month_low };
-    if (period === '1Y')
-      return { prev: row.prev_year_price, high: row.year_high, low: row.year_low };
-    if (period === 'YTD')
-      return { prev: row.prev_ytd_price, high: row.ytd_high, low: row.ytd_low };
+    if (!shouldScrubStats) {
+      if (period === '1D')
+        return { prev: row.prev_day_price, high: row.day_high, low: row.day_low };
+      if (period === '1W')
+        return { prev: row.prev_week_price, high: row.week_high, low: row.week_low };
+      if (period === '1M')
+        return { prev: row.prev_month_price, high: row.month_high, low: row.month_low };
+      if (period === '1Y')
+        return { prev: row.prev_year_price, high: row.year_high, low: row.year_low };
+      if (period === 'YTD')
+        return { prev: row.prev_ytd_price, high: row.ytd_high, low: row.ytd_low };
+    }
 
     if (!points || points.length === 0) {
       return { prev: null, high: null, low: null };
@@ -454,7 +511,7 @@
     const endMs = activeRange
       ? new Date(activeRange.end + 'T00:00:00').getTime()
       : new Date(points[points.length - 1].date + 'T00:00:00').getTime();
-    const periodStartMs = getPeriodStartMs(period, endMs);
+    const periodStartMs = getAnimatedPeriodStartMs(period, endMs);
     let prev: number | null = null;
     let closestPrevDist = Number.POSITIVE_INFINITY;
     let high: number | null = null;
@@ -487,7 +544,7 @@
     const endMs = activeRange
       ? new Date(activeRange.end + 'T00:00:00').getTime()
       : new Date(points[points.length - 1].date + 'T00:00:00').getTime();
-    const periodStartMs = getPeriodStartMs(period, endMs);
+    const periodStartMs = getAnimatedPeriodStartMs(period, endMs);
     return points.filter((point) => {
       const pointMs = new Date(point.date + 'T00:00:00').getTime();
       return pointMs >= periodStartMs && pointMs <= endMs;
