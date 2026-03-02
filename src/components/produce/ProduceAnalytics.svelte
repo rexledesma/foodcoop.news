@@ -176,10 +176,39 @@
   const linkPreviewRequests = new Map<string, Promise<LinkPreviewData>>();
   const linkPreviewObserverTargets = new Map<HTMLElement, string>();
   let linkPreviewViewportObserver = $state<IntersectionObserver | null>(null);
+  const VIRTUAL_ROW_ESTIMATE = 140;
+  const VIRTUAL_ROW_BUFFER = 50;
+  const VIRTUAL_ROW_CHUNK = 50;
+
+  // Render rows in chunked windows with one extra chunk on both sides to avoid
+  // boundary thrash when scrolling in either direction.
+  function extractVirtualRowRange(range: {
+    startIndex: number;
+    endIndex: number;
+    overscan: number;
+    count: number;
+  }): number[] {
+    if (range.count <= 0) return [];
+    const overscannedStart = Math.max(0, range.startIndex - range.overscan);
+    const overscannedEnd = Math.min(range.count - 1, range.endIndex + range.overscan);
+    const snappedStart = Math.max(
+      0,
+      Math.floor(overscannedStart / VIRTUAL_ROW_CHUNK) * VIRTUAL_ROW_CHUNK - VIRTUAL_ROW_CHUNK,
+    );
+    const snappedEnd = Math.min(
+      range.count - 1,
+      Math.ceil((overscannedEnd + 1) / VIRTUAL_ROW_CHUNK) * VIRTUAL_ROW_CHUNK +
+        VIRTUAL_ROW_CHUNK -
+        1,
+    );
+    return Array.from({ length: snappedEnd - snappedStart + 1 }, (_, i) => snappedStart + i);
+  }
+
   const rowVirtualizer = createWindowVirtualizer<HTMLTableRowElement>({
     count: 0,
-    estimateSize: () => 140,
-    overscan: 8,
+    estimateSize: () => VIRTUAL_ROW_ESTIMATE,
+    overscan: VIRTUAL_ROW_BUFFER,
+    rangeExtractor: extractVirtualRowRange,
     getItemKey: (index) => index,
   });
 
@@ -1260,8 +1289,9 @@
   $effect(() => {
     get(rowVirtualizer).setOptions({
       count: filteredRows.length,
-      estimateSize: () => 140,
-      overscan: 8,
+      estimateSize: () => VIRTUAL_ROW_ESTIMATE,
+      overscan: VIRTUAL_ROW_BUFFER,
+      rangeExtractor: extractVirtualRowRange,
       scrollMargin: virtualScrollMargin,
       getItemKey: (index) => filteredRows[index]?.name ?? index,
     });
