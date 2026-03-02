@@ -316,6 +316,9 @@
     }
     const data = (await response.json()) as { profile: MemberProfile };
     profile = data.profile;
+    if (payload.memberName !== undefined || payload.memberId !== undefined) {
+      window.dispatchEvent(new CustomEvent('member-profile:changed'));
+    }
     return profile;
   }
 
@@ -412,8 +415,9 @@
     state = { ...state, isSaving: true };
     dispatchState();
     try {
+      const trimmedMemberName = state.fullName.trim();
       await updateProfile({
-        memberName: state.fullName.trim(),
+        memberName: trimmedMemberName.length > 0 ? trimmedMemberName : ' ',
         memberId: state.memberId.trim(),
         jobFilters: state.selectedJobs,
       });
