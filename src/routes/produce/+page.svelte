@@ -27,6 +27,8 @@
   const periodRefreshAt = new Map<ProduceSWRPeriod, number>();
   let isFetching = false;
   let isSyncingFavorites = false;
+  let canSyncFavoritesWithServer: boolean | null = null;
+  let favoriteSyncAuthCheckPromise: Promise<boolean> | null = null;
 
   function parseFavorites(stored: string | null): string[] {
     if (!stored) return [];
@@ -54,8 +56,43 @@
     }
   }
 
+  async function resolveFavoriteSyncAuth(): Promise<boolean> {
+    if (canSyncFavoritesWithServer !== null) {
+      return canSyncFavoritesWithServer;
+    }
+    if (favoriteSyncAuthCheckPromise) {
+      return favoriteSyncAuthCheckPromise;
+    }
+
+    favoriteSyncAuthCheckPromise = (async () => {
+      try {
+        const response = await fetch('/api/auth/get-session', {
+          method: 'GET',
+          cache: 'no-store',
+        });
+        if (!response.ok) {
+          canSyncFavoritesWithServer = false;
+          return false;
+        }
+
+        const session = (await response.json()) as { user?: unknown } | null;
+        const isAuthenticated = Boolean(session?.user);
+        canSyncFavoritesWithServer = isAuthenticated;
+        return isAuthenticated;
+      } catch {
+        canSyncFavoritesWithServer = false;
+        return false;
+      } finally {
+        favoriteSyncAuthCheckPromise = null;
+      }
+    })();
+
+    return favoriteSyncAuthCheckPromise;
+  }
+
   async function syncFavoritesFromServer() {
     if (isSyncingFavorites) return;
+    if (!(await resolveFavoriteSyncAuth())) return;
     isSyncingFavorites = true;
 
     try {
@@ -63,6 +100,10 @@
         method: 'GET',
         cache: 'no-store',
       });
+      if (response.status === 401) {
+        canSyncFavoritesWithServer = false;
+        return;
+      }
       if (!response.ok) return;
       const data = (await response.json()) as { favorites?: string[] };
       if (!Array.isArray(data.favorites)) return;
@@ -92,6 +133,10 @@
     }
     writeFavorites(Array.from(current));
 
+    if (!(await resolveFavoriteSyncAuth())) {
+      return;
+    }
+
     try {
       const response = await fetch('/api/me/produce-favorites', {
         method: 'PUT',
@@ -100,6 +145,10 @@
         },
         body: JSON.stringify({ itemName: name, favorited: nextFavorited }),
       });
+      if (response.status === 401) {
+        canSyncFavoritesWithServer = false;
+        return;
+      }
       if (!response.ok) return;
     } catch {
       // Ignore server failures and keep local state.
@@ -248,6 +297,11 @@
       state = { ...state, showSticky: Boolean(event.detail) };
       dispatchState();
     };
+    const authSessionChangedHandler = () => {
+      canSyncFavoritesWithServer = null;
+      favoriteSyncAuthCheckPromise = null;
+      void syncFavoritesFromServer();
+    };
 
     const params = new URLSearchParams(window.location.search);
     const favorites = localStorage.getItem('produce-favorites') ?? '[]';
@@ -272,6 +326,7 @@
     void syncFavoritesFromServer();
 
     window.addEventListener('sticky-visibility', stickyVisibilityHandler as EventListener);
+    window.addEventListener('auth:session-changed', authSessionChangedHandler);
 
     void (async () => {
       if (shouldRefreshImmediately) {
@@ -288,6 +343,7 @@
 
     return () => {
       window.removeEventListener('sticky-visibility', stickyVisibilityHandler as EventListener);
+      window.removeEventListener('auth:session-changed', authSessionChangedHandler);
     };
   });
 
