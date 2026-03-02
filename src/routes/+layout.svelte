@@ -407,6 +407,27 @@
     const isMobileTouchInput = () =>
       window.matchMedia('(pointer: coarse)').matches || navigator.maxTouchPoints > 0;
 
+    const enforceMobileReplaceState = () => {
+      if (!isMobileTouchInput()) {
+        return () => {};
+      }
+
+      // On mobile, always replace history entries so iOS/Android edge-swipe
+      // gestures cannot navigate backward/forward through app routes.
+      const originalPushState = window.history.pushState;
+
+      const mobileHistory = window.history as History & { pushState: History['pushState'] };
+      mobileHistory.pushState = ((data: unknown, unused: string, url?: string | URL | null) => {
+        window.history.replaceState(data, unused, url);
+      }) as History['pushState'];
+
+      return () => {
+        mobileHistory.pushState = originalPushState;
+      };
+    };
+
+    const restoreMobileHistoryBehavior = enforceMobileReplaceState();
+
     let isSwipeNavigationInFlight = false;
     let swipeActiveTargetRoute: string | null = null;
     const swipeNavigator = createSwipeNavigator({
@@ -480,7 +501,6 @@
           void goto(route, {
             keepFocus: true,
             noScroll: true,
-            replaceState: isMobileTouchInput(),
           }).finally(() => {
             isSwipeNavigationInFlight = false;
             resetSwipeVisualState();
@@ -507,6 +527,7 @@
       window.removeEventListener('scroll', handleInteraction);
       window.removeEventListener('pwa-install:show', showPwaInstallDialog);
       resetSwipeVisualState();
+      restoreMobileHistoryBehavior();
       document.removeEventListener('touchend', preventDoubleTapZoom);
       document.removeEventListener('dblclick', preventDoubleClickZoom);
       document.removeEventListener('touchstart', handleTouchStart);
