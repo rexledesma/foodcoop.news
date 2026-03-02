@@ -29,7 +29,7 @@
   } = $props();
 
   let activeIndex = $state<number | null>(null);
-  let svgRef = $state<SVGSVGElement | null>(null);
+  let canvasRef = $state<HTMLCanvasElement | null>(null);
   let lastActiveIndex = $state<number | null>(null);
 
   function toDateMs(isoDate: string): number {
@@ -219,12 +219,11 @@
       return closest;
     })();
 
-    const lineSegments: { d: string; position: PositionY }[] = [];
-    const areaSegments: { d: string; position: PositionY }[] = [];
+    const lineSegments: { points: { x: number; y: number }[]; position: PositionY }[] = [];
+    const areaSegments: { points: { x: number; y: number }[]; position: PositionY }[] = [];
     const missingGapRanges: { startX: number; endX: number }[] = [];
     const positionY = (point: { y: number }): PositionY =>
       point.y === baselineY ? 'baseline' : point.y < baselineY ? 'above' : 'below';
-    const formatPoint = (point: { x: number; y: number }) => `${point.x.toFixed(2)} ${point.y.toFixed(2)}`;
 
     if (normalized.length > 1) {
       const gapThresholdMs = getConnectedGapThresholdMs(timePeriod);
@@ -252,17 +251,12 @@
 
         const pushAreaSegment = () => {
           if (currentPosition === null || currentPoints.length < 2) return;
-          const start = currentPoints[0];
-          const end = currentPoints[currentPoints.length - 1];
-          const line = currentPoints.map((point) => `L ${formatPoint(point)}`).join(' ');
-          const d = `M ${start.x.toFixed(2)} ${baselineY.toFixed(2)} ${line} L ${end.x.toFixed(2)} ${baselineY.toFixed(2)} Z`;
-          areaSegments.push({ d, position: currentPosition });
+          areaSegments.push({ points: [...currentPoints], position: currentPosition });
         };
 
         const pushLineSegment = () => {
           if (currentPosition === null || currentPoints.length < 2) return;
-          const line = currentPoints.map((point, index) => `${index === 0 ? 'M' : 'L'} ${formatPoint(point)}`);
-          lineSegments.push({ d: line.join(' '), position: currentPosition });
+          lineSegments.push({ points: [...currentPoints], position: currentPosition });
         };
 
         for (let i = 1; i < chunk.length; i += 1) {
@@ -276,10 +270,7 @@
             pushLineSegment();
             currentPoints = [];
             currentPosition = null;
-            lineSegments.push({
-              d: `M ${formatPoint(prev)} L ${formatPoint(curr)}`,
-              position: 'baseline',
-            });
+            lineSegments.push({ points: [prev, curr], position: 'baseline' });
             continue;
           }
 
@@ -342,14 +333,14 @@
     if (activeIndex < 0 || activeIndex >= model.normalized.length) return null;
     if (activeIndex >= model.pointsInScale.length) return null;
     return {
-      svg: model.normalized[activeIndex],
+      coordinates: model.normalized[activeIndex],
       data: model.pointsInScale[activeIndex],
     };
   });
 
   const isOutOfRange = $derived.by(() => {
     if (!model || !activePoint) return false;
-    const x = activePoint.svg.x;
+    const x = activePoint.coordinates.x;
     if (x < model.hatchEndX) return true;
     if (
       unavailableSinceDate &&
@@ -363,24 +354,23 @@
   });
 
   function handlePointerMove(e: PointerEvent) {
-    if (!model || !svgRef || model.normalized.length === 0) return;
-
-    const ctm = svgRef.getScreenCTM();
-    if (!ctm) return;
-
-    const svgX = (e.clientX - ctm.e) / ctm.a;
+    if (!model || !canvasRef || model.normalized.length === 0) return;
+    const rect = canvasRef.getBoundingClientRect();
+    if (rect.width === 0) return;
+    const canvasX = ((e.clientX - rect.left) / rect.width) * model.svgWidth;
     let closest = 0;
-    let closestDist = Math.abs(model.normalized[0].x - svgX);
+    let closestDist = Math.abs(model.normalized[0].x - canvasX);
 
     for (let i = 1; i < model.normalized.length; i += 1) {
-      const dist = Math.abs(model.normalized[i].x - svgX);
+      const dist = Math.abs(model.normalized[i].x - canvasX);
       if (dist < closestDist) {
         closestDist = dist;
         closest = i;
       }
     }
 
-    if (closestDist > 5) {
+    const threshold = (5 * model.svgWidth) / rect.width;
+    if (closestDist > threshold) {
       activeIndex = null;
       lastActiveIndex = null;
       return;
@@ -395,7 +385,7 @@
 
   function handlePointerDown(e: PointerEvent) {
     const target = e.currentTarget;
-    if (target instanceof SVGSVGElement) {
+    if (target instanceof HTMLCanvasElement) {
       target.setPointerCapture(e.pointerId);
     }
     handlePointerMove(e);
@@ -405,139 +395,193 @@
     activeIndex = null;
     lastActiveIndex = null;
   }
+
+  function strokeLine(
+    ctx: CanvasRenderingContext2D,
+    points: { x: number; y: number }[],
+    color: string,
+    width = 2,
+  ) {
+    if (points.length < 2) return;
+    ctx.beginPath();
+    ctx.moveTo(points[0].x, points[0].y);
+    for (let i = 1; i < points.length; i += 1) {
+      const point = points[i];
+      ctx.lineTo(point.x, point.y);
+    }
+    ctx.lineWidth = width;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.strokeStyle = color;
+    ctx.stroke();
+  }
+
+  function drawCircle(
+    ctx: CanvasRenderingContext2D,
+    x: number,
+    y: number,
+    radius: number,
+    fill: string,
+    stroke?: string,
+    strokeWidth = 1,
+  ) {
+    ctx.beginPath();
+    ctx.arc(x, y, radius, 0, Math.PI * 2);
+    ctx.fillStyle = fill;
+    ctx.fill();
+    if (stroke) {
+      ctx.lineWidth = strokeWidth;
+      ctx.strokeStyle = stroke;
+      ctx.stroke();
+    }
+  }
+
+  function drawHatchRect(
+    ctx: CanvasRenderingContext2D,
+    x: number,
+    y: number,
+    width: number,
+    height: number,
+  ) {
+    if (width <= 0 || height <= 0) return;
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(x, y, width, height);
+    ctx.clip();
+
+    const spacing = 4;
+    ctx.strokeStyle = 'rgba(82, 82, 91, 0.8)';
+    ctx.lineWidth = 0.5;
+    for (let i = -height; i <= width + height; i += spacing) {
+      ctx.beginPath();
+      ctx.moveTo(x + i, y + height);
+      ctx.lineTo(x + i + height, y);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  $effect(() => {
+    if (!model || !canvasRef) return;
+
+    const canvas = canvasRef;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    const pixelRatio = window.devicePixelRatio || 1;
+    const logicalWidth = model.svgWidth;
+    const logicalHeight = model.height + model.padding * 2;
+
+    canvas.width = Math.round(logicalWidth * pixelRatio);
+    canvas.height = Math.round(logicalHeight * pixelRatio);
+    ctx.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
+    ctx.clearRect(0, 0, logicalWidth, logicalHeight);
+
+    for (const gap of model.missingGapRanges) {
+      drawHatchRect(ctx, gap.startX, 0, Math.max(0, gap.endX - gap.startX), logicalHeight);
+    }
+
+    for (const segment of model.areaSegments) {
+      if (segment.points.length < 2) continue;
+      const start = segment.points[0];
+      const end = segment.points[segment.points.length - 1];
+      ctx.beginPath();
+      ctx.moveTo(start.x, model.baselineY);
+      ctx.lineTo(start.x, start.y);
+      for (let i = 1; i < segment.points.length; i += 1) {
+        const point = segment.points[i];
+        ctx.lineTo(point.x, point.y);
+      }
+      ctx.lineTo(end.x, model.baselineY);
+      ctx.closePath();
+      ctx.fillStyle = segment.position === 'above' ? 'rgba(239, 68, 68, 0.2)' : 'rgba(34, 197, 94, 0.2)';
+      ctx.fill();
+    }
+
+    for (const segment of model.lineSegments) {
+      const color =
+        segment.position === 'above' ? '#ef4444' : segment.position === 'below' ? '#22c55e' : '#a1a1aa';
+      strokeLine(ctx, segment.points, color, 2);
+    }
+
+    if (model.firstPoint) {
+      ctx.save();
+      ctx.setLineDash([3, 3]);
+      ctx.beginPath();
+      ctx.moveTo(model.padding, model.firstPoint.y);
+      ctx.lineTo(model.width + model.padding, model.firstPoint.y);
+      ctx.strokeStyle = '#000000';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    if (model.hatchEndX > model.padding) {
+      drawHatchRect(ctx, model.padding, 0, model.hatchEndX - model.padding, logicalHeight);
+    }
+
+    if (unavailableSinceDate && model.lastPoint && model.lastPoint.x < model.width + model.padding) {
+      drawHatchRect(
+        ctx,
+        model.lastPoint.x,
+        0,
+        model.width + model.padding - model.lastPoint.x,
+        logicalHeight,
+      );
+    }
+
+    if (model.periodStartPoint) {
+      const stroke =
+        model.positionY(model.periodStartPoint) === 'above'
+          ? '#ef4444'
+          : model.positionY(model.periodStartPoint) === 'below'
+            ? '#22c55e'
+            : '#a1a1aa';
+      drawCircle(ctx, model.periodStartPoint.x, model.periodStartPoint.y, 2.25, '#ffffff', stroke, 1.5);
+    }
+
+    if (model.lastPoint) {
+      const fill =
+        model.positionY(model.lastPoint) === 'above'
+          ? '#ef4444'
+          : model.positionY(model.lastPoint) === 'below'
+            ? '#22c55e'
+            : '#a1a1aa';
+      drawCircle(ctx, model.lastPoint.x, model.lastPoint.y, 2.75, fill);
+    }
+
+    if (activePoint) {
+      ctx.save();
+      ctx.globalAlpha = isOutOfRange ? 0.5 : 1;
+      ctx.setLineDash([2, 2]);
+      ctx.beginPath();
+      ctx.moveTo(activePoint.coordinates.x, 0);
+      ctx.lineTo(activePoint.coordinates.x, logicalHeight);
+      ctx.strokeStyle = '#71717a';
+      ctx.lineWidth = 0.75;
+      ctx.stroke();
+      ctx.restore();
+      drawCircle(ctx, activePoint.coordinates.x, activePoint.coordinates.y, 3, '#ffffff', '#3f3f46', 1.5);
+    }
+  });
 </script>
 
 {#if !model}
   <div class="h-4 text-[10px] text-zinc-400">—</div>
 {:else}
   <div class="relative" data-sparkline-interactive="true">
-    <svg
-      bind:this={svgRef}
-      viewBox={`0 0 ${model.svgWidth} ${model.height + model.padding * 2}`}
-      class="mx-auto h-6 touch-none"
-      preserveAspectRatio="xMidYMid meet"
-      aria-hidden="true"
+    <canvas
+      bind:this={canvasRef}
+      width={model.svgWidth}
+      height={model.height + model.padding * 2}
+      class="mx-auto h-6 w-auto touch-none"
+      aria-label="Produce price sparkline"
       onpointermove={handlePointerMove}
       onpointerdown={handlePointerDown}
       onpointerup={handlePointerLeave}
       onpointerleave={handlePointerLeave}
       onpointercancel={handlePointerLeave}
-    >
-      <defs>
-        <pattern id="hatch" width="4" height="4" patternUnits="userSpaceOnUse">
-          <line x1="0" y1="4" x2="4" y2="0" stroke="#52525b" stroke-width="0.5" stroke-opacity="0.8" />
-        </pattern>
-      </defs>
-
-      {#each model.missingGapRanges as gap, index (`gap-${index}`)}
-        <rect
-          x={gap.startX}
-          y="0"
-          width={Math.max(0, gap.endX - gap.startX)}
-          height={model.height + model.padding * 2}
-          fill="url(#hatch)"
-        />
-      {/each}
-
-      {#each model.areaSegments as segment, index (`area-${segment.position}-${index}`)}
-        <path
-          d={segment.d}
-          class={segment.position === 'above' ? 'fill-red-500/20' : 'fill-green-500/20'}
-        />
-      {/each}
-
-      {#each model.lineSegments as segment, index (`line-${segment.position}-${index}`)}
-        <path
-          d={segment.d}
-          class={{ above: 'stroke-red-500', below: 'stroke-green-500', baseline: 'stroke-zinc-400' }[
-            segment.position
-          ]}
-          fill="none"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-        />
-      {/each}
-
-      {#if model.firstPoint}
-        <line
-          x1={model.padding}
-          x2={model.width + model.padding}
-          y1={model.firstPoint.y}
-          y2={model.firstPoint.y}
-          class="stroke-black"
-          stroke-width="1"
-          stroke-dasharray="3 3"
-        />
-      {/if}
-
-      {#if model.hatchEndX > model.padding}
-        <rect
-          x={model.padding}
-          y="0"
-          width={model.hatchEndX - model.padding}
-          height={model.height + model.padding * 2}
-          fill="url(#hatch)"
-        />
-      {/if}
-
-      {#if unavailableSinceDate && model.lastPoint && model.lastPoint.x < model.width + model.padding}
-        <rect
-          x={model.lastPoint.x}
-          y="0"
-          width={model.width + model.padding - model.lastPoint.x}
-          height={model.height + model.padding * 2}
-          fill="url(#hatch)"
-        />
-      {/if}
-
-      {#if model.periodStartPoint}
-        <circle
-          cx={model.periodStartPoint.x}
-          cy={model.periodStartPoint.y}
-          r="2.25"
-          class={{
-            above: 'fill-white stroke-red-500',
-            below: 'fill-white stroke-green-500',
-            baseline: 'fill-white stroke-zinc-400',
-          }[model.positionY(model.periodStartPoint)]}
-          stroke-width="1.5"
-        />
-      {/if}
-
-      {#if model.lastPoint}
-        <circle
-          cx={model.lastPoint.x}
-          cy={model.lastPoint.y}
-          r="2.75"
-          class={{ above: 'fill-red-500', below: 'fill-green-500', baseline: 'fill-zinc-400' }[
-            model.positionY(model.lastPoint)
-          ]}
-          stroke-width="0"
-        />
-      {/if}
-
-      {#if activePoint}
-        <g opacity={isOutOfRange ? 0.5 : 1}>
-          <line
-            x1={activePoint.svg.x}
-            x2={activePoint.svg.x}
-            y1="0"
-            y2={model.height + model.padding * 2}
-            class="stroke-zinc-500"
-            stroke-width="0.75"
-            stroke-dasharray="2 2"
-          />
-          <circle
-            cx={activePoint.svg.x}
-            cy={activePoint.svg.y}
-            r="3"
-            class="fill-white stroke-zinc-700"
-            stroke-width="1.5"
-          />
-        </g>
-      {/if}
-    </svg>
+    ></canvas>
 
     <div class="mt-0.5 h-3">
       {#if activePoint}
