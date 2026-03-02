@@ -2,7 +2,10 @@
   import { goto } from '$app/navigation';
   import { createWindowVirtualizer } from '@tanstack/svelte-virtual';
   import Fuse from 'fuse.js';
+  import { flip } from 'svelte/animate';
+  import { cubicOut } from 'svelte/easing';
   import { onMount } from 'svelte';
+  import { fade } from 'svelte/transition';
   import { get } from 'svelte/store';
   import ProduceSparkline from '@/components/produce/ProduceSparkline.svelte';
   import { produceHash, produceItemUrl } from '@/lib/produce-hash';
@@ -1754,22 +1757,24 @@
             </tr>
           {/if}
           {#each virtualRows as virtualRow (virtualRow.key)}
-            {@const row = filteredRows[virtualRow.index]}
-            {#if row}
-              {@const rowHistory = history.get(row.name)}
-              {@const periodData = getPeriodData(row, timePeriod, rowHistory, dateRange)}
-              {@const prev = periodData.prev}
-              {@const change = prev !== null ? row.price - prev : null}
-              {@const pct = prev !== null && prev !== 0 ? ((row.price - prev) / prev) * 100 : null}
-              {@const showHighLow = getPeriodPointCount(rowHistory, dateRange, timePeriod) >= 3}
-              {@const specialtyUrl = getSpecialtyProduceUrl(row.name)}
-              <tr
-                data-index={virtualRow.index}
-                use:measureVirtualRow={virtualRow.index}
-                class={`group select-none border-b border-zinc-100 ${favorites.has(row.name) ? 'bg-amber-50' : 'hover:bg-zinc-50'}`}
-                ontouchend={(event) => handleRowTouchEnd(event, row.name)}
-                ondblclick={(event) => handleRowDoubleClick(event, row.name)}
-              >
+            {@const row = filteredRows[virtualRow.index]!}
+            {@const rowHistory = history.get(row.name)}
+            {@const periodData = getPeriodData(row, timePeriod, rowHistory, dateRange)}
+            {@const prev = periodData.prev}
+            {@const change = prev !== null ? row.price - prev : null}
+            {@const pct = prev !== null && prev !== 0 ? ((row.price - prev) / prev) * 100 : null}
+            {@const showHighLow = getPeriodPointCount(rowHistory, dateRange, timePeriod) >= 3}
+            {@const specialtyUrl = getSpecialtyProduceUrl(row.name)}
+            <tr
+              data-index={virtualRow.index}
+              use:measureVirtualRow={virtualRow.index}
+              animate:flip={{ duration: 420, easing: cubicOut }}
+              in:fade={{ duration: 220 }}
+              out:fade={{ duration: 180 }}
+              class={`group select-none border-b border-zinc-100 ${favorites.has(row.name) ? 'bg-amber-50' : 'hover:bg-zinc-50'}`}
+              ontouchend={(event) => handleRowTouchEnd(event, row.name)}
+              ondblclick={(event) => handleRowDoubleClick(event, row.name)}
+            >
                 <td
                   class={`${NAME_COL_CLASS} sticky left-0 z-10 box-border border-r border-zinc-200 p-2 md:w-auto md:border-r-0 ${
                     favorites.has(row.name) ? 'bg-amber-50' : 'bg-white group-hover:bg-zinc-50'
@@ -1944,8 +1949,7 @@
                     </div>
                   {/if}
                 </td>
-              </tr>
-            {/if}
+            </tr>
           {/each}
           {#if virtualPaddingBottom > 0}
             <tr aria-hidden="true" class="pointer-events-none border-0">
