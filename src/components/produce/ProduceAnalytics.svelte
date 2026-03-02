@@ -737,6 +737,16 @@
     return date.toLocaleDateString('en-US', { month: 'short', day: '2-digit' });
   }
 
+  function formatOutOfStockDate(isoDate: string): string {
+    const date = new Date(isoDate + 'T12:00:00');
+    const shouldIncludeYear = date.getFullYear() < new Date().getFullYear();
+    return date.toLocaleDateString('en-US', {
+      month: 'short',
+      day: '2-digit',
+      ...(shouldIncludeYear ? { year: 'numeric' } : {}),
+    });
+  }
+
   function togglePriceTrendFilter(next: 'drops' | 'increases') {
     const isActive =
       sortField === 'change' &&
@@ -1867,7 +1877,7 @@
                         {#if row.is_unavailable && row.unavailable_since_date}
                           <span class="rounded bg-red-100 px-1 text-red-700">
                             <span class="inline-block">Out of stock</span>{' '}
-                            <span class="inline-block">{formatShortDate(row.unavailable_since_date)}</span>
+                            <span class="inline-block">{formatOutOfStockDate(row.unavailable_since_date)}</span>
                           </span>
                         {/if}
                         {#if row.is_unavailable && row.unavailable_since_date && row.is_new}
