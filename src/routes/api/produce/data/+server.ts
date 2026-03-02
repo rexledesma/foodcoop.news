@@ -315,15 +315,9 @@ const DATA_SQL = `
     )
     WHERE rn = 1
   ),
-  prev_month_items AS (
-    SELECT DISTINCT name
-    FROM produce, latest_date
-    WHERE date_trunc('month', date::DATE) = date_trunc('month', max_date) - INTERVAL '1 month'
-  ),
   first_appearance AS (
     SELECT name, MIN(date::DATE) as first_seen_date
-    FROM produce, latest_date
-    WHERE date_trunc('month', date::DATE) = date_trunc('month', max_date)
+    FROM produce
     GROUP BY name
   ),
   current_with_new AS (
@@ -335,14 +329,21 @@ const DATA_SQL = `
       c.is_waxed,
       c.is_local,
       c.is_hydroponic,
-      CASE WHEN pm.name IS NULL THEN true ELSE false END as is_new,
-      CASE WHEN pm.name IS NULL THEN fa.first_seen_date::VARCHAR ELSE NULL END as first_seen_date,
+      CASE
+        WHEN fa.first_seen_date >= (SELECT max_date FROM latest_date) - INTERVAL '30 days'
+          THEN true
+        ELSE false
+      END as is_new,
+      CASE
+        WHEN fa.first_seen_date >= (SELECT max_date FROM latest_date) - INTERVAL '30 days'
+          THEN fa.first_seen_date::VARCHAR
+        ELSE NULL
+      END as first_seen_date,
       c.origin,
       c.unit,
       false as is_unavailable,
       NULL::VARCHAR as unavailable_since_date
     FROM current_prices c
-    LEFT JOIN prev_month_items pm ON c.name = pm.name
     LEFT JOIN first_appearance fa ON c.name = fa.name
   ),
   unavailable_rows AS (
@@ -354,14 +355,21 @@ const DATA_SQL = `
       r.is_waxed,
       r.is_local,
       r.is_hydroponic,
-      CASE WHEN pm.name IS NULL THEN true ELSE false END as is_new,
-      CASE WHEN pm.name IS NULL THEN fa.first_seen_date::VARCHAR ELSE NULL END as first_seen_date,
+      CASE
+        WHEN fa.first_seen_date >= (SELECT max_date FROM latest_date) - INTERVAL '30 days'
+          THEN true
+        ELSE false
+      END as is_new,
+      CASE
+        WHEN fa.first_seen_date >= (SELECT max_date FROM latest_date) - INTERVAL '30 days'
+          THEN fa.first_seen_date::VARCHAR
+        ELSE NULL
+      END as first_seen_date,
       r.origin,
       r.unit,
       true as is_unavailable,
       (r.last_seen_date + INTERVAL '1 day')::DATE::VARCHAR as unavailable_since_date
     FROM last_seen_rows r
-    LEFT JOIN prev_month_items pm ON r.name = pm.name
     LEFT JOIN first_appearance fa ON r.name = fa.name
   ),
   base_rows AS (
