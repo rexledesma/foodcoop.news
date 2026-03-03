@@ -40,6 +40,13 @@
     } | null;
   };
 
+  type AuthNavMetadata = {
+    isAuthenticated: boolean;
+    memberName: string;
+    memberId: string;
+    userEmail: string;
+  };
+
   let state = {
     pathname: initialPathname,
     loginHref: withNextParam('/login', initialPathname),
@@ -92,6 +99,7 @@
   let isSwipeSnapAnimating = false;
   let swipeSnapTimer: ReturnType<typeof setTimeout> | null = null;
   let swipeCommitTimer: ReturnType<typeof setTimeout> | null = null;
+  let authMetadataInFlight: Promise<AuthNavMetadata> | null = null;
 
   function serializeJsonLd(payload: unknown): string {
     return JSON.stringify(payload).replaceAll('<', '\\u003c');
@@ -266,9 +274,27 @@
     return SITE_DESCRIPTION;
   }
 
-  async function hydrateNavState() {
-    try {
-      const sessionResponse = await fetch('/api/auth/get-session');
+  function applyAuthMetadata(metadata: AuthNavMetadata) {
+    state = {
+      ...state,
+      pathname: $page.url.pathname,
+      loginHref: withNextParam('/login', $page.url.pathname),
+      isPending: false,
+      isAuthenticated: metadata.isAuthenticated,
+      memberName: metadata.memberName,
+      memberId: metadata.memberId,
+      userEmail: metadata.userEmail,
+    };
+    dispatchState();
+  }
+
+  async function fetchAuthMetadata(): Promise<AuthNavMetadata> {
+    if (authMetadataInFlight) {
+      return authMetadataInFlight;
+    }
+
+    authMetadataInFlight = (async () => {
+      const sessionResponse = await fetch('/api/auth/get-session', { cache: 'no-store' });
       const session = sessionResponse.ok
         ? ((await sessionResponse.json()) as { user?: { name?: string; email?: string } } | null)
         : null;
@@ -276,23 +302,32 @@
       let memberProfile: MemberProfileResponse | null = null;
 
       if (session?.user) {
-        const profileResponse = await fetch('/api/me/profile');
+        const profileResponse = await fetch('/api/me/profile', { cache: 'no-store' });
         if (profileResponse.ok) {
           memberProfile = (await profileResponse.json()) as MemberProfileResponse;
         }
       }
 
-      state = {
-        ...state,
-        pathname: $page.url.pathname,
-        loginHref: withNextParam('/login', $page.url.pathname),
-        isPending: false,
+      const metadata: AuthNavMetadata = {
         isAuthenticated: Boolean(session?.user),
         memberName: memberProfile?.profile?.memberName || session?.user?.name || '',
         memberId: memberProfile?.profile?.memberId || '',
         userEmail: session?.user?.email || '',
       };
-      dispatchState();
+      return metadata;
+    })();
+
+    try {
+      return await authMetadataInFlight;
+    } finally {
+      authMetadataInFlight = null;
+    }
+  }
+
+  async function hydrateNavState() {
+    try {
+      const fresh = await fetchAuthMetadata();
+      applyAuthMetadata(fresh);
     } catch {
       state = {
         ...state,
@@ -336,16 +371,12 @@
       state = { ...state, showSticky: Boolean(event.detail) };
       dispatchState();
     };
-    const authSessionChangedHandler = () => {
-      void hydrateNavState();
-    };
-    const memberProfileChangedHandler = () => {
+    const sidebarOpenedRevalidateHandler = () => {
       void hydrateNavState();
     };
 
     window.addEventListener('sticky-visibility', stickyVisibilityHandler as EventListener);
-    window.addEventListener('auth:session-changed', authSessionChangedHandler);
-    window.addEventListener('member-profile:changed', memberProfileChangedHandler);
+    window.addEventListener('navigation:sidebar-opened', sidebarOpenedRevalidateHandler);
 
     state = { ...state, showSticky: getCurrentStickyVisibility() };
     dispatchState();
@@ -525,8 +556,7 @@
 
     return () => {
       window.removeEventListener('sticky-visibility', stickyVisibilityHandler as EventListener);
-      window.removeEventListener('auth:session-changed', authSessionChangedHandler);
-      window.removeEventListener('member-profile:changed', memberProfileChangedHandler);
+      window.removeEventListener('navigation:sidebar-opened', sidebarOpenedRevalidateHandler);
       window.removeEventListener('pointerdown', handleInteraction);
       window.removeEventListener('keydown', handleInteraction);
       window.removeEventListener('scroll', handleInteraction);

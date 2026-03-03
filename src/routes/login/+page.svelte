@@ -84,7 +84,6 @@
           return;
         }
 
-        window.dispatchEvent(new CustomEvent('auth:session-changed'));
         await goto(resolveAuthDestination(get(page).url.searchParams.get('next')));
       } catch {
         state = { ...state, error: 'An unexpected error occurred', loading: false };

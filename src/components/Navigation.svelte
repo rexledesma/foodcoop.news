@@ -73,6 +73,9 @@
 
   function toggleSidebar() {
     isSidebarOpen = !isSidebarOpen;
+    if (isSidebarOpen) {
+      window.dispatchEvent(new CustomEvent('navigation:sidebar-opened'));
+    }
   }
 
   function isStandaloneMode(): boolean {
