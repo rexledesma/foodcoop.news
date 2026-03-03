@@ -1271,6 +1271,9 @@
     quickFilter = initialQuickFilter;
     dateFilter = initialDateFilter;
     itemFilter = initialItemFilter ?? null;
+    if (initialDateFilter) {
+      timePeriod = '1M';
+    }
     if (!itemFilter && initialProduceFilter) {
       const isHashParam = /^[a-f0-9]{7}$/i.test(initialProduceFilter.trim());
       itemFilter = isHashParam ? initialProduceFilter.trim().toLowerCase() : null;
