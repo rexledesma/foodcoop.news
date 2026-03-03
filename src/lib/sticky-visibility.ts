@@ -3,7 +3,7 @@ const REVEAL_ON_UP_STOP_ROUTES = new Set(['/', '/produce']);
 const SCROLL_THRESHOLD = 8;
 const TOP_THRESHOLD = 4;
 const REVEAL_ON_UP_SCROLL_STOP_DELAY_MS = 250;
-const REVEAL_ON_UP_MIN_REVERSE_SCROLL_PX = 144;
+const REVEAL_ON_UP_MIN_REVERSE_SCROLL_PX = 72;
 
 let initialized = false;
 let isTrackedRoute = false;
