@@ -491,7 +491,7 @@
           <a
             href="/integrations"
             data-sveltekit-replacestate={shouldReplaceHistoryOnMobile ? 'true' : undefined}
-            class="block rounded-md p-1 transition-colors hover:bg-zinc-100"
+            class="block rounded-md transition-colors hover:bg-zinc-100"
             onclick={closeSidebar}
           >
             {#if memberName.trim()}
