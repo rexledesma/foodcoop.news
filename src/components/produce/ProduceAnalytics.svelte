@@ -1540,7 +1540,7 @@
         {:else}
           <div class="flex items-center gap-1 overflow-hidden whitespace-nowrap">
             <span class="truncate">
-              Showing {filteredRows.length} of {quickFilterCount} items
+              {filteredRows.length} of {quickFilterCount} items
               {#if dateRange}
                 {' · Last updated '}
                 {new Date(dateRange.end + 'T00:00:00').toLocaleDateString('en-US', {
