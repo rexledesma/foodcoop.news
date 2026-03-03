@@ -14,6 +14,7 @@ const COOP_BLUESKY_HANDLE = 'foodcoop.bsky.social';
 const SOURCE_FETCH_TIMEOUT_MS = 4500;
 const BLUESKY_FEED_CACHE_CONTROL = 'public, max-age=60, s-maxage=300, stale-while-revalidate=3600';
 const SLOW_FEED_CACHE_CONTROL = 'public, max-age=300, s-maxage=14400, stale-while-revalidate=86400';
+const PRODUCE_EVENT_TIME_EST_OFFSET = '-05:00';
 
 type SourceName =
   | 'gazette'
@@ -162,7 +163,7 @@ const SOURCE_DEFINITIONS: SourceDefinition[] = [
       return (data.events ?? []).map((event) => ({
         type: 'produce',
         data: event,
-        date: new Date(`${event.date}T07:00:00`),
+        date: new Date(`${event.date}T07:00:00${PRODUCE_EVENT_TIME_EST_OFFSET}`),
       }));
     },
   },
