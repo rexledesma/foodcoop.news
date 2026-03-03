@@ -28,13 +28,6 @@ function addDaysIso(isoDate: string, days: number): string {
   return date.toISOString().slice(0, 10);
 }
 
-function getPreviousMonthKey(isoDate: string): string {
-  const date = isoToUtcDate(isoDate);
-  date.setUTCDate(1);
-  date.setUTCMonth(date.getUTCMonth() - 1);
-  return date.toISOString().slice(0, 7);
-}
-
 async function loadParquetNameDateRows(
   url: string,
 ): Promise<Array<{ name: string; date: string }>> {
@@ -146,14 +139,11 @@ export async function GET() {
       (latest, row) => (row.date > latest ? row.date : latest),
       rows[0].date,
     );
-    const currentMonth = maxDate.slice(0, 7);
-    const previousMonth = getPreviousMonthKey(maxDate);
+    const arrivalCutoff = addDaysIso(maxDate, -30);
     const unavailableCutoff = addDaysIso(maxDate, -30);
 
     const lastSeenByName = new Map<string, string>();
-    const namesOnMaxDate = new Set<string>();
-    const namesInPreviousMonth = new Set<string>();
-    const firstSeenCurrentMonth = new Map<string, string>();
+    const firstSeenByName = new Map<string, string>();
 
     for (const row of rows) {
       const { name, date } = row;
@@ -161,26 +151,17 @@ export async function GET() {
       if (!previousLastSeen || date > previousLastSeen) {
         lastSeenByName.set(name, date);
       }
-      if (date === maxDate) {
-        namesOnMaxDate.add(name);
-      }
-      if (date.slice(0, 7) === previousMonth) {
-        namesInPreviousMonth.add(name);
-      }
-      if (date.slice(0, 7) === currentMonth) {
-        const previousFirstSeen = firstSeenCurrentMonth.get(name);
-        if (!previousFirstSeen || date < previousFirstSeen) {
-          firstSeenCurrentMonth.set(name, date);
-        }
+      const previousFirstSeen = firstSeenByName.get(name);
+      if (!previousFirstSeen || date < previousFirstSeen) {
+        firstSeenByName.set(name, date);
       }
     }
 
     const arrivalsByDate = new Map<string, Set<string>>();
     const outOfStockByDate = new Map<string, Set<string>>();
 
-    for (const name of namesOnMaxDate) {
-      if (namesInPreviousMonth.has(name)) continue;
-      const firstSeen = firstSeenCurrentMonth.get(name);
+    for (const [name, firstSeen] of firstSeenByName) {
+      if (firstSeen < arrivalCutoff) continue;
       if (!firstSeen) continue;
       pushGroupedName(arrivalsByDate, firstSeen, name);
     }
@@ -189,11 +170,6 @@ export async function GET() {
       if (lastSeen >= maxDate || lastSeen < unavailableCutoff) continue;
       const unavailableSince = addDaysIso(lastSeen, 1);
       pushGroupedName(outOfStockByDate, unavailableSince, name);
-
-      if (namesInPreviousMonth.has(name)) continue;
-      const firstSeen = firstSeenCurrentMonth.get(name);
-      if (!firstSeen) continue;
-      pushGroupedName(arrivalsByDate, firstSeen, name);
     }
 
     const allDates = new Set([...arrivalsByDate.keys(), ...outOfStockByDate.keys()]);
