@@ -179,6 +179,10 @@
   const VIRTUAL_ROW_ESTIMATE = 140;
   const VIRTUAL_ROW_BUFFER = 50;
   const VIRTUAL_ROW_CHUNK = 50;
+  const DEFAULT_QUICK_FILTER: QuickFilter = null;
+  const DEFAULT_TIME_PERIOD: TimePeriod = '1M';
+  const DEFAULT_SORT_FIELD: SortField = 'change';
+  const DEFAULT_SORT_DIRECTION: SortDirection = 'asc';
 
   // Render rows in chunked windows with one extra chunk on both sides to avoid
   // boundary thrash when scrolling in either direction.
@@ -213,14 +217,14 @@
   });
 
   let search = $state('');
-  let quickFilter = $state<QuickFilter>(null);
-  let timePeriod = $state<TimePeriod>('1D');
+  let quickFilter = $state<QuickFilter>(DEFAULT_QUICK_FILTER);
+  let timePeriod = $state<TimePeriod>(DEFAULT_TIME_PERIOD);
   let statsFromPeriod = $state<TimePeriod | null>(null);
   let statsTransitionProgress = $state(1);
   let lastStatsPeriod: TimePeriod | null = null;
   let statsTransitionRaf = 0;
-  let sortField = $state<SortField | null>('change');
-  let sortDirection = $state<SortDirection>('asc');
+  let sortField = $state<SortField | null>(DEFAULT_SORT_FIELD);
+  let sortDirection = $state<SortDirection>(DEFAULT_SORT_DIRECTION);
   let dateFilter = $state<string | null>(null);
   let itemFilter = $state<string | null>(null);
   let lastAppliedInitialQuerySignature = $state<string | null>(null);
@@ -727,9 +731,9 @@
   }
 
   function clearQuickFilter() {
-    quickFilter = null;
-    sortField = 'name';
-    sortDirection = 'asc';
+    quickFilter = DEFAULT_QUICK_FILTER;
+    sortField = DEFAULT_SORT_FIELD;
+    sortDirection = DEFAULT_SORT_DIRECTION;
   }
 
   function formatShortDate(isoDate: string): string {
@@ -1567,9 +1571,9 @@
           type="button"
           onclick={() => {
             clearQueryFilters();
-            quickFilter = null;
-            sortField = 'name';
-            sortDirection = 'asc';
+            quickFilter = DEFAULT_QUICK_FILTER;
+            sortField = DEFAULT_SORT_FIELD;
+            sortDirection = DEFAULT_SORT_DIRECTION;
           }}
           class={`rounded-full px-3 py-1.5 text-sm font-medium whitespace-nowrap transition-colors ${
             !quickFilter && !dateFilter && !itemFilter
