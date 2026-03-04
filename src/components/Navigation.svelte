@@ -155,6 +155,10 @@
     }
   }
 
+  function preloadModeForHref(href: string): 'hover' | undefined {
+    return href === '/' || href === '/produce' ? 'hover' : undefined;
+  }
+
   function applyState(next: NavigationClientState) {
     pathname = next.pathname;
     loginHref = next.loginHref;
@@ -395,6 +399,7 @@
     </button>
     <a
       href="/"
+      data-sveltekit-preload-data="hover"
       class="select-none text-center text-base leading-none font-bold text-zinc-700"
       style="font-family: 'DIN 1451 Std Engschrift', 'DIN 1451 Engschrift', Bahnschrift, 'DIN Alternate', 'Franklin Gothic Medium', sans-serif;"
     >
@@ -410,6 +415,7 @@
       {#each navItems as item (item.href)}
         <a
           href={item.href}
+          data-sveltekit-preload-data={preloadModeForHref(item.href)}
           data-sveltekit-replacestate={shouldReplaceHistoryOnMobile ? 'true' : undefined}
           data-nav-href={item.href}
           class={`shrink-0 flex flex-row items-center justify-center rounded-lg px-2 py-2 transition-colors md:px-4 ${
@@ -508,11 +514,12 @@
             {/if}
           </a>
           <p class="mt-2 text-sm text-zinc-700">
-            <a
-              href="/produce?filter=favorites"
-              data-sveltekit-replacestate={shouldReplaceHistoryOnMobile ? 'true' : undefined}
-              class="inline-flex items-center gap-1 rounded-sm hover:text-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-800/30"
-              onclick={closeSidebar}
+          <a
+            href="/produce?filter=favorites"
+            data-sveltekit-preload-data="hover"
+            data-sveltekit-replacestate={shouldReplaceHistoryOnMobile ? 'true' : undefined}
+            class="inline-flex items-center gap-1 rounded-sm hover:text-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-800/30"
+            onclick={closeSidebar}
             >
               <span class="font-bold text-black">{produceFavoritesCount}</span>
               <span>favorites</span>
@@ -552,6 +559,7 @@
         {#each [...navItems, aboutItem] as item (item.href)}
           <a
             href={item.href}
+            data-sveltekit-preload-data={preloadModeForHref(item.href)}
             data-sveltekit-replacestate={shouldReplaceHistoryOnMobile ? 'true' : undefined}
             class={`flex items-center gap-3 rounded-md px-1 py-3 text-xl transition-colors hover:text-black ${
               normalizePathname(pathname) === item.href ? 'font-bold text-black' : 'font-normal text-zinc-700'
