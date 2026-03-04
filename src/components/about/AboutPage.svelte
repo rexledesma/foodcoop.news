@@ -157,8 +157,7 @@
       </a>. If you have any feedback, please
       <a href="mailto:rex.ledesma1@gmail.com" class="underline transition-colors hover:text-zinc-900">
         email me
-      </a>
-      !
+      </a>!
     </p>
     <section class="space-y-2">
       <h2 class="text-xl font-semibold text-zinc-900">Acknowledgments</h2>
