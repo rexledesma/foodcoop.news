@@ -717,6 +717,22 @@
     unavailableDate: string | null,
   ) {
     const logicalHeight = drawModel.height + drawModel.padding * 2;
+    const trendPosition: PositionY =
+      !drawModel.periodStartPoint || !drawModel.lastPoint
+        ? 'baseline'
+        : Math.abs(drawModel.lastPoint.y - drawModel.periodStartPoint.y) < 0.001
+          ? 'baseline'
+          : drawModel.lastPoint.y < drawModel.periodStartPoint.y
+            ? 'above'
+            : 'below';
+    const trendLineColor =
+      trendPosition === 'above' ? '#ef4444' : trendPosition === 'below' ? '#22c55e' : '#a1a1aa';
+    const trendFillColor =
+      trendPosition === 'above'
+        ? 'rgba(239, 68, 68, 0.2)'
+        : trendPosition === 'below'
+          ? 'rgba(34, 197, 94, 0.2)'
+          : 'rgba(161, 161, 170, 0.2)';
     ctx.save();
 
     for (const gap of drawModel.missingGapRanges) {
@@ -736,14 +752,12 @@
       }
       ctx.lineTo(end.x, drawModel.baselineY);
       ctx.closePath();
-      ctx.fillStyle = segment.position === 'above' ? 'rgba(239, 68, 68, 0.2)' : 'rgba(34, 197, 94, 0.2)';
+      ctx.fillStyle = trendFillColor;
       ctx.fill();
     }
 
     for (const segment of drawModel.lineSegments) {
-      const color =
-        segment.position === 'above' ? '#ef4444' : segment.position === 'below' ? '#22c55e' : '#a1a1aa';
-      strokeLine(ctx, segment.points, color, 2);
+      strokeLine(ctx, segment.points, trendLineColor, 2);
     }
 
     if (drawModel.firstPoint) {
@@ -783,13 +797,7 @@
     }
 
     if (drawModel.lastPoint) {
-      const fill =
-        drawModel.positionY(drawModel.lastPoint) === 'above'
-          ? '#ef4444'
-          : drawModel.positionY(drawModel.lastPoint) === 'below'
-            ? '#22c55e'
-            : '#a1a1aa';
-      drawCircle(ctx, drawModel.lastPoint.x, drawModel.lastPoint.y, 2.75, fill);
+      drawCircle(ctx, drawModel.lastPoint.x, drawModel.lastPoint.y, 2.75, trendLineColor);
     }
     ctx.restore();
   }
