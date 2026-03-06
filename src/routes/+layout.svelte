@@ -8,6 +8,7 @@
   import { signOut } from '@/lib/auth-client';
   import { withNextParam } from '@/lib/auth-redirect';
   import { prefetchProduceCache } from '@/lib/produce-cache-prefetch';
+  import type { LayoutData } from './$types';
   import {
     getCurrentStickyVisibility,
     initStickyVisibility,
@@ -47,6 +48,8 @@
     userEmail: string;
   };
 
+  export let data = {} as LayoutData;
+
   let state = {
     pathname: initialPathname,
     loginHref: withNextParam('/login', initialPathname),
@@ -80,6 +83,7 @@
   let documentTitle = SITE_NAME;
   let pageDescription = SITE_DESCRIPTION;
   let canonicalUrl = '';
+  let ogUrl = '';
   let ogImageUrl = '';
   let siteOrigin = '';
   let websiteJsonLd = '';
@@ -594,9 +598,10 @@
 
   $: documentTitle = computePageTitle($page.url.pathname, $page.url.searchParams);
   $: pageDescription = computePageDescription($page.url.pathname, $page.url.searchParams);
-  $: canonicalUrl = `${$page.url.origin}${$page.url.pathname}`;
-  $: ogImageUrl = `${$page.url.origin}${OG_IMAGE_PATH}`;
-  $: siteOrigin = $page.url.origin;
+  $: canonicalUrl = `${data.canonicalOrigin}${$page.url.pathname}`;
+  $: ogUrl = canonicalUrl;
+  $: ogImageUrl = `${data.canonicalOrigin}${OG_IMAGE_PATH}`;
+  $: siteOrigin = data.canonicalOrigin;
   $: websiteJsonLd = serializeJsonLd({
     '@context': 'https://schema.org',
     '@type': 'WebSite',
@@ -627,7 +632,7 @@
   <meta property="og:site_name" content={SITE_NAME} />
   <meta property="og:title" content={documentTitle} />
   <meta property="og:description" content={pageDescription} />
-  <meta property="og:url" content={$page.url.href} />
+  <meta property="og:url" content={ogUrl} />
   <meta property="og:image" content={ogImageUrl} />
   <svelte:element this={'script'} type="application/ld+json">{websiteJsonLd}</svelte:element>
   <svelte:element this={'script'} type="application/ld+json">
