@@ -54,6 +54,14 @@ export interface GazetteArticle {
   image?: string;
 }
 
+export interface GazetteDeadlineEvent {
+  id: string;
+  title: string;
+  description?: string;
+  issueDate: string;
+  dueDate: string;
+}
+
 export interface FoodCoopAnnouncement {
   id: string;
   title: string;

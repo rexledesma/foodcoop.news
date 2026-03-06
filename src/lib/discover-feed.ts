@@ -1,6 +1,7 @@
 import type {
   FeedPost,
   GazetteArticle,
+  GazetteDeadlineEvent,
   FoodCoopAnnouncement,
   FoodCoopCooksArticle,
   EventbriteEvent,
@@ -10,6 +11,7 @@ import type {
 
 export type FeedItem =
   | { type: 'gazette'; data: GazetteArticle; date: Date }
+  | { type: 'gazette-deadline'; data: GazetteDeadlineEvent; date: Date }
   | { type: 'bluesky'; data: FeedPost; date: Date }
   | { type: 'foodcoop'; data: FoodCoopAnnouncement; date: Date }
   | { type: 'foodcoopcooks'; data: FoodCoopCooksArticle; date: Date }
@@ -21,6 +23,7 @@ export type FeedItem =
 
 export function getFeedItemKey(item: FeedItem) {
   if (item.type === 'gazette') return `gazette-${item.data.id}`;
+  if (item.type === 'gazette-deadline') return `gazette-deadline-${item.data.id}`;
   if (item.type === 'foodcoop') return `foodcoop-${item.data.id}`;
   if (item.type === 'foodcoopcooks') return `foodcoopcooks-${item.data.id}`;
   if (item.type === 'foodcoopcooks-events') {

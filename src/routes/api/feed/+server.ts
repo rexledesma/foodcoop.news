@@ -5,6 +5,7 @@ import type {
   FoodCoopCooksArticle,
   FoodcoopEvent,
   GazetteArticle,
+  GazetteDeadlineEvent,
   ProduceEvent,
 } from '@/lib/types';
 import type { FeedItem } from '@/lib/discover-feed';
@@ -15,6 +16,12 @@ const SOURCE_FETCH_TIMEOUT_MS = 4500;
 const BLUESKY_FEED_CACHE_CONTROL = 'public, max-age=60, s-maxage=300, stale-while-revalidate=3600';
 const SLOW_FEED_CACHE_CONTROL = 'public, max-age=300, s-maxage=14400, stale-while-revalidate=86400';
 const PRODUCE_EVENT_TIME_EST_OFFSET = '-05:00';
+const GAZETTE_ISSUE_START_UTC = Date.UTC(2025, 11, 30, 12, 0, 0);
+const GAZETTE_ISSUE_INTERVAL_DAYS = 21;
+const GAZETTE_ARTICLE_DUE_DAYS_BEFORE = 22;
+const GAZETTE_LETTERS_DUE_DAYS_BEFORE = 18;
+const GAZETTE_DEADLINE_LOOKAHEAD_MONTHS = 6;
+const DAY_MS = 24 * 60 * 60 * 1000;
 
 type SourceName =
   | 'gazette'
@@ -52,17 +59,96 @@ type SourceResult =
 
 type SerializedFeedItem = Omit<FeedItem, 'date'> & { date: string };
 
+function toIsoDate(utcTimestamp: number): string {
+  return new Date(utcTimestamp).toISOString().slice(0, 10);
+}
+
+function formatIssueLabel(issueDate: string): string {
+  const date = new Date(`${issueDate}T12:00:00Z`);
+  return date.toLocaleDateString('en-US', {
+    month: 'long',
+    day: 'numeric',
+    timeZone: 'UTC',
+  });
+}
+
+function formatDueDateLabel(dueDate: string): string {
+  const date = new Date(`${dueDate}T12:00:00Z`);
+  return date.toLocaleDateString('en-US', {
+    month: 'long',
+    day: 'numeric',
+    year: 'numeric',
+    timeZone: 'UTC',
+  });
+}
+
+function createGazetteDeadlineEvents(now = new Date()): GazetteDeadlineEvent[] {
+  const nextSixMonths = new Date(now);
+  nextSixMonths.setMonth(nextSixMonths.getMonth() + GAZETTE_DEADLINE_LOOKAHEAD_MONTHS);
+
+  const nowTime = now.getTime();
+  const lookaheadTime = nextSixMonths.getTime();
+  const events: GazetteDeadlineEvent[] = [];
+
+  let issueDateUtc = GAZETTE_ISSUE_START_UTC;
+  if (issueDateUtc < nowTime) {
+    const elapsedDays = (nowTime - issueDateUtc) / DAY_MS;
+    const cyclesElapsed = Math.floor(elapsedDays / GAZETTE_ISSUE_INTERVAL_DAYS);
+    issueDateUtc += cyclesElapsed * GAZETTE_ISSUE_INTERVAL_DAYS * DAY_MS;
+  }
+
+  while (issueDateUtc <= lookaheadTime + GAZETTE_ARTICLE_DUE_DAYS_BEFORE * DAY_MS) {
+    const issueDate = toIsoDate(issueDateUtc);
+    const articleDueUtc = issueDateUtc - GAZETTE_ARTICLE_DUE_DAYS_BEFORE * DAY_MS;
+    const letterDueUtc = issueDateUtc - GAZETTE_LETTERS_DUE_DAYS_BEFORE * DAY_MS;
+
+    if (articleDueUtc >= nowTime && articleDueUtc <= lookaheadTime) {
+      const dueDate = toIsoDate(articleDueUtc);
+      events.push({
+        id: `${issueDate}-article`,
+        title: `Member Article Submission Deadline`,
+        description: `For the ${formatIssueLabel(issueDate)} issue, member article submissions are due on ${formatDueDateLabel(dueDate)}.`,
+        issueDate,
+        dueDate,
+      });
+    }
+
+    if (letterDueUtc >= nowTime && letterDueUtc <= lookaheadTime) {
+      const dueDate = toIsoDate(letterDueUtc);
+      events.push({
+        id: `${issueDate}-letter`,
+        title: `Letters to the Editor Deadline`,
+        description: `For the ${formatIssueLabel(issueDate)} issue, letters to the editor are due on ${formatDueDateLabel(dueDate)}.`,
+        issueDate,
+        dueDate,
+      });
+    }
+
+    issueDateUtc += GAZETTE_ISSUE_INTERVAL_DAYS * DAY_MS;
+  }
+
+  return events.sort((a, b) => a.dueDate.localeCompare(b.dueDate)).slice(0, 2);
+}
+
 const SOURCE_DEFINITIONS: SourceDefinition[] = [
   {
     name: 'gazette',
     path: '/api/gazette',
     map: (payload) => {
       const data = payload as SourceResponse & { articles?: GazetteArticle[] };
-      return (data.articles ?? []).map((article) => ({
+      const articles: FeedItem[] = (data.articles ?? []).map((article) => ({
         type: 'gazette',
         data: article,
         date: new Date(article.pubDate),
       }));
+
+      const deadlines: FeedItem[] = createGazetteDeadlineEvents().map((deadline) => ({
+        type: 'gazette-deadline',
+        data: deadline,
+        date: new Date(`${deadline.dueDate}T12:00:00Z`),
+      }));
+
+      return [...articles, ...deadlines];
     },
   },
   {

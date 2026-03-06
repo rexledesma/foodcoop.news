@@ -3,6 +3,7 @@
   import type {
     FeedPost,
     GazetteArticle,
+    GazetteDeadlineEvent,
     FoodCoopAnnouncement,
     FoodCoopCooksArticle,
     EventbriteEvent,
@@ -92,6 +93,9 @@
       if (filter === 'produce') {
         return item.type === 'produce';
       }
+      if (filter === 'gazette') {
+        return item.type === 'gazette' || item.type === 'gazette-deadline';
+      }
       return item.type === filter;
     });
   });
@@ -110,7 +114,8 @@
       item.type === 'foodcoopcooks-events' ||
       item.type === 'wordsprouts-events' ||
       item.type === 'concert-series-events' ||
-      item.type === 'gm-events'
+      item.type === 'gm-events' ||
+      item.type === 'gazette-deadline'
     );
   }
 
@@ -136,6 +141,12 @@
     return date.toLocaleString('en-US', {
       dateStyle: 'medium',
       timeStyle: 'short',
+    });
+  }
+
+  function formatDate(date: Date): string {
+    return date.toLocaleDateString('en-US', {
+      dateStyle: 'medium',
     });
   }
 
@@ -320,6 +331,8 @@
           <div class="feed-item-enter">
             {#if item.type === 'gazette'}
               {@render GazetteCard({ article: item.data })}
+            {:else if item.type === 'gazette-deadline'}
+              {@render GazetteDeadlineCard({ deadline: item.data })}
             {:else if item.type === 'foodcoop'}
               {@render FoodCoopCard({ article: item.data })}
             {:else if item.type === 'foodcoopcooks'}
@@ -367,6 +380,29 @@
     </div>
     <div class="feed-shimmer mt-4 h-32 rounded-lg"></div>
   </div>
+{/snippet}
+
+{#snippet GazetteDeadlineCard({ deadline }: { deadline: GazetteDeadlineEvent })}
+  <a
+    href="https://linewaitersgazette.com/about/"
+    target="_blank"
+    rel="noopener noreferrer"
+    class="block rounded-xl border border-zinc-200 bg-white p-4 transition-colors hover:border-green-300"
+  >
+    <div class="flex items-start gap-3">
+      <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-amber-100 text-xl">⏰</div>
+      <div class="min-w-0 flex-1">
+        <div class="flex flex-wrap items-center gap-2">
+          <span class="font-semibold text-zinc-900">Linewaiters' Gazette</span>
+          <span class="shrink-0 text-sm text-zinc-400">{formatDate(new Date(`${deadline.dueDate}T12:00:00Z`))}</span>
+        </div>
+        <p class="mt-2 font-medium text-zinc-700">{deadline.title}</p>
+        <p class="mt-1 text-sm text-zinc-500">
+          {deadline.description}
+        </p>
+      </div>
+    </div>
+  </a>
 {/snippet}
 
 {#snippet GazetteCard({ article }: { article: GazetteArticle })}
