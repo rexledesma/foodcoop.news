@@ -103,6 +103,11 @@
     window.dispatchEvent(new CustomEvent('pwa-install:show', { detail: { force: true, expandHowTo: true } }));
   }
 
+  async function handleSidebarSignOut() {
+    closeSidebar();
+    await onSignOut();
+  }
+
   async function hydrateProduceFavoritesSummary() {
     if (typeof window === 'undefined') return;
     try {
@@ -592,6 +597,15 @@
         >
           Send feedback
         </a>
+        {#if isAuthenticated}
+          <button
+            type="button"
+            class="mt-2 inline-flex w-full items-center justify-center rounded-lg border border-zinc-300 px-3 py-2 text-sm font-medium text-zinc-800 transition-colors hover:bg-zinc-100"
+            onclick={handleSidebarSignOut}
+          >
+            Log out
+          </button>
+        {/if}
       </div>
     </div>
   </div>
