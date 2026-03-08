@@ -28,7 +28,7 @@ function normalizeAuthNext(path: string | null | undefined): string | null {
 
 export function withNextParam(url: string, nextPath: string | null | undefined): string {
   const next = normalizeAuthNext(nextPath);
-  if (!next) {
+  if (!next || getPathname(next) === '/') {
     return url;
   }
 

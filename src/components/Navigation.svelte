@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { fly } from 'svelte/transition';
+  import { withNextParam } from '@/lib/auth-redirect';
 
   type NavigationClientState = {
     pathname: string;
@@ -139,8 +140,7 @@
   function getSignupHref(): string {
     const queryString = loginHref.split('?')[1] ?? '';
     const next = new URLSearchParams(queryString).get('next');
-    if (!next) return '/signup';
-    return `/signup?next=${encodeURIComponent(next)}`;
+    return withNextParam('/signup', next);
   }
 
   function getNavIcon(icon: NavIconName): string {
