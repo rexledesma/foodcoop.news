@@ -548,7 +548,7 @@
               href={getSignupHref()}
               class="rounded-lg bg-black px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-zinc-800"
             >
-              Create Account
+              Create account
             </a>
             <a
               href={loginHref}

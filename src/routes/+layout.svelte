@@ -48,6 +48,9 @@
     userEmail: string;
   };
 
+  const BRAND_FONT_FAMILY =
+    "'DIN 1451 Std Engschrift', 'DIN 1451 Engschrift', Bahnschrift, 'DIN Alternate', 'Franklin Gothic Medium', sans-serif";
+
   export let data = {} as LayoutData;
 
   let state = {
@@ -126,6 +129,13 @@
   function normalizePathname(pathname: string): string {
     if (pathname.length > 1 && pathname.endsWith('/')) return pathname.slice(0, -1);
     return pathname;
+  }
+
+  function getSignupHref(loginHref: string): string {
+    const queryString = loginHref.split('?')[1] ?? '';
+    const next = new URLSearchParams(queryString).get('next');
+    if (!next) return '/signup';
+    return `/signup?next=${encodeURIComponent(next)}`;
   }
 
   function isEditableElement(target: EventTarget | null): boolean {
@@ -615,6 +625,8 @@
     url: siteOrigin,
     logo: `${siteOrigin}${OG_IMAGE_PATH}`,
   });
+  $: showUnauthenticatedFooter = !isSwipePreviewMode && !state.isPending && !state.isAuthenticated;
+  $: signupHref = getSignupHref(state.loginHref);
 </script>
 
 <svelte:head>
@@ -644,7 +656,11 @@
   <Navigation {channel} {initialState} />
 {/if}
 
-<div class={`relative overflow-x-clip ${isSwipePreviewMode ? '' : 'pt-[5.5rem]'}`}>
+<div
+  class={`relative overflow-x-clip ${isSwipePreviewMode ? '' : 'pt-[5.5rem]'} ${
+    showUnauthenticatedFooter ? 'pb-32' : ''
+  }`}
+>
   {#if swipePreviewUrl}
     <div
       class="pointer-events-none absolute inset-0 z-0 overflow-hidden bg-white transition-transform ease-out motion-reduce:transition-none"
@@ -666,6 +682,37 @@
     <slot />
   </div>
 </div>
+
+{#if showUnauthenticatedFooter}
+  <footer
+    class="safe-area-pb fixed right-0 bottom-0 left-0 z-40 border-t border-zinc-200 bg-white"
+  >
+    <div class="mx-auto flex max-w-3xl items-center justify-between gap-3 px-4 py-3">
+      <a
+        href="/"
+        data-sveltekit-preload-data="hover"
+        class="shrink-0 select-none text-base leading-none font-bold text-zinc-700"
+        style={`font-family: ${BRAND_FONT_FAMILY};`}
+      >
+        FOODCOOP.NEWS
+      </a>
+      <div class="flex items-center gap-2">
+        <a
+          href={signupHref}
+          class="rounded-lg bg-black px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-zinc-800"
+        >
+          Create account
+        </a>
+        <a
+          href={state.loginHref}
+          class="rounded-lg border border-zinc-300 px-3 py-2 text-sm font-medium text-zinc-800 transition-colors hover:bg-zinc-100"
+        >
+          Sign in
+        </a>
+      </div>
+    </div>
+  </footer>
+{/if}
 
 {#if isPwaInstallReady && !isSwipePreviewMode}
   <pwa-install
