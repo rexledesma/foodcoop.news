@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { ConvexHttpClient } from 'convex/browser';
 import { api } from '../../../../../convex/_generated/api';
 
@@ -76,7 +77,13 @@ const getSummary = (eventLines: string[]) => {
   return summaryLine.slice(colonIndex + 1);
 };
 
-export async function GET({ params }: { params: { calendarId: string } }) {
+export async function GET({
+  params,
+  request,
+}: {
+  params: { calendarId: string };
+  request: Request;
+}) {
   try {
     const { calendarId } = params;
     if (!calendarId) {
@@ -113,23 +120,21 @@ export async function GET({ params }: { params: { calendarId: string } }) {
           });
 
     const filteredCalendar = [...header, ...filteredEvents.flat(), ...footer].join('\r\n');
+    const body = filteredCalendar.endsWith('\r\n') ? filteredCalendar : `${filteredCalendar}\r\n`;
 
-    const cacheMaxAgeSeconds = 300;
-    const recentlyUpdated =
-      typeof profile.updatedAt === 'number' &&
-      Date.now() - profile.updatedAt < cacheMaxAgeSeconds * 1000;
+    const etag = `"${createHash('sha256').update(body).digest('hex').slice(0, 16)}"`;
 
-    return new Response(
-      filteredCalendar.endsWith('\r\n') ? filteredCalendar : `${filteredCalendar}\r\n`,
-      {
-        headers: {
-          'content-type': 'text/calendar; charset=utf-8',
-          'cache-control': recentlyUpdated
-            ? 'no-store'
-            : `public, max-age=${cacheMaxAgeSeconds}, s-maxage=${cacheMaxAgeSeconds}`,
-        },
+    if (request.headers.get('if-none-match') === etag) {
+      return new Response(null, { status: 304, headers: { etag } });
+    }
+
+    return new Response(body, {
+      headers: {
+        'content-type': 'text/calendar; charset=utf-8',
+        'cache-control': 'private, max-age=300',
+        etag,
       },
-    );
+    });
   } catch (error) {
     console.error('Calendar API error:', error);
     return Response.json({ error: 'Failed to fetch calendar' }, { status: 500 });
