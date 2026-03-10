@@ -119,7 +119,7 @@
       <button
         type="submit"
         disabled={checkingEmail}
-        class="w-full rounded-lg bg-green-600 px-4 py-2 font-medium text-white transition-colors hover:bg-green-700 focus:ring-2 focus:ring-green-500 focus:ring-offset-2 focus:outline-none disabled:bg-green-400"
+        class="w-full rounded-lg bg-black px-4 py-2 font-medium text-white transition-colors hover:bg-zinc-800 focus:ring-2 focus:ring-zinc-900 focus:ring-offset-2 focus:outline-none disabled:bg-zinc-400"
       >
         {checkingEmail ? 'Checking...' : 'Continue'}
       </button>
@@ -158,7 +158,7 @@
       <button
         type="submit"
         disabled={loading}
-        class="w-full rounded-lg bg-green-600 px-4 py-2 font-medium text-white transition-colors hover:bg-green-700 focus:ring-2 focus:ring-green-500 focus:ring-offset-2 focus:outline-none disabled:bg-green-400"
+        class="w-full rounded-lg bg-black px-4 py-2 font-medium text-white transition-colors hover:bg-zinc-800 focus:ring-2 focus:ring-zinc-900 focus:ring-offset-2 focus:outline-none disabled:bg-zinc-400"
       >
         {loading ? 'Signing in...' : 'Sign In'}
       </button>

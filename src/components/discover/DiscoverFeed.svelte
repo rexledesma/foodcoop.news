@@ -285,7 +285,7 @@
             <button
               type="button"
               onclick={() => setSelectedFilter(option.value)}
-              class={`rounded-full px-3 py-1.5 text-sm font-medium whitespace-nowrap transition-colors ${filter === option.value ? 'bg-green-600 text-white' : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200'}`}
+              class={`rounded-full px-3 py-1.5 text-sm font-medium whitespace-nowrap transition-colors ${filter === option.value ? 'bg-black text-white' : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200'}`}
             >
               {option.label}
             </button>
@@ -297,7 +297,7 @@
             <button
               type="button"
               onclick={() => setSelectedFilter(option.value)}
-              class={`rounded-full px-3 py-1.5 text-sm font-medium whitespace-nowrap transition-colors ${filter === option.value ? 'bg-green-600 text-white' : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200'}`}
+              class={`rounded-full px-3 py-1.5 text-sm font-medium whitespace-nowrap transition-colors ${filter === option.value ? 'bg-black text-white' : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200'}`}
             >
               {option.label}
             </button>

@@ -347,7 +347,7 @@
           <button
             type="submit"
             disabled={isSaving}
-            class="rounded-lg bg-green-600 px-4 py-1.5 text-sm font-medium text-white transition-colors hover:bg-green-700 disabled:bg-green-400 disabled:opacity-60"
+            class="rounded-lg bg-black px-4 py-1.5 text-sm font-medium text-white transition-colors hover:bg-zinc-800 disabled:bg-zinc-400 disabled:opacity-60"
           >
             {isSaving ? 'Saving...' : 'Save'}
           </button>
@@ -387,7 +387,7 @@
             <button
               type="button"
               onclick={onOpenCalendarModal}
-              class="rounded-xl bg-green-600 px-4 py-2 font-medium text-white transition-colors hover:bg-green-700"
+              class="rounded-xl bg-black px-4 py-2 font-medium text-white transition-colors hover:bg-zinc-800"
             >
               Add iCal subscription
             </button>
