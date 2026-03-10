@@ -89,7 +89,9 @@ async function loadProduceMetadata(): Promise<ProduceMetadata> {
   const byYear = new Map<string, (typeof yearlyBlobs)[number]>();
   for (const blob of yearlyBlobs) {
     const match = blob.pathname.match(/produce-data-yearly\/(\d{4})-[a-f0-9]{7}\.parquet$/);
-    if (!match) continue;
+    if (!match) {
+      continue;
+    }
     const year = match[1];
     const yearNum = Number.parseInt(year, 10);
     if (Number.isNaN(yearNum) || yearNum < earliestSupportedYear || yearNum > currentYearNum) {
@@ -125,7 +127,9 @@ async function loadProduceMetadata(): Promise<ProduceMetadata> {
     Object.entries(derivedPatterns).map(
       ([key, pattern]): [string, null] | [string, { url: string; size: number }] => {
         const matching = derivedBlobs.filter((blob): boolean => pattern.test(blob.pathname));
-        if (matching.length === 0) return [key, null];
+        if (matching.length === 0) {
+          return [key, null];
+        }
         const latest = pickLatestBlob(matching);
         return [key, { url: latest.url, size: latest.size }];
       },
@@ -597,8 +601,12 @@ async function computePayload({
       const points = history.get(row.name) ?? [];
       points.push(row);
       history.set(row.name, points);
-      if (minDate === null || row.date < minDate) minDate = row.date;
-      if (maxDate === null || row.date > maxDate) maxDate = row.date;
+      if (minDate === null || row.date < minDate) {
+        minDate = row.date;
+      }
+      if (maxDate === null || row.date > maxDate) {
+        maxDate = row.date;
+      }
     }
 
     const dateRange: ProduceDateRange | null =
@@ -633,7 +641,9 @@ export const GET: RequestHandler = async ({ url }): Promise<Response> => {
   const age = cached.payload ? now - cached.cachedAt : Number.POSITIVE_INFINITY;
 
   const startRevalidation = (): Promise<void> => {
-    if (cached.revalidation) return cached.revalidation;
+    if (cached.revalidation) {
+      return cached.revalidation;
+    }
     cached.revalidation = (async (): Promise<void> => {
       const payload = await computePayload({ includeLongRange });
       cached.payload = payload;

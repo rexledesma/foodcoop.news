@@ -126,9 +126,9 @@
         method: 'GET',
         cache: 'no-store',
       });
-      if (!response.ok) return;
+      if (!response.ok) {return;}
       const data = (await response.json()) as { favorites?: string[] };
-      if (!Array.isArray(data.favorites)) return;
+      if (!Array.isArray(data.favorites)) {return;}
       writeFavoritesSnapshot(data.favorites);
     } catch {
       // Ignore sync failures and keep local favorites.
@@ -168,7 +168,7 @@
       const seen = new Set<string>();
       for (const item of parsedItems) {
         const key = getFeedItemKey(item);
-        if (seen.has(key)) continue;
+        if (seen.has(key)) {continue;}
         seen.add(key);
         deduped.push(item);
       }
@@ -233,7 +233,7 @@
 
   onMount(() : () => void => {
     const stickyVisibilityHandler = (event: Event) : void => {
-      if (!(event instanceof CustomEvent)) return;
+      if (!(event instanceof CustomEvent)) {return;}
       state = { ...state, showSticky: Boolean(event.detail) };
       dispatchState();
     };

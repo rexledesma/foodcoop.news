@@ -144,7 +144,7 @@
     onAddToWallet: async () : Promise<void> => addToWallet(),
     onAddToGoogleWallet: async () : Promise<void> => addToGoogleWallet(),
     onOpenCalendarModal: () : void => {
-      if (!requireAuth()) return;
+      if (!requireAuth()) {return;}
       state = { ...state, isCalendarModalOpen: true };
       dispatchState();
     },
@@ -196,7 +196,7 @@
   function loadDraft() : { fullName: string; memberId: string; selectedJobs: string[]; } | null {
     try {
       const raw = localStorage.getItem(DRAFT_STORAGE_KEY);
-      if (!raw) return null;
+      if (!raw) {return null;}
       return JSON.parse(raw) as { fullName: string; memberId: string; selectedJobs: string[] };
     } catch {
       return null;
@@ -272,7 +272,7 @@
   }
 
   function requireAuth() : boolean {
-    if (session?.user) return true;
+    if (session?.user) {return true;}
     void goto(withNextParam('/signup', '/integrations'));
     return false;
   }
@@ -280,7 +280,7 @@
   async function fetchSession() : Promise<SessionData> {
     try {
       const response = await fetch('/api/auth/get-session');
-      if (!response.ok) return null;
+      if (!response.ok) {return null;}
       return (await response.json()) as SessionData;
     } catch {
       return null;
@@ -289,14 +289,14 @@
 
   async function fetchProfile() : Promise<MemberProfile> {
     const response = await fetch('/api/me/profile');
-    if (!response.ok) return null;
+    if (!response.ok) {return null;}
     const data = (await response.json()) as { profile: MemberProfile };
     return data.profile;
   }
 
   async function fetchPushSubscriptions() : Promise<{ endpoint: string; }[]> {
     const response = await fetch('/api/me/push-subscriptions');
-    if (!response.ok) return [];
+    if (!response.ok) {return [];}
     const data = (await response.json()) as { subscriptions: { endpoint: string }[] };
     return data.subscriptions;
   }
@@ -320,7 +320,7 @@
   }
 
   function syncProfileToState() : void {
-    if (!profile) return;
+    if (!profile) {return;}
     const urls = getCalendarUrls(profile.calendarId);
     const sortedJobs = sortJobs(profile.jobFilters ?? []);
     state = {
@@ -337,7 +337,7 @@
   function handleJobKeydown(event: KeyboardEvent) : void {
     if (event.key === 'ArrowDown') {
       event.preventDefault();
-      if (state.filteredJobOptions.length === 0) return;
+      if (state.filteredJobOptions.length === 0) {return;}
       state = {
         ...state,
         isJobDropdownOpen: true,
@@ -352,7 +352,7 @@
 
     if (event.key === 'ArrowUp') {
       event.preventDefault();
-      if (state.filteredJobOptions.length === 0) return;
+      if (state.filteredJobOptions.length === 0) {return;}
       state = {
         ...state,
         isJobDropdownOpen: true,
@@ -371,7 +371,7 @@
         dispatchState();
         return;
       }
-      if (state.filteredJobOptions.length === 0) return;
+      if (state.filteredJobOptions.length === 0) {return;}
       event.preventDefault();
       const job = state.filteredJobOptions[Math.max(0, state.highlightedJobIndex)];
       if (job) {
@@ -408,7 +408,7 @@
   }
 
   async function saveProfile() : Promise<void> {
-    if (!requireAuth()) return;
+    if (!requireAuth()) {return;}
     state = { ...state, isSaving: true };
     dispatchState();
     try {
@@ -428,7 +428,7 @@
   }
 
   async function addToWallet() : Promise<void> {
-    if (!requireAuth()) return;
+    if (!requireAuth()) {return;}
     state = { ...state, isGeneratingPass: true };
     dispatchState();
     try {
@@ -437,7 +437,7 @@
         memberId: state.memberId.trim(),
       });
       const response = await fetch('/api/wallet/pass');
-      if (!response.ok) throw new Error('Failed to generate pass');
+      if (!response.ok) {throw new Error('Failed to generate pass');}
       const blob = await response.blob();
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -457,7 +457,7 @@
   }
 
   async function addToGoogleWallet() : Promise<void> {
-    if (!requireAuth()) return;
+    if (!requireAuth()) {return;}
     state = { ...state, isGeneratingGooglePass: true };
     dispatchState();
     try {
@@ -466,7 +466,7 @@
         memberId: state.memberId.trim(),
       });
       const response = await fetch('/api/wallet/google');
-      if (!response.ok) throw new Error('Failed to generate pass');
+      if (!response.ok) {throw new Error('Failed to generate pass');}
       const data = (await response.json()) as { url: string };
       window.open(data.url, '_blank');
       pushToast('success', 'Opening Google Wallet...');
@@ -479,7 +479,7 @@
   }
 
   async function copyCalendarUrl() : Promise<void> {
-    if (!requireAuth()) return;
+    if (!requireAuth()) {return;}
     if (!state.calendarId) {
       pushToast('error', 'Create a calendar subscription first.');
       return;
@@ -493,7 +493,7 @@
   }
 
   async function togglePush() : Promise<void> {
-    if (!requireAuth()) return;
+    if (!requireAuth()) {return;}
     state = { ...state, pushLoading: true };
     dispatchState();
 
@@ -518,7 +518,7 @@
           headers: { 'content-type': 'application/json' },
           body: JSON.stringify(keys),
         });
-        if (!response.ok) throw new Error('Failed to enable notifications');
+        if (!response.ok) {throw new Error('Failed to enable notifications');}
         state = { ...state, pushEnabled: true };
         pushToast('success', 'Notifications enabled.');
       }
@@ -538,7 +538,7 @@
     dispatchState();
     try {
       const response = await fetch('/api/notifications/test', { method: 'POST' });
-      if (!response.ok) throw new Error('Failed to send test notification');
+      if (!response.ok) {throw new Error('Failed to send test notification');}
       pushToast('success', 'Test notification sent!');
     } catch (error) {
       pushToast('error', error instanceof Error ? error.message : 'Failed to send test notification');
@@ -550,7 +550,7 @@
 
   onMount(() : () => void => {
     const stickyVisibilityHandler = (event: Event) : void => {
-      if (!(event instanceof CustomEvent)) return;
+      if (!(event instanceof CustomEvent)) {return;}
       state = { ...state, showSticky: Boolean(event.detail) };
       dispatchState();
     };
@@ -570,9 +570,9 @@
       };
 
       const initializePushInBackground = async (canManageNotifications: boolean) : Promise<void> => {
-        if (!canManageNotifications || !session?.user) return;
+        if (!canManageNotifications || !session?.user) {return;}
         try {
-          if (!isPushSupported()) return;
+          if (!isPushSupported()) {return;}
           await registerServiceWorker();
           const [subscriptions, existing] = await Promise.all([
             fetchPushSubscriptions(),

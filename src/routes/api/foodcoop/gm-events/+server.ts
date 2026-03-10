@@ -60,7 +60,9 @@ function parseGMAgendaDetails(html: string): {
 }
 
 function formatGMDescription(agendaLines: string[]): string {
-  if (agendaLines.length === 0) return '';
+  if (agendaLines.length === 0) {
+    return '';
+  }
 
   return agendaLines.map((line) => (/^Item\s+\d+:/i.test(line) ? `\t${line}` : line)).join('\n');
 }
@@ -74,7 +76,9 @@ function parseGMDateTime(text: string): Date | null {
     /(?:\b(?:Mon|Tue|Tues|Wed|Thu|Thur|Fri|Sat|Sun)\.?|\w+day)?,?\s*(\w+)\.?\s+(\d{1,2})(?:st|nd|rd|th)?,?\s+(\d{4})\s*(\d{1,2}):(\d{2})\s*(p\.?m\.?|a\.?m\.?)/i,
   );
 
-  if (!dateMatch) return null;
+  if (!dateMatch) {
+    return null;
+  }
 
   const [, monthStr, dayStr, yearStr, hourStr, minuteStr, ampm] = dateMatch;
   const months: Record<string, number> = {
@@ -106,7 +110,9 @@ function parseGMDateTime(text: string): Date | null {
 
   const monthKey = monthStr.toLowerCase().replace('.', '');
   const month = months[monthKey];
-  if (month === undefined) return null;
+  if (month === undefined) {
+    return null;
+  }
 
   let hour = parseInt(hourStr, 10);
   const minute = parseInt(minuteStr, 10);
@@ -115,8 +121,12 @@ function parseGMDateTime(text: string): Date | null {
 
   // Convert to 24-hour format
   const isPM = ampm.toLowerCase().startsWith('p');
-  if (isPM && hour !== 12) hour += 12;
-  if (!isPM && hour === 12) hour = 0;
+  if (isPM && hour !== 12) {
+    hour += 12;
+  }
+  if (!isPM && hour === 12) {
+    hour = 0;
+  }
 
   // Get the UTC offset for America/New_York on this specific date
   // This ensures correct handling regardless of server timezone (UTC on Cloudflare, local on dev)

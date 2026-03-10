@@ -8,12 +8,16 @@ let cachedEvents: ProduceEvent[] | null = null;
 let cacheTime = 0;
 
 function parseIsoDate(value: unknown): string | null {
-  if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value)) return value;
+  if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    return value;
+  }
   return null;
 }
 
 function parseName(value: unknown): string | null {
-  if (typeof value !== 'string') return null;
+  if (typeof value !== 'string') {
+    return null;
+  }
   const trimmed = value.trim();
   return trimmed.length > 0 ? trimmed : null;
 }
@@ -44,11 +48,15 @@ async function loadParquetNameDateRows(
   try {
     while (true) {
       const row = (await cursor.next()) as Record<string, unknown> | null;
-      if (!row) break;
+      if (!row) {
+        break;
+      }
 
       const name = parseName(row.name);
       const date = parseIsoDate(row.date);
-      if (!name || !date) continue;
+      if (!name || !date) {
+        continue;
+      }
       rows.push({ name, date });
     }
   } finally {
@@ -85,7 +93,9 @@ export async function GET(): Promise<Response> {
     const latestByYear = new Map<string, (typeof blobs)[number]>();
     for (const blob of blobs) {
       const match = blob.pathname.match(/^produce-data-yearly\/(\d{4})-[a-f0-9]{7}\.parquet$/);
-      if (!match) continue;
+      if (!match) {
+        continue;
+      }
       const year = match[1];
       const previous = latestByYear.get(year);
       if (
@@ -116,7 +126,9 @@ export async function GET(): Promise<Response> {
 
     const selectedYears = [referenceYear];
     const previousYear = String(Number.parseInt(referenceYear, 10) - 1);
-    if (latestByYear.has(previousYear)) selectedYears.push(previousYear);
+    if (latestByYear.has(previousYear)) {
+      selectedYears.push(previousYear);
+    }
 
     const selectedBlobs = selectedYears
       .map((year) => latestByYear.get(year))
@@ -165,13 +177,19 @@ export async function GET(): Promise<Response> {
     const outOfStockByDate = new Map<string, Set<string>>();
 
     for (const [name, firstSeen] of firstSeenByName) {
-      if (firstSeen < arrivalCutoff) continue;
-      if (!firstSeen) continue;
+      if (firstSeen < arrivalCutoff) {
+        continue;
+      }
+      if (!firstSeen) {
+        continue;
+      }
       pushGroupedName(arrivalsByDate, firstSeen, name);
     }
 
     for (const [name, lastSeen] of lastSeenByName) {
-      if (lastSeen >= maxDate || lastSeen < unavailableCutoff) continue;
+      if (lastSeen >= maxDate || lastSeen < unavailableCutoff) {
+        continue;
+      }
       const unavailableSince = addDaysIso(lastSeen, 1);
       pushGroupedName(outOfStockByDate, unavailableSince, name);
     }
@@ -186,7 +204,9 @@ export async function GET(): Promise<Response> {
       const outOfStock = Array.from(outOfStockByDate.get(date) ?? [])
         .sort((a, b): number => a.localeCompare(b))
         .map((name): { name: string } => ({ name }));
-      if (newArrivals.length === 0 && outOfStock.length === 0) continue;
+      if (newArrivals.length === 0 && outOfStock.length === 0) {
+        continue;
+      }
 
       events.push({
         id: date,

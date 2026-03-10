@@ -120,15 +120,15 @@
     inputPoints: ProduceHistoryPoint[],
     period: TimePeriod,
   ): ProduceHistoryPoint[] {
-    if (inputPoints.length < 2) return inputPoints;
+    if (inputPoints.length < 2) {return inputPoints;}
 
     const ensureIncludesLatestPoint = (
       sampledPoints: ProduceHistoryPoint[],
       sourcePoints: ProduceHistoryPoint[],
     ): ProduceHistoryPoint[] => {
       const latestSourcePoint = sourcePoints[sourcePoints.length - 1];
-      if (!latestSourcePoint) return sampledPoints;
-      if (sampledPoints.length === 0) return [latestSourcePoint];
+      if (!latestSourcePoint) {return sampledPoints;}
+      if (sampledPoints.length === 0) {return [latestSourcePoint];}
 
       const lastIndex = sampledPoints.length - 1;
       if (sampledPoints[lastIndex].date === latestSourcePoint.date) {
@@ -209,7 +209,7 @@
     fixedRange?: { min: number; max: number };
     baselineYOverride?: number;
   }): SparklineModel | null {
-    if (!points || points.length === 0) return null;
+    if (!points || points.length === 0) {return null;}
 
     const width = 100;
     const height = 24;
@@ -219,7 +219,7 @@
       return pointMs >= scaleStartMs && pointMs <= scaleEndMs;
     });
     const pointsInScale = downsampleForTimePeriod(plottedPoints.length > 0 ? plottedPoints : points, period);
-    if (pointsInScale.length === 0) return null;
+    if (pointsInScale.length === 0) {return null;}
 
     const values = pointsInScale.map((point) : number => point.price);
     const computedMin = Math.min(...values);
@@ -249,7 +249,7 @@
       (totalMs === 0 ? width / 2 : ((periodStartMs - scaleStartMs) / totalMs) * width) + padding;
 
     const periodStartPoint = (() : SparklinePoint | null => {
-      if (normalized.length < 2) return null;
+      if (normalized.length < 2) {return null;}
       let closest = normalized[0];
       let closestDist = Infinity;
       for (const [index, point] of pointsInScale.entries()) {
@@ -289,18 +289,18 @@
       contiguousChunks.push(activeChunk);
 
       for (const chunk of contiguousChunks) {
-        if (chunk.length < 2) continue;
+        if (chunk.length < 2) {continue;}
 
         let currentPoints: { x: number; y: number }[] = [];
         let currentPosition: PositionY | null = null;
 
         const pushAreaSegment = () : void => {
-          if (currentPosition === null || currentPoints.length < 2) return;
+          if (currentPosition === null || currentPoints.length < 2) {return;}
           areaSegments.push({ points: [...currentPoints], position: currentPosition });
         };
 
         const pushLineSegment = () : void => {
-          if (currentPosition === null || currentPoints.length < 2) return;
+          if (currentPosition === null || currentPoints.length < 2) {return;}
           lineSegments.push({ points: [...currentPoints], position: currentPosition });
         };
 
@@ -375,7 +375,7 @@
   }
 
   const targetModel = $derived.by((): SparklineModel | null => {
-    if (!points || points.length === 0) return null;
+    if (!points || points.length === 0) {return null;}
     const scaleEndMs = dateRange
       ? toDateMs(dateRange.end)
       : toDateMs(points[points.length - 1].date);
@@ -393,10 +393,10 @@
   const displayModel = $derived.by(() : SparklineModel | null => renderedModel ?? targetModel);
 
   const activePoint = $derived.by(() : { coordinates: SparklinePoint; data: ProduceHistoryPoint; } | null => {
-    if (!displayModel) return null;
-    if (activeIndex === null) return null;
-    if (activeIndex < 0 || activeIndex >= displayModel.normalized.length) return null;
-    if (activeIndex >= displayModel.pointsInScale.length) return null;
+    if (!displayModel) {return null;}
+    if (activeIndex === null) {return null;}
+    if (activeIndex < 0 || activeIndex >= displayModel.normalized.length) {return null;}
+    if (activeIndex >= displayModel.pointsInScale.length) {return null;}
     return {
       coordinates: displayModel.normalized[activeIndex],
       data: displayModel.pointsInScale[activeIndex],
@@ -404,7 +404,7 @@
   });
 
   const isOutOfRange = $derived.by(() : boolean => {
-    if (!displayModel || !activePoint) return false;
+    if (!displayModel || !activePoint) {return false;}
     const x = activePoint.coordinates.x;
     if (
       unavailableSinceDate &&
@@ -418,7 +418,7 @@
   });
 
   $effect(() : (() => void) | undefined => {
-    if (!canvasRef) return;
+    if (!canvasRef) {return;}
     const element = canvasRef;
     if (typeof IntersectionObserver === 'undefined') {
       isVisible = true;
@@ -562,8 +562,8 @@
         displayMin = lerp(displayMin, targetMin, RANGE_LERP_SPEED, dt);
         displayMax = lerp(displayMax, targetMax, RANGE_LERP_SPEED, dt);
         const pxThreshold = 0.5 * curRange / targetModel.height || 0.001;
-        if (Math.abs(displayMin - targetMin) < pxThreshold) displayMin = targetMin;
-        if (Math.abs(displayMax - targetMax) < pxThreshold) displayMax = targetMax;
+        if (Math.abs(displayMin - targetMin) < pxThreshold) {displayMin = targetMin;}
+        if (Math.abs(displayMax - targetMax) < pxThreshold) {displayMax = targetMax;}
       }
 
       const periodStartMs = transitionSourceModel
@@ -604,9 +604,9 @@
   });
 
   function handlePointerMove(e: PointerEvent) : void {
-    if (!displayModel || !canvasRef || displayModel.normalized.length === 0) return;
+    if (!displayModel || !canvasRef || displayModel.normalized.length === 0) {return;}
     const rect = canvasRef.getBoundingClientRect();
-    if (rect.width === 0) return;
+    if (rect.width === 0) {return;}
     const canvasX = ((e.clientX - rect.left) / rect.width) * displayModel.svgWidth;
     let closest = 0;
     let closestDist = Math.abs(displayModel.normalized[0].x - canvasX);
@@ -652,7 +652,7 @@
     color: string,
     width = 2,
   ) : void {
-    if (points.length < 2) return;
+    if (points.length < 2) {return;}
     ctx.beginPath();
     ctx.moveTo(points[0].x, points[0].y);
     for (let i = 1; i < points.length; i += 1) {
@@ -693,7 +693,7 @@
     width: number,
     height: number,
   ) : void {
-    if (width <= 0 || height <= 0) return;
+    if (width <= 0 || height <= 0) {return;}
     ctx.save();
     ctx.beginPath();
     ctx.rect(x, y, width, height);
@@ -740,7 +740,7 @@
     }
 
     for (const segment of drawModel.areaSegments) {
-      if (segment.points.length < 2) continue;
+      if (segment.points.length < 2) {continue;}
       const start = segment.points[0];
       const end = segment.points[segment.points.length - 1];
       ctx.beginPath();
@@ -803,11 +803,11 @@
   }
 
   $effect(() : void => {
-    if (!displayModel || !canvasRef) return;
+    if (!displayModel || !canvasRef) {return;}
 
     const canvas = canvasRef;
     const ctx = canvas.getContext('2d');
-    if (!ctx) return;
+    if (!ctx) {return;}
 
     const pixelRatio = window.devicePixelRatio || 1;
     const logicalWidth = displayModel.svgWidth;

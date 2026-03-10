@@ -53,10 +53,18 @@ export function createSwipeNavigator(config: SwipeNavigatorConfig): {
   };
 
   const handleTouchStart = (event: TouchEvent): void => {
-    if (!config.isMobileTouchInput()) return;
-    if (!config.canStart()) return;
-    if (event.touches.length !== 1) return;
-    if (config.isEditableElement(event.target)) return;
+    if (!config.isMobileTouchInput()) {
+      return;
+    }
+    if (!config.canStart()) {
+      return;
+    }
+    if (event.touches.length !== 1) {
+      return;
+    }
+    if (config.isEditableElement(event.target)) {
+      return;
+    }
 
     isTrackingSwipe = true;
     isHorizontalSwipe = false;
@@ -69,12 +77,18 @@ export function createSwipeNavigator(config: SwipeNavigatorConfig): {
 
     const nextPath = config.getSwipeTarget(1);
     const previousPath = config.getSwipeTarget(-1);
-    if (nextPath) config.preloadRoute(nextPath);
-    if (previousPath) config.preloadRoute(previousPath);
+    if (nextPath) {
+      config.preloadRoute(nextPath);
+    }
+    if (previousPath) {
+      config.preloadRoute(previousPath);
+    }
   };
 
   const handleTouchMove = (event: TouchEvent): void => {
-    if (!isTrackingSwipe) return;
+    if (!isTrackingSwipe) {
+      return;
+    }
     if (event.touches.length !== 1) {
       resetTracking();
       return;
@@ -94,7 +108,9 @@ export function createSwipeNavigator(config: SwipeNavigatorConfig): {
         absDeltaX >= config.captureThresholdPx &&
         absDeltaX > absDeltaY &&
         absDeltaY <= config.maxVerticalDriftPx;
-      if (!shouldCaptureHorizontalSwipe) return;
+      if (!shouldCaptureHorizontalSwipe) {
+        return;
+      }
       isHorizontalSwipe = true;
     }
 
@@ -117,7 +133,9 @@ export function createSwipeNavigator(config: SwipeNavigatorConfig): {
   };
 
   const handleTouchEnd = (event: TouchEvent): void => {
-    if (!isTrackingSwipe) return;
+    if (!isTrackingSwipe) {
+      return;
+    }
 
     const deltaX = touchCurrentX - touchStartX;
     const deltaY = touchCurrentY - touchStartY;
@@ -151,7 +169,9 @@ export function createSwipeNavigator(config: SwipeNavigatorConfig): {
   };
 
   const handleTouchCancel = (): void => {
-    if (!isTrackingSwipe) return;
+    if (!isTrackingSwipe) {
+      return;
+    }
     config.onCancel();
     resetTracking();
   };

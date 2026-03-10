@@ -7,7 +7,9 @@ export function parseProduceHtml(html: string, date: string): ParsedProducePage 
 
   $('table.produce tbody tr').each((_, row) => {
     const tds = $(row).find('td');
-    if (tds.length < 4) return;
+    if (tds.length < 4) {
+      return;
+    }
 
     let nameCell = '';
     let priceCell = '';
@@ -28,7 +30,9 @@ export function parseProduceHtml(html: string, date: string): ParsedProducePage 
       originCell = $(tds[3]).text().trim();
     }
 
-    if (!nameCell || !priceCell) return;
+    if (!nameCell || !priceCell) {
+      return;
+    }
 
     const { price, unit } = parsePrice(priceCell);
     const attrs = parseAttributes(attrsCell, nameCell);

@@ -43,7 +43,9 @@ interface BlueskyEmbed {
 }
 
 function extractImages(embed?: BlueskyEmbed): BlueskyImage[] | undefined {
-  if (!embed) return undefined;
+  if (!embed) {
+    return undefined;
+  }
 
   // Direct images embed
   if (embed.$type === 'app.bsky.embed.images#view' && embed.images) {
@@ -71,7 +73,9 @@ interface QuotedPost {
 }
 
 function extractQuotedPost(embed?: BlueskyEmbed): QuotedPost | undefined {
-  if (!embed) return undefined;
+  if (!embed) {
+    return undefined;
+  }
 
   // Direct record embed (quote post without media)
   if (embed.$type === 'app.bsky.embed.record#view' && embed.record) {

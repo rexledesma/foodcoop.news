@@ -24,13 +24,17 @@ export async function regenerateMonthParquet(month: string): Promise<{
 
   for (const blob of blobs) {
     const match = blob.pathname.match(/produce\/(\d{4}-\d{2}-\d{2})\.html$/);
-    if (!match) continue;
+    if (!match) {
+      continue;
+    }
 
     const date = match[1];
     daysCount++;
 
     const response = await fetch(blob.url);
-    if (!response.ok) continue;
+    if (!response.ok) {
+      continue;
+    }
 
     const html = await response.text();
     const { items } = parseProduceHtml(html, date);
@@ -70,14 +74,22 @@ export async function regenerateMonthParquet(month: string): Promise<{
 }
 
 function parseParquetBoolean(value: unknown): boolean {
-  if (typeof value === 'boolean') return value;
-  if (typeof value === 'number') return value !== 0;
-  if (typeof value === 'string') return value === 'true' || value === '1';
+  if (typeof value === 'boolean') {
+    return value;
+  }
+  if (typeof value === 'number') {
+    return value !== 0;
+  }
+  if (typeof value === 'string') {
+    return value === 'true' || value === '1';
+  }
   return false;
 }
 
 function parseParquetNumber(value: unknown): number {
-  if (typeof value === 'number') return value;
+  if (typeof value === 'number') {
+    return value;
+  }
   if (typeof value === 'string') {
     const parsed = Number.parseFloat(value);
     return Number.isNaN(parsed) ? 0 : parsed;
@@ -86,7 +98,9 @@ function parseParquetNumber(value: unknown): number {
 }
 
 function parseParquetString(value: unknown): string {
-  if (typeof value === 'string') return value;
+  if (typeof value === 'string') {
+    return value;
+  }
   if (typeof value === 'number' || typeof value === 'boolean' || typeof value === 'bigint') {
     return `${value}`;
   }
@@ -94,7 +108,9 @@ function parseParquetString(value: unknown): string {
 }
 
 function parseParquetUnit(value: unknown): ProduceItem['unit'] {
-  if (value === 'pound' || value === 'each' || value === 'bunch') return value;
+  if (value === 'pound' || value === 'each' || value === 'bunch') {
+    return value;
+  }
   return 'each';
 }
 
@@ -128,7 +144,9 @@ async function loadParquetItemsFromBlobUrl(url: string): Promise<ProduceItem[]> 
   try {
     while (true) {
       const row = (await cursor.next()) as Record<string, unknown> | null;
-      if (!row) break;
+      if (!row) {
+        break;
+      }
       items.push(toProduceItemFromParquetRow(row));
     }
   } finally {
@@ -192,7 +210,9 @@ function downsampleByDayBucket(items: ProduceItem[], bucketDays: number): Produc
 
   sampled.sort((a, b) => {
     const dateCompare = a.date.localeCompare(b.date);
-    if (dateCompare !== 0) return dateCompare;
+    if (dateCompare !== 0) {
+      return dateCompare;
+    }
     return a.name.localeCompare(b.name);
   });
 
@@ -224,7 +244,9 @@ function downsampleMonthlyFirst(items: ProduceItem[]): ProduceItem[] {
 
   sampled.sort((a, b) => {
     const dateCompare = a.date.localeCompare(b.date);
-    if (dateCompare !== 0) return dateCompare;
+    if (dateCompare !== 0) {
+      return dateCompare;
+    }
     return a.name.localeCompare(b.name);
   });
 
@@ -239,7 +261,9 @@ async function loadAllYearlyProduceItems(): Promise<ProduceItem[]> {
   const byYear = new Map<string, (typeof blobs)[number]>();
   for (const blob of blobs) {
     const match = blob.pathname.match(/^produce-data-yearly\/(\d{4})-[a-f0-9]{7}\.parquet$/);
-    if (!match) continue;
+    if (!match) {
+      continue;
+    }
     const year = match[1];
     const previousBlob = byYear.get(year);
     if (!previousBlob) {
@@ -261,7 +285,9 @@ async function loadAllYearlyProduceItems(): Promise<ProduceItem[]> {
   const allItems = itemsByYear.flat();
   allItems.sort((a, b) => {
     const dateCompare = a.date.localeCompare(b.date);
-    if (dateCompare !== 0) return dateCompare;
+    if (dateCompare !== 0) {
+      return dateCompare;
+    }
     return a.name.localeCompare(b.name);
   });
   return allItems;
@@ -336,7 +362,9 @@ export async function regenerateDerivedProduceParquets(): Promise<{
     ).values(),
   ).sort((a, b) => {
     const dateCompare = a.date.localeCompare(b.date);
-    if (dateCompare !== 0) return dateCompare;
+    if (dateCompare !== 0) {
+      return dateCompare;
+    }
     return a.name.localeCompare(b.name);
   });
 

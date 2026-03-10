@@ -11,7 +11,9 @@ type SetFavoriteBody = {
 };
 
 function isNotAuthenticated(error: unknown): boolean {
-  if (isUnauthenticatedError(error)) return true;
+  if (isUnauthenticatedError(error)) {
+    return true;
+  }
   return error instanceof Error && error.message.includes('Not authenticated');
 }
 

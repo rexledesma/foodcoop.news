@@ -35,10 +35,18 @@ function emitVisibility(): void {
 
 function scheduleRevealIfEligible(): void {
   clearRevealTimer();
-  if (!revealOnUpStop) return;
-  if (isTouchInteracting) return;
-  if (lastScrollDirection !== 'up') return;
-  if (reverseScrollDistance < REVEAL_ON_UP_MIN_REVERSE_SCROLL_PX) return;
+  if (!revealOnUpStop) {
+    return;
+  }
+  if (isTouchInteracting) {
+    return;
+  }
+  if (lastScrollDirection !== 'up') {
+    return;
+  }
+  if (reverseScrollDistance < REVEAL_ON_UP_MIN_REVERSE_SCROLL_PX) {
+    return;
+  }
 
   revealTimer = window.setTimeout((): void => {
     revealTimer = null;
@@ -120,20 +128,28 @@ function resetRouteState(): void {
 
 function bindGlobalListeners(): void {
   window.addEventListener('force-sticky', (event): void => {
-    if (!(event instanceof CustomEvent)) return;
+    if (!(event instanceof CustomEvent)) {
+      return;
+    }
     forceSticky = Boolean(event.detail);
     emitVisibility();
   });
 
   window.addEventListener('hide-sticky', (): void => {
-    if (window.scrollY <= stickyThreshold) return;
-    if (!showSticky) return;
+    if (window.scrollY <= stickyThreshold) {
+      return;
+    }
+    if (!showSticky) {
+      return;
+    }
     showSticky = false;
     emitVisibility();
   });
 
   window.addEventListener('sticky-threshold', (event): void => {
-    if (!(event instanceof CustomEvent)) return;
+    if (!(event instanceof CustomEvent)) {
+      return;
+    }
     const nextThreshold = Number(event.detail);
     stickyThreshold = Number.isFinite(nextThreshold) ? Math.max(0, nextThreshold) : 0;
   });
@@ -141,8 +157,12 @@ function bindGlobalListeners(): void {
   window.addEventListener(
     'scroll',
     (): void => {
-      if (!isTrackedRoute) return;
-      if (rafId !== null) return;
+      if (!isTrackedRoute) {
+        return;
+      }
+      if (rafId !== null) {
+        return;
+      }
 
       rafId = window.requestAnimationFrame((): void => {
         rafId = null;
@@ -155,7 +175,9 @@ function bindGlobalListeners(): void {
   window.addEventListener(
     'touchstart',
     (): void => {
-      if (!revealOnUpStop) return;
+      if (!revealOnUpStop) {
+        return;
+      }
       isTouchInteracting = true;
       clearRevealTimer();
     },
@@ -163,7 +185,9 @@ function bindGlobalListeners(): void {
   );
 
   const onTouchEnd = (): void => {
-    if (!revealOnUpStop) return;
+    if (!revealOnUpStop) {
+      return;
+    }
     isTouchInteracting = false;
     scheduleRevealIfEligible();
   };
@@ -173,7 +197,9 @@ function bindGlobalListeners(): void {
 }
 
 export function initStickyVisibility(pathname: string): void {
-  if (typeof window === 'undefined') return;
+  if (typeof window === 'undefined') {
+    return;
+  }
   if (!initialized) {
     bindGlobalListeners();
     initialized = true;
@@ -182,7 +208,9 @@ export function initStickyVisibility(pathname: string): void {
 }
 
 export function setStickyVisibilityRoute(pathname: string): void {
-  if (typeof window === 'undefined') return;
+  if (typeof window === 'undefined') {
+    return;
+  }
 
   isTrackedRoute = TRACKED_ROUTES.has(pathname);
   revealOnUpStop = REVEAL_ON_UP_STOP_ROUTES.has(pathname);
@@ -205,6 +233,8 @@ export function setStickyVisibilityRoute(pathname: string): void {
 }
 
 export function getCurrentStickyVisibility(): boolean {
-  if (typeof window === 'undefined') return true;
+  if (typeof window === 'undefined') {
+    return true;
+  }
   return computedVisibility();
 }

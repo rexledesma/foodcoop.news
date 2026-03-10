@@ -162,7 +162,7 @@
   }
 
   function handleStateUpdate(event: Event) : void {
-    if (!(event instanceof CustomEvent)) return;
+    if (!(event instanceof CustomEvent)) {return;}
     applyState(event.detail as IntegrationsClientState);
   }
 

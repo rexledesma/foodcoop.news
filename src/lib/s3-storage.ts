@@ -48,7 +48,9 @@ function getBucketName(): string {
 }
 
 function getS3Client(): S3Client {
-  if (s3Client) return s3Client;
+  if (s3Client) {
+    return s3Client;
+  }
 
   const forcePathStyle = process.env.AWS_S3_FORCE_PATH_STYLE === 'true';
   const endpoint = process.env.S3_ENDPOINT;
@@ -71,9 +73,13 @@ function encodeS3Key(pathname: string): string {
 
 function getSignedUrlTtlSeconds(): number {
   const raw = process.env.S3_SIGNED_URL_TTL_SECONDS;
-  if (!raw) return DEFAULT_SIGNED_URL_TTL_SECONDS;
+  if (!raw) {
+    return DEFAULT_SIGNED_URL_TTL_SECONDS;
+  }
   const parsed = Number.parseInt(raw, 10);
-  if (Number.isNaN(parsed) || parsed <= 0) return DEFAULT_SIGNED_URL_TTL_SECONDS;
+  if (Number.isNaN(parsed) || parsed <= 0) {
+    return DEFAULT_SIGNED_URL_TTL_SECONDS;
+  }
   return Math.min(parsed, 604800);
 }
 
@@ -91,19 +97,29 @@ async function getObjectUrl(pathname: string): Promise<string> {
 }
 
 function getBodySize(body: string | Uint8Array | Buffer | ArrayBuffer): number {
-  if (typeof body === 'string') return Buffer.byteLength(body);
-  if (body instanceof ArrayBuffer) return body.byteLength;
+  if (typeof body === 'string') {
+    return Buffer.byteLength(body);
+  }
+  if (body instanceof ArrayBuffer) {
+    return body.byteLength;
+  }
   return body.byteLength;
 }
 
 function toPutObjectBody(body: string | Uint8Array | Buffer | ArrayBuffer): string | Uint8Array {
-  if (typeof body === 'string') return body;
-  if (body instanceof ArrayBuffer) return new Uint8Array(body);
+  if (typeof body === 'string') {
+    return body;
+  }
+  if (body instanceof ArrayBuffer) {
+    return new Uint8Array(body);
+  }
   return body;
 }
 
 function isNotFoundError(error: unknown): boolean {
-  if (!(error instanceof Error)) return false;
+  if (!(error instanceof Error)) {
+    return false;
+  }
   return error.name === 'NotFound' || error.name === 'NoSuchKey' || error.name === '404';
 }
 
@@ -163,7 +179,9 @@ export async function put(
       );
       throw new Error(`Object already exists at ${pathname}`);
     } catch (error) {
-      if (!isNotFoundError(error)) throw error;
+      if (!isNotFoundError(error)) {
+        throw error;
+      }
     }
   }
 
@@ -185,7 +203,9 @@ export async function put(
 }
 
 export async function del(pathnames: string[], _options: DeleteOptions = {}): Promise<void> {
-  if (pathnames.length === 0) return;
+  if (pathnames.length === 0) {
+    return;
+  }
 
   const client = getS3Client();
   const bucket = getBucketName();

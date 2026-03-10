@@ -79,15 +79,21 @@ export async function fetchAuthMutationFromHeaders<Mutation extends FunctionRefe
 }
 
 export function isUnauthenticatedError(error: unknown): boolean {
-  if (!error || typeof error !== 'object') return false;
+  if (!error || typeof error !== 'object') {
+    return false;
+  }
 
   const maybe = error as {
     message?: unknown;
     data?: unknown;
   };
 
-  if (maybe.data === 'Unauthenticated') return true;
-  if (typeof maybe.message === 'string' && maybe.message.includes('Unauthenticated')) return true;
+  if (maybe.data === 'Unauthenticated') {
+    return true;
+  }
+  if (typeof maybe.message === 'string' && maybe.message.includes('Unauthenticated')) {
+    return true;
+  }
 
   return false;
 }

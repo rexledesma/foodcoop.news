@@ -110,12 +110,12 @@
   }
 
   async function hydrateProduceFavoritesSummary() : Promise<void> {
-    if (typeof window === 'undefined') return;
+    if (typeof window === 'undefined') {return;}
     try {
       const response = await fetch('/api/me/produce-favorites/summary', {
         headers: { accept: 'application/json' },
       });
-      if (!response.ok) return;
+      if (!response.ok) {return;}
 
       const payload = (await response.json()) as {
         favoritesCount?: unknown;
@@ -181,7 +181,7 @@
   }
 
   function handleStateUpdate(event: Event) : void {
-    if (!(event instanceof CustomEvent)) return;
+    if (!(event instanceof CustomEvent)) {return;}
     applyState(event.detail as NavigationClientState);
   }
 
@@ -190,36 +190,36 @@
   }
 
   function normalizePathname(path: string | null): string {
-    if (!path) return '';
-    if (path.length > 1 && path.endsWith('/')) return path.slice(0, -1);
+    if (!path) {return '';}
+    if (path.length > 1 && path.endsWith('/')) {return path.slice(0, -1);}
     return path;
   }
 
   function getNavLabelRect(path: string | null): DOMRect | null {
     const container = mobileScrollRef;
     const normalized = normalizePathname(path);
-    if (!container || !normalized) return null;
+    if (!container || !normalized) {return null;}
 
     const routeItems = Array.from(container.querySelectorAll('[data-nav-href]'));
     const routeItem = routeItems.find(
       (node) : boolean => node.getAttribute('data-nav-href') === normalized && isVisible(node),
     );
-    if (!routeItem) return null;
+    if (!routeItem) {return null;}
 
     const label = routeItem.querySelector('[data-nav-label]');
-    if (!label || !isVisible(label)) return null;
+    if (!label || !isVisible(label)) {return null;}
     return label.getBoundingClientRect();
   }
 
   function centerCurrentRouteInMobileNav() : void {
     const container = mobileScrollRef;
-    if (!container) return;
+    if (!container) {return;}
 
     const routeItems = Array.from(container.querySelectorAll('[data-nav-href]'));
     const activeItem = routeItems.find(
       (node) : boolean => node.getAttribute('data-nav-href') === pathname && isVisible(node),
     );
-    if (!activeItem) return;
+    if (!activeItem) {return;}
 
     const containerRect = container.getBoundingClientRect();
     const itemRect = activeItem.getBoundingClientRect();
@@ -287,7 +287,7 @@
 
     const handler = (event: Event) : void => handleStateUpdate(event);
     const syncFavorites = () : void => {
-      if (!isAuthenticated) return;
+      if (!isAuthenticated) {return;}
       void hydrateProduceFavoritesSummary();
     };
     const handleEscapeKey = (event: KeyboardEvent) : void => {
@@ -329,7 +329,7 @@
   });
 
   $effect(() : void => {
-    if (!pathname) return;
+    if (!pathname) {return;}
     requestAnimationFrame(() : void => {
       centerCurrentRouteInMobileNav();
       requestAnimationFrame(updateActiveRouteIndicator);
@@ -340,18 +340,18 @@
     const swipeSignature = `${swipeFromPath ?? ''}|${swipeToPath ?? ''}|${swipeProgress}|${
       isSwipeActive ? 1 : 0
     }`;
-    if (!swipeSignature) return;
+    if (!swipeSignature) {return;}
     requestAnimationFrame(updateActiveRouteIndicator);
   });
 
   $effect(() : void => {
-    if (!pathname) return;
+    if (!pathname) {return;}
     closeSidebar();
   });
 
   $effect(() : (() => void) | undefined => {
-    if (typeof document === 'undefined') return;
-    if (!isSidebarOpen) return;
+    if (typeof document === 'undefined') {return;}
+    if (!isSidebarOpen) {return;}
 
     const originalHtmlOverflow = document.documentElement.style.overflow;
     const originalBodyOverflow = document.body.style.overflow;
@@ -369,7 +369,7 @@
   });
 
   $effect(() : void => {
-    if (typeof window === 'undefined') return;
+    if (typeof window === 'undefined') {return;}
     if (!isAuthenticated) {
       produceFavoritesCount = 0;
       produceFavoritesInStockCount = 0;

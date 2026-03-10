@@ -192,7 +192,7 @@
     overscan: number;
     count: number;
   }): number[] {
-    if (range.count <= 0) return [];
+    if (range.count <= 0) {return [];}
     const overscannedStart = Math.max(0, range.startIndex - range.overscan);
     const overscannedEnd = Math.min(range.count - 1, range.endIndex + range.overscan);
     const snappedStart = Math.max(
@@ -261,7 +261,7 @@
   );
 
   const searchScores = $derived.by(() : Map<string, number> | null => {
-    if (!hasSearchQuery) return null;
+    if (!hasSearchQuery) {return null;}
     const hits = produceFuse.search(normalizedSearch);
     return new Map(hits.map((hit) : [string, number] => [hit.item.id, hit.score ?? Number.MAX_VALUE]));
   });
@@ -336,12 +336,12 @@
   });
 
   const fullSearchMatchCount = $derived.by(() : number => {
-    if (!searchScores) return periodScopedRows.length;
+    if (!searchScores) {return periodScopedRows.length;}
     return periodScopedRows.filter((row) : boolean => searchScores.has(produceHash(row.name))).length;
   });
 
   const hasActiveResultFilter = $derived.by(() : boolean => {
-    if (itemFilter || dateFilter) return true;
+    if (itemFilter || dateFilter) {return true;}
     return (
       quickFilter === 'favorites' || quickFilter === 'new' || quickFilter === 'recently_unavailable'
     );
@@ -375,7 +375,7 @@
   });
 
   const itemFilterName = $derived.by(() : string | null => {
-    if (!itemFilter) return null;
+    if (!itemFilter) {return null;}
     return periodScopedRows.find((row) : boolean => produceHash(row.name) === itemFilter)?.name ?? null;
   });
   const virtualRows = $derived($rowVirtualizer.getVirtualItems());
@@ -389,27 +389,27 @@
   );
   const virtualTotalSize = $derived(Math.max(0, $rowVirtualizer.getTotalSize() - virtualScrollMargin));
   const virtualPaddingTop = $derived.by(() : number => {
-    if (virtualRows.length === 0) return 0;
+    if (virtualRows.length === 0) {return 0;}
     return Math.max(0, virtualRows[0].start - virtualScrollMargin);
   });
   const virtualPaddingBottom = $derived.by(() : number => {
-    if (virtualRows.length === 0) return 0;
+    if (virtualRows.length === 0) {return 0;}
     const lastItem = virtualRows[virtualRows.length - 1];
     const adjustedLastEnd = Math.max(0, lastItem.end - virtualScrollMargin);
     return Math.max(0, virtualTotalSize - adjustedLastEnd);
   });
   const produceFilterDisplayName = $derived.by(() : string | null => {
-    if (itemFilterName) return itemFilterName;
-    if (!initialProduceFilter) return null;
+    if (itemFilterName) {return itemFilterName;}
+    if (!initialProduceFilter) {return null;}
     const decoded = decodeMaybe(initialProduceFilter).trim();
-    if (!decoded) return null;
+    if (!decoded) {return null;}
     const byHash = data.find((row) : boolean => produceHash(row.name).toLowerCase() === decoded.toLowerCase());
-    if (byHash) return byHash.name;
+    if (byHash) {return byHash.name;}
     return decoded;
   });
 
   function parseFavorites(stored: string): Set<string> {
-    if (!stored) return new Set();
+    if (!stored) {return new Set();}
     try {
       return new Set(JSON.parse(stored) as string[]);
     } catch {
@@ -426,28 +426,28 @@
   }
 
   function resolveProduceFilterToHash(produceParam: string | null): string | null {
-    if (!produceParam) return null;
+    if (!produceParam) {return null;}
     const decoded = decodeMaybe(produceParam).trim();
-    if (!decoded) return null;
+    if (!decoded) {return null;}
 
     const byHash = data.find(
       (row) : boolean => produceHash(row.name).toLowerCase() === decoded.toLowerCase(),
     );
-    if (byHash) return produceHash(byHash.name);
+    if (byHash) {return produceHash(byHash.name);}
 
     const byName = data.find((row) : boolean => row.name.toLowerCase() === decoded.toLowerCase());
-    if (byName) return produceHash(byName.name);
+    if (byName) {return produceHash(byName.name);}
 
     return null;
   }
 
   function getProduceAttributeTerms(row: ProduceRow): string {
     const terms: string[] = [];
-    if (row.is_organic) terms.push('organic');
-    if (row.is_local) terms.push('local');
-    if (row.is_ipm) terms.push('ipm');
-    if (row.is_hydroponic) terms.push('hydroponic');
-    if (row.is_waxed) terms.push('waxed');
+    if (row.is_organic) {terms.push('organic');}
+    if (row.is_local) {terms.push('local');}
+    if (row.is_ipm) {terms.push('ipm');}
+    if (row.is_hydroponic) {terms.push('hydroponic');}
+    if (row.is_waxed) {terms.push('waxed');}
     return terms.join(' ');
   }
 
@@ -477,7 +477,7 @@
 
   function getAnimatedPeriodStartMs(period: TimePeriod, endMs: number): number {
     const targetStart = getPeriodStartMs(period, endMs);
-    if (!statsFromPeriod || statsTransitionProgress >= 1) return targetStart;
+    if (!statsFromPeriod || statsTransitionProgress >= 1) {return targetStart;}
     const sourceStart = getPeriodStartMs(statsFromPeriod, endMs);
     return sourceStart + (targetStart - sourceStart) * statsTransitionProgress;
   }
@@ -491,7 +491,7 @@
       statsTransitionProgress = 1;
       return;
     }
-    if (timePeriod === lastStatsPeriod) return;
+    if (timePeriod === lastStatsPeriod) {return;}
 
     cancelAnimationFrame(statsTransitionRaf);
     statsFromPeriod = lastStatsPeriod;
@@ -524,7 +524,7 @@
     period: TimePeriod,
     useAnimatedStart = true,
   ): number | null {
-    if (!points || points.length === 0) return null;
+    if (!points || points.length === 0) {return null;}
     const endMs = activeRange
       ? new Date(activeRange.end + 'T00:00:00').getTime()
       : new Date(points[points.length - 1].date + 'T00:00:00').getTime();
@@ -536,7 +536,7 @@
     let closest = Number.POSITIVE_INFINITY;
     for (const point of points) {
       const ms = new Date(point.date + 'T00:00:00').getTime();
-      if (ms > endMs) continue;
+      if (ms > endMs) {continue;}
       const dist = Math.abs(ms - startMs);
       if (dist < closest) {
         closest = dist;
@@ -583,15 +583,15 @@
   ): { prev: number | null; high: number | null; low: number | null } {
     if (!shouldScrubStats) {
       if (period === '1D')
-        return { prev: row.prev_day_price, high: row.day_high, low: row.day_low };
+        {return { prev: row.prev_day_price, high: row.day_high, low: row.day_low };}
       if (period === '1W')
-        return { prev: row.prev_week_price, high: row.week_high, low: row.week_low };
+        {return { prev: row.prev_week_price, high: row.week_high, low: row.week_low };}
       if (period === '1M')
-        return { prev: row.prev_month_price, high: row.month_high, low: row.month_low };
+        {return { prev: row.prev_month_price, high: row.month_high, low: row.month_low };}
       if (period === '1Y')
-        return { prev: row.prev_year_price, high: row.year_high, low: row.year_low };
+        {return { prev: row.prev_year_price, high: row.year_high, low: row.year_low };}
       if (period === 'YTD')
-        return { prev: row.prev_ytd_price, high: row.ytd_high, low: row.ytd_low };
+        {return { prev: row.prev_ytd_price, high: row.ytd_high, low: row.ytd_low };}
     }
 
     if (!points || points.length === 0) {
@@ -609,7 +609,7 @@
 
     for (const point of points) {
       const pointMs = new Date(point.date + 'T00:00:00').getTime();
-      if (pointMs > endMs) continue;
+      if (pointMs > endMs) {continue;}
 
       const prevDist = Math.abs(pointMs - periodStartMs);
       if (prevDist < closestPrevDist) {
@@ -617,9 +617,9 @@
         prev = point.price;
       }
 
-      if (pointMs < periodStartMs) continue;
-      if (high === null || point.price > high) high = point.price;
-      if (low === null || point.price < low) low = point.price;
+      if (pointMs < periodStartMs) {continue;}
+      if (high === null || point.price > high) {high = point.price;}
+      if (low === null || point.price < low) {low = point.price;}
     }
 
     return { prev, high, low };
@@ -630,7 +630,7 @@
     activeRange: ProduceDateRange | null,
     period: TimePeriod,
   ): number {
-    if (!points || points.length === 0) return 0;
+    if (!points || points.length === 0) {return 0;}
     const endMs = activeRange
       ? new Date(activeRange.end + 'T00:00:00').getTime()
       : new Date(points[points.length - 1].date + 'T00:00:00').getTime();
@@ -646,7 +646,7 @@
     activeRange: ProduceDateRange | null,
     period: TimePeriod,
   ): boolean {
-    if (!points || points.length === 0) return false;
+    if (!points || points.length === 0) {return false;}
     const endMs = activeRange
       ? new Date(activeRange.end + 'T00:00:00').getTime()
       : new Date(points[points.length - 1].date + 'T00:00:00').getTime();
@@ -665,49 +665,49 @@
   }
 
   function quickFilterPillLabel(filter: QuickFilter): string {
-    if (filter === 'favorites') return 'Favorites';
-    if (filter === 'new') return 'New Arrivals';
-    if (filter === 'recently_unavailable') return 'Out of Stock';
+    if (filter === 'favorites') {return 'Favorites';}
+    if (filter === 'new') {return 'New Arrivals';}
+    if (filter === 'recently_unavailable') {return 'Out of Stock';}
     return 'Filter';
   }
 
   function quickFilterPillClass(filter: QuickFilter): string {
-    if (filter === 'favorites') return 'bg-amber-100 text-amber-800';
-    if (filter === 'new') return 'bg-[rgb(255,246,220)] text-[#3F7540]';
-    if (filter === 'recently_unavailable') return 'bg-red-100 text-red-700';
+    if (filter === 'favorites') {return 'bg-amber-100 text-amber-800';}
+    if (filter === 'new') {return 'bg-[rgb(255,246,220)] text-[#3F7540]';}
+    if (filter === 'recently_unavailable') {return 'bg-red-100 text-red-700';}
     return 'bg-zinc-100 text-zinc-700';
   }
 
   function activeViewFilter(): 'favorites' | 'new' | 'recently_unavailable' | 'date' | null {
-    if (dateFilter) return 'date';
-    if (quickFilter === 'favorites') return 'favorites';
-    if (quickFilter === 'new') return 'new';
-    if (quickFilter === 'recently_unavailable') return 'recently_unavailable';
+    if (dateFilter) {return 'date';}
+    if (quickFilter === 'favorites') {return 'favorites';}
+    if (quickFilter === 'new') {return 'new';}
+    if (quickFilter === 'recently_unavailable') {return 'recently_unavailable';}
     return null;
   }
 
   function activeFilterPillLabel(): string {
     const filter = activeViewFilter();
-    if (filter === 'date' && dateFilter) return formatShortDate(dateFilter);
-    if (filter === 'date') return 'All';
+    if (filter === 'date' && dateFilter) {return formatShortDate(dateFilter);}
+    if (filter === 'date') {return 'All';}
     return filter ? quickFilterPillLabel(filter) : 'All';
   }
 
   function activeFilterPillClass(): string {
     const filter = activeViewFilter();
-    if (filter === 'date') return 'bg-blue-100 text-blue-800';
+    if (filter === 'date') {return 'bg-blue-100 text-blue-800';}
     return filter ? quickFilterPillClass(filter) : 'bg-zinc-900 text-white';
   }
 
   function shouldShowViewFilterPill(): boolean {
-    if (produceFilterDisplayName) return false;
+    if (produceFilterDisplayName) {return false;}
     return true;
   }
 
   function activeResultFilterLabel(): string {
-    if (produceFilterDisplayName) return produceFilterDisplayName;
+    if (produceFilterDisplayName) {return produceFilterDisplayName;}
     const filter = activeViewFilter();
-    if (filter === 'date' && dateFilter) return formatShortDate(dateFilter).toLowerCase();
+    if (filter === 'date' && dateFilter) {return formatShortDate(dateFilter).toLowerCase();}
     if (filter === 'favorites' || filter === 'new' || filter === 'recently_unavailable') {
       return quickFilterPillLabel(filter).toLowerCase();
     }
@@ -797,13 +797,13 @@
   }
 
   function clearLinkPreviewTimer() : void {
-    if (linkPreviewHoverTimeout === null) return;
+    if (linkPreviewHoverTimeout === null) {return;}
     window.clearTimeout(linkPreviewHoverTimeout);
     linkPreviewHoverTimeout = null;
   }
 
   function clearLinkPreviewHideTimer() : void {
-    if (linkPreviewHideTimeout === null) return;
+    if (linkPreviewHideTimeout === null) {return;}
     window.clearTimeout(linkPreviewHideTimeout);
     linkPreviewHideTimeout = null;
   }
@@ -823,7 +823,7 @@
 
   function getCurrentPreviewCardHeight(url: string | null): number {
     const measured = linkPreviewCardRef?.offsetHeight ?? 0;
-    if (measured > 0) return measured;
+    if (measured > 0) {return measured;}
     return getPreviewHeightFallback(url);
   }
 
@@ -831,7 +831,7 @@
     anchorEl: HTMLElement,
     previewUrl: string | null,
   ): { left: number; top: number } {
-    if (typeof window === 'undefined') return { left: 0, top: 0 };
+    if (typeof window === 'undefined') {return { left: 0, top: 0 };}
     const rect = anchorEl.getBoundingClientRect();
 
     const cardWidth = 340;
@@ -869,10 +869,10 @@
     try {
       const payload = await requestLinkPreview(url);
 
-      if (currentToken !== linkPreviewRequestToken) return;
+      if (currentToken !== linkPreviewRequestToken) {return;}
       linkPreview = { itemName, url, left, top, loading: false, data: payload, pinned };
     } catch {
-      if (currentToken !== linkPreviewRequestToken) return;
+      if (currentToken !== linkPreviewRequestToken) {return;}
       linkPreview = null;
     }
   }
@@ -890,7 +890,7 @@
 
     const request = (async () : Promise<LinkPreviewData> => {
       const response = await fetch(`/api/produce/link-preview?url=${encodeURIComponent(url)}`);
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      if (!response.ok) {throw new Error(`HTTP ${response.status}`);}
       const payload = (await response.json()) as LinkPreviewData;
       linkPreviewCache.set(url, payload);
       return payload;
@@ -907,7 +907,7 @@
   }
 
   function prefetchLinkPreview(url: string) : void {
-    if (linkPreviewCache.has(url)) return;
+    if (linkPreviewCache.has(url)) {return;}
     void requestLinkPreview(url).catch(() : void => {});
   }
 
@@ -962,7 +962,7 @@
   }
 
   function syncLinkPreviewPositionOrClose() : void {
-    if (!linkPreview || !linkPreviewAnchorEl) return;
+    if (!linkPreview || !linkPreviewAnchorEl) {return;}
     const rect = linkPreviewAnchorEl.getBoundingClientRect();
 
     if (linkPreviewAnchorStartTop !== null) {
@@ -979,30 +979,30 @@
     }
 
     const { left, top } = computeLinkPreviewPosition(linkPreviewAnchorEl, linkPreview.url);
-    if (linkPreview.left === left && linkPreview.top === top) return;
+    if (linkPreview.left === left && linkPreview.top === top) {return;}
     linkPreview = { ...linkPreview, left, top };
   }
 
   function scheduleLinkPreviewHide() : void {
     clearLinkPreviewHideTimer();
-    if (linkPreview?.pinned) return;
+    if (linkPreview?.pinned) {return;}
     linkPreviewHideTimeout = window.setTimeout(() : void => {
       linkPreviewHideTimeout = null;
-      if (!linkPreview?.pinned) hideLinkPreview();
+      if (!linkPreview?.pinned) {hideLinkPreview();}
     }, 160);
   }
 
   function handleProduceLinkEnter(event: MouseEvent, itemName: string, url: string | null) : void {
     const target = event.currentTarget;
-    if (!(target instanceof HTMLElement)) return;
+    if (!(target instanceof HTMLElement)) {return;}
     queueLinkPreview(itemName, url, target);
   }
 
   function handleProduceLinkMove() : void {
-    if (!linkPreview) return;
-    if (linkPreview.pinned || !linkPreviewAnchorEl) return;
+    if (!linkPreview) {return;}
+    if (linkPreview.pinned || !linkPreviewAnchorEl) {return;}
     const { left, top } = computeLinkPreviewPosition(linkPreviewAnchorEl, linkPreview.url);
-    if (linkPreview.left === left && linkPreview.top === top) return;
+    if (linkPreview.left === left && linkPreview.top === top) {return;}
     linkPreview = { ...linkPreview, left, top };
   }
 
@@ -1012,7 +1012,7 @@
 
   function handleProduceLinkFocus(event: FocusEvent, itemName: string, url: string | null) : void {
     const target = event.currentTarget;
-    if (!(target instanceof HTMLElement)) return;
+    if (!(target instanceof HTMLElement)) {return;}
     queueLinkPreview(itemName, url, target);
   }
 
@@ -1020,7 +1020,7 @@
     if (!url) {
       event.preventDefault();
       const target = event.currentTarget;
-      if (!(target instanceof HTMLElement)) return;
+      if (!(target instanceof HTMLElement)) {return;}
       queueLinkPreview(itemName, null, target, true);
       return;
     }
@@ -1030,7 +1030,7 @@
     }
     event.preventDefault();
     const target = event.currentTarget;
-    if (!(target instanceof HTMLElement)) return;
+    if (!(target instanceof HTMLElement)) {return;}
     queueLinkPreview(itemName, url, target, true);
   }
 
@@ -1043,11 +1043,11 @@
   }
 
   function closePinnedLinkPreview() : void {
-    if (linkPreview?.pinned) hideLinkPreview();
+    if (linkPreview?.pinned) {hideLinkPreview();}
   }
 
   function handlePreviewFavoriteToggle() : void {
-    if (!linkPreview) return;
+    if (!linkPreview) {return;}
     toggleFavorite(linkPreview.itemName);
   }
 
@@ -1169,7 +1169,7 @@
     }
 
     const target = event.target;
-    if (!(target instanceof Element)) return;
+    if (!(target instanceof Element)) {return;}
     if (
       target.closest('a, button, input, textarea, select, [role="button"], [data-produce-preview-trigger="true"]')
     ) {
@@ -1184,9 +1184,9 @@
   }
 
   function updateVirtualScrollMargin() : void {
-    if (typeof window === 'undefined') return;
+    if (typeof window === 'undefined') {return;}
     const anchor = virtualRowsAnchorRef;
-    if (!anchor) return;
+    if (!anchor) {return;}
     virtualScrollMargin = anchor.getBoundingClientRect().top + window.scrollY;
   }
 
@@ -1204,7 +1204,7 @@
   }
 
   async function handlePreviewShareOrCopy() : Promise<void> {
-    if (!linkPreview) return;
+    if (!linkPreview) {return;}
     const url = `${window.location.origin}${produceItemUrl(linkPreview.itemName)}`;
     const shareData = { title: linkPreview.itemName, url };
     if (supportsNativeShare && typeof navigator.share === 'function') {
@@ -1237,7 +1237,7 @@
   }
 
   function sortArrow(field: SortField): string {
-    if (sortField !== field || sortDirection === null) return '';
+    if (sortField !== field || sortDirection === null) {return '';}
     return sortDirection === 'asc' ? '↑' : '↓';
   }
 
@@ -1265,7 +1265,7 @@
       produce: initialProduceFilter,
       filter: initialQuickFilter,
     });
-    if (querySignature === lastAppliedInitialQuerySignature) return false;
+    if (querySignature === lastAppliedInitialQuerySignature) {return false;}
     lastAppliedInitialQuerySignature = querySignature;
 
     if (!(initialItemFilter || initialProduceFilter || initialDateFilter || initialQuickFilter)) {
@@ -1288,7 +1288,7 @@
   }
 
   function handleStateUpdate(event: Event) : void {
-    if (!(event instanceof CustomEvent)) return;
+    if (!(event instanceof CustomEvent)) {return;}
     applyState(event.detail as ProduceAnalyticsClientState);
     applyInitialQueryFilters();
   }
@@ -1300,7 +1300,7 @@
         : timePeriod === '1Y' || timePeriod === '5Y' || timePeriod === 'YTD'
           ? timePeriod
           : null;
-    if (swrPeriod && SWR_PERIODS.has(swrPeriod)) revalidateForPeriod(swrPeriod);
+    if (swrPeriod && SWR_PERIODS.has(swrPeriod)) {revalidateForPeriod(swrPeriod);}
   });
 
   $effect(() : void => {
@@ -1315,7 +1315,7 @@
   });
 
   $effect(() : (() => void) | undefined => {
-    if (typeof window === 'undefined') return;
+    if (typeof window === 'undefined') {return;}
     void virtualRowsAnchorRef;
     void filteredRows.length;
     void timePeriod;
@@ -1372,9 +1372,9 @@
     }
 
     const handlePointerDown = (event: MouseEvent | TouchEvent) : void => {
-      if (!linkPreview?.pinned) return;
+      if (!linkPreview?.pinned) {return;}
       const target = event.target;
-      if (!(target instanceof Element)) return;
+      if (!(target instanceof Element)) {return;}
       if (
         target.closest('[data-produce-preview-card="true"]') ||
         target.closest('[data-produce-preview-trigger="true"]')
@@ -1384,7 +1384,7 @@
       hideLinkPreview();
     };
     const handleKeyDown = (event: KeyboardEvent) : void => {
-      if (event.key !== 'Escape') return;
+      if (event.key !== 'Escape') {return;}
       closePinnedLinkPreview();
     };
     const handleViewportChange = () : void => {
@@ -1395,10 +1395,10 @@
       linkPreviewViewportObserver = new IntersectionObserver(
         (entries) : void => {
           for (const entry of entries) {
-            if (!entry.isIntersecting) continue;
-            if (!(entry.target instanceof HTMLElement)) continue;
+            if (!entry.isIntersecting) {continue;}
+            if (!(entry.target instanceof HTMLElement)) {continue;}
             const previewUrl = linkPreviewObserverTargets.get(entry.target);
-            if (!previewUrl) continue;
+            if (!previewUrl) {continue;}
             linkPreviewViewportObserver?.unobserve(entry.target);
             prefetchLinkPreview(previewUrl);
           }
@@ -1447,7 +1447,7 @@
 
   $effect(() : (() => void) | undefined => {
     const element = stickyHeaderRef;
-    if (!element || typeof ResizeObserver === 'undefined') return;
+    if (!element || typeof ResizeObserver === 'undefined') {return;}
 
     const updateHeight = () : void => {
       window.dispatchEvent(new CustomEvent('sticky-threshold', { detail: element.offsetHeight }));
@@ -1461,7 +1461,7 @@
   });
 
   $effect(() : void => {
-    if (!linkPreview || !linkPreviewAnchorEl || !linkPreviewCardRef) return;
+    if (!linkPreview || !linkPreviewAnchorEl || !linkPreviewCardRef) {return;}
     syncLinkPreviewPositionOrClose();
   });
 </script>

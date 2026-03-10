@@ -130,10 +130,10 @@
     const diffHours = Math.floor(diffMs / 3600000);
     const diffDays = Math.floor(diffMs / 86400000);
 
-    if (diffMins < 1) return 'just now';
-    if (diffMins < 60) return `${diffMins}m ago`;
-    if (diffHours < 24) return `${diffHours}h ago`;
-    if (diffDays < 7) return `${diffDays}d ago`;
+    if (diffMins < 1) {return 'just now';}
+    if (diffMins < 60) {return `${diffMins}m ago`;}
+    if (diffHours < 24) {return `${diffHours}h ago`;}
+    if (diffDays < 7) {return `${diffDays}d ago`;}
     return null;
   }
 
@@ -152,7 +152,7 @@
 
   function formatPublishedAt(date: Date): string {
     const relative = formatRelativeTime(date);
-    if (!relative) return formatExactDateTime(date);
+    if (!relative) {return formatExactDateTime(date);}
     return `${relative} · ${formatExactDateTime(date)}`;
   }
 
@@ -193,7 +193,7 @@
   }
 
   function parseFavorites(stored: string): Set<string> {
-    if (!stored) return new Set();
+    if (!stored) {return new Set();}
     try {
       const parsed = JSON.parse(stored) as string[];
       return new Set(parsed);
@@ -203,7 +203,7 @@
   }
 
   function handleStateUpdate(event: Event) : void {
-    if (!(event instanceof CustomEvent)) return;
+    if (!(event instanceof CustomEvent)) {return;}
     const next = event.detail as DiscoverFeedClientState;
     items = next.items;
     loading = next.loading;
@@ -246,7 +246,7 @@
 
   $effect(() : (() => void) | undefined => {
     const element = filtersRef;
-    if (!element || typeof ResizeObserver === 'undefined') return;
+    if (!element || typeof ResizeObserver === 'undefined') {return;}
 
     const updateHeight = () : void => {
       window.dispatchEvent(new CustomEvent('sticky-threshold', { detail: element.offsetHeight }));

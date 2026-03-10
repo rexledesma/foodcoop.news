@@ -43,7 +43,9 @@ async function loadProduceMetadata(): Promise<{
   const byYear = new Map<string, (typeof yearlyBlobs)[number]>();
   for (const blob of yearlyBlobs) {
     const match = blob.pathname.match(/produce-data-yearly\/(\d{4})-[a-f0-9]{7}\.parquet$/);
-    if (!match) continue;
+    if (!match) {
+      continue;
+    }
     const year = match[1];
     const yearNum = Number.parseInt(year, 10);
     if (Number.isNaN(yearNum) || yearNum < earliestSupportedYear || yearNum > currentYearNum) {
@@ -80,7 +82,9 @@ async function loadProduceMetadata(): Promise<{
         const matchingDerivedBlobs = derivedBlobs.filter((blob): boolean =>
           DERIVED_PATH_PATTERNS[key].test(blob.pathname),
         );
-        if (matchingDerivedBlobs.length === 0) return [key, null];
+        if (matchingDerivedBlobs.length === 0) {
+          return [key, null];
+        }
         const latest = pickLatestBlob(matchingDerivedBlobs);
         return [
           key,

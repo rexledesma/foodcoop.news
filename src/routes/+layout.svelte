@@ -113,12 +113,12 @@
   }
 
   function dispatchState() : void {
-    if (typeof window === 'undefined') return;
+    if (typeof window === 'undefined') {return;}
     window.dispatchEvent(new CustomEvent(`navigation-state:update:${channel}`, { detail: state }));
   }
 
   function decodeParam(value: string | null): string {
-    if (!value) return '';
+    if (!value) {return '';}
     try {
       return decodeURIComponent(value).trim();
     } catch {
@@ -127,24 +127,24 @@
   }
 
   function normalizePathname(pathname: string): string {
-    if (pathname.length > 1 && pathname.endsWith('/')) return pathname.slice(0, -1);
+    if (pathname.length > 1 && pathname.endsWith('/')) {return pathname.slice(0, -1);}
     return pathname;
   }
 
   function getSignupHref(loginHref: string): string {
     const queryString = loginHref.split('?')[1] ?? '';
     const next = new URLSearchParams(queryString).get('next');
-    if (!next) return '/signup';
+    if (!next) {return '/signup';}
     return `/signup?next=${encodeURIComponent(next)}`;
   }
 
   function isEditableElement(target: EventTarget | null): boolean {
     const element = target instanceof Element ? target : null;
-    if (!element) return false;
+    if (!element) {return false;}
     if (element.closest('[data-sparkline-interactive="true"], [data-swipe-interactive="true"]')) {
       return true;
     }
-    if (element instanceof HTMLElement && element.isContentEditable) return true;
+    if (element instanceof HTMLElement && element.isContentEditable) {return true;}
 
     const tagName = element.tagName.toLowerCase();
     return tagName === 'input' || tagName === 'textarea' || tagName === 'select';
@@ -155,7 +155,7 @@
     const currentIndex = SWIPE_NAV_ROUTES.indexOf(
       currentPathname as (typeof SWIPE_NAV_ROUTES)[number],
     );
-    if (currentIndex === -1) return null;
+    if (currentIndex === -1) {return null;}
     return SWIPE_NAV_ROUTES[currentIndex + step] ?? null;
   }
 
@@ -164,24 +164,24 @@
   }
 
   function getSwipeTransitionDurationMs(): number {
-    if (isSwipeDragging) return 0;
+    if (isSwipeDragging) {return 0;}
     return isSwipeSnapAnimating ? SWIPE_SNAP_DURATION_MS : 0;
   }
 
   function clearSwipeSnapTimer() : void {
-    if (!swipeSnapTimer) return;
+    if (!swipeSnapTimer) {return;}
     clearTimeout(swipeSnapTimer);
     swipeSnapTimer = null;
   }
 
   function clearSwipeCommitTimer() : void {
-    if (!swipeCommitTimer) return;
+    if (!swipeCommitTimer) {return;}
     clearTimeout(swipeCommitTimer);
     swipeCommitTimer = null;
   }
 
   function resetNavSwipeState() : void {
-    if (!state.isSwipeActive && state.swipeFromPath === null && state.swipeToPath === null) return;
+    if (!state.isSwipeActive && state.swipeFromPath === null && state.swipeToPath === null) {return;}
     state = {
       ...state,
       swipeFromPath: null,
@@ -217,9 +217,9 @@
   }
 
   function formatProduceDate(value: string | null): string {
-    if (!value) return '';
+    if (!value) {return '';}
     const match = value.match(/^(\d{4})-(\d{2})-(\d{2})$/);
-    if (!match) return '';
+    if (!match) {return '';}
     const [, year, month, day] = match;
     return `${month}-${day}-${year}`;
   }
@@ -240,11 +240,11 @@
       return `Produce · ${SITE_NAME}`;
     }
 
-    if (pathname === '/discover' || pathname === '/') return `News · ${SITE_NAME}`;
-    if (pathname === '/integrations') return `Integrations · ${SITE_NAME}`;
-    if (pathname === '/about') return `About · ${SITE_NAME}`;
-    if (pathname === '/login') return `Login · ${SITE_NAME}`;
-    if (pathname === '/signup') return `Signup · ${SITE_NAME}`;
+    if (pathname === '/discover' || pathname === '/') {return `News · ${SITE_NAME}`;}
+    if (pathname === '/integrations') {return `Integrations · ${SITE_NAME}`;}
+    if (pathname === '/about') {return `About · ${SITE_NAME}`;}
+    if (pathname === '/login') {return `Login · ${SITE_NAME}`;}
+    if (pathname === '/signup') {return `Signup · ${SITE_NAME}`;}
 
     return SITE_NAME;
   }
@@ -381,7 +381,7 @@
     void prefetchProduceCache();
 
     const stickyVisibilityHandler = (event: Event) : void => {
-      if (!(event instanceof CustomEvent)) return;
+      if (!(event instanceof CustomEvent)) {return;}
       state = { ...state, showSticky: Boolean(event.detail) };
       dispatchState();
     };
@@ -409,22 +409,22 @@
           ? ((event.detail as { force?: boolean; expandHowTo?: boolean } | null) ?? null)
           : null;
       const forcePrompt = Boolean(eventDetail?.force);
-      if (isStandaloneMode()) return;
-      if (hasDismissedPwaInstall && !forcePrompt) return;
+      if (isStandaloneMode()) {return;}
+      if (hasDismissedPwaInstall && !forcePrompt) {return;}
       shouldForcePwaInstallDialog = forcePrompt;
       shouldExpandPwaInstallHowTo = Boolean(eventDetail?.expandHowTo);
       shouldOpenPwaInstallDialog = true;
     };
 
     const handleInteraction = (event: Event) : void => {
-      if (hasAutoShownPwaInstall) return;
+      if (hasAutoShownPwaInstall) {return;}
       if (event.type === 'scroll') {
-        if (hasCountedScrollInteraction) return;
+        if (hasCountedScrollInteraction) {return;}
         hasCountedScrollInteraction = true;
         window.removeEventListener('scroll', handleInteraction);
       }
       interactionCount += 1;
-      if (interactionCount < PWA_INTERACTION_THRESHOLD) return;
+      if (interactionCount < PWA_INTERACTION_THRESHOLD) {return;}
       hasAutoShownPwaInstall = true;
       showPwaInstallDialog();
       window.removeEventListener('pointerdown', handleInteraction);
@@ -439,7 +439,7 @@
 
     let lastTouchEndAt = 0;
     const preventDoubleTapZoom = (event: TouchEvent) : void => {
-      if (event.touches.length > 0) return;
+      if (event.touches.length > 0) {return;}
       const now = Date.now();
       if (now - lastTouchEndAt <= DOUBLE_TAP_DELAY_MS) {
         event.preventDefault();
@@ -504,7 +504,7 @@
       },
       onPreviewRoute: (route) : void => {
         const nextPreviewUrl = getSwipePreviewRouteUrl(route);
-        if (swipePreviewUrl === nextPreviewUrl) return;
+        if (swipePreviewUrl === nextPreviewUrl) {return;}
         swipePreviewUrl = nextPreviewUrl;
         swipeActiveTargetRoute = normalizePathname(route);
       },
@@ -514,7 +514,7 @@
         swipePreviewOffsetX = step === 1 ? -24 * (1 - progress) : 24 * (1 - progress);
         const swipeFromPath = normalizePathname(window.location.pathname);
         const swipeToPath = swipeActiveTargetRoute ?? getSwipeTarget(step);
-        if (!swipeToPath) return;
+        if (!swipeToPath) {return;}
         state = {
           ...state,
           swipeFromPath,
@@ -587,8 +587,8 @@
   });
 
   function handlePwaUserChoiceResult(event: Event) : void {
-    if (!(event instanceof CustomEvent)) return;
-    if (event.detail?.message !== 'dismissed') return;
+    if (!(event instanceof CustomEvent)) {return;}
+    if (event.detail?.message !== 'dismissed') {return;}
 
     hasDismissedPwaInstall = true;
     localStorage.setItem(PWA_DISMISSED_STORAGE_KEY, 'true');

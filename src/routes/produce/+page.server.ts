@@ -13,7 +13,9 @@ type ProduceUpdatesResponse = {
 
 function isGooglebotUserAgent(userAgent: string): boolean {
   const value = userAgent.toLowerCase();
-  if (!value) return false;
+  if (!value) {
+    return false;
+  }
   return value.includes('googlebot');
 }
 
@@ -25,7 +27,9 @@ function toProduceItemUrl(origin: string, date: string, produceName: string): st
 }
 
 function sortProduceItems(a: ProduceJsonLdItem, b: ProduceJsonLdItem): number {
-  if (a.date !== b.date) return b.date.localeCompare(a.date);
+  if (a.date !== b.date) {
+    return b.date.localeCompare(a.date);
+  }
   return a.name.localeCompare(b.name);
 }
 
@@ -52,10 +56,14 @@ export const load: PageServerLoad = async ({ fetch, request, url }) => {
     const outOfStock: ProduceJsonLdItem[] = [];
 
     for (const event of payload.events ?? []) {
-      if (!event?.date) continue;
+      if (!event?.date) {
+        continue;
+      }
 
       for (const arrival of event.newArrivals ?? []) {
-        if (!arrival?.name) continue;
+        if (!arrival?.name) {
+          continue;
+        }
         newArrivals.push({
           name: arrival.name,
           date: event.date,
@@ -64,7 +72,9 @@ export const load: PageServerLoad = async ({ fetch, request, url }) => {
       }
 
       for (const unavailable of event.outOfStock ?? []) {
-        if (!unavailable?.name) continue;
+        if (!unavailable?.name) {
+          continue;
+        }
         outOfStock.push({
           name: unavailable.name,
           date: event.date,

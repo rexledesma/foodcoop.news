@@ -28,7 +28,9 @@ function extractAttributeValue(xml: string, tagName: string, attributeName: stri
     'i',
   );
   const match = xml.match(regex);
-  if (match?.[1]) return match[1];
+  if (match?.[1]) {
+    return match[1];
+  }
   return '';
 }
 
@@ -63,7 +65,9 @@ async function fetchFoodCoopCooksWordPressFeed(): Promise<FoodCoopCooksArticle[]
 
   while (true) {
     match = itemRegex.exec(xml);
-    if (!match) break;
+    if (!match) {
+      break;
+    }
     const itemXml = match[1];
 
     const title = decode(extractTextContent(itemXml, 'title'));
@@ -109,7 +113,9 @@ async function fetchFoodCoopCooksYouTubeFeed(): Promise<FoodCoopCooksArticle[]> 
 
   while (true) {
     match = entryRegex.exec(xml);
-    if (!match) break;
+    if (!match) {
+      break;
+    }
 
     const entryXml = match[1];
     const videoId = extractTextContent(entryXml, 'yt:videoId');
@@ -119,7 +125,9 @@ async function fetchFoodCoopCooksYouTubeFeed(): Promise<FoodCoopCooksArticle[]> 
     const pubDate = extractTextContent(entryXml, 'published');
     const image = extractAttributeValue(entryXml, 'media:thumbnail', 'url');
 
-    if (!videoId || !title || !link || !pubDate) continue;
+    if (!videoId || !title || !link || !pubDate) {
+      continue;
+    }
 
     items.push({
       id: `youtube-${videoId}`,

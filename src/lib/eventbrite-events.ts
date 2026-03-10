@@ -35,7 +35,9 @@ const EVENT_WINDOW_DAYS = 45;
 const EVENT_ID_PATTERN = /tickets-(\d+)/g;
 
 function formatVenueAddress(address?: EventbriteVenueAddress): string | undefined {
-  if (!address) return undefined;
+  if (!address) {
+    return undefined;
+  }
 
   const parts = [
     address.address_1,
@@ -50,7 +52,9 @@ function formatVenueAddress(address?: EventbriteVenueAddress): string | undefine
 
 function inWindow(startUtc: string): boolean {
   const eventTime = new Date(startUtc).getTime();
-  if (Number.isNaN(eventTime)) return false;
+  if (Number.isNaN(eventTime)) {
+    return false;
+  }
 
   const now = Date.now();
   const fortyFiveDaysAgo = now - EVENT_WINDOW_DAYS * 24 * 60 * 60 * 1000;
@@ -68,7 +72,9 @@ async function fetchEventIdsFromOrganizerPage(
     },
   });
 
-  if (!response.ok) return [];
+  if (!response.ok) {
+    return [];
+  }
 
   const html = await response.text();
   const matches = Array.from(html.matchAll(EVENT_ID_PATTERN), (match) => match[1]);
@@ -82,7 +88,9 @@ async function fetchEventById(id: string, apiKey: string): Promise<EventbriteApi
     },
   });
 
-  if (!response.ok) return null;
+  if (!response.ok) {
+    return null;
+  }
   return (await response.json()) as EventbriteApiEvent;
 }
 
@@ -107,7 +115,9 @@ export async function fetchEventbriteEventsById(
     options.organizerPageUrl,
     options.maxEventIds ?? 50,
   );
-  if (ids.length === 0) return [];
+  if (ids.length === 0) {
+    return [];
+  }
 
   const events = await Promise.all(ids.map((id) => fetchEventById(id, options.apiKey)));
 
@@ -115,7 +125,9 @@ export async function fetchEventbriteEventsById(
     .filter((event): event is EventbriteApiEvent => Boolean(event))
     .filter((event) => inWindow(event.start.utc))
     .filter((event) => {
-      if (!options.namePattern) return true;
+      if (!options.namePattern) {
+        return true;
+      }
       return options.namePattern.test(event.name?.text || '');
     })
     .map((event) => mapEvent(event, options.titleFallback))

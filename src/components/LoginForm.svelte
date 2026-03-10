@@ -56,19 +56,19 @@
   }
 
   function handleStateUpdate(event: Event) : void {
-    if (!(event instanceof CustomEvent)) return;
+    if (!(event instanceof CustomEvent)) {return;}
     applyState(event.detail as LoginFormClientState);
   }
 
   function handleEmailInput(event: Event) : void {
     const target = event.currentTarget;
-    if (!(target instanceof HTMLInputElement)) return;
+    if (!(target instanceof HTMLInputElement)) {return;}
     onEmailChange(target.value);
   }
 
   function handlePasswordInput(event: Event) : void {
     const target = event.currentTarget;
-    if (!(target instanceof HTMLInputElement)) return;
+    if (!(target instanceof HTMLInputElement)) {return;}
     onPasswordChange(target.value);
   }
 

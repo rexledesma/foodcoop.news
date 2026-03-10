@@ -23,7 +23,9 @@ function extractTextContent(xml: string, tagName: string): string {
 async function fetchTwitterImage(url: string): Promise<string | undefined> {
   try {
     const response = await fetch(url);
-    if (!response.ok) return undefined;
+    if (!response.ok) {
+      return undefined;
+    }
 
     const html = await response.text();
     // Look for twitter:image meta tag

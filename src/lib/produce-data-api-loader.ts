@@ -12,7 +12,9 @@ export async function loadProduceData(options?: { includeLongRange?: boolean }):
   dateRange: ProduceDateRange | null;
 }> {
   const params = new URLSearchParams();
-  if (options?.includeLongRange) params.set('includeLongRange', '1');
+  if (options?.includeLongRange) {
+    params.set('includeLongRange', '1');
+  }
   const response = await fetch(
     params.size > 0 ? `/api/produce/data?${params.toString()}` : '/api/produce/data',
   );

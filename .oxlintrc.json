@@ -3,6 +3,7 @@
   "plugins": ["eslint", "typescript", "unicorn", "oxc", "import", "jsx-a11y"],
   "ignorePatterns": ["out/**", "build/**", "convex/_generated/**"],
   "rules": {
+    "curly": "error",
     "no-unused-vars": [
       "error",
       {

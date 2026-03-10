@@ -23,7 +23,9 @@ const snapshotCache: SnapshotCache = {
 };
 
 function isNotAuthenticated(error: unknown): boolean {
-  if (isUnauthenticatedError(error)) return true;
+  if (isUnauthenticatedError(error)) {
+    return true;
+  }
   return error instanceof Error && error.message.includes('Not authenticated');
 }
 
@@ -40,7 +42,9 @@ async function loadLatestSnapshot(): Promise<LatestSnapshot> {
   }
 
   const latest = htmlBlobs.reduce((currentLatest, blob) => {
-    if (!currentLatest) return blob;
+    if (!currentLatest) {
+      return blob;
+    }
     return new Date(blob.uploadedAt).getTime() > new Date(currentLatest.uploadedAt).getTime()
       ? blob
       : currentLatest;
@@ -63,7 +67,9 @@ async function loadLatestSnapshot(): Promise<LatestSnapshot> {
   const names = new Set<string>();
   for (const item of parsed.items) {
     const name = item.name.trim();
-    if (!name) continue;
+    if (!name) {
+      continue;
+    }
     names.add(name);
   }
 
@@ -71,7 +77,9 @@ async function loadLatestSnapshot(): Promise<LatestSnapshot> {
 }
 
 const startRevalidation = (): Promise<void> => {
-  if (snapshotCache.revalidation) return snapshotCache.revalidation;
+  if (snapshotCache.revalidation) {
+    return snapshotCache.revalidation;
+  }
 
   snapshotCache.revalidation = (async (): Promise<void> => {
     const payload = await loadLatestSnapshot();
@@ -135,7 +143,9 @@ export async function GET({ request }: { request: Request }): Promise<Response> 
 
     let inStockCount = 0;
     for (const favorite of favoriteNames) {
-      if (snapshot.names.has(favorite)) inStockCount += 1;
+      if (snapshot.names.has(favorite)) {
+        inStockCount += 1;
+      }
     }
 
     const favoritesCount = favoriteNames.length;

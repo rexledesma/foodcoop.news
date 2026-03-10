@@ -162,8 +162,12 @@ const SOURCE_DEFINITIONS: SourceDefinition[] = [
       const data = payload as SourceResponse & { posts?: FeedPost[] };
       return (data.posts ?? [])
         .filter((post): boolean => {
-          if (!post.repostedBy) return true;
-          if (post.repostedBy.handle !== COOP_BLUESKY_HANDLE) return false;
+          if (!post.repostedBy) {
+            return true;
+          }
+          if (post.repostedBy.handle !== COOP_BLUESKY_HANDLE) {
+            return false;
+          }
           return post.author.handle !== COOP_BLUESKY_HANDLE;
         })
         .map((post): { type: 'bluesky'; data: FeedPost; date: Date } => ({
@@ -302,9 +306,13 @@ function parseSourceFilter(rawSources: string | null): SourceDefinition[] {
 }
 
 function parseLimit(rawLimit: string | null): number | null {
-  if (!rawLimit) return null;
+  if (!rawLimit) {
+    return null;
+  }
   const parsed = Number.parseInt(rawLimit, 10);
-  if (!Number.isFinite(parsed) || parsed <= 0) return null;
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    return null;
+  }
   return parsed;
 }
 
@@ -390,7 +398,9 @@ export async function GET({
 
     if (result.lastUpdated) {
       const ts = Date.parse(result.lastUpdated);
-      if (!Number.isNaN(ts)) lastUpdatedTimestamps.push(ts);
+      if (!Number.isNaN(ts)) {
+        lastUpdatedTimestamps.push(ts);
+      }
     }
   }
 

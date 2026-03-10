@@ -40,7 +40,9 @@ type FeedResponse = {
 
 function isGooglebotUserAgent(userAgent: string): boolean {
   const value = userAgent.toLowerCase();
-  if (!value) return false;
+  if (!value) {
+    return false;
+  }
   return value.includes('googlebot');
 }
 
@@ -54,12 +56,16 @@ function isNewsType(value: string): boolean {
 
 function parseDate(value: string): Date | null {
   const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return null;
+  if (Number.isNaN(date.getTime())) {
+    return null;
+  }
   return date;
 }
 
 function toRecord(value: unknown): Record<string, unknown> | null {
-  if (!value || typeof value !== 'object') return null;
+  if (!value || typeof value !== 'object') {
+    return null;
+  }
   return value as Record<string, unknown>;
 }
 
@@ -70,14 +76,20 @@ function readOptionalString(record: Record<string, unknown>, key: string): strin
 
 function toDiscoverEvent(item: SerializedFeedItem): DiscoverEventItem | null {
   const data = toRecord(item.data);
-  if (!data) return null;
+  if (!data) {
+    return null;
+  }
 
   const title = readOptionalString(data, 'title');
   const url = readOptionalString(data, 'url');
-  if (!title || !url) return null;
+  if (!title || !url) {
+    return null;
+  }
 
   const dateFromItem = parseDate(item.date);
-  if (!dateFromItem) return null;
+  if (!dateFromItem) {
+    return null;
+  }
 
   const startUtc = readOptionalString(data, 'startUtc')
     ? (readOptionalString(data, 'startUtc') as string)
@@ -95,14 +107,20 @@ function toDiscoverEvent(item: SerializedFeedItem): DiscoverEventItem | null {
 
 function toDiscoverNews(item: SerializedFeedItem): DiscoverNewsItem | null {
   const data = toRecord(item.data);
-  if (!data) return null;
+  if (!data) {
+    return null;
+  }
 
   const publishedAt = parseDate(item.date)?.toISOString();
-  if (!publishedAt) return null;
+  if (!publishedAt) {
+    return null;
+  }
 
   if (item.type === 'produce') {
     const date = readOptionalString(data, 'date') ?? readOptionalString(data, 'id');
-    if (!date) return null;
+    if (!date) {
+      return null;
+    }
 
     const newArrivalsCount = Array.isArray(data.newArrivals) ? data.newArrivals.length : 0;
     const outOfStockCount = Array.isArray(data.outOfStock) ? data.outOfStock.length : 0;
@@ -118,12 +136,16 @@ function toDiscoverNews(item: SerializedFeedItem): DiscoverNewsItem | null {
   if (item.type === 'bluesky') {
     const postText = readOptionalString(data, 'text') ?? '';
     const uri = readOptionalString(data, 'uri');
-    if (!uri) return null;
+    if (!uri) {
+      return null;
+    }
 
     const parts = uri.replace('at://', '').split('/');
     const handle = parts[0];
     const postId = parts[parts.length - 1];
-    if (!handle || !postId) return null;
+    if (!handle || !postId) {
+      return null;
+    }
 
     return {
       title: postText.split('\n')[0]?.trim() || 'Bluesky update',
@@ -134,11 +156,15 @@ function toDiscoverNews(item: SerializedFeedItem): DiscoverNewsItem | null {
   }
 
   const title = readOptionalString(data, 'title') ?? '';
-  if (!title) return null;
+  if (!title) {
+    return null;
+  }
 
   const url =
     typeof data.link === 'string' ? data.link : typeof data.url === 'string' ? data.url : '';
-  if (!url) return null;
+  if (!url) {
+    return null;
+  }
 
   const description =
     typeof data.description === 'string' && data.description.length > 0

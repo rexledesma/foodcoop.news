@@ -31,10 +31,10 @@
   let favoriteSyncAuthCheckPromise: Promise<boolean> | null = null;
 
   function parseFavorites(stored: string | null): string[] {
-    if (!stored) return [];
+    if (!stored) {return [];}
     try {
       const parsed = JSON.parse(stored);
-      if (!Array.isArray(parsed)) return [];
+      if (!Array.isArray(parsed)) {return [];}
       return parsed.filter((item): item is string => typeof item === 'string');
     } catch {
       return [];
@@ -44,7 +44,7 @@
   function writeFavorites(favorites: string[]) : void {
     try {
       const snapshot = JSON.stringify(favorites);
-      if (snapshot === state.favoritesSnapshot) return;
+      if (snapshot === state.favoritesSnapshot) {return;}
       localStorage.setItem('produce-favorites', snapshot);
       localStorage.setItem('produce-favorites-cache', snapshot);
       state = { ...state, favoritesSnapshot: snapshot };
@@ -91,8 +91,8 @@
   }
 
   async function syncFavoritesFromServer() : Promise<void> {
-    if (isSyncingFavorites) return;
-    if (!(await resolveFavoriteSyncAuth())) return;
+    if (isSyncingFavorites) {return;}
+    if (!(await resolveFavoriteSyncAuth())) {return;}
     isSyncingFavorites = true;
 
     try {
@@ -104,9 +104,9 @@
         canSyncFavoritesWithServer = false;
         return;
       }
-      if (!response.ok) return;
+      if (!response.ok) {return;}
       const data = (await response.json()) as { favorites?: string[] };
-      if (!Array.isArray(data.favorites)) return;
+      if (!Array.isArray(data.favorites)) {return;}
       writeFavorites(data.favorites);
     } catch {
       // Ignore sync failures and use local favorites.
@@ -149,7 +149,7 @@
         canSyncFavoritesWithServer = false;
         return;
       }
-      if (!response.ok) return;
+      if (!response.ok) {return;}
     } catch {
       // Ignore server failures and keep local state.
     }
@@ -219,9 +219,9 @@
 
   function initialQuickFilterFromParams(params: URLSearchParams): ProduceQuickFilter | null {
     const filterParam = params.get('filter')?.trim().toLowerCase();
-    if (filterParam === 'favorites') return 'favorites';
-    if (filterParam === 'new') return 'new';
-    if (filterParam === 'recently_unavailable') return 'recently_unavailable';
+    if (filterParam === 'favorites') {return 'favorites';}
+    if (filterParam === 'new') {return 'new';}
+    if (filterParam === 'recently_unavailable') {return 'recently_unavailable';}
     return null;
   }
 
@@ -230,7 +230,7 @@
   }
 
   async function loadProduce({ refreshing, period }: { refreshing: boolean; period?: ProduceSWRPeriod }) : Promise<void> {
-    if (isFetching) return;
+    if (isFetching) {return;}
     isFetching = true;
 
     state = {
@@ -283,17 +283,17 @@
   }
 
   async function revalidateForPeriod(period: ProduceSWRPeriod) : Promise<void> {
-    if (!SWR_PERIODS.has(period)) return;
+    if (!SWR_PERIODS.has(period)) {return;}
     const now = Date.now();
     const lastRefreshAt = periodRefreshAt.get(period) ?? 0;
-    if (now - lastRefreshAt < SWR_REVALIDATE_INTERVAL_MS) return;
+    if (now - lastRefreshAt < SWR_REVALIDATE_INTERVAL_MS) {return;}
     periodRefreshAt.set(period, now);
     await loadProduce({ refreshing: true, period });
   }
 
   onMount(() : () => void => {
     const stickyVisibilityHandler = (event: Event) : void => {
-      if (!(event instanceof CustomEvent)) return;
+      if (!(event instanceof CustomEvent)) {return;}
       state = { ...state, showSticky: Boolean(event.detail) };
       dispatchState();
     };
@@ -348,7 +348,7 @@
   });
 
   $effect(() : void => {
-    if (typeof window === 'undefined') return;
+    if (typeof window === 'undefined') {return;}
 
     const nextDateFilter = page.url.searchParams.get('date');
     const nextItemFilter = page.url.searchParams.get('item');

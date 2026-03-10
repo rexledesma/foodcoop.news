@@ -27,7 +27,9 @@ function normalizeMetaText(raw: string): string {
 }
 
 function trimDescription(raw: string): string {
-  if (raw.length <= MAX_DESCRIPTION_LENGTH) return raw;
+  if (raw.length <= MAX_DESCRIPTION_LENGTH) {
+    return raw;
+  }
   return `${raw.slice(0, MAX_DESCRIPTION_LENGTH - 1).trimEnd()}...`;
 }
 
@@ -48,12 +50,16 @@ function findMetaContent(html: string, key: string, value: string): string | nul
 
 function findTitle(html: string): string | null {
   const titleMatch = html.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
-  if (!titleMatch) return null;
+  if (!titleMatch) {
+    return null;
+  }
   return normalizeMetaText(titleMatch[1]);
 }
 
 function resolveAbsoluteUrl(candidate: string | null, baseUrl: URL): string | undefined {
-  if (!candidate) return undefined;
+  if (!candidate) {
+    return undefined;
+  }
   try {
     return new URL(candidate, baseUrl).toString();
   } catch {

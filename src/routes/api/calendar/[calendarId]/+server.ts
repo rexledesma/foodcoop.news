@@ -71,10 +71,14 @@ const parseCalendar = (
 
 const getSummary = (eventLines: string[]): string => {
   const summaryLine = eventLines.find((line): boolean => line.startsWith('SUMMARY'));
-  if (!summaryLine) return '';
+  if (!summaryLine) {
+    return '';
+  }
 
   const colonIndex = summaryLine.indexOf(':');
-  if (colonIndex === -1) return '';
+  if (colonIndex === -1) {
+    return '';
+  }
 
   return summaryLine.slice(colonIndex + 1);
 };
@@ -119,7 +123,9 @@ export async function GET({
         ? events
         : events.filter((event): boolean => {
             const summary = normalizeText(getSummary(event));
-            if (!summary) return false;
+            if (!summary) {
+              return false;
+            }
             return normalizedFilters.some((filter): boolean => summary.includes(filter));
           });
 
