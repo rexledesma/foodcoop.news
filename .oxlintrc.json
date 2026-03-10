@@ -3,6 +3,14 @@
   "plugins": ["eslint", "typescript", "unicorn", "oxc", "import", "jsx-a11y"],
   "ignorePatterns": ["out/**", "build/**", "convex/_generated/**"],
   "rules": {
+    "no-unused-vars": [
+      "error",
+      {
+        "argsIgnorePattern": "^_",
+        "ignoreRestSiblings": true,
+        "destructuredArrayIgnorePattern": "^_$"
+      }
+    ],
     "@typescript-eslint/ban-ts-comment": "error",
     "@typescript-eslint/explicit-function-return-type": [
       "error",
