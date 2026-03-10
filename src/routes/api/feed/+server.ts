@@ -127,26 +127,30 @@ function createGazetteDeadlineEvents(now = new Date()): GazetteDeadlineEvent[] {
     issueDateUtc += GAZETTE_ISSUE_INTERVAL_DAYS * DAY_MS;
   }
 
-  return events.sort((a, b) => a.dueDate.localeCompare(b.dueDate)).slice(0, 2);
+  return events.sort((a, b): number => a.dueDate.localeCompare(b.dueDate)).slice(0, 2);
 }
 
 const SOURCE_DEFINITIONS: SourceDefinition[] = [
   {
     name: 'gazette',
     path: '/api/gazette',
-    map: (payload) => {
+    map: (payload): FeedItem[] => {
       const data = payload as SourceResponse & { articles?: GazetteArticle[] };
-      const articles: FeedItem[] = (data.articles ?? []).map((article) => ({
-        type: 'gazette',
-        data: article,
-        date: new Date(article.pubDate),
-      }));
+      const articles: FeedItem[] = (data.articles ?? []).map(
+        (article): { type: 'gazette'; data: GazetteArticle; date: Date } => ({
+          type: 'gazette',
+          data: article,
+          date: new Date(article.pubDate),
+        }),
+      );
 
-      const deadlines: FeedItem[] = createGazetteDeadlineEvents().map((deadline) => ({
-        type: 'gazette-deadline',
-        data: deadline,
-        date: new Date(`${deadline.dueDate}T12:00:00Z`),
-      }));
+      const deadlines: FeedItem[] = createGazetteDeadlineEvents().map(
+        (deadline): { type: 'gazette-deadline'; data: GazetteDeadlineEvent; date: Date } => ({
+          type: 'gazette-deadline',
+          data: deadline,
+          date: new Date(`${deadline.dueDate}T12:00:00Z`),
+        }),
+      );
 
       return [...articles, ...deadlines];
     },
@@ -154,15 +158,15 @@ const SOURCE_DEFINITIONS: SourceDefinition[] = [
   {
     name: 'bluesky',
     path: '/api/feed/bluesky',
-    map: (payload) => {
+    map: (payload): { type: 'bluesky'; data: FeedPost; date: Date }[] => {
       const data = payload as SourceResponse & { posts?: FeedPost[] };
       return (data.posts ?? [])
-        .filter((post) => {
+        .filter((post): boolean => {
           if (!post.repostedBy) return true;
           if (post.repostedBy.handle !== COOP_BLUESKY_HANDLE) return false;
           return post.author.handle !== COOP_BLUESKY_HANDLE;
         })
-        .map((post) => ({
+        .map((post): { type: 'bluesky'; data: FeedPost; date: Date } => ({
           type: 'bluesky',
           data: post,
           date: new Date(post.createdAt),
@@ -172,96 +176,110 @@ const SOURCE_DEFINITIONS: SourceDefinition[] = [
   {
     name: 'foodcoop',
     path: '/api/foodcoop',
-    map: (payload) => {
+    map: (payload): { type: 'foodcoop'; data: FoodCoopAnnouncement; date: Date }[] => {
       const data = payload as SourceResponse & { articles?: FoodCoopAnnouncement[] };
-      return (data.articles ?? []).map((article) => ({
-        type: 'foodcoop',
-        data: article,
-        date: new Date(article.pubDate),
-      }));
+      return (data.articles ?? []).map(
+        (article): { type: 'foodcoop'; data: FoodCoopAnnouncement; date: Date } => ({
+          type: 'foodcoop',
+          data: article,
+          date: new Date(article.pubDate),
+        }),
+      );
     },
   },
   {
     name: 'foodcoopcooks',
     path: '/api/foodcoopcooks',
-    map: (payload) => {
+    map: (payload): { type: 'foodcoopcooks'; data: FoodCoopCooksArticle; date: Date }[] => {
       const data = payload as SourceResponse & { articles?: FoodCoopCooksArticle[] };
-      return (data.articles ?? []).map((article) => ({
-        type: 'foodcoopcooks',
-        data: article,
-        date: new Date(article.pubDate),
-      }));
+      return (data.articles ?? []).map(
+        (article): { type: 'foodcoopcooks'; data: FoodCoopCooksArticle; date: Date } => ({
+          type: 'foodcoopcooks',
+          data: article,
+          date: new Date(article.pubDate),
+        }),
+      );
     },
   },
   {
     name: 'foodcoopcooks-events',
     path: '/api/foodcoopcooks/events',
-    map: (payload) => {
+    map: (payload): { type: 'foodcoopcooks-events'; data: EventbriteEvent; date: Date }[] => {
       const data = payload as SourceResponse & { events?: EventbriteEvent[] };
-      return (data.events ?? []).map((event) => ({
-        type: 'foodcoopcooks-events',
-        data: event,
-        date: new Date(event.startUtc),
-      }));
+      return (data.events ?? []).map(
+        (event): { type: 'foodcoopcooks-events'; data: EventbriteEvent; date: Date } => ({
+          type: 'foodcoopcooks-events',
+          data: event,
+          date: new Date(event.startUtc),
+        }),
+      );
     },
   },
   {
     name: 'wordsprouts-events',
     path: '/api/wordsprouts/events',
-    map: (payload) => {
+    map: (payload): { type: 'wordsprouts-events'; data: EventbriteEvent; date: Date }[] => {
       const data = payload as SourceResponse & { events?: EventbriteEvent[] };
-      return (data.events ?? []).map((event) => ({
-        type: 'wordsprouts-events',
-        data: event,
-        date: new Date(event.startUtc),
-      }));
+      return (data.events ?? []).map(
+        (event): { type: 'wordsprouts-events'; data: EventbriteEvent; date: Date } => ({
+          type: 'wordsprouts-events',
+          data: event,
+          date: new Date(event.startUtc),
+        }),
+      );
     },
   },
   {
     name: 'concert-series-events',
     path: '/api/concert-series/events',
-    map: (payload) => {
+    map: (payload): { type: 'concert-series-events'; data: EventbriteEvent; date: Date }[] => {
       const data = payload as SourceResponse & { events?: EventbriteEvent[] };
-      return (data.events ?? []).map((event) => ({
-        type: 'concert-series-events',
-        data: event,
-        date: new Date(event.startUtc),
-      }));
+      return (data.events ?? []).map(
+        (event): { type: 'concert-series-events'; data: EventbriteEvent; date: Date } => ({
+          type: 'concert-series-events',
+          data: event,
+          date: new Date(event.startUtc),
+        }),
+      );
     },
   },
   {
     name: 'gm-events',
     path: '/api/foodcoop/gm-events',
-    map: (payload) => {
+    map: (payload): { type: 'gm-events'; data: FoodcoopEvent; date: Date }[] => {
       const data = payload as SourceResponse & { events?: FoodcoopEvent[] };
-      return (data.events ?? []).map((event) => ({
-        type: 'gm-events',
-        data: event,
-        date: new Date(event.startUtc),
-      }));
+      return (data.events ?? []).map(
+        (event): { type: 'gm-events'; data: FoodcoopEvent; date: Date } => ({
+          type: 'gm-events',
+          data: event,
+          date: new Date(event.startUtc),
+        }),
+      );
     },
   },
   {
     name: 'produce',
     path: '/api/produce/updates',
-    map: (payload) => {
+    map: (payload): { type: 'produce'; data: ProduceEvent; date: Date }[] => {
       const data = payload as SourceResponse & { events?: ProduceEvent[] };
-      return (data.events ?? []).map((event) => ({
-        type: 'produce',
-        data: event,
-        date: new Date(`${event.date}T07:00:00${PRODUCE_EVENT_TIME_EST_OFFSET}`),
-      }));
+      return (data.events ?? []).map(
+        (event): { type: 'produce'; data: ProduceEvent; date: Date } => ({
+          type: 'produce',
+          data: event,
+          date: new Date(`${event.date}T07:00:00${PRODUCE_EVENT_TIME_EST_OFFSET}`),
+        }),
+      );
     },
   },
 ];
 
-function dedupeAndSort(items: FeedItem[]) {
+function dedupeAndSort(items: FeedItem[]): FeedItem[] {
   const byKey = new Map<string, FeedItem>();
   for (const item of items) {
     byKey.set(getFeedItemKey(item), item);
   }
 
-  return Array.from(byKey.values()).sort((a, b) => b.date.getTime() - a.date.getTime());
+  return Array.from(byKey.values()).sort((a, b): number => b.date.getTime() - a.date.getTime());
 }
 
 function parseSourceFilter(rawSources: string | null): SourceDefinition[] {
@@ -271,7 +289,7 @@ function parseSourceFilter(rawSources: string | null): SourceDefinition[] {
 
   const requestedNames = rawSources
     .split(',')
-    .map((name) => name.trim())
+    .map((name): string => name.trim())
     .filter(Boolean);
 
   if (requestedNames.length === 0) {
@@ -279,7 +297,7 @@ function parseSourceFilter(rawSources: string | null): SourceDefinition[] {
   }
 
   const allowed = new Set(requestedNames);
-  const filtered = SOURCE_DEFINITIONS.filter((source) => allowed.has(source.name));
+  const filtered = SOURCE_DEFINITIONS.filter((source): boolean => allowed.has(source.name));
   return filtered.length > 0 ? filtered : SOURCE_DEFINITIONS;
 }
 
@@ -291,7 +309,7 @@ function parseLimit(rawLimit: string | null): number | null {
 }
 
 function resolveCacheControl(selectedSources: SourceDefinition[]): string {
-  const hasBluesky = selectedSources.some((source) => source.name === 'bluesky');
+  const hasBluesky = selectedSources.some((source): boolean => source.name === 'bluesky');
   return hasBluesky ? BLUESKY_FEED_CACHE_CONTROL : SLOW_FEED_CACHE_CONTROL;
 }
 
@@ -301,7 +319,7 @@ async function fetchSource(
   timeoutMs = SOURCE_FETCH_TIMEOUT_MS,
 ): Promise<SourceResult> {
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+  const timeoutId = setTimeout((): void => controller.abort(), timeoutMs);
 
   try {
     const response = await fetchFn(source.path, { signal: controller.signal });
@@ -340,12 +358,18 @@ async function fetchSource(
   }
 }
 
-export async function GET({ fetch, url }: { fetch: typeof globalThis.fetch; url: URL }) {
+export async function GET({
+  fetch,
+  url,
+}: {
+  fetch: typeof globalThis.fetch;
+  url: URL;
+}): Promise<Response> {
   const selectedSources = parseSourceFilter(url.searchParams.get('sources'));
   const cacheControl = resolveCacheControl(selectedSources);
   const limit = parseLimit(url.searchParams.get('limit'));
   const sourceResults = await Promise.all(
-    selectedSources.map((source) => fetchSource(source, fetch)),
+    selectedSources.map((source): Promise<SourceResult> => fetchSource(source, fetch)),
   );
 
   const errorsBySource: Partial<Record<SourceName, string>> = {};
@@ -372,10 +396,24 @@ export async function GET({ fetch, url }: { fetch: typeof globalThis.fetch; url:
 
   const dedupedItems = dedupeAndSort(allItems);
   const limitedItems = limit ? dedupedItems.slice(0, limit) : dedupedItems;
-  const serializedItems: SerializedFeedItem[] = limitedItems.map((item) => ({
-    ...item,
-    date: item.date.toISOString(),
-  }));
+  const serializedItems: SerializedFeedItem[] = limitedItems.map(
+    (
+      item,
+    ):
+      | { date: string; type: 'gazette'; data: GazetteArticle }
+      | { date: string; type: 'gazette-deadline'; data: GazetteDeadlineEvent }
+      | { date: string; type: 'bluesky'; data: FeedPost }
+      | { date: string; type: 'foodcoop'; data: FoodCoopAnnouncement }
+      | { date: string; type: 'foodcoopcooks'; data: FoodCoopCooksArticle }
+      | { date: string; type: 'foodcoopcooks-events'; data: EventbriteEvent }
+      | { date: string; type: 'wordsprouts-events'; data: EventbriteEvent }
+      | { date: string; type: 'concert-series-events'; data: EventbriteEvent }
+      | { date: string; type: 'gm-events'; data: FoodcoopEvent }
+      | { date: string; type: 'produce'; data: ProduceEvent } => ({
+      ...item,
+      date: item.date.toISOString(),
+    }),
+  );
 
   const maxLastUpdated =
     lastUpdatedTimestamps.length > 0
@@ -390,7 +428,7 @@ export async function GET({ fetch, url }: { fetch: typeof globalThis.fetch; url:
       total: serializedItems.length,
       isPartial: false,
       pendingSources: 0,
-      requestedSources: selectedSources.map((source) => source.name),
+      requestedSources: selectedSources.map((source): SourceName => source.name),
       successfulSources,
       failedSources,
       errorsBySource,

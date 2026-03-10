@@ -30,7 +30,12 @@ type SwipeNavigatorConfig = {
   onCancel: () => void;
 };
 
-export function createSwipeNavigator(config: SwipeNavigatorConfig) {
+export function createSwipeNavigator(config: SwipeNavigatorConfig): {
+  handleTouchStart: (event: TouchEvent) => void;
+  handleTouchMove: (event: TouchEvent) => void;
+  handleTouchEnd: (event: TouchEvent) => void;
+  handleTouchCancel: () => void;
+} {
   let touchStartX = 0;
   let touchStartY = 0;
   let touchCurrentX = 0;
@@ -38,7 +43,7 @@ export function createSwipeNavigator(config: SwipeNavigatorConfig) {
   let isTrackingSwipe = false;
   let isHorizontalSwipe = false;
 
-  const resetTracking = () => {
+  const resetTracking = (): void => {
     isTrackingSwipe = false;
     isHorizontalSwipe = false;
     touchStartX = 0;
@@ -47,7 +52,7 @@ export function createSwipeNavigator(config: SwipeNavigatorConfig) {
     touchCurrentY = 0;
   };
 
-  const handleTouchStart = (event: TouchEvent) => {
+  const handleTouchStart = (event: TouchEvent): void => {
     if (!config.isMobileTouchInput()) return;
     if (!config.canStart()) return;
     if (event.touches.length !== 1) return;
@@ -68,7 +73,7 @@ export function createSwipeNavigator(config: SwipeNavigatorConfig) {
     if (previousPath) config.preloadRoute(previousPath);
   };
 
-  const handleTouchMove = (event: TouchEvent) => {
+  const handleTouchMove = (event: TouchEvent): void => {
     if (!isTrackingSwipe) return;
     if (event.touches.length !== 1) {
       resetTracking();
@@ -111,7 +116,7 @@ export function createSwipeNavigator(config: SwipeNavigatorConfig) {
     config.onDrag({ step, travelPx, progress });
   };
 
-  const handleTouchEnd = (event: TouchEvent) => {
+  const handleTouchEnd = (event: TouchEvent): void => {
     if (!isTrackingSwipe) return;
 
     const deltaX = touchCurrentX - touchStartX;
@@ -145,7 +150,7 @@ export function createSwipeNavigator(config: SwipeNavigatorConfig) {
     resetTracking();
   };
 
-  const handleTouchCancel = () => {
+  const handleTouchCancel = (): void => {
     if (!isTrackingSwipe) return;
     config.onCancel();
     resetTracking();

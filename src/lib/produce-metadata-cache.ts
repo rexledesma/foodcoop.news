@@ -20,6 +20,6 @@ export async function getCachedProduceMetadata<T>(loader: () => Promise<T>): Pro
   return data;
 }
 
-export function invalidateProduceMetadataCache() {
+export function invalidateProduceMetadataCache(): void {
   cache = null;
 }

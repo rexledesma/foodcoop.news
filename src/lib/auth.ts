@@ -8,11 +8,11 @@ const convexSiteUrl = process.env.NEXT_PUBLIC_CONVEX_SITE_URL!;
 const authOptions: GetTokenOptions = {
   jwtCache: {
     enabled: true,
-    isAuthError: () => false,
+    isAuthError: (): false => false,
   },
 };
 
-const parseConvexSiteUrl = (url: string) => {
+const parseConvexSiteUrl = (url: string): string => {
   if (!url) {
     throw new Error('NEXT_PUBLIC_CONVEX_SITE_URL is not set');
   }
@@ -26,7 +26,7 @@ const parseConvexSiteUrl = (url: string) => {
 
 const siteUrl = parseConvexSiteUrl(convexSiteUrl);
 
-function setupClient(token?: string) {
+function setupClient(token?: string): ConvexHttpClient {
   const client = new ConvexHttpClient(convexUrl);
   if (token !== undefined) {
     client.setAuth(token);
@@ -61,7 +61,7 @@ export async function fetchAuthQueryFromHeaders<Query extends FunctionReference<
   query: Query,
   ...args: OptionalRestArgs<Query>
 ): Promise<FunctionReturnType<Query>> {
-  return callWithToken(headers, (token?: string) => {
+  return callWithToken(headers, (token?: string): Promise<FunctionReturnType<Query>> => {
     const client = setupClient(token);
     return client.query(query, ...args);
   });
@@ -72,7 +72,7 @@ export async function fetchAuthMutationFromHeaders<Mutation extends FunctionRefe
   mutation: Mutation,
   ...args: OptionalRestArgs<Mutation>
 ): Promise<FunctionReturnType<Mutation>> {
-  return callWithToken(headers, (token?: string) => {
+  return callWithToken(headers, (token?: string): Promise<FunctionReturnType<Mutation>> => {
     const client = setupClient(token);
     return client.mutation(mutation, ...args);
   });

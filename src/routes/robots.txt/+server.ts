@@ -5,7 +5,7 @@ function toAbsoluteUrl(origin: string, pathname: string): string {
   return `${normalizedOrigin}${pathname}`;
 }
 
-export function GET({ url }: { url: URL }) {
+export function GET({ url }: { url: URL }): Response {
   const origin = env.SITE_URL || url.origin;
   const sitemapUrl = toAbsoluteUrl(origin, '/sitemap.xml');
   const body = `User-agent: *

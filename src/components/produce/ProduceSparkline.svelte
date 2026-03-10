@@ -214,14 +214,14 @@
     const width = 100;
     const height = 24;
     const padding = 3;
-    const plottedPoints = points.filter((point) => {
+    const plottedPoints = points.filter((point) : boolean => {
       const pointMs = toDateMs(point.date);
       return pointMs >= scaleStartMs && pointMs <= scaleEndMs;
     });
     const pointsInScale = downsampleForTimePeriod(plottedPoints.length > 0 ? plottedPoints : points, period);
     if (pointsInScale.length === 0) return null;
 
-    const values = pointsInScale.map((point) => point.price);
+    const values = pointsInScale.map((point) : number => point.price);
     const computedMin = Math.min(...values);
     const computedMax = Math.max(...values);
     const min = fixedRange ? Math.min(fixedRange.min, fixedRange.max) : computedMin;
@@ -229,7 +229,7 @@
     const range = max - min;
     const totalMs = scaleEndMs - scaleStartMs;
 
-    const normalized: SparklinePoint[] = pointsInScale.map((point) => {
+    const normalized: SparklinePoint[] = pointsInScale.map((point) : { x: number; y: number; pointMs: number; } => {
       const pointMs = toDateMs(point.date);
       const x = (totalMs === 0 ? width / 2 : ((pointMs - scaleStartMs) / totalMs) * width) + padding;
       const y =
@@ -248,7 +248,7 @@
     const periodStartX =
       (totalMs === 0 ? width / 2 : ((periodStartMs - scaleStartMs) / totalMs) * width) + padding;
 
-    const periodStartPoint = (() => {
+    const periodStartPoint = (() : SparklinePoint | null => {
       if (normalized.length < 2) return null;
       let closest = normalized[0];
       let closestDist = Infinity;
@@ -294,12 +294,12 @@
         let currentPoints: { x: number; y: number }[] = [];
         let currentPosition: PositionY | null = null;
 
-        const pushAreaSegment = () => {
+        const pushAreaSegment = () : void => {
           if (currentPosition === null || currentPoints.length < 2) return;
           areaSegments.push({ points: [...currentPoints], position: currentPosition });
         };
 
-        const pushLineSegment = () => {
+        const pushLineSegment = () : void => {
           if (currentPosition === null || currentPoints.length < 2) return;
           lineSegments.push({ points: [...currentPoints], position: currentPosition });
         };
@@ -390,9 +390,9 @@
     });
   });
 
-  const displayModel = $derived.by(() => renderedModel ?? targetModel);
+  const displayModel = $derived.by(() : SparklineModel | null => renderedModel ?? targetModel);
 
-  const activePoint = $derived.by(() => {
+  const activePoint = $derived.by(() : { coordinates: SparklinePoint; data: ProduceHistoryPoint; } | null => {
     if (!displayModel) return null;
     if (activeIndex === null) return null;
     if (activeIndex < 0 || activeIndex >= displayModel.normalized.length) return null;
@@ -403,7 +403,7 @@
     };
   });
 
-  const isOutOfRange = $derived.by(() => {
+  const isOutOfRange = $derived.by(() : boolean => {
     if (!displayModel || !activePoint) return false;
     const x = activePoint.coordinates.x;
     if (
@@ -417,7 +417,7 @@
     return false;
   });
 
-  $effect(() => {
+  $effect(() : (() => void) | undefined => {
     if (!canvasRef) return;
     const element = canvasRef;
     if (typeof IntersectionObserver === 'undefined') {
@@ -426,17 +426,17 @@
     }
 
     const observer = new IntersectionObserver(
-      (entries) => {
+      (entries) : void => {
         const entry = entries[0];
         isVisible = !!entry?.isIntersecting;
       },
       { root: null, threshold: 0.01 },
     );
     observer.observe(element);
-    return () => observer.disconnect();
+    return () : void => observer.disconnect();
   });
 
-  function resetEngineToTarget(target: SparklineModel) {
+  function resetEngineToTarget(target: SparklineModel) : void {
     displayWindowMs = Math.max(target.scaleEndMs - target.scaleStartMs, DAY_MS);
     displayMin = target.minValue;
     displayMax = target.maxValue;
@@ -457,7 +457,7 @@
     };
   }
 
-  $effect(() => {
+  $effect(() : (() => void) | undefined => {
     if (!targetModel) {
       cancelAnimationFrame(rafId);
       rafId = 0;
@@ -514,7 +514,7 @@
     cancelAnimationFrame(rafId);
     let lastFrame = performance.now();
 
-    const animate = (now: number) => {
+    const animate = (now: number) : void => {
       const dt = Math.min(now - lastFrame, MAX_DELTA_MS);
       lastFrame = now;
 
@@ -597,13 +597,13 @@
     };
 
     rafId = requestAnimationFrame(animate);
-    return () => {
+    return () : void => {
       cancelAnimationFrame(rafId);
       rafId = 0;
     };
   });
 
-  function handlePointerMove(e: PointerEvent) {
+  function handlePointerMove(e: PointerEvent) : void {
     if (!displayModel || !canvasRef || displayModel.normalized.length === 0) return;
     const rect = canvasRef.getBoundingClientRect();
     if (rect.width === 0) return;
@@ -633,7 +633,7 @@
     }
   }
 
-  function handlePointerDown(e: PointerEvent) {
+  function handlePointerDown(e: PointerEvent) : void {
     const target = e.currentTarget;
     if (target instanceof HTMLCanvasElement) {
       target.setPointerCapture(e.pointerId);
@@ -641,7 +641,7 @@
     handlePointerMove(e);
   }
 
-  function handlePointerLeave() {
+  function handlePointerLeave() : void {
     activeIndex = null;
     lastActiveIndex = null;
   }
@@ -651,7 +651,7 @@
     points: { x: number; y: number }[],
     color: string,
     width = 2,
-  ) {
+  ) : void {
     if (points.length < 2) return;
     ctx.beginPath();
     ctx.moveTo(points[0].x, points[0].y);
@@ -674,7 +674,7 @@
     fill: string,
     stroke?: string,
     strokeWidth = 1,
-  ) {
+  ) : void {
     ctx.beginPath();
     ctx.arc(x, y, radius, 0, Math.PI * 2);
     ctx.fillStyle = fill;
@@ -692,7 +692,7 @@
     y: number,
     width: number,
     height: number,
-  ) {
+  ) : void {
     if (width <= 0 || height <= 0) return;
     ctx.save();
     ctx.beginPath();
@@ -715,7 +715,7 @@
     ctx: CanvasRenderingContext2D,
     drawModel: SparklineModel,
     unavailableDate: string | null,
-  ) {
+  ) : void {
     const logicalHeight = drawModel.height + drawModel.padding * 2;
     const trendPosition: PositionY =
       !drawModel.periodStartPoint || !drawModel.lastPoint
@@ -802,7 +802,7 @@
     ctx.restore();
   }
 
-  $effect(() => {
+  $effect(() : void => {
     if (!displayModel || !canvasRef) return;
 
     const canvas = canvasRef;

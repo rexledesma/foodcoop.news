@@ -44,7 +44,11 @@ const cachedPayloadByVariant: Record<CacheKey, CachedVariant> = {
   withLongRange: { payload: null, cachedAt: 0, revalidation: null },
 };
 
-function withCacheHeaders(init?: ResponseInit) {
+function withCacheHeaders(init?: ResponseInit): {
+  headers: Headers;
+  status?: number;
+  statusText?: string;
+} {
   const headers = new Headers(init?.headers);
   headers.set('cache-control', PRODUCE_CACHE_CONTROL);
   return {
@@ -53,7 +57,7 @@ function withCacheHeaders(init?: ResponseInit) {
   } satisfies ResponseInit;
 }
 
-function getCurrentYear() {
+function getCurrentYear(): string {
   return new Date()
     .toLocaleDateString('en-CA', {
       timeZone: 'America/New_York',
@@ -62,8 +66,9 @@ function getCurrentYear() {
 }
 
 function pickLatestBlob<T extends { uploadedAt: string | Date }>(blobs: T[]): T {
-  return blobs.reduce((latest, blob) =>
-    new Date(blob.uploadedAt).getTime() > new Date(latest.uploadedAt).getTime() ? blob : latest,
+  return blobs.reduce(
+    (latest, blob): T =>
+      new Date(blob.uploadedAt).getTime() > new Date(latest.uploadedAt).getTime() ? blob : latest,
   );
 }
 
@@ -103,13 +108,13 @@ async function loadProduceMetadata(): Promise<ProduceMetadata> {
   }
 
   const years = Array.from(byYear.entries())
-    .map(([year, blob]) => ({
+    .map(([year, blob]): { year: string; url: string; size: number; isCurrentYear: boolean } => ({
       year,
       url: blob.url,
       size: blob.size,
       isCurrentYear: year === currentYear,
     }))
-    .sort((a, b) => b.year.localeCompare(a.year));
+    .sort((a, b): number => b.year.localeCompare(a.year));
 
   const derivedPatterns = {
     ytd: /^produce-data-derived\/ytd-[a-f0-9]{7}\.parquet$/,
@@ -117,12 +122,14 @@ async function loadProduceMetadata(): Promise<ProduceMetadata> {
   } as const;
 
   const derived = Object.fromEntries(
-    Object.entries(derivedPatterns).map(([key, pattern]) => {
-      const matching = derivedBlobs.filter((blob) => pattern.test(blob.pathname));
-      if (matching.length === 0) return [key, null];
-      const latest = pickLatestBlob(matching);
-      return [key, { url: latest.url, size: latest.size }];
-    }),
+    Object.entries(derivedPatterns).map(
+      ([key, pattern]): [string, null] | [string, { url: string; size: number }] => {
+        const matching = derivedBlobs.filter((blob): boolean => pattern.test(blob.pathname));
+        if (matching.length === 0) return [key, null];
+        const latest = pickLatestBlob(matching);
+        return [key, { url: latest.url, size: latest.size }];
+      },
+    ),
   ) as ProduceMetadata['derived'];
 
   return { years, derived };
@@ -495,18 +502,18 @@ async function computePayload({
     return { data: [], history: [], dateRange: null };
   }
 
-  const currentYearEntry = meta.years.find((entry) => entry.isCurrentYear);
+  const currentYearEntry = meta.years.find((entry): boolean => entry.isCurrentYear);
   const currentYear = currentYearEntry
     ? Number.parseInt(currentYearEntry.year, 10)
     : Number.parseInt(meta.years[0].year, 10);
-  const previousYearEntries = meta.years.filter((entry) => {
+  const previousYearEntries = meta.years.filter((entry): boolean => {
     const yearNum = Number.parseInt(entry.year, 10);
     return yearNum === currentYear - 1;
   });
 
   const coreParquets = [
     meta.derived.ytd?.url ? { tableName: 'produce_ytd', url: meta.derived.ytd.url } : null,
-    ...previousYearEntries.map((entry) => ({
+    ...previousYearEntries.map((entry): { tableName: string; url: string } => ({
       tableName: `produce_${entry.year}`,
       url: entry.url,
     })),
@@ -514,10 +521,14 @@ async function computePayload({
 
   const fallbackCoreParquets = meta.years
     .filter(
-      (entry) =>
-        entry.isCurrentYear || previousYearEntries.some((prev) => prev.year === entry.year),
+      (entry): boolean =>
+        entry.isCurrentYear ||
+        previousYearEntries.some((prev): boolean => prev.year === entry.year),
     )
-    .map((entry) => ({ tableName: `produce_${entry.year}`, url: entry.url }));
+    .map((entry): { tableName: string; url: string } => ({
+      tableName: `produce_${entry.year}`,
+      url: entry.url,
+    }));
 
   const effectiveCoreParquets = coreParquets.length > 0 ? coreParquets : fallbackCoreParquets;
   if (effectiveCoreParquets.length === 0) {
@@ -541,11 +552,13 @@ async function computePayload({
 
   try {
     const stagedDescriptors = await Promise.all(
-      descriptors.map(async ({ tableName, url }) => {
-        const parquetPath = await stageParquetFile(url);
-        stagedFiles.push(parquetPath);
-        return { tableName, parquetPath };
-      }),
+      descriptors.map(
+        async ({ tableName, url }): Promise<{ tableName: string; parquetPath: string }> => {
+          const parquetPath = await stageParquetFile(url);
+          stagedFiles.push(parquetPath);
+          return { tableName, parquetPath };
+        },
+      ),
     );
 
     instance = await DuckDBInstance.create(':memory:');
@@ -559,7 +572,7 @@ async function computePayload({
     }
 
     const unionQuery = stagedDescriptors
-      .map((item) => `SELECT * FROM ${item.tableName}`)
+      .map((item): string => `SELECT * FROM ${item.tableName}`)
       .join(' UNION ');
     await connection.run(`CREATE OR REPLACE TABLE produce AS ${unionQuery}`);
 
@@ -606,28 +619,30 @@ async function computePayload({
   } finally {
     connection?.closeSync();
     instance?.closeSync();
-    await Promise.all(stagedFiles.map(async (file) => unlink(file).catch(() => {})));
+    await Promise.all(
+      stagedFiles.map(async (file): Promise<void> => unlink(file).catch((): void => {})),
+    );
   }
 }
 
-export const GET: RequestHandler = async ({ url }) => {
+export const GET: RequestHandler = async ({ url }): Promise<Response> => {
   const includeLongRange = url.searchParams.get('includeLongRange') === '1';
   const cacheKey: CacheKey = includeLongRange ? 'withLongRange' : 'core';
   const cached = cachedPayloadByVariant[cacheKey];
   const now = Date.now();
   const age = cached.payload ? now - cached.cachedAt : Number.POSITIVE_INFINITY;
 
-  const startRevalidation = () => {
+  const startRevalidation = (): Promise<void> => {
     if (cached.revalidation) return cached.revalidation;
-    cached.revalidation = (async () => {
+    cached.revalidation = (async (): Promise<void> => {
       const payload = await computePayload({ includeLongRange });
       cached.payload = payload;
       cached.cachedAt = Date.now();
     })()
-      .catch((error) => {
+      .catch((error): void => {
         console.error(`Produce data API revalidation error (${cacheKey}):`, error);
       })
-      .finally(() => {
+      .finally((): void => {
         cached.revalidation = null;
       });
     return cached.revalidation;

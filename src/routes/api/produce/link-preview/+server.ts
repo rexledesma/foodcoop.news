@@ -93,7 +93,7 @@ function extractPreview(targetUrl: URL, html: string): LinkPreview {
 
 async function fetchPreview(targetUrl: URL): Promise<LinkPreview> {
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+  const timeoutId = setTimeout((): void => controller.abort(), FETCH_TIMEOUT_MS);
 
   try {
     const response = await fetch(targetUrl, {
@@ -114,7 +114,7 @@ async function fetchPreview(targetUrl: URL): Promise<LinkPreview> {
   }
 }
 
-export async function GET({ url }: { url: URL }) {
+export async function GET({ url }: { url: URL }): Promise<Response> {
   const sourceUrl = url.searchParams.get('url');
   if (!sourceUrl) {
     return Response.json({ error: 'Missing url query parameter' }, { status: 400 });

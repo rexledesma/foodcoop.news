@@ -147,14 +147,14 @@
   let isLoading = $state(false);
   let isRefreshing = $state(false);
   let error = $state('');
-  let revalidateForPeriod = $state<(period: ProduceSWRPeriod) => void>(() => {});
+  let revalidateForPeriod = $state<(period: ProduceSWRPeriod) => void>(() : void => {});
   let initialDateFilter = $state<string | null>(null);
   let initialItemFilter = $state<string | null>(null);
   let initialProduceFilter = $state<string | null>(null);
   let initialQuickFilter = $state<QuickFilter>(null);
   let showSticky = $state(true);
   let favoritesSnapshot = $state('[]');
-  let toggleFavorite = $state<(name: string) => void>(() => {});
+  let toggleFavorite = $state<(name: string) => void>(() : void => {});
   let stickyHeaderRef = $state<HTMLDivElement | null>(null);
   let linkPreview = $state<LinkPreviewState | null>(null);
   let linkPreviewHoverTimeout = $state<number | null>(null);
@@ -205,15 +205,15 @@
         VIRTUAL_ROW_CHUNK -
         1,
     );
-    return Array.from({ length: snappedEnd - snappedStart + 1 }, (_, i) => snappedStart + i);
+    return Array.from({ length: snappedEnd - snappedStart + 1 }, (_, i) : number => snappedStart + i);
   }
 
   const rowVirtualizer = createWindowVirtualizer<HTMLTableRowElement>({
     count: 0,
-    estimateSize: () => VIRTUAL_ROW_ESTIMATE,
+    estimateSize: () : number => VIRTUAL_ROW_ESTIMATE,
     overscan: VIRTUAL_ROW_BUFFER,
     rangeExtractor: extractVirtualRowRange,
-    getItemKey: (index) => index,
+    getItemKey: (index) : number => index,
   });
 
   let search = $state('');
@@ -233,12 +233,12 @@
   const stickyVisible = $derived(showSticky);
   const normalizedSearch = $derived(search.trim().toLowerCase());
   const hasSearchQuery = $derived(normalizedSearch.length > 0);
-  const periodScopedRows = $derived.by(() => {
-    return data.filter((row) => hasPointInPeriod(history.get(row.name), dateRange, timePeriod));
+  const periodScopedRows = $derived.by(() : ProduceRow[] => {
+    return data.filter((row) : boolean => hasPointInPeriod(history.get(row.name), dateRange, timePeriod));
   });
 
   const searchDocs = $derived(
-    periodScopedRows.map<ProduceSearchDocument>((row) => ({
+    periodScopedRows.map<ProduceSearchDocument>((row) : { id: string; name: string; origin: string; attributes: string; } => ({
       id: produceHash(row.name),
       name: row.name,
       origin: row.origin,
@@ -260,10 +260,10 @@
     }),
   );
 
-  const searchScores = $derived.by(() => {
+  const searchScores = $derived.by(() : Map<string, number> | null => {
     if (!hasSearchQuery) return null;
     const hits = produceFuse.search(normalizedSearch);
-    return new Map(hits.map((hit) => [hit.item.id, hit.score ?? Number.MAX_VALUE]));
+    return new Map(hits.map((hit) : [string, number] => [hit.item.id, hit.score ?? Number.MAX_VALUE]));
   });
 
   function rowMatchesDateFilter(row: ProduceRow, targetDate: string): boolean {
@@ -273,32 +273,32 @@
     return arrivedOnDate || becameUnavailableOnDate;
   }
 
-  const filteredRows = $derived.by(() => {
+  const filteredRows = $derived.by(() : ProduceRow[] => {
     let result = periodScopedRows;
 
     if (itemFilter) {
-      result = result.filter((row) => produceHash(row.name) === itemFilter);
+      result = result.filter((row) : boolean => produceHash(row.name) === itemFilter);
     }
 
     const selectedDate = dateFilter;
     if (selectedDate) {
-      result = result.filter((row) => rowMatchesDateFilter(row, selectedDate));
+      result = result.filter((row) : boolean => rowMatchesDateFilter(row, selectedDate));
     }
 
     if (searchScores) {
-      result = result.filter((row) => searchScores.has(produceHash(row.name)));
+      result = result.filter((row) : boolean => searchScores.has(produceHash(row.name)));
     }
 
     if (quickFilter === 'favorites') {
-      result = result.filter((row) => favorites.has(row.name));
+      result = result.filter((row) : boolean => favorites.has(row.name));
     } else if (quickFilter === 'new') {
-      result = result.filter((row) => row.is_new);
+      result = result.filter((row) : boolean => row.is_new);
     } else if (quickFilter === 'recently_unavailable') {
-      result = result.filter((row) => row.is_unavailable);
+      result = result.filter((row) : boolean => row.is_unavailable);
     }
 
     if (searchScores && (!sortField || !sortDirection)) {
-      return [...result].sort((a, b) => {
+      return [...result].sort((a, b) : number => {
         const aScore = searchScores.get(produceHash(a.name)) ?? Number.MAX_VALUE;
         const bScore = searchScores.get(produceHash(b.name)) ?? Number.MAX_VALUE;
         return aScore - bScore;
@@ -309,7 +309,7 @@
       return result;
     }
 
-    return [...result].sort((a, b) => {
+    return [...result].sort((a, b) : number => {
       if (sortField === 'name') {
         return sortDirection === 'asc' ? a.name.localeCompare(b.name) : b.name.localeCompare(a.name);
       }
@@ -335,19 +335,19 @@
     });
   });
 
-  const fullSearchMatchCount = $derived.by(() => {
+  const fullSearchMatchCount = $derived.by(() : number => {
     if (!searchScores) return periodScopedRows.length;
-    return periodScopedRows.filter((row) => searchScores.has(produceHash(row.name))).length;
+    return periodScopedRows.filter((row) : boolean => searchScores.has(produceHash(row.name))).length;
   });
 
-  const hasActiveResultFilter = $derived.by(() => {
+  const hasActiveResultFilter = $derived.by(() : boolean => {
     if (itemFilter || dateFilter) return true;
     return (
       quickFilter === 'favorites' || quickFilter === 'new' || quickFilter === 'recently_unavailable'
     );
   });
 
-  const shouldShowClearFilterSearchCta = $derived.by(() => {
+  const shouldShowClearFilterSearchCta = $derived.by(() : boolean => {
     return (
       filteredRows.length === 0 &&
       hasSearchQuery &&
@@ -356,54 +356,54 @@
     );
   });
 
-  const quickFilterCount = $derived.by(() => {
+  const quickFilterCount = $derived.by(() : number => {
     let base = periodScopedRows;
     const selectedDate = dateFilter;
     if (selectedDate) {
-      base = base.filter((row) => rowMatchesDateFilter(row, selectedDate));
+      base = base.filter((row) : boolean => rowMatchesDateFilter(row, selectedDate));
     }
     if (!quickFilter || quickFilter === 'drops' || quickFilter === 'increases') {
       return base.length;
     }
     if (quickFilter === 'favorites') {
-      return base.filter((row) => favorites.has(row.name)).length;
+      return base.filter((row) : boolean => favorites.has(row.name)).length;
     }
     if (quickFilter === 'new') {
-      return base.filter((row) => row.is_new).length;
+      return base.filter((row) : boolean => row.is_new).length;
     }
-    return base.filter((row) => row.is_unavailable).length;
+    return base.filter((row) : boolean => row.is_unavailable).length;
   });
 
-  const itemFilterName = $derived.by(() => {
+  const itemFilterName = $derived.by(() : string | null => {
     if (!itemFilter) return null;
-    return periodScopedRows.find((row) => produceHash(row.name) === itemFilter)?.name ?? null;
+    return periodScopedRows.find((row) : boolean => produceHash(row.name) === itemFilter)?.name ?? null;
   });
   const virtualRows = $derived($rowVirtualizer.getVirtualItems());
-  const visibleVirtualRows = $derived.by(() =>
+  const visibleVirtualRows = $derived.by(() : any =>
     virtualRows
-      .map((virtualRow) => {
+      .map((virtualRow) : { virtualRow: any; row: ProduceRow; } | null => {
         const row = filteredRows[virtualRow.index];
         return row ? { virtualRow, row } : null;
       })
-      .filter((entry) => entry !== null),
+      .filter((entry) : boolean => entry !== null),
   );
   const virtualTotalSize = $derived(Math.max(0, $rowVirtualizer.getTotalSize() - virtualScrollMargin));
-  const virtualPaddingTop = $derived.by(() => {
+  const virtualPaddingTop = $derived.by(() : number => {
     if (virtualRows.length === 0) return 0;
     return Math.max(0, virtualRows[0].start - virtualScrollMargin);
   });
-  const virtualPaddingBottom = $derived.by(() => {
+  const virtualPaddingBottom = $derived.by(() : number => {
     if (virtualRows.length === 0) return 0;
     const lastItem = virtualRows[virtualRows.length - 1];
     const adjustedLastEnd = Math.max(0, lastItem.end - virtualScrollMargin);
     return Math.max(0, virtualTotalSize - adjustedLastEnd);
   });
-  const produceFilterDisplayName = $derived.by(() => {
+  const produceFilterDisplayName = $derived.by(() : string | null => {
     if (itemFilterName) return itemFilterName;
     if (!initialProduceFilter) return null;
     const decoded = decodeMaybe(initialProduceFilter).trim();
     if (!decoded) return null;
-    const byHash = data.find((row) => produceHash(row.name).toLowerCase() === decoded.toLowerCase());
+    const byHash = data.find((row) : boolean => produceHash(row.name).toLowerCase() === decoded.toLowerCase());
     if (byHash) return byHash.name;
     return decoded;
   });
@@ -431,11 +431,11 @@
     if (!decoded) return null;
 
     const byHash = data.find(
-      (row) => produceHash(row.name).toLowerCase() === decoded.toLowerCase(),
+      (row) : boolean => produceHash(row.name).toLowerCase() === decoded.toLowerCase(),
     );
     if (byHash) return produceHash(byHash.name);
 
-    const byName = data.find((row) => row.name.toLowerCase() === decoded.toLowerCase());
+    const byName = data.find((row) : boolean => row.name.toLowerCase() === decoded.toLowerCase());
     if (byName) return produceHash(byName.name);
 
     return null;
@@ -484,7 +484,7 @@
 
   const shouldScrubStats = $derived(statsFromPeriod !== null && statsTransitionProgress < 1);
 
-  $effect(() => {
+  $effect(() : (() => void) | undefined => {
     if (lastStatsPeriod === null) {
       lastStatsPeriod = timePeriod;
       statsFromPeriod = null;
@@ -499,7 +499,7 @@
     lastStatsPeriod = timePeriod;
     const start = performance.now();
 
-    const animate = (now: number) => {
+    const animate = (now: number) : void => {
       const t = Math.min((now - start) / WINDOW_TRANSITION_MS, 1);
       statsTransitionProgress = (1 - Math.cos(t * Math.PI)) / 2;
       if (t < 1) {
@@ -512,7 +512,7 @@
     };
 
     statsTransitionRaf = requestAnimationFrame(animate);
-    return () => {
+    return () : void => {
       cancelAnimationFrame(statsTransitionRaf);
       statsTransitionRaf = 0;
     };
@@ -635,7 +635,7 @@
       ? new Date(activeRange.end + 'T00:00:00').getTime()
       : new Date(points[points.length - 1].date + 'T00:00:00').getTime();
     const periodStartMs = getAnimatedPeriodStartMs(period, endMs);
-    return points.filter((point) => {
+    return points.filter((point) : boolean => {
       const pointMs = new Date(point.date + 'T00:00:00').getTime();
       return pointMs >= periodStartMs && pointMs <= endMs;
     }).length;
@@ -714,7 +714,7 @@
     return 'current filter';
   }
 
-  function clearActiveResultFilter() {
+  function clearActiveResultFilter() : void {
     if (dateFilter) {
       clearDateFilter();
       return;
@@ -726,11 +726,11 @@
     clearQuickFilter();
   }
 
-  function clearSearchQuery() {
+  function clearSearchQuery() : void {
     search = '';
   }
 
-  function clearQuickFilter() {
+  function clearQuickFilter() : void {
     quickFilter = DEFAULT_QUICK_FILTER;
     sortField = DEFAULT_SORT_FIELD;
     sortDirection = DEFAULT_SORT_DIRECTION;
@@ -751,7 +751,7 @@
     });
   }
 
-  function togglePriceTrendFilter(next: 'drops' | 'increases') {
+  function togglePriceTrendFilter(next: 'drops' | 'increases') : void {
     const isActive =
       sortField === 'change' &&
       ((next === 'drops' && sortDirection === 'asc') ||
@@ -765,14 +765,14 @@
     sortDirection = next === 'drops' ? 'asc' : 'desc';
   }
 
-  function clearDateFilter() {
+  function clearDateFilter() : void {
     dateFilter = null;
     const url = new URL(window.location.href);
     url.searchParams.delete('date');
     void goto(url.pathname + url.search, { keepFocus: true, noScroll: true, replaceState: true });
   }
 
-  function clearQueryFilters() {
+  function clearQueryFilters() : void {
     dateFilter = null;
     itemFilter = null;
     initialProduceFilter = null;
@@ -785,7 +785,7 @@
     void goto(url.pathname + url.search, { keepFocus: true, noScroll: true, replaceState: true });
   }
 
-  function clearItemFilter() {
+  function clearItemFilter() : void {
     itemFilter = null;
     initialProduceFilter = null;
     const url = new URL(window.location.href);
@@ -796,19 +796,19 @@
     void goto(url.pathname + url.search, { keepFocus: true, noScroll: true, replaceState: true });
   }
 
-  function clearLinkPreviewTimer() {
+  function clearLinkPreviewTimer() : void {
     if (linkPreviewHoverTimeout === null) return;
     window.clearTimeout(linkPreviewHoverTimeout);
     linkPreviewHoverTimeout = null;
   }
 
-  function clearLinkPreviewHideTimer() {
+  function clearLinkPreviewHideTimer() : void {
     if (linkPreviewHideTimeout === null) return;
     window.clearTimeout(linkPreviewHideTimeout);
     linkPreviewHideTimeout = null;
   }
 
-  function hideLinkPreview() {
+  function hideLinkPreview() : void {
     clearLinkPreviewTimer();
     clearLinkPreviewHideTimer();
     linkPreview = null;
@@ -861,7 +861,7 @@
     left: number,
     top: number,
     pinned: boolean,
-  ) {
+  ) : Promise<void> {
     const currentToken = ++linkPreviewRequestToken;
 
     linkPreview = { itemName, url, left, top, loading: true, data: null, pinned };
@@ -888,7 +888,7 @@
       return pendingRequest;
     }
 
-    const request = (async () => {
+    const request = (async () : Promise<LinkPreviewData> => {
       const response = await fetch(`/api/produce/link-preview?url=${encodeURIComponent(url)}`);
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       const payload = (await response.json()) as LinkPreviewData;
@@ -906,16 +906,16 @@
     }
   }
 
-  function prefetchLinkPreview(url: string) {
+  function prefetchLinkPreview(url: string) : void {
     if (linkPreviewCache.has(url)) return;
-    void requestLinkPreview(url).catch(() => {});
+    void requestLinkPreview(url).catch(() : void => {});
   }
 
   function observeLinkPreviewTrigger(
     node: HTMLElement,
     { url }: { url: string | null },
   ): { update: ({ url }: { url: string | null }) => void; destroy: () => void } {
-    const observeNode = (nextUrl: string | null) => {
+    const observeNode = (nextUrl: string | null) : void => {
       linkPreviewViewportObserver?.unobserve(node);
       if (!nextUrl || linkPreviewCache.has(nextUrl)) {
         linkPreviewObserverTargets.delete(node);
@@ -928,10 +928,10 @@
     observeNode(url);
 
     return {
-      update(next) {
+      update(next) : void {
         observeNode(next.url);
       },
-      destroy() {
+      destroy() : void {
         linkPreviewViewportObserver?.unobserve(node);
         linkPreviewObserverTargets.delete(node);
       },
@@ -943,7 +943,7 @@
     url: string | null,
     anchorEl: HTMLElement,
     pinned = false,
-  ) {
+  ) : void {
     clearLinkPreviewTimer();
     clearLinkPreviewHideTimer();
     const { left, top } = computeLinkPreviewPosition(anchorEl, url);
@@ -955,13 +955,13 @@
       return;
     }
 
-    linkPreviewHoverTimeout = window.setTimeout(() => {
+    linkPreviewHoverTimeout = window.setTimeout(() : void => {
       linkPreviewHoverTimeout = null;
       void fetchLinkPreview(itemName, url, left, top, pinned);
     }, 180);
   }
 
-  function syncLinkPreviewPositionOrClose() {
+  function syncLinkPreviewPositionOrClose() : void {
     if (!linkPreview || !linkPreviewAnchorEl) return;
     const rect = linkPreviewAnchorEl.getBoundingClientRect();
 
@@ -983,22 +983,22 @@
     linkPreview = { ...linkPreview, left, top };
   }
 
-  function scheduleLinkPreviewHide() {
+  function scheduleLinkPreviewHide() : void {
     clearLinkPreviewHideTimer();
     if (linkPreview?.pinned) return;
-    linkPreviewHideTimeout = window.setTimeout(() => {
+    linkPreviewHideTimeout = window.setTimeout(() : void => {
       linkPreviewHideTimeout = null;
       if (!linkPreview?.pinned) hideLinkPreview();
     }, 160);
   }
 
-  function handleProduceLinkEnter(event: MouseEvent, itemName: string, url: string | null) {
+  function handleProduceLinkEnter(event: MouseEvent, itemName: string, url: string | null) : void {
     const target = event.currentTarget;
     if (!(target instanceof HTMLElement)) return;
     queueLinkPreview(itemName, url, target);
   }
 
-  function handleProduceLinkMove() {
+  function handleProduceLinkMove() : void {
     if (!linkPreview) return;
     if (linkPreview.pinned || !linkPreviewAnchorEl) return;
     const { left, top } = computeLinkPreviewPosition(linkPreviewAnchorEl, linkPreview.url);
@@ -1006,17 +1006,17 @@
     linkPreview = { ...linkPreview, left, top };
   }
 
-  function handleProduceLinkLeave() {
+  function handleProduceLinkLeave() : void {
     scheduleLinkPreviewHide();
   }
 
-  function handleProduceLinkFocus(event: FocusEvent, itemName: string, url: string | null) {
+  function handleProduceLinkFocus(event: FocusEvent, itemName: string, url: string | null) : void {
     const target = event.currentTarget;
     if (!(target instanceof HTMLElement)) return;
     queueLinkPreview(itemName, url, target);
   }
 
-  function handleProduceLinkClick(event: MouseEvent, itemName: string, url: string | null) {
+  function handleProduceLinkClick(event: MouseEvent, itemName: string, url: string | null) : void {
     if (!url) {
       event.preventDefault();
       const target = event.currentTarget;
@@ -1034,19 +1034,19 @@
     queueLinkPreview(itemName, url, target, true);
   }
 
-  function handlePreviewMouseEnter() {
+  function handlePreviewMouseEnter() : void {
     clearLinkPreviewHideTimer();
   }
 
-  function handlePreviewMouseLeave() {
+  function handlePreviewMouseLeave() : void {
     scheduleLinkPreviewHide();
   }
 
-  function closePinnedLinkPreview() {
+  function closePinnedLinkPreview() : void {
     if (linkPreview?.pinned) hideLinkPreview();
   }
 
-  function handlePreviewFavoriteToggle() {
+  function handlePreviewFavoriteToggle() : void {
     if (!linkPreview) return;
     toggleFavorite(linkPreview.itemName);
   }
@@ -1088,7 +1088,7 @@
     emoji: '⭐' | '💔',
     originX?: number,
     originY?: number,
-  ) {
+  ) : void {
     const origin = resolveBurstOrigin(rowElement, originX, originY);
     const angle = randomInRange(210, 330) * (Math.PI / 180);
     const launchDistance = randomInRange(34, 78);
@@ -1116,8 +1116,8 @@
     favoriteBursts = [...favoriteBursts, burst];
   }
 
-  function removeFavoriteBurst(id: number) {
-    favoriteBursts = favoriteBursts.filter((item) => item.id !== id);
+  function removeFavoriteBurst(id: number) : void {
+    favoriteBursts = favoriteBursts.filter((item) : boolean => item.id !== id);
   }
 
   function toggleFavoriteWithBurst(
@@ -1125,13 +1125,13 @@
     rowElement: HTMLTableRowElement,
     originX?: number,
     originY?: number,
-  ) {
+  ) : void {
     const wasFavorite = favorites.has(rowName);
     toggleFavorite(rowName);
     createFavoriteBurstFromRow(rowElement, wasFavorite ? '💔' : '⭐', originX, originY);
   }
 
-  function handleRowTouchEnd(event: TouchEvent, rowName: string) {
+  function handleRowTouchEnd(event: TouchEvent, rowName: string) : void {
     if (event.changedTouches.length !== 1) {
       lastRowTap = null;
       return;
@@ -1163,7 +1163,7 @@
     };
   }
 
-  function handleRowDoubleClick(event: MouseEvent, rowName: string) {
+  function handleRowDoubleClick(event: MouseEvent, rowName: string) : void {
     if (Date.now() - lastTouchDoubleTapAt <= SUPPRESS_DBLCLICK_AFTER_TOUCH_MS) {
       return;
     }
@@ -1183,7 +1183,7 @@
     }
   }
 
-  function updateVirtualScrollMargin() {
+  function updateVirtualScrollMargin() : void {
     if (typeof window === 'undefined') return;
     const anchor = virtualRowsAnchorRef;
     if (!anchor) return;
@@ -1197,13 +1197,13 @@
     const virtualizer = get(rowVirtualizer);
     virtualizer.measureElement(node);
     return {
-      update(_nextIndex: number) {
+      update(_nextIndex: number) : void {
         virtualizer.measureElement(node);
       },
     };
   }
 
-  async function handlePreviewShareOrCopy() {
+  async function handlePreviewShareOrCopy() : Promise<void> {
     if (!linkPreview) return;
     const url = `${window.location.origin}${produceItemUrl(linkPreview.itemName)}`;
     const shareData = { title: linkPreview.itemName, url };
@@ -1220,7 +1220,7 @@
     linkPreviewCopied = true;
   }
 
-  function handleSort(field: SortField) {
+  function handleSort(field: SortField) : void {
     if (sortField === field) {
       if (sortDirection === 'asc') {
         sortDirection = 'desc';
@@ -1241,7 +1241,7 @@
     return sortDirection === 'asc' ? '↑' : '↓';
   }
 
-  function applyState(next: ProduceAnalyticsClientState) {
+  function applyState(next: ProduceAnalyticsClientState) : void {
     data = next.data;
     history = next.history;
     dateRange = next.dateRange;
@@ -1287,13 +1287,13 @@
     return true;
   }
 
-  function handleStateUpdate(event: Event) {
+  function handleStateUpdate(event: Event) : void {
     if (!(event instanceof CustomEvent)) return;
     applyState(event.detail as ProduceAnalyticsClientState);
     applyInitialQueryFilters();
   }
 
-  $effect(() => {
+  $effect(() : void => {
     const swrPeriod: ProduceSWRPeriod | null =
       timePeriod === 'MAX'
         ? 'SINCE_2013'
@@ -1303,37 +1303,37 @@
     if (swrPeriod && SWR_PERIODS.has(swrPeriod)) revalidateForPeriod(swrPeriod);
   });
 
-  $effect(() => {
+  $effect(() : void => {
     get(rowVirtualizer).setOptions({
       count: filteredRows.length,
-      estimateSize: () => VIRTUAL_ROW_ESTIMATE,
+      estimateSize: () : number => VIRTUAL_ROW_ESTIMATE,
       overscan: VIRTUAL_ROW_BUFFER,
       rangeExtractor: extractVirtualRowRange,
       scrollMargin: virtualScrollMargin,
-      getItemKey: (index) => filteredRows[index]?.name ?? index,
+      getItemKey: (index) : string => filteredRows[index]?.name ?? index,
     });
   });
 
-  $effect(() => {
+  $effect(() : (() => void) | undefined => {
     if (typeof window === 'undefined') return;
     void virtualRowsAnchorRef;
     void filteredRows.length;
     void timePeriod;
-    const raf = window.requestAnimationFrame(() => {
+    const raf = window.requestAnimationFrame(() : void => {
       updateVirtualScrollMargin();
       get(rowVirtualizer).measure();
     });
-    return () => window.cancelAnimationFrame(raf);
+    return () : void => window.cancelAnimationFrame(raf);
   });
 
-  $effect(() => {
+  $effect(() : void => {
     localStorage.setItem(
       'produce-filters',
       JSON.stringify({ quickFilter, timePeriod, sortField, sortDirection }),
     );
   });
 
-  onMount(() => {
+  onMount(() : () => void => {
     applyState(initialState);
     const didApplyInitialQueryFilters = applyInitialQueryFilters();
 
@@ -1365,13 +1365,13 @@
       }
     }
 
-    const handler = (event: Event) => handleStateUpdate(event);
+    const handler = (event: Event) : void => handleStateUpdate(event);
     window.addEventListener(`produce-analytics-state:update:${channel}`, handler as EventListener);
     if (typeof navigator !== 'undefined' && typeof navigator.share === 'function') {
       supportsNativeShare = true;
     }
 
-    const handlePointerDown = (event: MouseEvent | TouchEvent) => {
+    const handlePointerDown = (event: MouseEvent | TouchEvent) : void => {
       if (!linkPreview?.pinned) return;
       const target = event.target;
       if (!(target instanceof Element)) return;
@@ -1383,17 +1383,17 @@
       }
       hideLinkPreview();
     };
-    const handleKeyDown = (event: KeyboardEvent) => {
+    const handleKeyDown = (event: KeyboardEvent) : void => {
       if (event.key !== 'Escape') return;
       closePinnedLinkPreview();
     };
-    const handleViewportChange = () => {
+    const handleViewportChange = () : void => {
       updateVirtualScrollMargin();
       syncLinkPreviewPositionOrClose();
     };
     if (typeof IntersectionObserver !== 'undefined') {
       linkPreviewViewportObserver = new IntersectionObserver(
-        (entries) => {
+        (entries) : void => {
           for (const entry of entries) {
             if (!entry.isIntersecting) continue;
             if (!(entry.target instanceof HTMLElement)) continue;
@@ -1420,7 +1420,7 @@
     window.addEventListener('scroll', handleViewportChange, true);
     window.addEventListener('resize', handleViewportChange);
 
-    return () => {
+    return () : void => {
       window.removeEventListener(`produce-analytics-state:update:${channel}`, handler as EventListener);
       document.removeEventListener('mousedown', handlePointerDown);
       document.removeEventListener('touchstart', handlePointerDown);
@@ -1436,7 +1436,7 @@
     };
   });
 
-  $effect(() => {
+  $effect(() : void => {
     if (!itemFilter && initialProduceFilter && data.length > 0) {
       const resolved = resolveProduceFilterToHash(initialProduceFilter);
       if (resolved) {
@@ -1445,11 +1445,11 @@
     }
   });
 
-  $effect(() => {
+  $effect(() : (() => void) | undefined => {
     const element = stickyHeaderRef;
     if (!element || typeof ResizeObserver === 'undefined') return;
 
-    const updateHeight = () => {
+    const updateHeight = () : void => {
       window.dispatchEvent(new CustomEvent('sticky-threshold', { detail: element.offsetHeight }));
     };
 
@@ -1457,10 +1457,10 @@
     const observer = new ResizeObserver(updateHeight);
     observer.observe(element);
 
-    return () => observer.disconnect();
+    return () : void => observer.disconnect();
   });
 
-  $effect(() => {
+  $effect(() : void => {
     if (!linkPreview || !linkPreviewAnchorEl || !linkPreviewCardRef) return;
     syncLinkPreviewPositionOrClose();
   });

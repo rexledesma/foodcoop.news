@@ -17,19 +17,19 @@
     loading: false,
     showIntegrationsPrompt: false,
     signinHref: '/login',
-    onEmailChange: (value: string) => {
+    onEmailChange: (value: string) : void => {
       state = { ...state, email: value };
       dispatchState();
     },
-    onPasswordChange: (value: string) => {
+    onPasswordChange: (value: string) : void => {
       state = { ...state, password: value };
       dispatchState();
     },
-    onConfirmPasswordChange: (value: string) => {
+    onConfirmPasswordChange: (value: string) : void => {
       state = { ...state, confirmPassword: value };
       dispatchState();
     },
-    onSubmit: async () => {
+    onSubmit: async () : Promise<void> => {
       state = { ...state, error: '' };
 
       if (state.password !== state.confirmPassword) {
@@ -70,11 +70,11 @@
 
   const initialState = state;
 
-  function dispatchState() {
+  function dispatchState() : void {
     window.dispatchEvent(new CustomEvent(`signup-form-state:update:${channel}`, { detail: state }));
   }
 
-  onMount(() => {
+  onMount(() : void => {
     const next = get(page).url.searchParams.get('next');
     state = {
       ...state,

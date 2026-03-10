@@ -3,6 +3,12 @@
   "plugins": ["eslint", "typescript", "unicorn", "oxc", "import", "jsx-a11y"],
   "ignorePatterns": ["out/**", "build/**", "convex/_generated/**"],
   "rules": {
-    "@typescript-eslint/ban-ts-comment": "error"
+    "@typescript-eslint/ban-ts-comment": "error",
+    "@typescript-eslint/explicit-function-return-type": [
+      "error",
+      {
+        "allowExpressions": true
+      }
+    ]
   }
 }

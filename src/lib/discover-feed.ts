@@ -21,7 +21,7 @@ export type FeedItem =
   | { type: 'gm-events'; data: FoodcoopEvent; date: Date }
   | { type: 'produce'; data: ProduceEvent; date: Date };
 
-export function getFeedItemKey(item: FeedItem) {
+export function getFeedItemKey(item: FeedItem): string {
   if (item.type === 'gazette') return `gazette-${item.data.id}`;
   if (item.type === 'gazette-deadline') return `gazette-deadline-${item.data.id}`;
   if (item.type === 'foodcoop') return `foodcoop-${item.data.id}`;

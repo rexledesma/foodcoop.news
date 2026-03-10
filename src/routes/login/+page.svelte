@@ -17,15 +17,15 @@
     step: 'email' as 'email' | 'password',
     checkingEmail: false,
     signupHref: '/signup',
-    onEmailChange: (value: string) => {
+    onEmailChange: (value: string) : void => {
       state = { ...state, email: value };
       dispatchState();
     },
-    onPasswordChange: (value: string) => {
+    onPasswordChange: (value: string) : void => {
       state = { ...state, password: value };
       dispatchState();
     },
-    onEmailSubmit: async () => {
+    onEmailSubmit: async () : Promise<void> => {
       state = { ...state, error: '' };
       if (!state.email) {
         state = { ...state, error: 'Please enter your email' };
@@ -64,7 +64,7 @@
         dispatchState();
       }
     },
-    onPasswordSubmit: async () => {
+    onPasswordSubmit: async () : Promise<void> => {
       state = { ...state, error: '', loading: true };
       dispatchState();
 
@@ -90,7 +90,7 @@
         dispatchState();
       }
     },
-    onBack: () => {
+    onBack: () : void => {
       state = { ...state, step: 'email', password: '', error: '' };
       dispatchState();
     },
@@ -98,11 +98,11 @@
 
   const initialState = state;
 
-  function dispatchState() {
+  function dispatchState() : void {
     window.dispatchEvent(new CustomEvent(`login-form-state:update:${channel}`, { detail: state }));
   }
 
-  onMount(() => {
+  onMount(() : void => {
     state = {
       ...state,
       signupHref: withNextParam('/signup', get(page).url.searchParams.get('next')),

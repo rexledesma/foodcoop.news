@@ -31,12 +31,12 @@
   let showIntegrationsPrompt = $state(false);
   let signinHref = $state('/login');
 
-  let onEmailChange = $state<(value: string) => void>(() => {});
-  let onPasswordChange = $state<(value: string) => void>(() => {});
-  let onConfirmPasswordChange = $state<(value: string) => void>(() => {});
-  let onSubmit = $state<() => Promise<void>>(async () => {});
+  let onEmailChange = $state<(value: string) => void>(() : void => {});
+  let onPasswordChange = $state<(value: string) => void>(() : void => {});
+  let onConfirmPasswordChange = $state<(value: string) => void>(() : void => {});
+  let onSubmit = $state<() => Promise<void>>(async () : Promise<void> => {});
 
-  function applyState(next: SignUpFormClientState) {
+  function applyState(next: SignUpFormClientState) : void {
     email = next.email;
     password = next.password;
     confirmPassword = next.confirmPassword;
@@ -50,41 +50,41 @@
     onSubmit = next.onSubmit;
   }
 
-  function handleStateUpdate(event: Event) {
+  function handleStateUpdate(event: Event) : void {
     if (!(event instanceof CustomEvent)) return;
     applyState(event.detail as SignUpFormClientState);
   }
 
-  function handleEmailInput(event: Event) {
+  function handleEmailInput(event: Event) : void {
     const target = event.currentTarget;
     if (!(target instanceof HTMLInputElement)) return;
     onEmailChange(target.value);
   }
 
-  function handlePasswordInput(event: Event) {
+  function handlePasswordInput(event: Event) : void {
     const target = event.currentTarget;
     if (!(target instanceof HTMLInputElement)) return;
     onPasswordChange(target.value);
   }
 
-  function handleConfirmPasswordInput(event: Event) {
+  function handleConfirmPasswordInput(event: Event) : void {
     const target = event.currentTarget;
     if (!(target instanceof HTMLInputElement)) return;
     onConfirmPasswordChange(target.value);
   }
 
-  async function handleSubmit(event: SubmitEvent) {
+  async function handleSubmit(event: SubmitEvent) : Promise<void> {
     event.preventDefault();
     await onSubmit();
   }
 
-  onMount(() => {
+  onMount(() : () => void => {
     applyState(initialState);
 
-    const handler = (event: Event) => handleStateUpdate(event);
+    const handler = (event: Event) : void => handleStateUpdate(event);
     window.addEventListener(`signup-form-state:update:${channel}`, handler as EventListener);
 
-    return () => {
+    return () : void => {
       window.removeEventListener(`signup-form-state:update:${channel}`, handler as EventListener);
     };
   });

@@ -19,7 +19,7 @@ type SignupNotificationUser = {
 function parseTrustedOriginsEnv(): string[] {
   return (process.env.TRUSTED_ORIGINS ?? '')
     .split(',')
-    .map((origin) => origin.trim())
+    .map((origin): string => origin.trim())
     .filter(Boolean);
 }
 
@@ -37,7 +37,7 @@ async function sendSignupNotificationEmail(user: SignupNotificationUser): Promis
 
   const to = toRaw
     .split(',')
-    .map((email) => email.trim())
+    .map((email): string => email.trim())
     .filter(Boolean);
   if (to.length === 0) {
     return;
@@ -104,7 +104,7 @@ export const createMemberProfileForUser = internalMutation({
   },
 });
 
-export const createAuth = (ctx: GenericCtx<DataModel>) => {
+export const createAuth = (ctx: GenericCtx<DataModel>): ReturnType<typeof betterAuth> => {
   // Cast to action context for runMutation access in database hooks
   // This is safe because createAuth is only called from HTTP actions
   const actionCtx = ctx as GenericActionCtx<DataModel>;

@@ -58,7 +58,7 @@ async function loadParquetNameDateRows(
   return rows;
 }
 
-function pushGroupedName(map: Map<string, Set<string>>, date: string, name: string) {
+function pushGroupedName(map: Map<string, Set<string>>, date: string, name: string): void {
   const existing = map.get(date);
   if (existing) {
     existing.add(name);
@@ -67,7 +67,7 @@ function pushGroupedName(map: Map<string, Set<string>>, date: string, name: stri
   map.set(date, new Set([name]));
 }
 
-export async function GET() {
+export async function GET(): Promise<Response> {
   try {
     const now = Date.now();
     if (cachedEvents && now - cacheTime < CACHE_DURATION) {
@@ -96,7 +96,9 @@ export async function GET() {
       }
     }
 
-    const availableYears = Array.from(latestByYear.keys()).sort((a, b) => b.localeCompare(a));
+    const availableYears = Array.from(latestByYear.keys()).sort((a, b): number =>
+      b.localeCompare(a),
+    );
     if (availableYears.length === 0) {
       cachedEvents = [];
       cacheTime = now;
@@ -121,7 +123,9 @@ export async function GET() {
       .filter((blob): blob is (typeof blobs)[number] => Boolean(blob));
 
     const rowsByBlob = await Promise.all(
-      selectedBlobs.map((blob) => loadParquetNameDateRows(blob.url)),
+      selectedBlobs.map(
+        (blob): Promise<{ name: string; date: string }[]> => loadParquetNameDateRows(blob.url),
+      ),
     );
     const rows = rowsByBlob.flat();
 
@@ -136,7 +140,7 @@ export async function GET() {
     }
 
     const maxDate = rows.reduce(
-      (latest, row) => (row.date > latest ? row.date : latest),
+      (latest, row): string => (row.date > latest ? row.date : latest),
       rows[0].date,
     );
     const arrivalCutoff = addDaysIso(maxDate, -30);
@@ -177,11 +181,11 @@ export async function GET() {
     const events: ProduceEvent[] = [];
     for (const date of allDates) {
       const newArrivals = Array.from(arrivalsByDate.get(date) ?? [])
-        .sort((a, b) => a.localeCompare(b))
-        .map((name) => ({ name }));
+        .sort((a, b): number => a.localeCompare(b))
+        .map((name): { name: string } => ({ name }));
       const outOfStock = Array.from(outOfStockByDate.get(date) ?? [])
-        .sort((a, b) => a.localeCompare(b))
-        .map((name) => ({ name }));
+        .sort((a, b): number => a.localeCompare(b))
+        .map((name): { name: string } => ({ name }));
       if (newArrivals.length === 0 && outOfStock.length === 0) continue;
 
       events.push({
@@ -192,7 +196,7 @@ export async function GET() {
       });
     }
 
-    events.sort((a, b) => b.date.localeCompare(a.date));
+    events.sort((a, b): number => b.date.localeCompare(a.date));
     cachedEvents = events;
     cacheTime = now;
 

@@ -62,16 +62,16 @@
   let pendingSources = $state(0);
   let showSticky = $state(true);
   let favoritesSnapshot = $state('[]');
-  let fetchFeeds = $state<() => void>(() => {});
+  let fetchFeeds = $state<() => void>(() : void => {});
 
   let filtersRef = $state<HTMLDivElement | null>(null);
 
   const favorites = $derived(parseFavorites(favoritesSnapshot));
 
-  const filteredItems = $derived.by(() => {
+  const filteredItems = $derived.by(() : FeedItem[] => {
     const now = new Date();
 
-    return items.filter((item) => {
+    return items.filter((item) : boolean => {
       if (filter === 'latest') {
         return !isEventItem(item) || item.date < now;
       }
@@ -102,14 +102,14 @@
 
   const displayedItems = $derived(
     filter === 'upcoming'
-      ? [...filteredItems].sort((a, b) => a.date.getTime() - b.date.getTime())
+      ? [...filteredItems].sort((a, b) : number => a.date.getTime() - b.date.getTime())
       : filteredItems,
   );
 
   const isInitialLoading = $derived(loading && items.length === 0);
   const isInitialError = $derived(Boolean(error) && items.length === 0);
 
-  function isEventItem(item: FeedItem) {
+  function isEventItem(item: FeedItem) : boolean {
     return (
       item.type === 'foodcoopcooks-events' ||
       item.type === 'wordsprouts-events' ||
@@ -120,7 +120,7 @@
   }
 
   function isFilterType(value: string): value is FilterType {
-    return FILTER_OPTIONS.some((option) => option.value === value);
+    return FILTER_OPTIONS.some((option) : boolean => option.value === value);
   }
 
   function formatRelativeTime(date: Date): string | null {
@@ -202,7 +202,7 @@
     }
   }
 
-  function handleStateUpdate(event: Event) {
+  function handleStateUpdate(event: Event) : void {
     if (!(event instanceof CustomEvent)) return;
     const next = event.detail as DiscoverFeedClientState;
     items = next.items;
@@ -214,12 +214,12 @@
     fetchFeeds = next.fetchFeeds;
   }
 
-  function setSelectedFilter(nextFilter: FilterType) {
+  function setSelectedFilter(nextFilter: FilterType) : void {
     filter = nextFilter;
     localStorage.setItem(DISCOVER_FILTER_STORAGE_KEY, nextFilter);
   }
 
-  onMount(() => {
+  onMount(() : () => void => {
     items = initialState.items;
     loading = initialState.loading;
     error = initialState.error;
@@ -233,10 +233,10 @@
       filter = storedFilter;
     }
 
-    const handler = (event: Event) => handleStateUpdate(event);
+    const handler = (event: Event) : void => handleStateUpdate(event);
     window.addEventListener(`discover-feed-state:update:${channel}`, handler as EventListener);
 
-    return () => {
+    return () : void => {
       window.removeEventListener(
         `discover-feed-state:update:${channel}`,
         handler as EventListener,
@@ -244,11 +244,11 @@
     };
   });
 
-  $effect(() => {
+  $effect(() : (() => void) | undefined => {
     const element = filtersRef;
     if (!element || typeof ResizeObserver === 'undefined') return;
 
-    const updateHeight = () => {
+    const updateHeight = () : void => {
       window.dispatchEvent(new CustomEvent('sticky-threshold', { detail: element.offsetHeight }));
     };
 
@@ -256,7 +256,7 @@
     const observer = new ResizeObserver(updateHeight);
     observer.observe(element);
 
-    return () => observer.disconnect();
+    return () : void => observer.disconnect();
   });
 </script>
 

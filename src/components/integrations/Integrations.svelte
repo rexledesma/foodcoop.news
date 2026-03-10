@@ -92,29 +92,29 @@
   let isSendingTest = $state(false);
   let toasts = $state<IntegrationToast[]>([]);
 
-  let onMemberNameChange = $state<(value: string) => void>(() => {});
-  let onMemberIdChange = $state<(value: string) => void>(() => {});
-  let onSave = $state<() => Promise<void>>(async () => {});
-  let onAddToWallet = $state<() => Promise<void>>(async () => {});
-  let onAddToGoogleWallet = $state<() => Promise<void>>(async () => {});
-  let onOpenCalendarModal = $state<() => void>(() => {});
-  let onCloseCalendarModal = $state<() => void>(() => {});
-  let onCopyCalendarUrl = $state<() => Promise<void>>(async () => {});
-  let onJobSearchChange = $state<(value: string) => void>(() => {});
-  let onJobSearchFocus = $state<() => void>(() => {});
-  let onJobSearchBlur = $state<() => void>(() => {});
-  let onJobSearchKeyDown = $state<(event: KeyboardEvent) => void>(() => {});
-  let onToggleJob = $state<(job: string) => void>(() => {});
-  let onRemoveJob = $state<(job: string) => void>(() => {});
-  let onHighlightJobIndex = $state<(index: number) => void>(() => {});
-  let onTogglePush = $state<() => Promise<void>>(async () => {});
-  let onSendTestNotification = $state<() => Promise<void>>(async () => {});
+  let onMemberNameChange = $state<(value: string) => void>(() : void => {});
+  let onMemberIdChange = $state<(value: string) => void>(() : void => {});
+  let onSave = $state<() => Promise<void>>(async () : Promise<void> => {});
+  let onAddToWallet = $state<() => Promise<void>>(async () : Promise<void> => {});
+  let onAddToGoogleWallet = $state<() => Promise<void>>(async () : Promise<void> => {});
+  let onOpenCalendarModal = $state<() => void>(() : void => {});
+  let onCloseCalendarModal = $state<() => void>(() : void => {});
+  let onCopyCalendarUrl = $state<() => Promise<void>>(async () : Promise<void> => {});
+  let onJobSearchChange = $state<(value: string) => void>(() : void => {});
+  let onJobSearchFocus = $state<() => void>(() : void => {});
+  let onJobSearchBlur = $state<() => void>(() : void => {});
+  let onJobSearchKeyDown = $state<(event: KeyboardEvent) => void>(() : void => {});
+  let onToggleJob = $state<(job: string) => void>(() : void => {});
+  let onRemoveJob = $state<(job: string) => void>(() : void => {});
+  let onHighlightJobIndex = $state<(index: number) => void>(() : void => {});
+  let onTogglePush = $state<() => Promise<void>>(async () : Promise<void> => {});
+  let onSendTestNotification = $state<() => Promise<void>>(async () : Promise<void> => {});
 
   let headerRef = $state<HTMLDivElement | null>(null);
   let cardRef = $state<HTMLDivElement | null>(null);
   let shineRef = $state<HTMLDivElement | null>(null);
 
-  function applyState(next: IntegrationsClientState) {
+  function applyState(next: IntegrationsClientState) : void {
     isInitialLoading = next.isInitialLoading;
     showSticky = next.showSticky;
     sessionPending = next.sessionPending;
@@ -161,12 +161,12 @@
     onSendTestNotification = next.onSendTestNotification;
   }
 
-  function handleStateUpdate(event: Event) {
+  function handleStateUpdate(event: Event) : void {
     if (!(event instanceof CustomEvent)) return;
     applyState(event.detail as IntegrationsClientState);
   }
 
-  function handleCardMouseMove(event: MouseEvent) {
+  function handleCardMouseMove(event: MouseEvent) : void {
     const target = event.currentTarget as HTMLDivElement;
     const rect = target.getBoundingClientRect();
     const x = event.clientX - rect.left;
@@ -184,7 +184,7 @@
     }
   }
 
-  function handleCardMouseLeave(event: MouseEvent) {
+  function handleCardMouseLeave(event: MouseEvent) : void {
     const target = event.currentTarget as HTMLDivElement;
     target.style.transform = 'rotateX(0deg) rotateY(0deg)';
     if (shineRef) {
@@ -192,24 +192,24 @@
     }
   }
 
-  onMount(() => {
+  onMount(() : () => void => {
     applyState(initialState);
 
-    const handler = (event: Event) => handleStateUpdate(event);
+    const handler = (event: Event) : void => handleStateUpdate(event);
     window.addEventListener(`integrations-state:update:${channel}`, handler as EventListener);
 
-    return () => {
+    return () : void => {
       window.removeEventListener(`integrations-state:update:${channel}`, handler as EventListener);
     };
   });
 
-  $effect(() => {
+  $effect(() : (() => void) | undefined => {
     const element = headerRef;
     if (!element || typeof ResizeObserver === 'undefined') {
       return;
     }
 
-    const updateHeight = () => {
+    const updateHeight = () : void => {
       window.dispatchEvent(new CustomEvent('sticky-threshold', { detail: element.offsetHeight }));
     };
 
@@ -217,7 +217,7 @@
     const observer = new ResizeObserver(updateHeight);
     observer.observe(element);
 
-    return () => observer.disconnect();
+    return () : void => observer.disconnect();
   });
 </script>
 

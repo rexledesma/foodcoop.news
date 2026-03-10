@@ -41,7 +41,7 @@
     }
   }
 
-  function writeFavorites(favorites: string[]) {
+  function writeFavorites(favorites: string[]) : void {
     try {
       const snapshot = JSON.stringify(favorites);
       if (snapshot === state.favoritesSnapshot) return;
@@ -64,7 +64,7 @@
       return favoriteSyncAuthCheckPromise;
     }
 
-    favoriteSyncAuthCheckPromise = (async () => {
+    favoriteSyncAuthCheckPromise = (async () : Promise<boolean> => {
       try {
         const response = await fetch('/api/auth/get-session', {
           method: 'GET',
@@ -90,7 +90,7 @@
     return favoriteSyncAuthCheckPromise;
   }
 
-  async function syncFavoritesFromServer() {
+  async function syncFavoritesFromServer() : Promise<void> {
     if (isSyncingFavorites) return;
     if (!(await resolveFavoriteSyncAuth())) return;
     isSyncingFavorites = true;
@@ -115,9 +115,9 @@
     }
   }
 
-  async function toggleFavorite(name: string) {
+  async function toggleFavorite(name: string) : Promise<void> {
     const current = new Set(
-      (() => {
+      (() : string[] => {
         try {
           return parseFavorites(localStorage.getItem('produce-favorites'));
         } catch {
@@ -162,7 +162,7 @@
     isLoading: true,
     isRefreshing: false,
     error: '',
-    revalidateForPeriod: (_period: ProduceSWRPeriod) => {
+    revalidateForPeriod: (_period: ProduceSWRPeriod) : void => {
       void revalidateForPeriod(_period);
     },
     initialDateFilter: null as string | null,
@@ -171,7 +171,7 @@
     initialQuickFilter: null as ProduceQuickFilter | null,
     showSticky: getCurrentStickyVisibility(),
     favoritesSnapshot: '[]',
-    toggleFavorite: (name: string) => {
+    toggleFavorite: (name: string) : void => {
       void toggleFavorite(name);
     },
   };
@@ -186,13 +186,13 @@
     listName: string,
     items: PageData['newArrivals'],
     changeLabel: 'available' | 'unavailable',
-  ) {
+  ) : { '@context': string; '@type': string; name: string; numberOfItems: number; itemListElement: { '@type': string; position: number; item: { '@type': string; name: string; url: string; description: string; }; }[]; } {
     return {
       '@context': 'https://schema.org',
       '@type': 'ItemList',
       name: listName,
       numberOfItems: items.length,
-      itemListElement: items.map((item, index) => ({
+      itemListElement: items.map((item, index) : { '@type': string; position: number; item: { '@type': string; name: string; url: string; description: string; }; } => ({
         '@type': 'ListItem',
         position: index + 1,
         item: {
@@ -205,7 +205,7 @@
     };
   }
 
-  function dispatchState() {
+  function dispatchState() : void {
     window.dispatchEvent(
       new CustomEvent(`produce-analytics-state:update:${channel}`, {
         detail: state,
@@ -229,7 +229,7 @@
     return period === '5Y' || period === 'SINCE_2013';
   }
 
-  async function loadProduce({ refreshing, period }: { refreshing: boolean; period?: ProduceSWRPeriod }) {
+  async function loadProduce({ refreshing, period }: { refreshing: boolean; period?: ProduceSWRPeriod }) : Promise<void> {
     if (isFetching) return;
     isFetching = true;
 
@@ -282,7 +282,7 @@
     }
   }
 
-  async function revalidateForPeriod(period: ProduceSWRPeriod) {
+  async function revalidateForPeriod(period: ProduceSWRPeriod) : Promise<void> {
     if (!SWR_PERIODS.has(period)) return;
     const now = Date.now();
     const lastRefreshAt = periodRefreshAt.get(period) ?? 0;
@@ -291,13 +291,13 @@
     await loadProduce({ refreshing: true, period });
   }
 
-  onMount(() => {
-    const stickyVisibilityHandler = (event: Event) => {
+  onMount(() : () => void => {
+    const stickyVisibilityHandler = (event: Event) : void => {
       if (!(event instanceof CustomEvent)) return;
       state = { ...state, showSticky: Boolean(event.detail) };
       dispatchState();
     };
-    const authSessionChangedHandler = () => {
+    const authSessionChangedHandler = () : void => {
       canSyncFavoritesWithServer = null;
       favoriteSyncAuthCheckPromise = null;
       void syncFavoritesFromServer();
@@ -328,7 +328,7 @@
     window.addEventListener('sticky-visibility', stickyVisibilityHandler as EventListener);
     window.addEventListener('auth:session-changed', authSessionChangedHandler);
 
-    void (async () => {
+    void (async () : Promise<void> => {
       if (shouldRefreshImmediately) {
         await loadProduce({ refreshing: Boolean(cached) });
       } else {
@@ -341,13 +341,13 @@
       }
     })();
 
-    return () => {
+    return () : void => {
       window.removeEventListener('sticky-visibility', stickyVisibilityHandler as EventListener);
       window.removeEventListener('auth:session-changed', authSessionChangedHandler);
     };
   });
 
-  $effect(() => {
+  $effect(() : void => {
     if (typeof window === 'undefined') return;
 
     const nextDateFilter = page.url.searchParams.get('date');

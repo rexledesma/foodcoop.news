@@ -12,14 +12,14 @@ function escapeXml(value: string): string {
   return encode(value, { mode: 'specialChars' });
 }
 
-export function GET({ url }: { url: URL }) {
+export function GET({ url }: { url: URL }): Response {
   const origin = env.SITE_URL || url.origin;
-  const urls = INDEXABLE_PATHS.map((pathname) => toAbsoluteUrl(origin, pathname));
+  const urls = INDEXABLE_PATHS.map((pathname): string => toAbsoluteUrl(origin, pathname));
   const body = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 ${urls
   .map(
-    (entry) => `  <url>
+    (entry): string => `  <url>
     <loc>${escapeXml(entry)}</loc>
   </url>`,
   )

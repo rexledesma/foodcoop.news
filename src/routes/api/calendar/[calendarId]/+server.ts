@@ -7,7 +7,7 @@ const SHIFT_CALENDAR_URL =
 
 const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
 
-const normalizeText = (text: string) =>
+const normalizeText = (text: string): string =>
   text
     .toLowerCase()
     .replace(/\*+/g, '')
@@ -15,7 +15,7 @@ const normalizeText = (text: string) =>
     .replace(/\s+/g, ' ')
     .trim();
 
-const unfoldLines = (calendarText: string) => {
+const unfoldLines = (calendarText: string): string[] => {
   const rawLines = calendarText.split(/\r?\n/);
   const lines: string[] = [];
 
@@ -30,7 +30,9 @@ const unfoldLines = (calendarText: string) => {
   return lines;
 };
 
-const parseCalendar = (lines: string[]) => {
+const parseCalendar = (
+  lines: string[],
+): { header: string[]; events: string[][]; footer: string[] } => {
   const header: string[] = [];
   const footer: string[] = [];
   const events: string[][] = [];
@@ -67,8 +69,8 @@ const parseCalendar = (lines: string[]) => {
   return { header, events, footer };
 };
 
-const getSummary = (eventLines: string[]) => {
-  const summaryLine = eventLines.find((line) => line.startsWith('SUMMARY'));
+const getSummary = (eventLines: string[]): string => {
+  const summaryLine = eventLines.find((line): boolean => line.startsWith('SUMMARY'));
   if (!summaryLine) return '';
 
   const colonIndex = summaryLine.indexOf(':');
@@ -83,7 +85,7 @@ export async function GET({
 }: {
   params: { calendarId: string };
   request: Request;
-}) {
+}): Promise<Response> {
   try {
     const { calendarId } = params;
     if (!calendarId) {
@@ -108,15 +110,17 @@ export async function GET({
 
     const jobFilters: string[] = Array.isArray(profile.jobFilters) ? profile.jobFilters : [];
 
-    const normalizedFilters = jobFilters.map((filter) => normalizeText(filter)).filter(Boolean);
+    const normalizedFilters = jobFilters
+      .map((filter): string => normalizeText(filter))
+      .filter(Boolean);
 
     const filteredEvents =
       normalizedFilters.length === 0
         ? events
-        : events.filter((event) => {
+        : events.filter((event): boolean => {
             const summary = normalizeText(getSummary(event));
             if (!summary) return false;
-            return normalizedFilters.some((filter) => summary.includes(filter));
+            return normalizedFilters.some((filter): boolean => summary.includes(filter));
           });
 
     const filteredCalendar = [...header, ...filteredEvents.flat(), ...footer].join('\r\n');

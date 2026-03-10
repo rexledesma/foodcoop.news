@@ -54,7 +54,7 @@
   let swipeProgress = $state(0);
   let isSwipeActive = $state(false);
 
-  let onSignOut = $state<() => Promise<void>>(async () => {});
+  let onSignOut = $state<() => Promise<void>>(async () : Promise<void> => {});
 
   let mobileScrollRef = $state<HTMLDivElement | null>(null);
   let activeIndicatorLeft = $state(0);
@@ -68,11 +68,11 @@
   let produceFavoritesOutOfStockCount = $state(0);
   let showSidebarInstallAppButton = $state(false);
 
-  function closeSidebar() {
+  function closeSidebar() : void {
     isSidebarOpen = false;
   }
 
-  function toggleSidebar() {
+  function toggleSidebar() : void {
     isSidebarOpen = !isSidebarOpen;
     if (isSidebarOpen) {
       window.dispatchEvent(new CustomEvent('navigation:sidebar-opened'));
@@ -96,20 +96,20 @@
     return (isAppleMobile || isAndroidMobile) && 'serviceWorker' in navigator;
   }
 
-  function updateSidebarInstallAppButtonVisibility() {
+  function updateSidebarInstallAppButtonVisibility() : void {
     showSidebarInstallAppButton = !isStandaloneMode() && isMobileInstallCapableDevice();
   }
 
-  function openInstallPromptFromSidebar() {
+  function openInstallPromptFromSidebar() : void {
     window.dispatchEvent(new CustomEvent('pwa-install:show', { detail: { force: true, expandHowTo: true } }));
   }
 
-  async function handleSidebarSignOut() {
+  async function handleSidebarSignOut() : Promise<void> {
     closeSidebar();
     await onSignOut();
   }
 
-  async function hydrateProduceFavoritesSummary() {
+  async function hydrateProduceFavoritesSummary() : Promise<void> {
     if (typeof window === 'undefined') return;
     try {
       const response = await fetch('/api/me/produce-favorites/summary', {
@@ -164,7 +164,7 @@
     return href === '/' || href === '/produce' ? 'hover' : undefined;
   }
 
-  function applyState(next: NavigationClientState) {
+  function applyState(next: NavigationClientState) : void {
     pathname = next.pathname;
     loginHref = next.loginHref;
     showSticky = next.showSticky;
@@ -180,7 +180,7 @@
     onSignOut = next.onSignOut;
   }
 
-  function handleStateUpdate(event: Event) {
+  function handleStateUpdate(event: Event) : void {
     if (!(event instanceof CustomEvent)) return;
     applyState(event.detail as NavigationClientState);
   }
@@ -202,7 +202,7 @@
 
     const routeItems = Array.from(container.querySelectorAll('[data-nav-href]'));
     const routeItem = routeItems.find(
-      (node) => node.getAttribute('data-nav-href') === normalized && isVisible(node),
+      (node) : boolean => node.getAttribute('data-nav-href') === normalized && isVisible(node),
     );
     if (!routeItem) return null;
 
@@ -211,13 +211,13 @@
     return label.getBoundingClientRect();
   }
 
-  function centerCurrentRouteInMobileNav() {
+  function centerCurrentRouteInMobileNav() : void {
     const container = mobileScrollRef;
     if (!container) return;
 
     const routeItems = Array.from(container.querySelectorAll('[data-nav-href]'));
     const activeItem = routeItems.find(
-      (node) => node.getAttribute('data-nav-href') === pathname && isVisible(node),
+      (node) : boolean => node.getAttribute('data-nav-href') === pathname && isVisible(node),
     );
     if (!activeItem) return;
 
@@ -239,7 +239,7 @@
     return Math.min(maxLeft, Math.max(0, nextLeft));
   }
 
-  function updateActiveRouteIndicator() {
+  function updateActiveRouteIndicator() : void {
     const container = mobileScrollRef;
     if (!container || !pathname) {
       showActiveIndicator = false;
@@ -275,9 +275,9 @@
     showActiveIndicator = true;
   }
 
-  onMount(() => {
+  onMount(() : () => void => {
     const coarsePointerMedia = window.matchMedia('(pointer: coarse)');
-    const updateHistoryReplaceMode = () => {
+    const updateHistoryReplaceMode = () : void => {
       shouldReplaceHistoryOnMobile = coarsePointerMedia.matches || navigator.maxTouchPoints > 0;
     };
     updateHistoryReplaceMode();
@@ -285,18 +285,18 @@
 
     applyState(initialState);
 
-    const handler = (event: Event) => handleStateUpdate(event);
-    const syncFavorites = () => {
+    const handler = (event: Event) : void => handleStateUpdate(event);
+    const syncFavorites = () : void => {
       if (!isAuthenticated) return;
       void hydrateProduceFavoritesSummary();
     };
-    const handleEscapeKey = (event: KeyboardEvent) => {
+    const handleEscapeKey = (event: KeyboardEvent) : void => {
       if (event.key === 'Escape') {
         closeSidebar();
       }
     };
     const displayModeMedia = window.matchMedia('(display-mode: standalone)');
-    const handleDisplayModeChange = () => {
+    const handleDisplayModeChange = () : void => {
       updateSidebarInstallAppButtonVisibility();
     };
     window.addEventListener(`navigation-state:update:${channel}`, handler as EventListener);
@@ -309,13 +309,13 @@
     void hydrateProduceFavoritesSummary();
 
     const container = mobileScrollRef;
-    const handleScroll = () => updateActiveRouteIndicator();
-    const handleResize = () => updateActiveRouteIndicator();
+    const handleScroll = () : void => updateActiveRouteIndicator();
+    const handleResize = () : void => updateActiveRouteIndicator();
     container?.addEventListener('scroll', handleScroll, { passive: true });
     window.addEventListener('resize', handleResize);
     requestAnimationFrame(updateActiveRouteIndicator);
 
-    return () => {
+    return () : void => {
       coarsePointerMedia.removeEventListener('change', updateHistoryReplaceMode);
       window.removeEventListener(`navigation-state:update:${channel}`, handler as EventListener);
       window.removeEventListener('produce-favorites', syncFavorites);
@@ -328,15 +328,15 @@
     };
   });
 
-  $effect(() => {
+  $effect(() : void => {
     if (!pathname) return;
-    requestAnimationFrame(() => {
+    requestAnimationFrame(() : void => {
       centerCurrentRouteInMobileNav();
       requestAnimationFrame(updateActiveRouteIndicator);
     });
   });
 
-  $effect(() => {
+  $effect(() : void => {
     const swipeSignature = `${swipeFromPath ?? ''}|${swipeToPath ?? ''}|${swipeProgress}|${
       isSwipeActive ? 1 : 0
     }`;
@@ -344,12 +344,12 @@
     requestAnimationFrame(updateActiveRouteIndicator);
   });
 
-  $effect(() => {
+  $effect(() : void => {
     if (!pathname) return;
     closeSidebar();
   });
 
-  $effect(() => {
+  $effect(() : (() => void) | undefined => {
     if (typeof document === 'undefined') return;
     if (!isSidebarOpen) return;
 
@@ -361,14 +361,14 @@
     document.body.style.overflow = 'hidden';
     document.body.style.overscrollBehavior = 'none';
 
-    return () => {
+    return () : void => {
       document.documentElement.style.overflow = originalHtmlOverflow;
       document.body.style.overflow = originalBodyOverflow;
       document.body.style.overscrollBehavior = originalBodyOverscroll;
     };
   });
 
-  $effect(() => {
+  $effect(() : void => {
     if (typeof window === 'undefined') return;
     if (!isAuthenticated) {
       produceFavoritesCount = 0;

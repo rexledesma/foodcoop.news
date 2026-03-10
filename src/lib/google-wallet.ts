@@ -54,7 +54,29 @@ function createGenericObject(params: {
   memberId: string;
   memberName: string;
   serialNumber: string;
-}) {
+}): {
+  id: string;
+  classId: string;
+  cardTitle: { defaultValue: { language: string; value: string } };
+  subheader: { defaultValue: { language: string; value: string } };
+  header: { defaultValue: { language: string; value: string } };
+  textModulesData: {
+    id: string;
+    localizedHeader: { defaultValue: { language: string; value: string } };
+    localizedBody: { defaultValue: { language: string; value: string } };
+  }[];
+  barcode: { type: string; value: string; alternateText: string };
+  hexBackgroundColor: string;
+  logo: {
+    sourceUri: { uri: string };
+    contentDescription: { defaultValue: { language: string; value: string } };
+  };
+  appLinkData: { uri: { uri: string; description: string } };
+  wideLogo: {
+    sourceUri: { uri: string };
+    contentDescription: { defaultValue: { language: string; value: string } };
+  };
+} {
   const { memberId, memberName, serialNumber } = params;
   const objectId = `${ISSUER_ID}.${serialNumber}`;
 
@@ -171,7 +193,45 @@ function buildGoogleWalletClaims(params: {
   memberId: string;
   memberName: string;
   serialNumber: string;
-}) {
+}): {
+  claims: {
+    iss: string;
+    aud: string;
+    iat: number;
+    exp: number;
+    origins: string[];
+    typ: string;
+    payload: {
+      genericObjects: {
+        id: string;
+        classId: string;
+        cardTitle: { defaultValue: { language: string; value: string } };
+        subheader: { defaultValue: { language: string; value: string } };
+        header: { defaultValue: { language: string; value: string } };
+        textModulesData: {
+          id: string;
+          localizedHeader: { defaultValue: { language: string; value: string } };
+          localizedBody: { defaultValue: { language: string; value: string } };
+        }[];
+        barcode: { type: string; value: string; alternateText: string };
+        hexBackgroundColor: string;
+        logo: {
+          sourceUri: { uri: string };
+          contentDescription: { defaultValue: { language: string; value: string } };
+        };
+        appLinkData: { uri: { uri: string; description: string } };
+        wideLogo: {
+          sourceUri: { uri: string };
+          contentDescription: { defaultValue: { language: string; value: string } };
+        };
+      }[];
+    };
+  };
+  credentials: { client_email: string; private_key: string; private_key_id: string };
+  classId: string;
+  objectId: string;
+  serialNumber: string;
+} {
   const credentials = getServiceAccountCredentials();
   const serialNumber = process.env.NODE_ENV === 'production' ? params.serialNumber : randomUUID();
   const genericObject = createGenericObject({

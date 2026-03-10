@@ -7,7 +7,7 @@ import {
 
 // POST /api/cron/backfill-produce
 // Regenerates all monthly parquet files from stored HTML snapshots
-export async function POST({ request }: { request: Request }) {
+export async function POST({ request }: { request: Request }): Promise<Response> {
   const authHeader = request.headers.get('authorization');
   if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
     return Response.json({ error: 'Unauthorized' }, { status: 401 });
@@ -46,7 +46,7 @@ export async function POST({ request }: { request: Request }) {
 
     invalidateProduceMetadataCache();
 
-    const totalItems = results.reduce((sum, r) => sum + r.itemCount, 0);
+    const totalItems = results.reduce((sum, r): number => sum + r.itemCount, 0);
 
     return Response.json({
       success: true,

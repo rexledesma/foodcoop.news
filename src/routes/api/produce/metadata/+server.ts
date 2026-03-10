@@ -1,7 +1,7 @@
 import { list } from '@/lib/s3-storage';
 import { getCachedProduceMetadata } from '@/lib/produce-metadata-cache';
 
-function getCurrentYear() {
+function getCurrentYear(): string {
   return new Date()
     .toLocaleDateString('en-CA', {
       timeZone: 'America/New_York',
@@ -17,12 +17,16 @@ const DERIVED_PATH_PATTERNS = {
 type DerivedKey = keyof typeof DERIVED_PATH_PATTERNS;
 
 function pickLatestBlob<T extends { uploadedAt: string | Date }>(blobs: T[]): T {
-  return blobs.reduce((latest, blob) =>
-    new Date(blob.uploadedAt).getTime() > new Date(latest.uploadedAt).getTime() ? blob : latest,
+  return blobs.reduce(
+    (latest, blob): T =>
+      new Date(blob.uploadedAt).getTime() > new Date(latest.uploadedAt).getTime() ? blob : latest,
   );
 }
 
-async function loadProduceMetadata() {
+async function loadProduceMetadata(): Promise<{
+  years: { year: string; url: string; size: number; isCurrentYear: boolean }[];
+  derived: Record<'ytd' | 'longRangeDownsampled', { url: string; size: number } | null>;
+}> {
   const [{ blobs: yearlyBlobs }, { blobs: derivedBlobs }] = await Promise.all([
     list({
       prefix: 'produce-data-yearly/',
@@ -58,35 +62,41 @@ async function loadProduceMetadata() {
   }
 
   const years = Array.from(byYear.entries())
-    .map(([year, blob]) => ({
+    .map(([year, blob]): { year: string; url: string; size: number; isCurrentYear: boolean } => ({
       year,
       url: blob.url,
       size: blob.size,
       isCurrentYear: year === currentYear,
     }))
-    .sort((a, b) => b.year.localeCompare(a.year));
+    .sort((a, b): number => b.year.localeCompare(a.year));
 
   const derived = Object.fromEntries(
-    (Object.keys(DERIVED_PATH_PATTERNS) as DerivedKey[]).map((key) => {
-      const matchingDerivedBlobs = derivedBlobs.filter((blob) =>
-        DERIVED_PATH_PATTERNS[key].test(blob.pathname),
-      );
-      if (matchingDerivedBlobs.length === 0) return [key, null];
-      const latest = pickLatestBlob(matchingDerivedBlobs);
-      return [
+    (Object.keys(DERIVED_PATH_PATTERNS) as DerivedKey[]).map(
+      (
         key,
-        {
-          url: latest.url,
-          size: latest.size,
-        },
-      ];
-    }),
+      ):
+        | ['ytd' | 'longRangeDownsampled', null]
+        | ['ytd' | 'longRangeDownsampled', { url: string; size: number }] => {
+        const matchingDerivedBlobs = derivedBlobs.filter((blob): boolean =>
+          DERIVED_PATH_PATTERNS[key].test(blob.pathname),
+        );
+        if (matchingDerivedBlobs.length === 0) return [key, null];
+        const latest = pickLatestBlob(matchingDerivedBlobs);
+        return [
+          key,
+          {
+            url: latest.url,
+            size: latest.size,
+          },
+        ];
+      },
+    ),
   ) as Record<DerivedKey, { url: string; size: number } | null>;
 
   return { years, derived };
 }
 
-export async function GET() {
+export async function GET(): Promise<Response> {
   try {
     const data = await getCachedProduceMetadata(loadProduceMetadata);
 

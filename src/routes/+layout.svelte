@@ -67,15 +67,15 @@
     swipeToPath: null as string | null,
     swipeProgress: 0,
     isSwipeActive: false,
-    onToggleDropdown: () => {
+    onToggleDropdown: () : void => {
       state = { ...state, isDropdownOpen: !state.isDropdownOpen };
       dispatchState();
     },
-    onCloseDropdown: () => {
+    onCloseDropdown: () : void => {
       state = { ...state, isDropdownOpen: false };
       dispatchState();
     },
-    onSignOut: async () => {
+    onSignOut: async () : Promise<void> => {
       await signOut();
       const pathname = $page.url.pathname;
       location.href = withNextParam('/login', pathname);
@@ -112,7 +112,7 @@
     return JSON.stringify(payload).replaceAll('<', '\\u003c');
   }
 
-  function dispatchState() {
+  function dispatchState() : void {
     if (typeof window === 'undefined') return;
     window.dispatchEvent(new CustomEvent(`navigation-state:update:${channel}`, { detail: state }));
   }
@@ -168,19 +168,19 @@
     return isSwipeSnapAnimating ? SWIPE_SNAP_DURATION_MS : 0;
   }
 
-  function clearSwipeSnapTimer() {
+  function clearSwipeSnapTimer() : void {
     if (!swipeSnapTimer) return;
     clearTimeout(swipeSnapTimer);
     swipeSnapTimer = null;
   }
 
-  function clearSwipeCommitTimer() {
+  function clearSwipeCommitTimer() : void {
     if (!swipeCommitTimer) return;
     clearTimeout(swipeCommitTimer);
     swipeCommitTimer = null;
   }
 
-  function resetNavSwipeState() {
+  function resetNavSwipeState() : void {
     if (!state.isSwipeActive && state.swipeFromPath === null && state.swipeToPath === null) return;
     state = {
       ...state,
@@ -192,7 +192,7 @@
     dispatchState();
   }
 
-  function resetSwipeVisualState() {
+  function resetSwipeVisualState() : void {
     clearSwipeSnapTimer();
     clearSwipeCommitTimer();
     isSwipeDragging = false;
@@ -203,13 +203,13 @@
     resetNavSwipeState();
   }
 
-  function animateSwipeBack() {
+  function animateSwipeBack() : void {
     isSwipeDragging = false;
     isSwipeSnapAnimating = true;
     swipeForegroundOffsetX = 0;
     swipePreviewOffsetX = 0;
     clearSwipeSnapTimer();
-    swipeSnapTimer = setTimeout(() => {
+    swipeSnapTimer = setTimeout(() : void => {
       isSwipeSnapAnimating = false;
       swipePreviewUrl = '';
       swipeSnapTimer = null;
@@ -288,7 +288,7 @@
     return SITE_DESCRIPTION;
   }
 
-  function applyAuthMetadata(metadata: AuthNavMetadata) {
+  function applyAuthMetadata(metadata: AuthNavMetadata) : void {
     state = {
       ...state,
       pathname: $page.url.pathname,
@@ -307,7 +307,7 @@
       return authMetadataInFlight;
     }
 
-    authMetadataInFlight = (async () => {
+    authMetadataInFlight = (async () : Promise<AuthNavMetadata> => {
       const sessionResponse = await fetch('/api/auth/get-session', { cache: 'no-store' });
       const session = sessionResponse.ok
         ? ((await sessionResponse.json()) as { user?: { name?: string; email?: string } } | null)
@@ -338,7 +338,7 @@
     }
   }
 
-  async function hydrateNavState() {
+  async function hydrateNavState() : Promise<void> {
     try {
       const fresh = await fetchAuthMetadata();
       applyAuthMetadata(fresh);
@@ -365,14 +365,14 @@
 
   $: isSwipePreviewMode = $page.url.searchParams.get('swipePreview') === '1';
 
-  onMount(() => {
+  onMount(() : (() => void) | undefined => {
     if (isSwipePreviewMode) {
       return;
     }
 
     hasDismissedPwaInstall = localStorage.getItem(PWA_DISMISSED_STORAGE_KEY) === 'true';
 
-    void import('@khmyznikov/pwa-install').then(() => {
+    void import('@khmyznikov/pwa-install').then(() : void => {
       isPwaInstallReady = true;
     });
 
@@ -380,12 +380,12 @@
     initStickyVisibility($page.url.pathname);
     void prefetchProduceCache();
 
-    const stickyVisibilityHandler = (event: Event) => {
+    const stickyVisibilityHandler = (event: Event) : void => {
       if (!(event instanceof CustomEvent)) return;
       state = { ...state, showSticky: Boolean(event.detail) };
       dispatchState();
     };
-    const sidebarOpenedRevalidateHandler = () => {
+    const sidebarOpenedRevalidateHandler = () : void => {
       void hydrateNavState();
     };
 
@@ -396,14 +396,14 @@
     dispatchState();
     void hydrateNavState();
 
-    const isStandaloneMode = () =>
+    const isStandaloneMode = () : boolean =>
       window.matchMedia('(display-mode: standalone)').matches ||
       (window.navigator as Navigator & { standalone?: boolean }).standalone === true;
 
     let interactionCount = 0;
     let hasCountedScrollInteraction = false;
 
-    const showPwaInstallDialog = (event?: Event) => {
+    const showPwaInstallDialog = (event?: Event) : void => {
       const eventDetail =
         event instanceof CustomEvent
           ? ((event.detail as { force?: boolean; expandHowTo?: boolean } | null) ?? null)
@@ -416,7 +416,7 @@
       shouldOpenPwaInstallDialog = true;
     };
 
-    const handleInteraction = (event: Event) => {
+    const handleInteraction = (event: Event) : void => {
       if (hasAutoShownPwaInstall) return;
       if (event.type === 'scroll') {
         if (hasCountedScrollInteraction) return;
@@ -438,7 +438,7 @@
     window.addEventListener('pwa-install:show', showPwaInstallDialog);
 
     let lastTouchEndAt = 0;
-    const preventDoubleTapZoom = (event: TouchEvent) => {
+    const preventDoubleTapZoom = (event: TouchEvent) : void => {
       if (event.touches.length > 0) return;
       const now = Date.now();
       if (now - lastTouchEndAt <= DOUBLE_TAP_DELAY_MS) {
@@ -446,19 +446,19 @@
       }
       lastTouchEndAt = now;
     };
-    const preventDoubleClickZoom = (event: MouseEvent) => {
+    const preventDoubleClickZoom = (event: MouseEvent) : void => {
       event.preventDefault();
     };
 
     document.addEventListener('touchend', preventDoubleTapZoom, { passive: false });
     document.addEventListener('dblclick', preventDoubleClickZoom);
 
-    const isMobileTouchInput = () =>
+    const isMobileTouchInput = () : boolean =>
       window.matchMedia('(pointer: coarse)').matches || navigator.maxTouchPoints > 0;
 
-    const enforceMobileReplaceState = () => {
+    const enforceMobileReplaceState = () : () => void => {
       if (!isMobileTouchInput()) {
-        return () => {};
+        return () : void => {};
       }
 
       // On mobile, always replace history entries so iOS/Android edge-swipe
@@ -466,11 +466,11 @@
       const originalPushState = window.history.pushState;
 
       const mobileHistory = window.history as History & { pushState: History['pushState'] };
-      mobileHistory.pushState = ((data: unknown, unused: string, url?: string | URL | null) => {
+      mobileHistory.pushState = ((data: unknown, unused: string, url?: string | URL | null) : void => {
         window.history.replaceState(data, unused, url);
       }) as History['pushState'];
 
-      return () => {
+      return () : void => {
         mobileHistory.pushState = originalPushState;
       };
     };
@@ -484,15 +484,15 @@
       maxVerticalDriftPx: SWIPE_MAX_VERTICAL_DRIFT_PX,
       peekMaxTravelRatio: SWIPE_PEEK_MAX_TRAVEL_RATIO,
       commitRatio: SWIPE_COMMIT_RATIO,
-      getViewportWidth: () => Math.max(window.innerWidth, 1),
-      canStart: () => !isSwipeNavigationInFlight,
+      getViewportWidth: () : number => Math.max(window.innerWidth, 1),
+      canStart: () : boolean => !isSwipeNavigationInFlight,
       isMobileTouchInput,
       isEditableElement,
       getSwipeTarget,
-      preloadRoute: (route) => {
+      preloadRoute: (route) : void => {
         void preloadData(route);
       },
-      onStart: () => {
+      onStart: () : void => {
         clearSwipeSnapTimer();
         clearSwipeCommitTimer();
         isSwipeDragging = false;
@@ -502,13 +502,13 @@
         swipeActiveTargetRoute = null;
         resetNavSwipeState();
       },
-      onPreviewRoute: (route) => {
+      onPreviewRoute: (route) : void => {
         const nextPreviewUrl = getSwipePreviewRouteUrl(route);
         if (swipePreviewUrl === nextPreviewUrl) return;
         swipePreviewUrl = nextPreviewUrl;
         swipeActiveTargetRoute = normalizePathname(route);
       },
-      onDrag: ({ step, travelPx, progress }) => {
+      onDrag: ({ step, travelPx, progress }) : void => {
         isSwipeDragging = true;
         swipeForegroundOffsetX = step * travelPx;
         swipePreviewOffsetX = step === 1 ? -24 * (1 - progress) : 24 * (1 - progress);
@@ -524,13 +524,13 @@
         };
         dispatchState();
       },
-      onNoTarget: () => {
+      onNoTarget: () : void => {
         isSwipeDragging = false;
         swipeForegroundOffsetX = 0;
         swipePreviewOffsetX = 0;
         resetNavSwipeState();
       },
-      onCommit: ({ step, route }) => {
+      onCommit: ({ step, route }) : void => {
         isSwipeDragging = false;
         isSwipeSnapAnimating = true;
         swipePreviewOffsetX = 0;
@@ -545,18 +545,18 @@
         dispatchState();
         isSwipeNavigationInFlight = true;
         clearSwipeCommitTimer();
-        swipeCommitTimer = setTimeout(() => {
+        swipeCommitTimer = setTimeout(() : void => {
           swipeCommitTimer = null;
           void goto(route, {
             keepFocus: true,
             noScroll: true,
-          }).finally(() => {
+          }).finally(() : void => {
             isSwipeNavigationInFlight = false;
             resetSwipeVisualState();
           });
         }, SWIPE_SNAP_DURATION_MS);
       },
-      onCancel: () => {
+      onCancel: () : void => {
         animateSwipeBack();
         resetNavSwipeState();
       },
@@ -568,7 +568,7 @@
     document.addEventListener('touchend', handleTouchEnd, { passive: false });
     document.addEventListener('touchcancel', handleTouchCancel, { passive: true });
 
-    return () => {
+    return () : void => {
       window.removeEventListener('sticky-visibility', stickyVisibilityHandler as EventListener);
       window.removeEventListener('navigation:sidebar-opened', sidebarOpenedRevalidateHandler);
       window.removeEventListener('pointerdown', handleInteraction);
@@ -586,7 +586,7 @@
     };
   });
 
-  function handlePwaUserChoiceResult(event: Event) {
+  function handlePwaUserChoiceResult(event: Event) : void {
     if (!(event instanceof CustomEvent)) return;
     if (event.detail?.message !== 'dismissed') return;
 

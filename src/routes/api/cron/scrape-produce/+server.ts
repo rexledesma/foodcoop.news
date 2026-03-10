@@ -4,7 +4,7 @@ import { invalidateProduceMetadataCache } from '@/lib/produce-metadata-cache';
 import { regenerateYtdDerivedParquet, upsertYearParquetForDate } from '@/lib/produce-parquet-utils';
 
 // https://vercel.com/docs/cron-jobs/manage-cron-jobs#securing-cron-jobs
-export async function GET({ request }: { request: Request }) {
+export async function GET({ request }: { request: Request }): Promise<Response> {
   const authHeader = request.headers.get('authorization');
   if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
     return Response.json({ error: 'Unauthorized' }, { status: 401 });

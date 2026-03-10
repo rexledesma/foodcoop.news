@@ -39,7 +39,7 @@
     pendingSources: 0,
     showSticky: getCurrentStickyVisibility(),
     favoritesSnapshot: '[]',
-    fetchFeeds: () => loadFeeds(),
+    fetchFeeds: () : Promise<void> => loadFeeds(),
   };
 
   const initialState = state;
@@ -48,13 +48,13 @@
     return JSON.stringify(payload).replaceAll('<', '\\u003c');
   }
 
-  function buildEventItemList(listName: string, events: DiscoverJsonLdEvent[]) {
+  function buildEventItemList(listName: string, events: DiscoverJsonLdEvent[]) : { '@context': string; '@type': string; name: string; numberOfItems: number; itemListElement: { '@type': string; position: number; item: { location?: { address?: string | undefined; name?: string | undefined; '@type': string; } | undefined; description?: string | undefined; '@type': string; name: string; startDate: string; url: string; }; }[]; } {
     return {
       '@context': 'https://schema.org',
       '@type': 'ItemList',
       name: listName,
       numberOfItems: events.length,
-      itemListElement: events.map((event, index) => {
+      itemListElement: events.map((event, index) : { '@type': string; position: number; item: { location?: { address?: string | undefined; name?: string | undefined; '@type': string; } | undefined; description?: string | undefined; '@type': string; name: string; startDate: string; url: string; }; } => {
         const location =
           event.venueName || event.venueAddress
             ? {
@@ -80,13 +80,13 @@
     };
   }
 
-  function buildNewsItemList(listName: string, newsItems: DiscoverJsonLdNews[]) {
+  function buildNewsItemList(listName: string, newsItems: DiscoverJsonLdNews[]) : { '@context': string; '@type': string; name: string; numberOfItems: number; itemListElement: { '@type': string; position: number; item: { description?: string | undefined; '@type': string; headline: string; datePublished: string; url: string; }; }[]; } {
     return {
       '@context': 'https://schema.org',
       '@type': 'ItemList',
       name: listName,
       numberOfItems: newsItems.length,
-      itemListElement: newsItems.map((newsItem, index) => ({
+      itemListElement: newsItems.map((newsItem, index) : { '@type': string; position: number; item: { description?: string | undefined; '@type': string; headline: string; datePublished: string; url: string; }; } => ({
         '@type': 'ListItem',
         position: index + 1,
         item: {
@@ -100,13 +100,13 @@
     };
   }
 
-  function readFavoritesSnapshot() {
+  function readFavoritesSnapshot() : string {
     const local = localStorage.getItem('produce-favorites');
     const cache = localStorage.getItem('produce-favorites-cache');
     return local ?? cache ?? '[]';
   }
 
-  function writeFavoritesSnapshot(favorites: string[]) {
+  function writeFavoritesSnapshot(favorites: string[]) : void {
     try {
       const snapshot = JSON.stringify(favorites);
       localStorage.setItem('produce-favorites', snapshot);
@@ -120,7 +120,7 @@
     }
   }
 
-  async function syncFavoritesFromServer() {
+  async function syncFavoritesFromServer() : Promise<void> {
     try {
       const response = await fetch('/api/me/produce-favorites', {
         method: 'GET',
@@ -135,34 +135,34 @@
     }
   }
 
-  function dispatchState() {
+  function dispatchState() : void {
     window.dispatchEvent(new CustomEvent(`discover-feed-state:update:${channel}`, { detail: state }));
   }
 
-  function sortAndPrune(items: FeedItem[]) {
+  function sortAndPrune(items: FeedItem[]) : FeedItem[] {
     const fortyFiveDaysAgo = new Date();
     fortyFiveDaysAgo.setDate(fortyFiveDaysAgo.getDate() - 45);
     const fortyFiveDaysAhead = new Date();
     fortyFiveDaysAhead.setDate(fortyFiveDaysAhead.getDate() + 45);
 
     return [...items]
-      .sort((a, b) => b.date.getTime() - a.date.getTime())
-      .filter((item) => item.date >= fortyFiveDaysAgo && item.date <= fortyFiveDaysAhead);
+      .sort((a, b) : number => b.date.getTime() - a.date.getTime())
+      .filter((item) : boolean => item.date >= fortyFiveDaysAgo && item.date <= fortyFiveDaysAhead);
   }
 
-  async function loadFeeds() {
+  async function loadFeeds() : Promise<void> {
     const token = ++loadFeedToken;
 
     const parseAndDedupe = (payload: FeedAggregatorResponse): FeedItem[] => {
       const parsedItems = (payload.items ?? [])
         .map(
-          (item) =>
+          (item) : FeedItem =>
             ({
               ...item,
               date: new Date(item.date),
             }) as FeedItem,
         )
-        .filter((item) => !Number.isNaN(item.date.getTime()));
+        .filter((item) : boolean => !Number.isNaN(item.date.getTime()));
 
       const deduped: FeedItem[] = [];
       const seen = new Set<string>();
@@ -175,7 +175,7 @@
       return deduped;
     };
 
-    const isStale = () => token !== loadFeedToken;
+    const isStale = () : boolean => token !== loadFeedToken;
 
     state = {
       ...state,
@@ -190,13 +190,13 @@
     const mergedItems = new Map<string, FeedItem>();
     let pendingGroups: number = FEED_SOURCE_GROUPS.length;
 
-    const groupRequests = FEED_SOURCE_GROUPS.map(async (group) => {
+    const groupRequests = FEED_SOURCE_GROUPS.map(async (group) : Promise<void> => {
       const params = new URLSearchParams();
       params.set('sources', group.join(','));
 
       try {
         const response = await fetch(`/api/feed?${params.toString()}`);
-        const payload = (await response.json().catch(() => ({}))) as FeedAggregatorResponse;
+        const payload = (await response.json().catch(() : Record<string, never> => ({}))) as FeedAggregatorResponse;
         const items = parseAndDedupe(payload);
         const successCount = payload.successfulSources?.length ?? 0;
 
@@ -231,14 +231,14 @@
     await Promise.allSettled(groupRequests);
   }
 
-  onMount(() => {
-    const stickyVisibilityHandler = (event: Event) => {
+  onMount(() : () => void => {
+    const stickyVisibilityHandler = (event: Event) : void => {
       if (!(event instanceof CustomEvent)) return;
       state = { ...state, showSticky: Boolean(event.detail) };
       dispatchState();
     };
 
-    const syncFavorites = () => {
+    const syncFavorites = () : void => {
       state = { ...state, favoritesSnapshot: readFavoritesSnapshot() };
       dispatchState();
     };
@@ -253,7 +253,7 @@
     window.addEventListener('produce-favorites-cache', syncFavorites);
     window.addEventListener('storage', syncFavorites);
 
-    return () => {
+    return () : void => {
       window.removeEventListener('sticky-visibility', stickyVisibilityHandler as EventListener);
       window.removeEventListener('produce-favorites', syncFavorites);
       window.removeEventListener('produce-favorites-cache', syncFavorites);

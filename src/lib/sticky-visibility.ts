@@ -18,7 +18,7 @@ let reverseScrollDistance = 0;
 let revealTimer: number | null = null;
 let rafId: number | null = null;
 
-function clearRevealTimer() {
+function clearRevealTimer(): void {
   if (revealTimer !== null) {
     window.clearTimeout(revealTimer);
     revealTimer = null;
@@ -29,18 +29,18 @@ function computedVisibility(): boolean {
   return isTrackedRoute ? showSticky || forceSticky : true;
 }
 
-function emitVisibility() {
+function emitVisibility(): void {
   window.dispatchEvent(new CustomEvent('sticky-visibility', { detail: computedVisibility() }));
 }
 
-function scheduleRevealIfEligible() {
+function scheduleRevealIfEligible(): void {
   clearRevealTimer();
   if (!revealOnUpStop) return;
   if (isTouchInteracting) return;
   if (lastScrollDirection !== 'up') return;
   if (reverseScrollDistance < REVEAL_ON_UP_MIN_REVERSE_SCROLL_PX) return;
 
-  revealTimer = window.setTimeout(() => {
+  revealTimer = window.setTimeout((): void => {
     revealTimer = null;
     if (!isTouchInteracting && window.scrollY > stickyThreshold && !showSticky) {
       showSticky = true;
@@ -49,7 +49,7 @@ function scheduleRevealIfEligible() {
   }, REVEAL_ON_UP_SCROLL_STOP_DELAY_MS);
 }
 
-function updateFromScroll() {
+function updateFromScroll(): void {
   const currentY = window.scrollY;
   const delta = currentY - lastScrollY;
   const absDelta = Math.abs(delta);
@@ -108,7 +108,7 @@ function updateFromScroll() {
   }
 }
 
-function resetRouteState() {
+function resetRouteState(): void {
   stickyThreshold = 0;
   lastScrollY = window.scrollY;
   showSticky = true;
@@ -118,21 +118,21 @@ function resetRouteState() {
   clearRevealTimer();
 }
 
-function bindGlobalListeners() {
-  window.addEventListener('force-sticky', (event) => {
+function bindGlobalListeners(): void {
+  window.addEventListener('force-sticky', (event): void => {
     if (!(event instanceof CustomEvent)) return;
     forceSticky = Boolean(event.detail);
     emitVisibility();
   });
 
-  window.addEventListener('hide-sticky', () => {
+  window.addEventListener('hide-sticky', (): void => {
     if (window.scrollY <= stickyThreshold) return;
     if (!showSticky) return;
     showSticky = false;
     emitVisibility();
   });
 
-  window.addEventListener('sticky-threshold', (event) => {
+  window.addEventListener('sticky-threshold', (event): void => {
     if (!(event instanceof CustomEvent)) return;
     const nextThreshold = Number(event.detail);
     stickyThreshold = Number.isFinite(nextThreshold) ? Math.max(0, nextThreshold) : 0;
@@ -140,11 +140,11 @@ function bindGlobalListeners() {
 
   window.addEventListener(
     'scroll',
-    () => {
+    (): void => {
       if (!isTrackedRoute) return;
       if (rafId !== null) return;
 
-      rafId = window.requestAnimationFrame(() => {
+      rafId = window.requestAnimationFrame((): void => {
         rafId = null;
         updateFromScroll();
       });
@@ -154,7 +154,7 @@ function bindGlobalListeners() {
 
   window.addEventListener(
     'touchstart',
-    () => {
+    (): void => {
       if (!revealOnUpStop) return;
       isTouchInteracting = true;
       clearRevealTimer();
@@ -162,7 +162,7 @@ function bindGlobalListeners() {
     { passive: true },
   );
 
-  const onTouchEnd = () => {
+  const onTouchEnd = (): void => {
     if (!revealOnUpStop) return;
     isTouchInteracting = false;
     scheduleRevealIfEligible();
@@ -172,7 +172,7 @@ function bindGlobalListeners() {
   window.addEventListener('touchcancel', onTouchEnd, { passive: true });
 }
 
-export function initStickyVisibility(pathname: string) {
+export function initStickyVisibility(pathname: string): void {
   if (typeof window === 'undefined') return;
   if (!initialized) {
     bindGlobalListeners();
@@ -181,7 +181,7 @@ export function initStickyVisibility(pathname: string) {
   setStickyVisibilityRoute(pathname);
 }
 
-export function setStickyVisibilityRoute(pathname: string) {
+export function setStickyVisibilityRoute(pathname: string): void {
   if (typeof window === 'undefined') return;
 
   isTrackedRoute = TRACKED_ROUTES.has(pathname);
@@ -194,7 +194,7 @@ export function setStickyVisibilityRoute(pathname: string) {
     rafId = null;
   }
 
-  rafId = window.requestAnimationFrame(() => {
+  rafId = window.requestAnimationFrame((): void => {
     rafId = null;
     showSticky = true;
     emitVisibility();
@@ -204,7 +204,7 @@ export function setStickyVisibilityRoute(pathname: string) {
   });
 }
 
-export function getCurrentStickyVisibility() {
+export function getCurrentStickyVisibility(): boolean {
   if (typeof window === 'undefined') return true;
   return computedVisibility();
 }

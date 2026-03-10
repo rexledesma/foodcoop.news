@@ -18,7 +18,7 @@
   const DRAFT_STORAGE_KEY = 'integrations:draft';
   const NOTIFICATIONS_ALLOWED_EMAILS = (import.meta.env.NEXT_PUBLIC_NOTIFICATIONS_ALLOWED_EMAILS ?? '')
     .split(',')
-    .map((email: string) => email.trim())
+    .map((email: string) : string => email.trim())
     .filter(Boolean);
   const SHIFT_JOB_OPTIONS = [
     '🚽 Bathroom',
@@ -91,15 +91,15 @@
   let session: SessionData = null;
   let profile: MemberProfile = null;
 
-  function normalizeJobSortKey(job: string) {
+  function normalizeJobSortKey(job: string) : string {
     return job
       .replace(/^\p{Extended_Pictographic}+\s*/gu, '')
       .toLowerCase()
       .trim();
   }
 
-  function sortJobs(jobs: string[]) {
-    return [...jobs].sort((a, b) => normalizeJobSortKey(a).localeCompare(normalizeJobSortKey(b)));
+  function sortJobs(jobs: string[]) : string[] {
+    return [...jobs].sort((a, b) : number => normalizeJobSortKey(a).localeCompare(normalizeJobSortKey(b)));
   }
 
   let state = {
@@ -130,32 +130,32 @@
     pushLoading: false,
     isSendingTest: false,
     toasts: [] as Toast[],
-    onMemberNameChange: (value: string) => {
+    onMemberNameChange: (value: string) : void => {
       state = { ...state, fullName: value, displayFullName: value.trim() };
       maybeSaveDraft();
       dispatchState();
     },
-    onMemberIdChange: (value: string) => {
+    onMemberIdChange: (value: string) : void => {
       state = { ...state, memberId: value.replace(/\D/g, '') };
       maybeSaveDraft();
       dispatchState();
     },
-    onSave: async () => saveProfile(),
-    onAddToWallet: async () => addToWallet(),
-    onAddToGoogleWallet: async () => addToGoogleWallet(),
-    onOpenCalendarModal: () => {
+    onSave: async () : Promise<void> => saveProfile(),
+    onAddToWallet: async () : Promise<void> => addToWallet(),
+    onAddToGoogleWallet: async () : Promise<void> => addToGoogleWallet(),
+    onOpenCalendarModal: () : void => {
       if (!requireAuth()) return;
       state = { ...state, isCalendarModalOpen: true };
       dispatchState();
     },
-    onCloseCalendarModal: () => {
+    onCloseCalendarModal: () : void => {
       state = { ...state, isCalendarModalOpen: false };
       dispatchState();
     },
-    onCopyCalendarUrl: async () => copyCalendarUrl(),
-    onJobSearchChange: (value: string) => {
+    onCopyCalendarUrl: async () : Promise<void> => copyCalendarUrl(),
+    onJobSearchChange: (value: string) : void => {
       const filtered = value.trim()
-        ? SHIFT_JOB_OPTIONS.filter((job) => job.toLowerCase().includes(value.toLowerCase()))
+        ? SHIFT_JOB_OPTIONS.filter((job) : boolean => job.toLowerCase().includes(value.toLowerCase()))
         : SHIFT_JOB_OPTIONS;
       state = {
         ...state,
@@ -166,34 +166,34 @@
       };
       dispatchState();
     },
-    onJobSearchFocus: () => {
+    onJobSearchFocus: () : void => {
       state = { ...state, isJobDropdownOpen: true };
       dispatchState();
     },
-    onJobSearchBlur: () => {
-      window.setTimeout(() => {
+    onJobSearchBlur: () : void => {
+      window.setTimeout(() : void => {
         state = { ...state, isJobDropdownOpen: false };
         dispatchState();
       }, 150);
     },
-    onJobSearchKeyDown: (event: KeyboardEvent) => handleJobKeydown(event),
-    onToggleJob: (job: string) => toggleJob(job),
-    onRemoveJob: (job: string) => removeJob(job),
-    onHighlightJobIndex: (index: number) => {
+    onJobSearchKeyDown: (event: KeyboardEvent) : void => handleJobKeydown(event),
+    onToggleJob: (job: string) : Promise<void> => toggleJob(job),
+    onRemoveJob: (job: string) : Promise<void> => removeJob(job),
+    onHighlightJobIndex: (index: number) : void => {
       state = { ...state, highlightedJobIndex: index };
       dispatchState();
     },
-    onTogglePush: async () => togglePush(),
-    onSendTestNotification: async () => sendTestNotification(),
+    onTogglePush: async () : Promise<void> => togglePush(),
+    onSendTestNotification: async () : Promise<void> => sendTestNotification(),
   };
 
   const initialState = state;
 
-  function dispatchState() {
+  function dispatchState() : void {
     window.dispatchEvent(new CustomEvent(`integrations-state:update:${channel}`, { detail: state }));
   }
 
-  function loadDraft() {
+  function loadDraft() : { fullName: string; memberId: string; selectedJobs: string[]; } | null {
     try {
       const raw = localStorage.getItem(DRAFT_STORAGE_KEY);
       if (!raw) return null;
@@ -203,7 +203,7 @@
     }
   }
 
-  function saveDraft() {
+  function saveDraft() : void {
     try {
       localStorage.setItem(
         DRAFT_STORAGE_KEY,
@@ -218,17 +218,17 @@
     }
   }
 
-  function maybeSaveDraft() {
+  function maybeSaveDraft() : void {
     if (!session) {
       saveDraft();
     }
   }
 
-  function clearDraft() {
+  function clearDraft() : void {
     localStorage.removeItem(DRAFT_STORAGE_KEY);
   }
 
-  function getCalendarUrls(calendarId: string) {
+  function getCalendarUrls(calendarId: string) : { calendarDisplayUrl: string; googleCalendarUrl: string; outlookCalendarUrl: string; } {
     const origin = window.location.origin;
     const path = `${CALENDAR_PROXY_PATH}/${calendarId}`;
     const display = `${origin}${path}`;
@@ -243,41 +243,41 @@
     };
   }
 
-  function pushToast(variant: Toast['variant'], message: string) {
+  function pushToast(variant: Toast['variant'], message: string) : void {
     const id = Date.now();
     const toast: Toast = { id, variant, message, visible: false };
     state = { ...state, toasts: [...state.toasts, toast] };
     dispatchState();
 
-    window.setTimeout(() => {
+    window.setTimeout(() : void => {
       state = {
         ...state,
-        toasts: state.toasts.map((t) => (t.id === id ? { ...t, visible: true } : t)),
+        toasts: state.toasts.map((t) : Toast => (t.id === id ? { ...t, visible: true } : t)),
       };
       dispatchState();
     }, 10);
 
-    window.setTimeout(() => {
+    window.setTimeout(() : void => {
       state = {
         ...state,
-        toasts: state.toasts.map((t) => (t.id === id ? { ...t, visible: false } : t)),
+        toasts: state.toasts.map((t) : Toast => (t.id === id ? { ...t, visible: false } : t)),
       };
       dispatchState();
     }, 2500);
 
-    window.setTimeout(() => {
-      state = { ...state, toasts: state.toasts.filter((t) => t.id !== id) };
+    window.setTimeout(() : void => {
+      state = { ...state, toasts: state.toasts.filter((t) : boolean => t.id !== id) };
       dispatchState();
     }, 3000);
   }
 
-  function requireAuth() {
+  function requireAuth() : boolean {
     if (session?.user) return true;
     void goto(withNextParam('/signup', '/integrations'));
     return false;
   }
 
-  async function fetchSession() {
+  async function fetchSession() : Promise<SessionData> {
     try {
       const response = await fetch('/api/auth/get-session');
       if (!response.ok) return null;
@@ -287,14 +287,14 @@
     }
   }
 
-  async function fetchProfile() {
+  async function fetchProfile() : Promise<MemberProfile> {
     const response = await fetch('/api/me/profile');
     if (!response.ok) return null;
     const data = (await response.json()) as { profile: MemberProfile };
     return data.profile;
   }
 
-  async function fetchPushSubscriptions() {
+  async function fetchPushSubscriptions() : Promise<{ endpoint: string; }[]> {
     const response = await fetch('/api/me/push-subscriptions');
     if (!response.ok) return [];
     const data = (await response.json()) as { subscriptions: { endpoint: string }[] };
@@ -305,7 +305,7 @@
     memberName?: string;
     memberId?: string;
     jobFilters?: string[];
-  }) {
+  }) : Promise<MemberProfile> {
     const response = await fetch('/api/me/profile', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
@@ -319,7 +319,7 @@
     return profile;
   }
 
-  function syncProfileToState() {
+  function syncProfileToState() : void {
     if (!profile) return;
     const urls = getCalendarUrls(profile.calendarId);
     const sortedJobs = sortJobs(profile.jobFilters ?? []);
@@ -334,7 +334,7 @@
     };
   }
 
-  function handleJobKeydown(event: KeyboardEvent) {
+  function handleJobKeydown(event: KeyboardEvent) : void {
     if (event.key === 'ArrowDown') {
       event.preventDefault();
       if (state.filteredJobOptions.length === 0) return;
@@ -386,9 +386,9 @@
     }
   }
 
-  async function toggleJob(job: string) {
+  async function toggleJob(job: string) : Promise<void> {
     const nextJobs = state.selectedJobs.includes(job)
-      ? state.selectedJobs.filter((j) => j !== job)
+      ? state.selectedJobs.filter((j) : boolean => j !== job)
       : [...state.selectedJobs, job];
     state = { ...state, selectedJobs: nextJobs };
     maybeSaveDraft();
@@ -403,11 +403,11 @@
     }
   }
 
-  async function removeJob(job: string) {
+  async function removeJob(job: string) : Promise<void> {
     await toggleJob(job);
   }
 
-  async function saveProfile() {
+  async function saveProfile() : Promise<void> {
     if (!requireAuth()) return;
     state = { ...state, isSaving: true };
     dispatchState();
@@ -427,7 +427,7 @@
     }
   }
 
-  async function addToWallet() {
+  async function addToWallet() : Promise<void> {
     if (!requireAuth()) return;
     state = { ...state, isGeneratingPass: true };
     dispatchState();
@@ -456,7 +456,7 @@
     }
   }
 
-  async function addToGoogleWallet() {
+  async function addToGoogleWallet() : Promise<void> {
     if (!requireAuth()) return;
     state = { ...state, isGeneratingGooglePass: true };
     dispatchState();
@@ -478,7 +478,7 @@
     }
   }
 
-  async function copyCalendarUrl() {
+  async function copyCalendarUrl() : Promise<void> {
     if (!requireAuth()) return;
     if (!state.calendarId) {
       pushToast('error', 'Create a calendar subscription first.');
@@ -492,7 +492,7 @@
     }
   }
 
-  async function togglePush() {
+  async function togglePush() : Promise<void> {
     if (!requireAuth()) return;
     state = { ...state, pushLoading: true };
     dispatchState();
@@ -533,7 +533,7 @@
     }
   }
 
-  async function sendTestNotification() {
+  async function sendTestNotification() : Promise<void> {
     state = { ...state, isSendingTest: true };
     dispatchState();
     try {
@@ -548,8 +548,8 @@
     }
   }
 
-  onMount(() => {
-    const stickyVisibilityHandler = (event: Event) => {
+  onMount(() : () => void => {
+    const stickyVisibilityHandler = (event: Event) : void => {
       if (!(event instanceof CustomEvent)) return;
       state = { ...state, showSticky: Boolean(event.detail) };
       dispatchState();
@@ -557,8 +557,8 @@
 
     window.addEventListener('sticky-visibility', stickyVisibilityHandler as EventListener);
 
-    void (async () => {
-      const finalizeInitialPaint = (canManageNotifications: boolean) => {
+    void (async () : Promise<void> => {
+      const finalizeInitialPaint = (canManageNotifications: boolean) : void => {
         state = {
           ...state,
           sessionPending: false,
@@ -569,7 +569,7 @@
         dispatchState();
       };
 
-      const initializePushInBackground = async (canManageNotifications: boolean) => {
+      const initializePushInBackground = async (canManageNotifications: boolean) : Promise<void> => {
         if (!canManageNotifications || !session?.user) return;
         try {
           if (!isPushSupported()) return;
@@ -603,7 +603,7 @@
         finalizeInitialPaint(canManageNotifications);
 
         if (session?.user) {
-          void (async () => {
+          void (async () : Promise<void> => {
             try {
               profile = await fetchProfile();
               syncProfileToState();
@@ -636,7 +636,7 @@
 
     dispatchState();
 
-    return () => {
+    return () : void => {
       window.removeEventListener('sticky-visibility', stickyVisibilityHandler as EventListener);
     };
   });

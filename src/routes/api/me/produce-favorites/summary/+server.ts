@@ -32,7 +32,9 @@ async function loadLatestSnapshot(): Promise<LatestSnapshot> {
     prefix: 'produce/',
   });
 
-  const htmlBlobs = blobs.filter((blob) => /produce\/\d{4}-\d{2}-\d{2}\.html$/.test(blob.pathname));
+  const htmlBlobs = blobs.filter((blob): boolean =>
+    /produce\/\d{4}-\d{2}-\d{2}\.html$/.test(blob.pathname),
+  );
   if (htmlBlobs.length === 0) {
     return { names: new Set(), snapshotDate: null };
   }
@@ -68,18 +70,18 @@ async function loadLatestSnapshot(): Promise<LatestSnapshot> {
   return { names, snapshotDate };
 }
 
-const startRevalidation = () => {
+const startRevalidation = (): Promise<void> => {
   if (snapshotCache.revalidation) return snapshotCache.revalidation;
 
-  snapshotCache.revalidation = (async () => {
+  snapshotCache.revalidation = (async (): Promise<void> => {
     const payload = await loadLatestSnapshot();
     snapshotCache.payload = payload;
     snapshotCache.cachedAt = Date.now();
   })()
-    .catch((error) => {
+    .catch((error): void => {
       console.error('Produce favorites summary snapshot revalidation failed:', error);
     })
-    .finally(() => {
+    .finally((): void => {
       snapshotCache.revalidation = null;
     });
 
@@ -112,7 +114,7 @@ async function getLatestSnapshotCached(): Promise<LatestSnapshot> {
   throw new Error('No produce snapshot available');
 }
 
-export async function GET({ request }: { request: Request }) {
+export async function GET({ request }: { request: Request }): Promise<Response> {
   try {
     const favorites = await fetchAuthQueryFromHeaders(
       request.headers,
@@ -124,8 +126,8 @@ export async function GET({ request }: { request: Request }) {
       new Set(
         favorites
           .filter((name): name is string => typeof name === 'string')
-          .map((name) => name.trim())
-          .filter((name) => name.length > 0),
+          .map((name): string => name.trim())
+          .filter((name): boolean => name.length > 0),
       ),
     );
 

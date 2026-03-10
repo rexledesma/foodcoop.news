@@ -34,13 +34,13 @@
   let checkingEmail = $state(false);
   let signupHref = $state('/signup');
 
-  let onEmailChange = $state<(value: string) => void>(() => {});
-  let onPasswordChange = $state<(value: string) => void>(() => {});
-  let onEmailSubmit = $state<() => Promise<void>>(async () => {});
-  let onPasswordSubmit = $state<() => Promise<void>>(async () => {});
-  let onBack = $state<() => void>(() => {});
+  let onEmailChange = $state<(value: string) => void>(() : void => {});
+  let onPasswordChange = $state<(value: string) => void>(() : void => {});
+  let onEmailSubmit = $state<() => Promise<void>>(async () : Promise<void> => {});
+  let onPasswordSubmit = $state<() => Promise<void>>(async () : Promise<void> => {});
+  let onBack = $state<() => void>(() : void => {});
 
-  function applyState(next: LoginFormClientState) {
+  function applyState(next: LoginFormClientState) : void {
     email = next.email;
     password = next.password;
     error = next.error;
@@ -55,40 +55,40 @@
     onBack = next.onBack;
   }
 
-  function handleStateUpdate(event: Event) {
+  function handleStateUpdate(event: Event) : void {
     if (!(event instanceof CustomEvent)) return;
     applyState(event.detail as LoginFormClientState);
   }
 
-  function handleEmailInput(event: Event) {
+  function handleEmailInput(event: Event) : void {
     const target = event.currentTarget;
     if (!(target instanceof HTMLInputElement)) return;
     onEmailChange(target.value);
   }
 
-  function handlePasswordInput(event: Event) {
+  function handlePasswordInput(event: Event) : void {
     const target = event.currentTarget;
     if (!(target instanceof HTMLInputElement)) return;
     onPasswordChange(target.value);
   }
 
-  async function handleEmailSubmit(event: SubmitEvent) {
+  async function handleEmailSubmit(event: SubmitEvent) : Promise<void> {
     event.preventDefault();
     await onEmailSubmit();
   }
 
-  async function handlePasswordSubmit(event: SubmitEvent) {
+  async function handlePasswordSubmit(event: SubmitEvent) : Promise<void> {
     event.preventDefault();
     await onPasswordSubmit();
   }
 
-  onMount(() => {
+  onMount(() : () => void => {
     applyState(initialState);
 
-    const handler = (event: Event) => handleStateUpdate(event);
+    const handler = (event: Event) : void => handleStateUpdate(event);
     window.addEventListener(`login-form-state:update:${channel}`, handler as EventListener);
 
-    return () => {
+    return () : void => {
       window.removeEventListener(`login-form-state:update:${channel}`, handler as EventListener);
     };
   });
