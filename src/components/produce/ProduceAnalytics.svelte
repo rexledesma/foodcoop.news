@@ -1131,6 +1131,35 @@
     createFavoriteBurstFromRow(rowElement, wasFavorite ? '💔' : '⭐', originX, originY);
   }
 
+  function handleRowFavoriteButtonClick(event: MouseEvent, rowName: string) : void {
+    event.preventDefault();
+    const button = event.currentTarget;
+    if (!(button instanceof HTMLElement)) {return;}
+    const rowElement = button.closest('tr');
+    if (!(rowElement instanceof HTMLTableRowElement)) {
+      toggleFavorite(rowName);
+      return;
+    }
+    const rect = button.getBoundingClientRect();
+    toggleFavoriteWithBurst(
+      rowName,
+      rowElement,
+      rect.left + rect.width / 2,
+      rect.top + rect.height / 2,
+    );
+  }
+
+  function handleRowActionsButtonClick(
+    event: MouseEvent,
+    rowName: string,
+    url: string | null,
+  ) : void {
+    event.preventDefault();
+    const button = event.currentTarget;
+    if (!(button instanceof HTMLElement)) {return;}
+    queueLinkPreview(rowName, url, button, true);
+  }
+
   function handleRowTouchEnd(event: TouchEvent, rowName: string) : void {
     if (event.changedTouches.length !== 1) {
       lastRowTap = null;
@@ -1837,7 +1866,7 @@
                   }`}
                 >
                   <div class="flex items-start gap-2">
-                    <div class="min-w-0">
+                    <div class="flex min-w-0 flex-1 flex-col gap-1">
                       <div
                         class="line-clamp-3 text-sm font-medium text-zinc-900 md:line-clamp-none"
                         data-produce-name="true"
@@ -1934,6 +1963,30 @@
                       {#if row.origin}
                         <div class="text-xs text-zinc-400">{row.origin}</div>
                       {/if}
+
+                      <div class="mt-auto flex justify-end gap-2 pt-1 text-[11px] font-medium text-zinc-400">
+                        <button
+                          type="button"
+                          onclick={(event) => handleRowFavoriteButtonClick(event, row.name)}
+                          aria-pressed={favorites.has(row.name)}
+                          aria-label={favorites.has(row.name) ? `Remove ${row.name} from favorites` : `Add ${row.name} to favorites`}
+                          class={`inline-flex h-6 w-6 items-center justify-center rounded-full transition-colors ${
+                            favorites.has(row.name)
+                              ? 'text-amber-800 hover:bg-amber-100'
+                              : 'text-zinc-500 hover:bg-amber-100 hover:text-amber-800'
+                          }`}
+                        >
+                          <span aria-hidden="true" class="text-sm leading-none">{favorites.has(row.name) ? '♥' : '♡'}</span>
+                        </button>
+                        <button
+                          type="button"
+                          onclick={(event) => handleRowActionsButtonClick(event, row.name, specialtyUrl)}
+                          aria-label={`More actions for ${row.name}`}
+                          class="inline-flex h-6 w-6 items-center justify-center rounded-full text-zinc-500 transition-colors hover:bg-zinc-100 hover:text-zinc-700"
+                        >
+                          <span aria-hidden="true" class="text-sm leading-none">⋯</span>
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </td>
