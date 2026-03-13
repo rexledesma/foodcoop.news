@@ -739,7 +739,7 @@
               {#each update.newArrivals as item (item.name)}
                 <span class="inline-flex items-center gap-1 rounded-full bg-[rgb(255,246,220)] px-2 py-0.5 text-xs text-[#3F7540]">
                   {#if favorites.has(item.name)}
-                    <span class="grid h-4 w-4 place-items-center rounded-full bg-amber-100 text-[12px] leading-none text-amber-700">⭐</span>
+                    <span class="text-[12px] leading-none text-amber-700">♥</span>
                   {/if}
                   <span class={favorites.has(item.name) ? 'font-bold' : ''}>{item.name}</span>
                 </span>
@@ -754,7 +754,7 @@
               {#each update.outOfStock as item (item.name)}
                 <span class="inline-flex items-center gap-1 rounded-full bg-red-100 px-2 py-0.5 text-xs text-red-700">
                   {#if favorites.has(item.name)}
-                    <span class="grid h-4 w-4 place-items-center rounded-full bg-amber-100 text-[12px] leading-none text-amber-700">⭐</span>
+                    <span class="text-[12px] leading-none text-amber-700">♥</span>
                   {/if}
                   <span class={favorites.has(item.name) ? 'font-bold' : ''}>{item.name}</span>
                 </span>

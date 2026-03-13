@@ -52,7 +52,7 @@
     id: number;
     x: number;
     y: number;
-    emoji: '⭐' | '💔';
+    emoji: '❤️' | '💔';
     xMid: number;
     yMid: number;
     xEnd: number;
@@ -942,7 +942,7 @@
 
   function createFavoriteBurstFromRow(
     rowElement: HTMLTableRowElement,
-    emoji: '⭐' | '💔',
+    emoji: '❤️' | '💔',
     originX?: number,
     originY?: number,
   ) : void {
@@ -985,7 +985,7 @@
   ) : void {
     const wasFavorite = favorites.has(rowName);
     toggleFavorite(rowName);
-    createFavoriteBurstFromRow(rowElement, wasFavorite ? '💔' : '⭐', originX, originY);
+    createFavoriteBurstFromRow(rowElement, wasFavorite ? '💔' : '❤️', originX, originY);
   }
 
   function handleRowFavoriteButtonClick(event: MouseEvent, rowName: string) : void {
