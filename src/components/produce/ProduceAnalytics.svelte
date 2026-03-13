@@ -1418,7 +1418,7 @@
               onclick={() => toggleControlsMenu('filter')}
               aria-expanded={openControlsMenu === 'filter'}
               data-produce-controls-trigger="true"
-              class={`inline-flex w-full items-center justify-between gap-1 rounded-full px-2.5 py-1 text-sm font-medium transition-colors sm:w-auto sm:justify-start ${activeFilterPillClass()}`}
+              class={`inline-flex w-full items-center justify-between gap-1 rounded-full px-2.5 py-1 text-sm font-medium transition-colors sm:w-32 ${activeFilterPillClass()}`}
             >
               <span>{activeFilterPillLabel()}</span>
               <span aria-hidden="true" class="text-[10px] text-zinc-500">▼</span>
@@ -1464,7 +1464,7 @@
               onclick={() => toggleControlsMenu('sort')}
               aria-expanded={openControlsMenu === 'sort'}
               data-produce-controls-trigger="true"
-              class={`inline-flex w-full items-center justify-between gap-1 rounded-full px-2.5 py-1 text-sm font-medium transition-colors sm:w-auto sm:justify-start ${activeSortPillClass()}`}
+              class={`inline-flex w-full items-center justify-between gap-1 rounded-full px-2.5 py-1 text-sm font-medium transition-colors sm:w-32 ${activeSortPillClass()}`}
             >
               <span>{activeSortLabel()}</span>
               <span aria-hidden="true" class="text-[10px] text-zinc-500">▼</span>
@@ -1511,7 +1511,7 @@
               onclick={() => toggleControlsMenu('period')}
               aria-expanded={openControlsMenu === 'period'}
               data-produce-controls-trigger="true"
-              class={`inline-flex w-full items-center justify-between gap-1 rounded-full px-2.5 py-1 text-sm font-medium transition-colors sm:w-auto sm:justify-start ${activePeriodPillClass()}`}
+              class={`inline-flex w-full items-center justify-between gap-1 rounded-full px-2.5 py-1 text-sm font-medium transition-colors sm:w-32 ${activePeriodPillClass()}`}
             >
               <span>{PERIOD_LABELS[timePeriod]}</span>
               <span aria-hidden="true" class="text-[10px] text-zinc-500">▼</span>

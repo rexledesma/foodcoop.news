@@ -428,7 +428,7 @@
         </div>
       {:else}
         <div class="flex gap-1">
-          <div class="relative min-w-0 flex-1">
+          <div class="relative min-w-0 flex-1 sm:w-32 sm:flex-none">
             <button
               type="button"
               onclick={() => {
@@ -486,7 +486,7 @@
             {/if}
           </div>
 
-          <div class="relative min-w-0 flex-1">
+          <div class="relative min-w-0 flex-1 sm:w-32 sm:flex-none">
             <button
               type="button"
               onclick={() => {
