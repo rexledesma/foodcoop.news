@@ -62,6 +62,7 @@
   let activeIndicatorWidth = $state(0);
   let showActiveIndicator = $state(false);
   let shouldReplaceHistoryOnMobile = $state(false);
+  let isIosMobile = $state(false);
   let isSidebarOpen = $state(false);
   let produceFavoritesCount = $state(0);
   let produceFavoritesInStockCount = $state(0);
@@ -94,6 +95,15 @@
     const isAndroidMobile = /Android/i.test(userAgent);
 
     return (isAppleMobile || isAndroidMobile) && 'serviceWorker' in navigator;
+  }
+
+  function isIosMobileDevice(): boolean {
+    const userAgent = navigator.userAgent || '';
+    return (
+      (/iPhone|iPad|iPod/i.test(userAgent) ||
+        (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)) &&
+      window.matchMedia('(pointer: coarse)').matches
+    );
   }
 
   function updateSidebarInstallAppButtonVisibility() : void {
@@ -279,6 +289,7 @@
     const coarsePointerMedia = window.matchMedia('(pointer: coarse)');
     const updateHistoryReplaceMode = () : void => {
       shouldReplaceHistoryOnMobile = coarsePointerMedia.matches || navigator.maxTouchPoints > 0;
+      isIosMobile = isIosMobileDevice();
     };
     updateHistoryReplaceMode();
     coarsePointerMedia.addEventListener('change', updateHistoryReplaceMode);
@@ -382,11 +393,27 @@
 
 <nav
   data-swipe-interactive="true"
-  class={`safe-area-pt fixed top-0 right-0 left-0 z-40 bg-gradient-to-b from-[#e6f3fc] via-[#e6f9f0] to-white transition-opacity duration-250 ease-in-out motion-reduce:transition-none [backface-visibility:hidden] [transform:translateZ(0)] [will-change:opacity] ${
-    showSticky ? 'opacity-100' : 'pointer-events-none opacity-0'
+  class={`safe-area-pt fixed top-0 right-0 left-0 z-40 transition-opacity duration-250 ease-in-out motion-reduce:transition-none [backface-visibility:hidden] [transform:translateZ(0)] [will-change:opacity] ${
+    showSticky || isIosMobile ? 'opacity-100' : 'pointer-events-none opacity-0'
   }`}
 >
-    <div class="relative mx-auto grid h-12 max-w-3xl grid-cols-[2.5rem_1fr_2.5rem] items-center px-4">
+    <div
+      aria-hidden="true"
+      class={`absolute inset-0 bg-gradient-to-b from-[#e6f3fc] via-[#e6f9f0] to-white transition-opacity duration-250 ease-in-out motion-reduce:transition-none ${
+        showSticky ? 'opacity-100' : 'opacity-0'
+      }`}
+    ></div>
+    <div
+      aria-hidden="true"
+      class={`absolute inset-x-0 top-0 h-[env(safe-area-inset-top)] bg-linear-to-b from-[rgba(230,243,252,0.56)] via-[rgba(230,249,240,0.34)] to-[rgba(255,255,255,0.08)] backdrop-blur-xl transition-opacity duration-250 ease-in-out motion-reduce:transition-none ${
+        !showSticky && isIosMobile ? 'opacity-100' : 'opacity-0'
+      }`}
+    ></div>
+    <div
+      class={`relative mx-auto grid h-12 max-w-3xl grid-cols-[2.5rem_1fr_2.5rem] items-center px-4 transition-opacity duration-250 ease-in-out motion-reduce:transition-none ${
+        showSticky ? 'opacity-100' : 'pointer-events-none opacity-0'
+      }`}
+    >
       <button
         type="button"
         onclick={toggleSidebar}
@@ -424,7 +451,9 @@
     </div>
     <div
       bind:this={mobileScrollRef}
-      class="relative mx-auto flex h-10 max-w-3xl items-center justify-center gap-1 overflow-x-auto overflow-y-hidden border-b border-zinc-200 px-4 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden md:gap-2 md:overflow-visible"
+      class={`relative mx-auto flex h-10 max-w-3xl items-center justify-center gap-1 overflow-x-auto overflow-y-hidden border-b border-zinc-200 px-4 transition-opacity duration-250 ease-in-out [scrollbar-width:none] [-ms-overflow-style:none] motion-reduce:transition-none [&::-webkit-scrollbar]:hidden md:gap-2 md:overflow-visible ${
+        showSticky ? 'opacity-100' : 'pointer-events-none opacity-0'
+      }`}
     >
       <div class="flex items-center justify-center gap-1 md:gap-2">
         {#each navItems as item (item.href)}
