@@ -222,8 +222,8 @@
       apply: () : void => applySortSelection('change', 'asc'),
     },
     {
-      label: 'Price Increases',
-      shortLabel: 'Increases',
+      label: 'Price Hikes',
+      shortLabel: 'Hikes',
       isActive: (field, direction) => field === 'change' && direction === 'desc',
       apply: () : void => applySortSelection('change', 'desc'),
     },
@@ -904,7 +904,7 @@
   function sortOptionPillClass(label: string) : string {
     if (label === 'Popular') {return 'bg-amber-100 text-amber-800';}
     if (label === 'Price Drops') {return 'bg-green-100 text-green-700';}
-    if (label === 'Price Increases') {return 'bg-red-100 text-red-700';}
+    if (label === 'Price Hikes') {return 'bg-red-100 text-red-700';}
     return 'bg-zinc-100 text-zinc-700';
   }
 
