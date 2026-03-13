@@ -12,7 +12,7 @@
   import type { FeedItem } from '@/lib/discover-feed';
   import { getFeedItemKey } from '@/lib/discover-feed';
 
-  type PrimaryFilterType = 'latest' | 'upcoming';
+  type PrimaryFilterType = 'latest_45_days' | 'latest_week' | 'upcoming';
   type SourceFilterType =
     | 'foodcoop'
     | 'gazette'
@@ -22,9 +22,14 @@
     | 'concert-series'
     | 'produce';
 
-  const PRIMARY_FILTER_OPTIONS: { value: PrimaryFilterType; label: string }[] = [
-    { value: 'latest', label: 'Latest' },
-    { value: 'upcoming', label: 'Upcoming' },
+  const PRIMARY_FILTER_OPTIONS: {
+    value: PrimaryFilterType;
+    label: string;
+    compactLabel: string;
+  }[] = [
+    { value: 'latest_45_days', label: 'Latest: Past 45 days', compactLabel: '45D' },
+    { value: 'latest_week', label: 'Latest: Past week', compactLabel: '1W' },
+    { value: 'upcoming', label: 'Upcoming', compactLabel: 'Upcoming' },
   ];
   const SOURCE_FILTER_OPTIONS: { value: SourceFilterType; label: string; description?: string }[] = [
     {
@@ -86,7 +91,7 @@
     initialState: DiscoverFeedClientState;
   } = $props();
 
-  let primaryFilter = $state<PrimaryFilterType>('latest');
+  let primaryFilter = $state<PrimaryFilterType>('latest_45_days');
   let sourceFilter = $state<SourceFilterType | null>(null);
   let items = $state<FeedItem[]>([]);
   let loading = $state(true);
@@ -104,11 +109,19 @@
 
   const filteredItems = $derived.by(() : FeedItem[] => {
     const now = new Date();
+    const fortyFiveDaysAgo = new Date(now);
+    fortyFiveDaysAgo.setDate(fortyFiveDaysAgo.getDate() - 45);
+    const oneWeekAgo = new Date(now);
+    oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
 
     return items.filter((item) : boolean => {
       const matchesPrimary = primaryFilter === 'upcoming'
         ? isEventItem(item) && item.date >= now
-        : !isEventItem(item) || item.date < now;
+        : item.date < now && item.date >= (
+          primaryFilter === 'latest_week'
+            ? oneWeekAgo
+            : fortyFiveDaysAgo
+        );
 
       if (!matchesPrimary) {return false;}
       if (sourceFilter === null) {return true;}
@@ -152,6 +165,12 @@
 
   function isPrimaryFilterType(value: string): value is PrimaryFilterType {
     return PRIMARY_FILTER_OPTIONS.some((option) : boolean => option.value === value);
+  }
+
+  function normalizePrimaryFilter(value: string | undefined): PrimaryFilterType | null {
+    if (!value) {return null;}
+    if (value === 'latest') {return 'latest_45_days';}
+    return isPrimaryFilterType(value) ? value : null;
   }
 
   function isSourceFilterType(value: string): value is SourceFilterType {
@@ -270,7 +289,7 @@
   }
 
   function primaryMenuLabel() : string {
-    return PRIMARY_FILTER_OPTIONS.find((option) : boolean => option.value === primaryFilter)?.label ?? 'View';
+    return PRIMARY_FILTER_OPTIONS.find((option) : boolean => option.value === primaryFilter)?.compactLabel ?? 'View';
   }
 
   function primaryMenuButtonClass() : string {
@@ -314,8 +333,9 @@
           primaryFilter?: string;
           sourceFilter?: string | null;
         };
-        if (parsed.primaryFilter && isPrimaryFilterType(parsed.primaryFilter)) {
-          primaryFilter = parsed.primaryFilter;
+        const normalizedPrimaryFilter = normalizePrimaryFilter(parsed.primaryFilter);
+        if (normalizedPrimaryFilter) {
+          primaryFilter = normalizedPrimaryFilter;
         }
         if (
           parsed.sourceFilter !== undefined &&
@@ -325,8 +345,9 @@
           sourceFilter = parsed.sourceFilter;
         }
       } catch {
-        if (isPrimaryFilterType(storedFilter)) {
-          primaryFilter = storedFilter;
+        const normalizedPrimaryFilter = normalizePrimaryFilter(storedFilter);
+        if (normalizedPrimaryFilter) {
+          primaryFilter = normalizedPrimaryFilter;
         } else if (isSourceFilterType(storedFilter)) {
           sourceFilter = storedFilter;
         }
@@ -399,15 +420,15 @@
     <div class="pb-4">
       {#if isInitialLoading}
         <div class="space-y-3">
-          <div class="flex flex-wrap gap-1">
-            <div class="feed-shimmer h-8 w-60 rounded-full sm:w-72"></div>
-            <div class="feed-shimmer h-8 w-28 rounded-full"></div>
+          <div class="flex gap-1">
+            <div class="feed-shimmer h-8 flex-1 rounded-full"></div>
+            <div class="feed-shimmer h-8 flex-1 rounded-full"></div>
           </div>
           <div class="feed-shimmer h-5 w-40 rounded-full"></div>
         </div>
       {:else}
-        <div class="flex flex-wrap gap-1">
-          <div class="relative w-60 sm:w-72">
+        <div class="flex gap-1">
+          <div class="relative min-w-0 flex-1">
             <button
               type="button"
               onclick={() => {
@@ -465,7 +486,7 @@
             {/if}
           </div>
 
-          <div class="relative w-28 sm:w-32">
+          <div class="relative min-w-0 flex-1">
             <button
               type="button"
               onclick={() => {
@@ -476,7 +497,7 @@
               data-discover-primary-trigger="true"
               class={`inline-flex w-full items-center justify-between gap-1 rounded-full px-3 py-1.5 text-sm font-medium whitespace-nowrap transition-colors ${primaryMenuButtonClass()}`}
             >
-              <span>{primaryMenuLabel()}</span>
+              <span class="truncate whitespace-nowrap">{primaryMenuLabel()}</span>
               <span
                 aria-hidden="true"
                 class="text-[10px] text-white/80"
@@ -487,7 +508,7 @@
 
             {#if primaryMenuOpen}
               <div
-                class="absolute top-full right-0 z-40 mt-2 w-[min(14rem,calc(100vw-2rem))] max-w-[calc(100vw-2rem)] overflow-hidden rounded-2xl border border-zinc-200 bg-white py-1 shadow-[0_16px_50px_-24px_rgba(0,0,0,0.45)]"
+                class="absolute top-full right-0 z-40 mt-2 w-[min(18rem,calc(100vw-2rem))] max-w-[calc(100vw-2rem)] overflow-hidden rounded-2xl border border-zinc-200 bg-white py-1 shadow-[0_16px_50px_-24px_rgba(0,0,0,0.45)]"
                 data-discover-primary-menu="true"
               >
                 <div class="px-4 py-2 text-xs font-semibold tracking-[0.08em] text-zinc-500 uppercase">
@@ -499,7 +520,7 @@
                     onclick={() => setPrimaryFilter(option.value)}
                     class={`flex w-full items-center justify-between gap-3 px-3 py-2 text-left text-sm transition-colors hover:bg-zinc-50 ${primaryFilter === option.value ? 'bg-zinc-50' : ''}`}
                   >
-                    <span class={`${DISCOVER_MENU_PILL_BASE_CLASS} ${primaryOptionPillClass(option.value)}`}>
+                    <span class={`${DISCOVER_MENU_PILL_BASE_CLASS} whitespace-nowrap ${primaryOptionPillClass(option.value)}`}>
                       {option.label}
                     </span>
                     {#if primaryFilter === option.value}
