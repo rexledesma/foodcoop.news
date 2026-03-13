@@ -382,93 +382,93 @@
 
 <nav
   data-swipe-interactive="true"
-  class={`safe-area-pt fixed top-0 right-0 left-0 z-40 bg-gradient-to-b from-[#e6f3fc] via-[#e6f9f0] to-white transition-opacity duration-300 ease-in-out motion-reduce:transition-none ${
+  class={`safe-area-pt fixed top-0 right-0 left-0 z-40 bg-gradient-to-b from-[#e6f3fc] via-[#e6f9f0] to-white transition-opacity duration-250 ease-in-out motion-reduce:transition-none [backface-visibility:hidden] [transform:translateZ(0)] [will-change:opacity] ${
     showSticky ? 'opacity-100' : 'pointer-events-none opacity-0'
   }`}
 >
-  <div class="mx-auto grid h-12 max-w-3xl grid-cols-[2.5rem_1fr_2.5rem] items-center px-4">
-    <button
-      type="button"
-      onclick={toggleSidebar}
-      class="flex h-6 w-6 select-none items-center justify-center rounded-md text-zinc-700 transition-colors hover:bg-zinc-200/60 hover:text-black"
-      aria-label={isSidebarOpen ? 'Close menu' : 'Open menu'}
-      aria-expanded={isSidebarOpen}
-      aria-controls="navigation-sidebar"
+    <div class="mx-auto grid h-12 max-w-3xl grid-cols-[2.5rem_1fr_2.5rem] items-center px-4">
+      <button
+        type="button"
+        onclick={toggleSidebar}
+        class="flex h-6 w-6 select-none items-center justify-center rounded-md text-zinc-700 transition-colors hover:bg-zinc-200/60 hover:text-black"
+        aria-label={isSidebarOpen ? 'Close menu' : 'Open menu'}
+        aria-expanded={isSidebarOpen}
+        aria-controls="navigation-sidebar"
+      >
+        <span class="sr-only">{isSidebarOpen ? 'Close menu' : 'Open menu'}</span>
+        <span class="inline-flex h-4 w-5 flex-col justify-between" aria-hidden="true">
+          <span class="h-0.5 w-full rounded-full bg-current"></span>
+          <span class="h-0.5 w-full rounded-full bg-current"></span>
+          <span class="h-0.5 w-full rounded-full bg-current"></span>
+        </span>
+      </button>
+      <a
+        href="/"
+        data-sveltekit-preload-data="hover"
+        class="select-none text-center text-base leading-none font-bold text-zinc-700"
+        style="font-family: 'DIN 1451 Std Engschrift', 'DIN 1451 Engschrift', Bahnschrift, 'DIN Alternate', 'Franklin Gothic Medium', sans-serif;"
+      >
+        FOODCOOP.NEWS
+      </a>
+      <div aria-hidden="true" class="h-4 w-7"></div>
+    </div>
+    <div
+      bind:this={mobileScrollRef}
+      class="relative mx-auto flex h-10 max-w-3xl items-center justify-center gap-1 overflow-x-auto overflow-y-hidden border-b border-zinc-200 px-4 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden md:gap-2 md:overflow-visible"
     >
-      <span class="sr-only">{isSidebarOpen ? 'Close menu' : 'Open menu'}</span>
-      <span class="inline-flex h-4 w-5 flex-col justify-between" aria-hidden="true">
-        <span class="h-0.5 w-full rounded-full bg-current"></span>
-        <span class="h-0.5 w-full rounded-full bg-current"></span>
-        <span class="h-0.5 w-full rounded-full bg-current"></span>
-      </span>
-    </button>
-    <a
-      href="/"
-      data-sveltekit-preload-data="hover"
-      class="select-none text-center text-base leading-none font-bold text-zinc-700"
-      style="font-family: 'DIN 1451 Std Engschrift', 'DIN 1451 Engschrift', Bahnschrift, 'DIN Alternate', 'Franklin Gothic Medium', sans-serif;"
-    >
-      FOODCOOP.NEWS
-    </a>
-    <div aria-hidden="true" class="h-4 w-7"></div>
-  </div>
-  <div
-    bind:this={mobileScrollRef}
-    class="relative mx-auto flex h-10 max-w-3xl items-center justify-center gap-1 overflow-x-auto overflow-y-hidden border-b border-zinc-200 px-4 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden md:gap-2 md:overflow-visible"
-  >
-    <div class="flex items-center justify-center gap-1 md:gap-2">
-      {#each navItems as item (item.href)}
+      <div class="flex items-center justify-center gap-1 md:gap-2">
+        {#each navItems as item (item.href)}
+          <a
+            href={item.href}
+            data-sveltekit-preload-data={preloadModeForHref(item.href)}
+            data-sveltekit-replacestate={shouldReplaceHistoryOnMobile ? 'true' : undefined}
+            data-nav-href={item.href}
+            class={`shrink-0 flex flex-row items-center justify-center rounded-lg px-2 py-2 transition-colors md:px-4 ${
+              pathname === item.href ? 'text-black' : 'text-zinc-500 hover:text-black'
+            }`}
+          >
+            <span data-nav-label class="inline-flex items-center">
+              <span class="text-sm font-medium">{item.label}</span>
+            </span>
+          </a>
+        {/each}
+
         <a
-          href={item.href}
-          data-sveltekit-preload-data={preloadModeForHref(item.href)}
+          href={aboutItem.href}
           data-sveltekit-replacestate={shouldReplaceHistoryOnMobile ? 'true' : undefined}
-          data-nav-href={item.href}
-          class={`shrink-0 flex flex-row items-center justify-center rounded-lg px-2 py-2 transition-colors md:px-4 ${
-            pathname === item.href ? 'text-black' : 'text-zinc-500 hover:text-black'
+          data-nav-href={aboutItem.href}
+          class={`shrink-0 flex flex-row items-center justify-center rounded-lg px-2 py-2 transition-colors md:hidden ${
+            pathname === aboutItem.href ? 'text-black' : 'text-zinc-500 hover:text-black'
           }`}
         >
           <span data-nav-label class="inline-flex items-center">
-            <span class="text-sm font-medium">{item.label}</span>
+            <span class="text-sm font-medium">{aboutItem.label}</span>
           </span>
         </a>
-      {/each}
 
-      <a
-        href={aboutItem.href}
-        data-sveltekit-replacestate={shouldReplaceHistoryOnMobile ? 'true' : undefined}
-        data-nav-href={aboutItem.href}
-        class={`shrink-0 flex flex-row items-center justify-center rounded-lg px-2 py-2 transition-colors md:hidden ${
-          pathname === aboutItem.href ? 'text-black' : 'text-zinc-500 hover:text-black'
-        }`}
-      >
-        <span data-nav-label class="inline-flex items-center">
-          <span class="text-sm font-medium">{aboutItem.label}</span>
-        </span>
-      </a>
+        <a
+          href={aboutItem.href}
+          data-sveltekit-replacestate={shouldReplaceHistoryOnMobile ? 'true' : undefined}
+          data-nav-href={aboutItem.href}
+          class={`hidden flex-row items-center justify-center rounded-lg px-2 py-2 transition-colors md:flex md:px-4 ${
+            pathname === aboutItem.href ? 'text-black' : 'text-zinc-500 hover:text-black'
+          }`}
+        >
+          <span data-nav-label class="inline-flex items-center">
+            <span class="text-sm font-medium">{aboutItem.label}</span>
+          </span>
+        </a>
 
-      <a
-        href={aboutItem.href}
-        data-sveltekit-replacestate={shouldReplaceHistoryOnMobile ? 'true' : undefined}
-        data-nav-href={aboutItem.href}
-        class={`hidden flex-row items-center justify-center rounded-lg px-2 py-2 transition-colors md:flex md:px-4 ${
-          pathname === aboutItem.href ? 'text-black' : 'text-zinc-500 hover:text-black'
-        }`}
-      >
-        <span data-nav-label class="inline-flex items-center">
-          <span class="text-sm font-medium">{aboutItem.label}</span>
-        </span>
-      </a>
+      </div>
 
+      <span
+        aria-hidden="true"
+        class="pointer-events-none absolute top-0 left-0 h-0.5 bg-black transition-all duration-300 ease-out"
+        style={`transform: translate(${activeIndicatorLeft}px, ${activeIndicatorTop}px); width: ${activeIndicatorWidth}px; opacity: ${
+          showActiveIndicator ? 1 : 0
+        };`}
+      ></span>
     </div>
-
-    <span
-      aria-hidden="true"
-      class="pointer-events-none absolute top-0 left-0 h-0.5 bg-black transition-all duration-300 ease-out"
-      style={`transform: translate(${activeIndicatorLeft}px, ${activeIndicatorTop}px); width: ${activeIndicatorWidth}px; opacity: ${
-        showActiveIndicator ? 1 : 0
-      };`}
-    ></span>
-  </div>
 </nav>
 
 {#if isSidebarOpen}

@@ -1290,7 +1290,7 @@
 <div class="mx-auto max-w-3xl px-4 pb-6">
   <div
     bind:this={stickyHeaderRef}
-    class={`sticky top-[5.5rem] z-20 bg-white transition-opacity duration-300 ease-in-out motion-reduce:transition-none ${
+    class={`sticky top-[5.5rem] z-20 bg-white transition-opacity duration-250 ease-in-out motion-reduce:transition-none ${
       stickyVisible ? 'opacity-100' : 'pointer-events-none opacity-0'
     }`}
   >
