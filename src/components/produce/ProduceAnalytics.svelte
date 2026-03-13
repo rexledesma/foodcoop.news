@@ -26,11 +26,10 @@
     | '5Y'
     | 'MAX'
     | 'YTD';
-  type SortField = 'name' | 'price' | 'change' | 'first_seen' | 'last_seen';
+  type SortField = 'name' | 'price' | 'change' | 'first_seen' | 'last_seen' | 'favorite_count';
   type SortDirection = 'asc' | 'desc' | null;
   type QuickFilter =
     | 'favorites'
-    | 'popular'
     | 'drops'
     | 'increases'
     | 'new'
@@ -278,8 +277,6 @@
 
     if (quickFilter === 'favorites') {
       result = result.filter((row) : boolean => favorites.has(row.name));
-    } else if (quickFilter === 'popular') {
-      result = result.filter((row) : boolean => favoriteCount(row.name) > 0);
     } else if (quickFilter === 'new') {
       result = result.filter((row) : boolean => row.is_new);
     } else if (quickFilter === 'recently_unavailable') {
@@ -294,7 +291,7 @@
       });
     }
 
-    if (quickFilter === 'popular') {
+    if (sortField === 'favorite_count') {
       return [...result].sort((a, b) : number => {
         const countDelta = favoriteCount(b.name) - favoriteCount(a.name);
         if (countDelta !== 0) {return countDelta;}
@@ -323,6 +320,10 @@
         const bVal = b.unavailable_since_date ?? '';
         return sortDirection === 'asc' ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
       }
+      if (sortField === 'favorite_count') {
+        const countDelta = favoriteCount(a.name) - favoriteCount(b.name);
+        return sortDirection === 'asc' ? countDelta : -countDelta;
+      }
 
       const aPrev = getPreviousPrice(a, timePeriod, history.get(a.name), dateRange, false);
       const bPrev = getPreviousPrice(b, timePeriod, history.get(b.name), dateRange, false);
@@ -341,7 +342,6 @@
     if (itemFilter || dateFilter) {return true;}
     return (
       quickFilter === 'favorites' ||
-      quickFilter === 'popular' ||
       quickFilter === 'new' ||
       quickFilter === 'recently_unavailable'
     );
@@ -367,9 +367,6 @@
     }
     if (quickFilter === 'favorites') {
       return base.filter((row) : boolean => favorites.has(row.name)).length;
-    }
-    if (quickFilter === 'popular') {
-      return base.filter((row) : boolean => favoriteCount(row.name) > 0).length;
     }
     if (quickFilter === 'new') {
       return base.filter((row) : boolean => row.is_new).length;
@@ -669,7 +666,6 @@
 
   function quickFilterPillLabel(filter: QuickFilter): string {
     if (filter === 'favorites') {return 'Favorites';}
-    if (filter === 'popular') {return 'Popular';}
     if (filter === 'new') {return 'New Arrivals';}
     if (filter === 'recently_unavailable') {return 'Out of Stock';}
     return 'Filter';
@@ -677,7 +673,6 @@
 
   function quickFilterPillClass(filter: QuickFilter): string {
     if (filter === 'favorites') {return 'bg-amber-100 text-amber-800';}
-    if (filter === 'popular') {return 'bg-amber-100 text-amber-800';}
     if (filter === 'new') {return 'bg-[rgb(255,246,220)] text-[#3F7540]';}
     if (filter === 'recently_unavailable') {return 'bg-red-100 text-red-700';}
     return 'bg-zinc-100 text-zinc-700';
@@ -685,14 +680,12 @@
 
   function activeViewFilter():
     | 'favorites'
-    | 'popular'
     | 'new'
     | 'recently_unavailable'
     | 'date'
     | null {
     if (dateFilter) {return 'date';}
     if (quickFilter === 'favorites') {return 'favorites';}
-    if (quickFilter === 'popular') {return 'popular';}
     if (quickFilter === 'new') {return 'new';}
     if (quickFilter === 'recently_unavailable') {return 'recently_unavailable';}
     return null;
@@ -722,7 +715,6 @@
     if (filter === 'date' && dateFilter) {return formatShortDate(dateFilter).toLowerCase();}
     if (
       filter === 'favorites' ||
-      filter === 'popular' ||
       filter === 'new' ||
       filter === 'recently_unavailable'
     ) {
@@ -780,6 +772,21 @@
     }
     sortField = 'change';
     sortDirection = next === 'drops' ? 'asc' : 'desc';
+  }
+
+  function togglePopularSort() : void {
+    const isActive = sortField === 'favorite_count' && sortDirection === 'desc';
+    if (isActive) {
+      sortField = DEFAULT_SORT_FIELD;
+      sortDirection = DEFAULT_SORT_DIRECTION;
+      return;
+    }
+    sortField = 'favorite_count';
+    sortDirection = 'desc';
+  }
+
+  function hasAllScopeSelection() : boolean {
+    return !quickFilter && !dateFilter && !itemFilter;
   }
 
   function clearDateFilter() : void {
@@ -1110,7 +1117,12 @@
       return false;
     }
 
-    quickFilter = initialQuickFilter;
+    quickFilter =
+      initialQuickFilter === 'favorites' ||
+      initialQuickFilter === 'new' ||
+      initialQuickFilter === 'recently_unavailable'
+        ? initialQuickFilter
+        : null;
     dateFilter = initialDateFilter;
     itemFilter = initialItemFilter ?? null;
     if (initialDateFilter) {
@@ -1120,8 +1132,13 @@
       const isHashParam = /^[a-f0-9]{7}$/i.test(initialProduceFilter.trim());
       itemFilter = isHashParam ? initialProduceFilter.trim().toLowerCase() : null;
     }
-    sortField = initialDateFilter ? null : 'name';
-    sortDirection = initialDateFilter ? null : 'asc';
+    if (initialDateFilter) {
+      sortField = null;
+      sortDirection = null;
+    } else {
+      sortField = 'name';
+      sortDirection = 'asc';
+    }
     return true;
   }
 
@@ -1188,7 +1205,6 @@
           const persistedQuickFilter = parsed.quickFilter;
           quickFilter =
             persistedQuickFilter === 'favorites' ||
-            persistedQuickFilter === 'popular' ||
             persistedQuickFilter === 'new' ||
             persistedQuickFilter === 'recently_unavailable'
               ? persistedQuickFilter
@@ -1381,7 +1397,7 @@
             sortDirection = DEFAULT_SORT_DIRECTION;
           }}
           class={`rounded-full px-3 py-1.5 text-sm font-medium whitespace-nowrap transition-colors ${
-            !quickFilter && !dateFilter && !itemFilter
+            hasAllScopeSelection()
               ? 'bg-zinc-900 text-white'
               : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200'
           }`}
@@ -1394,8 +1410,6 @@
           onclick={() => {
             clearQueryFilters();
             quickFilter = quickFilter === 'favorites' ? null : 'favorites';
-            sortField = 'name';
-            sortDirection = 'asc';
           }}
           class={`rounded-full px-3 py-1.5 text-sm font-medium whitespace-nowrap transition-colors ${
             quickFilter === 'favorites'
@@ -1410,26 +1424,7 @@
           type="button"
           onclick={() => {
             clearQueryFilters();
-            quickFilter = quickFilter === 'popular' ? null : 'popular';
-            sortField = null;
-            sortDirection = null;
-          }}
-          class={`rounded-full px-3 py-1.5 text-sm font-medium whitespace-nowrap transition-colors ${
-            quickFilter === 'popular'
-              ? 'bg-amber-100 text-amber-800'
-              : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200'
-          }`}
-        >
-          Popular
-        </button>
-
-        <button
-          type="button"
-          onclick={() => {
-            clearQueryFilters();
             quickFilter = quickFilter === 'new' ? null : 'new';
-            sortField = 'first_seen';
-            sortDirection = 'desc';
           }}
           class={`rounded-full px-3 py-1.5 text-sm font-medium whitespace-nowrap transition-colors ${
             quickFilter === 'new'
@@ -1445,8 +1440,6 @@
           onclick={() => {
             clearQueryFilters();
             quickFilter = quickFilter === 'recently_unavailable' ? null : 'recently_unavailable';
-            sortField = 'last_seen';
-            sortDirection = 'desc';
           }}
           class={`rounded-full px-3 py-1.5 text-sm font-medium whitespace-nowrap transition-colors ${
             quickFilter === 'recently_unavailable'
@@ -1459,6 +1452,20 @@
       </div>
 
       <div class="flex flex-wrap items-center gap-1">
+        <button
+          type="button"
+          onclick={() => {
+            togglePopularSort();
+          }}
+          class={`rounded-full px-3 py-1.5 text-sm font-medium whitespace-nowrap transition-colors ${
+            sortField === 'favorite_count' && sortDirection === 'desc'
+              ? 'bg-amber-100 text-amber-800'
+              : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200'
+          }`}
+        >
+          Popular
+        </button>
+
         <button
           type="button"
           onclick={() => {
