@@ -61,3 +61,23 @@ export const getUserFavorites = query({
     }
   },
 });
+
+export const getFavoriteCounts = query({
+  args: {
+    itemNames: v.optional(v.array(v.string())),
+  },
+  handler: async (ctx, args) => {
+    const filterNames = args.itemNames ? new Set(args.itemNames) : null;
+    const favorites = await ctx.db.query('produceFavorites').collect();
+    const counts: Record<string, number> = {};
+
+    for (const favorite of favorites) {
+      if (filterNames && !filterNames.has(favorite.itemName)) {
+        continue;
+      }
+      counts[favorite.itemName] = (counts[favorite.itemName] ?? 0) + 1;
+    }
+
+    return counts;
+  },
+});

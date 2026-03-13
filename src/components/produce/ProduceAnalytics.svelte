@@ -82,6 +82,7 @@
     initialQuickFilter: QuickFilter;
     showSticky: boolean;
     favoritesSnapshot: string;
+    favoriteCounts: Record<string, number>;
     toggleFavorite: (name: string) => void;
   };
 
@@ -150,6 +151,7 @@
   let initialQuickFilter = $state<QuickFilter>(null);
   let showSticky = $state(true);
   let favoritesSnapshot = $state('[]');
+  let favoriteCounts = $state<Record<string, number>>({});
   let toggleFavorite = $state<(name: string) => void>(() : void => {});
   let stickyHeaderRef = $state<HTMLDivElement | null>(null);
   let actionsMenu = $state<ActionsMenuState | null>(null);
@@ -1097,6 +1099,10 @@
     return sortDirection === 'asc' ? '↑' : '↓';
   }
 
+  function favoriteCount(name: string): number {
+    return favoriteCounts[name] ?? 0;
+  }
+
   function applyState(next: ProduceAnalyticsClientState) : void {
     data = next.data;
     history = next.history;
@@ -1111,6 +1117,7 @@
     initialQuickFilter = next.initialQuickFilter;
     showSticky = next.showSticky;
     favoritesSnapshot = next.favoritesSnapshot;
+    favoriteCounts = next.favoriteCounts;
     toggleFavorite = next.toggleFavorite;
   }
 
@@ -1731,13 +1738,33 @@
                           onclick={(event) => handleRowFavoriteButtonClick(event, row.name)}
                           aria-pressed={favorites.has(row.name)}
                           aria-label={favorites.has(row.name) ? `Remove ${row.name} from favorites` : `Add ${row.name} to favorites`}
-                          class={`inline-flex h-6 w-6 items-center justify-center rounded-full transition-colors ${
-                            favorites.has(row.name)
-                              ? 'text-amber-800 hover:bg-amber-100'
-                              : 'text-zinc-500 hover:bg-amber-100 hover:text-amber-800'
+                          class={`inline-flex h-6 min-w-6 items-center justify-center rounded-full px-1 transition-colors ${
+                            favoriteCount(row.name) > 0
+                              ? favorites.has(row.name)
+                                ? 'text-amber-800 hover:bg-amber-100'
+                                : 'text-zinc-500 hover:bg-amber-100 hover:text-amber-800'
+                              : favorites.has(row.name)
+                                ? 'text-amber-800'
+                                : 'text-zinc-500'
                           }`}
                         >
-                          <span aria-hidden="true" class="text-sm leading-none">{favorites.has(row.name) ? '♥' : '♡'}</span>
+                          <span
+                            aria-hidden="true"
+                            class={`inline-flex h-6 w-6 items-center justify-center rounded-full text-sm leading-none transition-colors ${
+                              favoriteCount(row.name) > 0 ? '' : 'hover:bg-amber-100 hover:text-amber-800'
+                            }`}
+                          >
+                            {favorites.has(row.name) ? '♥' : '♡'}
+                          </span>
+                          <span
+                            aria-hidden="true"
+                            class="inline-flex w-[2ch] justify-start text-[10px] leading-none"
+                            style="font-variant-numeric: tabular-nums;"
+                          >
+                            {#if favoriteCount(row.name) > 0}
+                              {favoriteCount(row.name)}
+                            {/if}
+                          </span>
                         </button>
                         <div class={`relative ${actionsMenu?.itemName === row.name ? 'z-50' : ''}`}>
                           <button

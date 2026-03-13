@@ -29,6 +29,7 @@
   let isSyncingFavorites = false;
   let canSyncFavoritesWithServer: boolean | null = null;
   let favoriteSyncAuthCheckPromise: Promise<boolean> | null = null;
+  let favoriteCountsRequestToken = 0;
 
   function parseFavorites(stored: string | null): string[] {
     if (!stored) {return [];}
@@ -53,6 +54,55 @@
       dispatchState();
     } catch {
       // Ignore local storage errors.
+    }
+  }
+
+  function adjustFavoriteCount(name: string, delta: number) : void {
+    const nextCount = Math.max(0, (state.favoriteCounts[name] ?? 0) + delta);
+    const favoriteCounts =
+      nextCount > 0
+        ? { ...state.favoriteCounts, [name]: nextCount }
+        : Object.fromEntries(
+            Object.entries(state.favoriteCounts).filter(([itemName]) : boolean => itemName !== name),
+          );
+    state = { ...state, favoriteCounts };
+    dispatchState();
+  }
+
+  async function refreshFavoriteCounts(itemNames: string[]) : Promise<void> {
+    if (itemNames.length === 0) {
+      state = { ...state, favoriteCounts: {} };
+      dispatchState();
+      return;
+    }
+
+    const requestToken = ++favoriteCountsRequestToken;
+
+    try {
+      const response = await fetch('/api/produce/favorite-counts', {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+        },
+        body: JSON.stringify({ itemNames }),
+      });
+      if (!response.ok) {return;}
+
+      const payload = (await response.json()) as { counts?: Record<string, unknown> };
+      const favoriteCounts: Record<string, number> = {};
+
+      for (const [itemName, count] of Object.entries(payload.counts ?? {})) {
+        if (typeof count !== 'number' || count <= 0) {
+          continue;
+        }
+        favoriteCounts[itemName] = count;
+      }
+
+      if (requestToken !== favoriteCountsRequestToken) {return;}
+      state = { ...state, favoriteCounts };
+      dispatchState();
+    } catch {
+      // Ignore count refresh failures and leave the current snapshot in place.
     }
   }
 
@@ -132,6 +182,7 @@
       current.delete(name);
     }
     writeFavorites(Array.from(current));
+    adjustFavoriteCount(name, nextFavorited ? 1 : -1);
 
     if (!(await resolveFavoriteSyncAuth())) {
       return;
@@ -171,6 +222,7 @@
     initialQuickFilter: null as ProduceQuickFilter | null,
     showSticky: getCurrentStickyVisibility(),
     favoritesSnapshot: '[]',
+    favoriteCounts: {} as Record<string, number>,
     toggleFavorite: (name: string) : void => {
       void toggleFavorite(name);
     },
@@ -254,6 +306,7 @@
       };
       writeProduceCache(data.data, data.history, data.dateRange);
       dispatchState();
+      void refreshFavoriteCounts(data.data.map((row) : string => row.name));
     } catch (error) {
       try {
         clearProduceCache();
@@ -268,6 +321,7 @@
         };
         writeProduceCache(retryData.data, retryData.history, retryData.dateRange);
         dispatchState();
+        void refreshFavoriteCounts(retryData.data.map((row) : string => row.name));
       } catch (retryError) {
         state = {
           ...state,
@@ -324,6 +378,7 @@
     };
     dispatchState();
     void syncFavoritesFromServer();
+    void refreshFavoriteCounts((cached?.data ?? state.data).map((row) : string => row.name));
 
     window.addEventListener('sticky-visibility', stickyVisibilityHandler as EventListener);
     window.addEventListener('auth:session-changed', authSessionChangedHandler);
