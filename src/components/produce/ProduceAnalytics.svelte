@@ -67,6 +67,7 @@
     rotateEnd: number;
     durationMs: number;
   };
+  type ControlsMenu = 'filter' | 'sort' | 'period' | null;
   type ProduceAnalyticsClientState = {
     data: ProduceRow[];
     history: ProduceHistoryMap;
@@ -112,6 +113,18 @@
     '5Y': 'Past 5 years',
     MAX: 'Max range',
   };
+  const FILTER_MENU_OPTIONS: { value: QuickFilter; label: string; className: string; }[] = [
+    { value: null, label: 'All', className: 'text-zinc-900' },
+    { value: 'favorites', label: 'Favorites', className: 'text-amber-800' },
+    { value: 'new', label: 'New Arrivals', className: 'text-[#3F7540]' },
+    { value: 'recently_unavailable', label: 'Out of Stock', className: 'text-red-700' },
+  ];
+  const SORT_MENU_OPTIONS: {
+    label: string;
+    shortLabel: string;
+    isActive: (field: SortField | null, direction: SortDirection) => boolean;
+    apply: () => void;
+  }[] = [];
   const SWR_PERIODS = new Set<ProduceSWRPeriod>([
     '1Y',
     '5Y',
@@ -155,6 +168,7 @@
   let actionsMenuCopied = $state(false);
   let favoriteBurstLayerRef = $state<HTMLDivElement | null>(null);
   let virtualRowsAnchorRef = $state<HTMLDivElement | null>(null);
+  let openControlsMenu = $state<ControlsMenu>(null);
   let favoriteBursts = $state<FavoriteBurst[]>([]);
   let nextFavoriteBurstId = $state(0);
   let virtualScrollMargin = $state(0);
@@ -169,6 +183,51 @@
   const DEFAULT_TIME_PERIOD: TimePeriod = '1M';
   const DEFAULT_SORT_FIELD: SortField = 'change';
   const DEFAULT_SORT_DIRECTION: SortDirection = 'asc';
+
+  SORT_MENU_OPTIONS.push(
+    {
+      label: 'Name: A-Z',
+      shortLabel: 'A-Z',
+      isActive: (field, direction) => field === 'name' && direction === 'asc',
+      apply: () : void => applySortSelection('name', 'asc'),
+    },
+    {
+      label: 'Name: Z-A',
+      shortLabel: 'Z-A',
+      isActive: (field, direction) => field === 'name' && direction === 'desc',
+      apply: () : void => applySortSelection('name', 'desc'),
+    },
+    {
+      label: 'Popular',
+      shortLabel: 'Popular',
+      isActive: (field, direction) => field === 'favorite_count' && direction === 'desc',
+      apply: () : void => applySortSelection('favorite_count', 'desc'),
+    },
+    {
+      label: 'Price: Low to High',
+      shortLabel: 'Low-High',
+      isActive: (field, direction) => field === 'price' && direction === 'asc',
+      apply: () : void => applySortSelection('price', 'asc'),
+    },
+    {
+      label: 'Price: High to Low',
+      shortLabel: 'High-Low',
+      isActive: (field, direction) => field === 'price' && direction === 'desc',
+      apply: () : void => applySortSelection('price', 'desc'),
+    },
+    {
+      label: 'Price Drops',
+      shortLabel: 'Drops',
+      isActive: (field, direction) => field === 'change' && direction === 'asc',
+      apply: () : void => applySortSelection('change', 'asc'),
+    },
+    {
+      label: 'Price Increases',
+      shortLabel: 'Increases',
+      isActive: (field, direction) => field === 'change' && direction === 'desc',
+      apply: () : void => applySortSelection('change', 'desc'),
+    },
+  );
 
   // Render rows in chunked windows with one extra chunk on both sides to avoid
   // boundary thrash when scrolling in either direction.
@@ -760,35 +819,6 @@
     });
   }
 
-  function togglePriceTrendFilter(next: 'drops' | 'increases') : void {
-    const isActive =
-      sortField === 'change' &&
-      ((next === 'drops' && sortDirection === 'asc') ||
-        (next === 'increases' && sortDirection === 'desc'));
-    if (isActive) {
-      sortField = 'name';
-      sortDirection = 'asc';
-      return;
-    }
-    sortField = 'change';
-    sortDirection = next === 'drops' ? 'asc' : 'desc';
-  }
-
-  function togglePopularSort() : void {
-    const isActive = sortField === 'favorite_count' && sortDirection === 'desc';
-    if (isActive) {
-      sortField = DEFAULT_SORT_FIELD;
-      sortDirection = DEFAULT_SORT_DIRECTION;
-      return;
-    }
-    sortField = 'favorite_count';
-    sortDirection = 'desc';
-  }
-
-  function hasAllScopeSelection() : boolean {
-    return !quickFilter && !dateFilter && !itemFilter;
-  }
-
   function clearDateFilter() : void {
     dateFilter = null;
     const url = new URL(window.location.href);
@@ -831,6 +861,60 @@
     actionsMenuAnchorEl = null;
     actionsMenuCopied = false;
     clearActionsMenuCopyFeedback();
+  }
+
+  function toggleControlsMenu(menu: Exclude<ControlsMenu, null>) : void {
+    openControlsMenu = openControlsMenu === menu ? null : menu;
+  }
+
+  function hideControlsMenu() : void {
+    openControlsMenu = null;
+  }
+
+  function applyQuickFilter(nextFilter: QuickFilter) : void {
+    clearQueryFilters();
+    quickFilter = nextFilter;
+    hideControlsMenu();
+  }
+
+  function applySortSelection(nextField: SortField, nextDirection: Exclude<SortDirection, null>) : void {
+    clearQueryFilters();
+    sortField = nextField;
+    sortDirection = nextDirection;
+    hideControlsMenu();
+  }
+
+  function activeSortLabel() : string {
+    const activeOption = SORT_MENU_OPTIONS.find((option) => option.isActive(sortField, sortDirection));
+    if (activeOption) {return activeOption.shortLabel;}
+    return 'A-Z';
+  }
+
+  function activeSortPillClass() : string {
+    if (sortField === 'favorite_count' && sortDirection === 'desc') {return 'bg-amber-100 text-amber-800';}
+    if (sortField === 'change' && sortDirection === 'asc') {return 'bg-green-100 text-green-700';}
+    if (sortField === 'change' && sortDirection === 'desc') {return 'bg-red-100 text-red-700';}
+    return 'bg-zinc-100 text-zinc-700';
+  }
+
+  function activePeriodPillClass() : string {
+    return 'bg-blue-100 text-blue-800';
+  }
+
+  function sortOptionPillClass(label: string) : string {
+    if (label === 'Popular') {return 'bg-amber-100 text-amber-800';}
+    if (label === 'Price Drops') {return 'bg-green-100 text-green-700';}
+    if (label === 'Price Increases') {return 'bg-red-100 text-red-700';}
+    return 'bg-zinc-100 text-zinc-700';
+  }
+
+  function periodOptionPillClass(period: TimePeriod) : string {
+    return 'bg-blue-100 text-blue-800';
+  }
+
+  function filterOptionPillClass(filter: QuickFilter) : string {
+    if (filter === null) {return 'bg-zinc-100 text-zinc-700';}
+    return quickFilterPillClass(filter);
   }
 
   async function requestLinkPreview(url: string): Promise<LinkPreviewData> {
@@ -1223,20 +1307,30 @@
     const handler = (event: Event) : void => handleStateUpdate(event);
     window.addEventListener(`produce-analytics-state:update:${channel}`, handler as EventListener);
     const handlePointerDown = (event: MouseEvent | TouchEvent) : void => {
-      if (!actionsMenu) {return;}
       const target = event.target;
       if (!(target instanceof Element)) {return;}
+      if (actionsMenu) {
+        if (
+          target.closest('[data-produce-actions-menu="true"]') ||
+          target.closest('[data-produce-actions-trigger="true"]')
+        ) {
+          return;
+        }
+        hideActionsMenu();
+      }
+      if (!openControlsMenu) {return;}
       if (
-        target.closest('[data-produce-actions-menu="true"]') ||
-        target.closest('[data-produce-actions-trigger="true"]')
+        target.closest('[data-produce-controls-menu="true"]') ||
+        target.closest('[data-produce-controls-trigger="true"]')
       ) {
         return;
       }
-      hideActionsMenu();
+      hideControlsMenu();
     };
     const handleKeyDown = (event: KeyboardEvent) : void => {
       if (event.key !== 'Escape') {return;}
       hideActionsMenu();
+      hideControlsMenu();
     };
     const handleViewportChange = () : void => {
       updateVirtualScrollMargin();
@@ -1259,6 +1353,7 @@
       window.removeEventListener('resize', handleViewportChange);
       favoriteBursts = [];
       hideActionsMenu();
+      hideControlsMenu();
     };
   });
 
@@ -1297,66 +1392,168 @@
     <h1 class="py-6 text-2xl font-bold text-zinc-900">Produce</h1>
 
     <div class="mb-4">
-      <div class="flex w-full max-w-md items-center gap-1.5 rounded-lg border border-zinc-300 bg-white px-3 py-2">
-        {#if produceFilterDisplayName}
-          <span class="inline-flex shrink-0 items-center gap-1 rounded-full bg-violet-100 px-2.5 py-0.5 text-xs font-medium text-violet-800">
-            <span class="max-w-[120px] truncate">{produceFilterDisplayName}</span>
+      <div
+        class="flex w-full max-w-2xl flex-col gap-2 rounded-lg border border-zinc-300 bg-white px-3 py-2"
+      >
+        <div class="grid w-full grid-cols-3 gap-2 text-sm font-medium text-zinc-900 sm:flex sm:flex-wrap sm:items-center">
+          <div class="relative">
             <button
               type="button"
-              aria-label="Remove item filter"
-              onclick={(e) => {
-                e.stopPropagation();
-                clearItemFilter();
-              }}
-              class="ml-0.5 rounded-full p-0.5 transition hover:opacity-70"
+              onclick={() => toggleControlsMenu('filter')}
+              aria-expanded={openControlsMenu === 'filter'}
+              data-produce-controls-trigger="true"
+              class={`inline-flex w-full items-center justify-between gap-1 rounded-full px-2.5 py-1 text-sm font-medium transition-colors sm:w-auto sm:justify-start ${activeFilterPillClass()}`}
             >
-              ✕
+              <span>{activeFilterPillLabel()}</span>
+              <span aria-hidden="true" class="text-[10px] text-zinc-500">▼</span>
             </button>
-          </span>
-        {/if}
 
-        {#if shouldShowViewFilterPill()}
-          <span
-            class={`inline-flex shrink-0 items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium ${activeFilterPillClass()}`}
-          >
-            <span class="max-w-[120px] truncate">{activeFilterPillLabel()}</span>
-            {#if activeViewFilter() === 'date'}
-              <button
-                type="button"
-                aria-label="Remove date filter"
-                onclick={(e) => {
-                  e.stopPropagation();
-                  clearDateFilter();
-                }}
-                class="ml-0.5 rounded-full p-0.5 transition hover:opacity-70"
+            {#if openControlsMenu === 'filter'}
+              <div
+                class="absolute top-full left-0 z-40 mt-2 w-[min(14rem,calc(100vw-2.5rem))] max-w-[calc(100vw-2.5rem)] overflow-hidden rounded-2xl border border-zinc-200 bg-white py-1 shadow-[0_16px_50px_-24px_rgba(0,0,0,0.45)] sm:right-0 sm:left-auto sm:w-44 sm:max-w-none"
+                data-produce-controls-menu="true"
               >
-                ✕
-              </button>
-            {:else if activeViewFilter()}
-              <button
-                type="button"
-                aria-label="Remove quick filter"
-                onclick={(e) => {
-                  e.stopPropagation();
-                  clearQuickFilter();
-                }}
-                class="ml-0.5 rounded-full p-0.5 transition hover:opacity-70"
-              >
-                ✕
-              </button>
+                {#each FILTER_MENU_OPTIONS as option (option.label)}
+                  <button
+                    type="button"
+                    onclick={() => applyQuickFilter(option.value)}
+                    class="flex w-full items-center justify-between px-2 py-1.5 text-left text-sm transition-colors hover:bg-zinc-50"
+                  >
+                    <span
+                      class={`inline-flex items-center rounded-full px-2.5 py-1 text-sm font-medium ${
+                        activeViewFilter() === option.value || (option.value === null && !activeViewFilter())
+                          ? activeFilterPillClass()
+                          : filterOptionPillClass(option.value)
+                      }`}
+                    >
+                      {option.label}
+                    </span>
+                    {#if activeViewFilter() === option.value || (option.value === null && !activeViewFilter())}
+                      <span aria-hidden="true">✓</span>
+                    {/if}
+                  </button>
+                {/each}
+              </div>
             {/if}
-          </span>
-        {/if}
+          </div>
 
-        <input
-          type="search"
-          value={search}
-          oninput={(e) => {
-            search = e.currentTarget.value;
-          }}
-          placeholder="Search produce..."
-          class="min-w-0 flex-1 bg-transparent text-zinc-900 placeholder-zinc-500 outline-none"
-        />
+          <span aria-hidden="true" class="hidden text-zinc-300 sm:block">|</span>
+
+          <div class="relative">
+            <button
+              type="button"
+              onclick={() => toggleControlsMenu('sort')}
+              aria-expanded={openControlsMenu === 'sort'}
+              data-produce-controls-trigger="true"
+              class={`inline-flex w-full items-center justify-between gap-1 rounded-full px-2.5 py-1 text-sm font-medium transition-colors sm:w-auto sm:justify-start ${activeSortPillClass()}`}
+            >
+              <span>{activeSortLabel()}</span>
+              <span aria-hidden="true" class="text-[10px] text-zinc-500">▼</span>
+            </button>
+
+            {#if openControlsMenu === 'sort'}
+              <div
+                class="absolute top-full left-1/2 z-40 mt-2 w-[min(14rem,calc(100vw-2.5rem))] max-w-[calc(100vw-2.5rem)] -translate-x-1/2 overflow-hidden rounded-2xl border border-zinc-200 bg-white py-1 shadow-[0_16px_50px_-24px_rgba(0,0,0,0.45)] sm:right-0 sm:left-auto sm:w-44 sm:max-w-none sm:translate-x-0"
+                data-produce-controls-menu="true"
+              >
+                {#each SORT_MENU_OPTIONS as option (option.label)}
+                  <button
+                    type="button"
+                    onclick={() => {
+                      option.apply();
+                      hideControlsMenu();
+                    }}
+                    class="flex w-full items-center justify-between px-2 py-1.5 text-left text-sm transition-colors hover:bg-zinc-50"
+                  >
+                    <span
+                      class={`inline-flex items-center rounded-full px-2.5 py-1 text-sm font-medium ${
+                        sortOptionPillClass(option.label)
+                      }`}
+                    >
+                      {option.label}
+                    </span>
+                    {#if option.isActive(sortField, sortDirection)}
+                      <span aria-hidden="true">✓</span>
+                    {/if}
+                  </button>
+                {/each}
+              </div>
+            {/if}
+          </div>
+
+          <span aria-hidden="true" class="hidden text-zinc-300 sm:block">|</span>
+
+          <div class="relative">
+            <button
+              type="button"
+              onclick={() => toggleControlsMenu('period')}
+              aria-expanded={openControlsMenu === 'period'}
+              data-produce-controls-trigger="true"
+              class={`inline-flex w-full items-center justify-between gap-1 rounded-full px-2.5 py-1 text-sm font-medium transition-colors sm:w-auto sm:justify-start ${activePeriodPillClass()}`}
+            >
+              <span>{PERIOD_LABELS[timePeriod]}</span>
+              <span aria-hidden="true" class="text-[10px] text-zinc-500">▼</span>
+            </button>
+
+            {#if openControlsMenu === 'period'}
+              <div
+                class="absolute top-full right-0 z-40 mt-2 w-[min(10rem,calc(100vw-2.5rem))] max-w-[calc(100vw-2.5rem)] overflow-hidden rounded-2xl border border-zinc-200 bg-white py-1 shadow-[0_16px_50px_-24px_rgba(0,0,0,0.45)] sm:w-32 sm:max-w-none"
+                data-produce-controls-menu="true"
+              >
+                {#each TIME_PERIODS as period (period)}
+                  <button
+                    type="button"
+                    onclick={() => {
+                      timePeriod = period;
+                      hideControlsMenu();
+                    }}
+                    class="flex w-full items-center justify-between px-2 py-1.5 text-left text-sm transition-colors hover:bg-zinc-50"
+                  >
+                    <span
+                      class={`inline-flex items-center rounded-full px-2.5 py-1 text-sm font-medium ${periodOptionPillClass(period)}`}
+                    >
+                      {PERIOD_LABELS[period]}
+                    </span>
+                    {#if timePeriod === period}
+                      <span aria-hidden="true">✓</span>
+                    {/if}
+                  </button>
+                {/each}
+              </div>
+            {/if}
+          </div>
+        </div>
+
+        <div class="h-px w-full bg-zinc-200"></div>
+
+        <div class="flex flex-wrap items-center gap-x-2 gap-y-1.5">
+          {#if produceFilterDisplayName}
+            <span class="inline-flex shrink-0 items-center gap-1 rounded-full bg-violet-100 px-2.5 py-0.5 text-xs font-medium text-violet-800">
+              <span class="max-w-[120px] truncate">{produceFilterDisplayName}</span>
+              <button
+                type="button"
+                aria-label="Remove item filter"
+                onclick={(e) => {
+                  e.stopPropagation();
+                  clearItemFilter();
+                }}
+                class="ml-0.5 rounded-full p-0.5 transition hover:opacity-70"
+              >
+                ✕
+              </button>
+            </span>
+          {/if}
+
+          <input
+            type="search"
+            value={search}
+            oninput={(e) => {
+              search = e.currentTarget.value;
+            }}
+            placeholder="Search produce..."
+            class="min-w-[12rem] flex-1 bg-transparent text-zinc-900 placeholder-zinc-500 outline-none"
+          />
+        </div>
       </div>
 
       <div class="px-2 pt-2 pb-0 text-sm leading-5 text-zinc-500">
@@ -1383,136 +1580,6 @@
             </span>
           </div>
         {/if}
-      </div>
-    </div>
-
-    <div class="mt-2 mb-4 flex flex-col gap-2">
-      <div class="flex flex-wrap items-center gap-1">
-        <button
-          type="button"
-          onclick={() => {
-            clearQueryFilters();
-            quickFilter = DEFAULT_QUICK_FILTER;
-            sortField = DEFAULT_SORT_FIELD;
-            sortDirection = DEFAULT_SORT_DIRECTION;
-          }}
-          class={`rounded-full px-3 py-1.5 text-sm font-medium whitespace-nowrap transition-colors ${
-            hasAllScopeSelection()
-              ? 'bg-zinc-900 text-white'
-              : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200'
-          }`}
-        >
-          All
-        </button>
-
-        <button
-          type="button"
-          onclick={() => {
-            clearQueryFilters();
-            quickFilter = quickFilter === 'favorites' ? null : 'favorites';
-          }}
-          class={`rounded-full px-3 py-1.5 text-sm font-medium whitespace-nowrap transition-colors ${
-            quickFilter === 'favorites'
-              ? 'bg-amber-100 text-amber-800'
-              : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200'
-          }`}
-        >
-          Favorites
-        </button>
-
-        <button
-          type="button"
-          onclick={() => {
-            clearQueryFilters();
-            quickFilter = quickFilter === 'new' ? null : 'new';
-          }}
-          class={`rounded-full px-3 py-1.5 text-sm font-medium whitespace-nowrap transition-colors ${
-            quickFilter === 'new'
-              ? 'bg-[rgb(255,246,220)] text-[#3F7540]'
-              : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200'
-          }`}
-        >
-          New Arrivals
-        </button>
-
-        <button
-          type="button"
-          onclick={() => {
-            clearQueryFilters();
-            quickFilter = quickFilter === 'recently_unavailable' ? null : 'recently_unavailable';
-          }}
-          class={`rounded-full px-3 py-1.5 text-sm font-medium whitespace-nowrap transition-colors ${
-            quickFilter === 'recently_unavailable'
-              ? 'bg-red-100 text-red-700'
-              : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200'
-          }`}
-        >
-          Out of Stock
-        </button>
-      </div>
-
-      <div class="flex flex-wrap items-center gap-1">
-        <button
-          type="button"
-          onclick={() => {
-            togglePopularSort();
-          }}
-          class={`rounded-full px-3 py-1.5 text-sm font-medium whitespace-nowrap transition-colors ${
-            sortField === 'favorite_count' && sortDirection === 'desc'
-              ? 'bg-amber-100 text-amber-800'
-              : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200'
-          }`}
-        >
-          Popular
-        </button>
-
-        <button
-          type="button"
-          onclick={() => {
-            clearQueryFilters();
-            togglePriceTrendFilter('drops');
-          }}
-          class={`rounded-full px-3 py-1.5 text-sm font-medium whitespace-nowrap transition-colors ${
-            sortField === 'change' && sortDirection === 'asc'
-              ? 'bg-green-100 text-green-700'
-              : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200'
-          }`}
-        >
-          Price Drops
-        </button>
-
-        <button
-          type="button"
-          onclick={() => {
-            clearQueryFilters();
-            togglePriceTrendFilter('increases');
-          }}
-          class={`rounded-full px-3 py-1.5 text-sm font-medium whitespace-nowrap transition-colors ${
-            sortField === 'change' && sortDirection === 'desc'
-              ? 'bg-red-100 text-red-700'
-              : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200'
-          }`}
-        >
-          Price Increases
-        </button>
-      </div>
-
-      <div class="flex flex-wrap items-center gap-1">
-        {#each TIME_PERIODS as period (period)}
-          <button
-            type="button"
-            onclick={() => {
-              timePeriod = period;
-            }}
-            class={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
-              timePeriod === period
-                ? 'bg-zinc-900 text-white'
-                : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200'
-            }`}
-          >
-            {PERIOD_LABELS[period]}
-          </button>
-        {/each}
       </div>
     </div>
 
