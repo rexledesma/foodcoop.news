@@ -23,17 +23,49 @@
     | 'upcoming'
     | 'produce';
 
-  const FILTER_OPTIONS: { value: FilterType; label: string }[] = [
+  const FILTER_OPTIONS: { value: FilterType; label: string; description?: string }[] = [
     { value: 'latest', label: 'Latest' },
     { value: 'upcoming', label: 'Upcoming' },
-    { value: 'foodcoop', label: 'Announcements' },
-    { value: 'produce', label: 'Produce' },
-    { value: 'gazette', label: "Linewaiters' Gazette" },
-    { value: 'bluesky', label: 'Bluesky' },
-    { value: 'foodcoopcooks', label: 'Cooking' },
-    { value: 'wordsprouts', label: 'Wordsprouts' },
-    { value: 'concert-series', label: 'Concerts' },
+    {
+      value: 'foodcoop',
+      label: 'Announcements',
+      description: 'News from the Coop',
+    },
+    {
+      value: 'produce',
+      label: 'Produce',
+      description: 'Fresh produce updates and market notes',
+    },
+    {
+      value: 'gazette',
+      label: "Linewaiters' Gazette",
+      description: 'Gazette stories and submission deadlines',
+    },
+    {
+      value: 'bluesky',
+      label: 'Bluesky',
+      description: 'Social posts from the Coop feed',
+    },
+    {
+      value: 'foodcoopcooks',
+      label: 'Cooking',
+      description: 'Food Coop Cooks articles and classes',
+    },
+    {
+      value: 'wordsprouts',
+      label: 'Wordsprouts',
+      description: 'Writing events and workshop listings',
+    },
+    {
+      value: 'concert-series',
+      label: 'Concerts',
+      description: 'Concert series performances and events',
+    },
   ];
+  const PRIMARY_FILTERS: FilterType[] = ['latest', 'upcoming'];
+  const SOURCE_FILTER_OPTIONS = FILTER_OPTIONS.filter(
+    (option) : boolean => !PRIMARY_FILTERS.includes(option.value),
+  );
 
   const DISCOVER_FILTER_STORAGE_KEY = 'discover-filter';
 
@@ -63,6 +95,8 @@
   let showSticky = $state(true);
   let favoritesSnapshot = $state('[]');
   let fetchFeeds = $state<() => void>(() : void => {});
+  let primaryMenuOpen = $state(false);
+  let sourceMenuOpen = $state(false);
 
   let filtersRef = $state<HTMLDivElement | null>(null);
 
@@ -216,7 +250,33 @@
 
   function setSelectedFilter(nextFilter: FilterType) : void {
     filter = nextFilter;
+    primaryMenuOpen = false;
+    sourceMenuOpen = false;
     localStorage.setItem(DISCOVER_FILTER_STORAGE_KEY, nextFilter);
+  }
+
+  function primaryMenuLabel() : string {
+    const selected = FILTER_OPTIONS.find((option) : boolean => option.value === filter);
+    if (selected && PRIMARY_FILTERS.includes(selected.value)) {return selected.label;}
+    return 'View';
+  }
+
+  function primaryMenuButtonClass() : string {
+    return PRIMARY_FILTERS.includes(filter)
+      ? 'bg-black text-white'
+      : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200';
+  }
+
+  function sourceMenuLabel() : string {
+    const selected = SOURCE_FILTER_OPTIONS.find((option) : boolean => option.value === filter);
+    return selected ? `Source: ${selected.label}` : 'Browse by source';
+  }
+
+  function sourceMenuButtonClass() : string {
+    const active = SOURCE_FILTER_OPTIONS.some((option) : boolean => option.value === filter);
+    return active
+      ? 'bg-black text-white'
+      : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200';
   }
 
   onMount(() : () => void => {
@@ -235,12 +295,42 @@
 
     const handler = (event: Event) : void => handleStateUpdate(event);
     window.addEventListener(`discover-feed-state:update:${channel}`, handler as EventListener);
+    const handlePointerDown = (event: MouseEvent | TouchEvent) : void => {
+      const target = event.target;
+      if (!(target instanceof Element)) {return;}
+      if (
+        primaryMenuOpen &&
+        !target.closest('[data-discover-primary-menu="true"]') &&
+        !target.closest('[data-discover-primary-trigger="true"]')
+      ) {
+        primaryMenuOpen = false;
+      }
+      if (!sourceMenuOpen) {return;}
+      if (
+        target.closest('[data-discover-source-menu="true"]') ||
+        target.closest('[data-discover-source-trigger="true"]')
+      ) {
+        return;
+      }
+      sourceMenuOpen = false;
+    };
+    const handleKeyDown = (event: KeyboardEvent) : void => {
+      if (event.key !== 'Escape') {return;}
+      primaryMenuOpen = false;
+      sourceMenuOpen = false;
+    };
+    window.addEventListener('mousedown', handlePointerDown);
+    window.addEventListener('touchstart', handlePointerDown);
+    window.addEventListener('keydown', handleKeyDown);
 
     return () : void => {
       window.removeEventListener(
         `discover-feed-state:update:${channel}`,
         handler as EventListener,
       );
+      window.removeEventListener('mousedown', handlePointerDown);
+      window.removeEventListener('touchstart', handlePointerDown);
+      window.removeEventListener('keydown', handleKeyDown);
     };
   });
 
@@ -281,27 +371,87 @@
         </div>
       {:else}
         <div class="flex flex-wrap gap-1">
-          {#each FILTER_OPTIONS.filter((option) => ['latest', 'upcoming'].includes(option.value)) as option (option.value)}
+          <div class="relative w-28 sm:w-32">
             <button
               type="button"
-              onclick={() => setSelectedFilter(option.value)}
-              class={`rounded-full px-3 py-1.5 text-sm font-medium whitespace-nowrap transition-colors ${filter === option.value ? 'bg-black text-white' : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200'}`}
+              onclick={() => {
+                primaryMenuOpen = !primaryMenuOpen;
+                sourceMenuOpen = false;
+              }}
+              aria-expanded={primaryMenuOpen}
+              data-discover-primary-trigger="true"
+              class={`inline-flex w-full items-center justify-between gap-1 rounded-full px-3 py-1.5 text-sm font-medium whitespace-nowrap transition-colors ${primaryMenuButtonClass()}`}
             >
-              {option.label}
+              <span>{primaryMenuLabel()}</span>
+              <span
+                aria-hidden="true"
+                class={`text-[10px] ${PRIMARY_FILTERS.includes(filter) ? 'text-white/80' : 'text-zinc-500'}`}
+              >
+                ▼
+              </span>
             </button>
-          {/each}
-        </div>
 
-        <div class="mt-2 flex flex-wrap gap-1">
-          {#each FILTER_OPTIONS.filter((option) => !['latest', 'upcoming'].includes(option.value)) as option (option.value)}
+            {#if primaryMenuOpen}
+              <div
+                class="absolute top-full left-0 z-40 mt-2 w-[min(14rem,calc(100vw-2rem))] overflow-hidden rounded-2xl border border-zinc-200 bg-white py-1 shadow-[0_16px_50px_-24px_rgba(0,0,0,0.45)]"
+                data-discover-primary-menu="true"
+              >
+                {#each FILTER_OPTIONS.filter((option) => PRIMARY_FILTERS.includes(option.value)) as option (option.value)}
+                  <button
+                    type="button"
+                    onclick={() => setSelectedFilter(option.value)}
+                    class={`flex w-full items-center justify-between gap-3 px-3 py-2 text-left text-sm transition-colors hover:bg-zinc-50 ${filter === option.value ? 'bg-zinc-50' : ''}`}
+                  >
+                    <span class="font-medium text-zinc-900">{option.label}</span>
+                    {#if filter === option.value}
+                      <span aria-hidden="true" class="text-sm text-zinc-700">✓</span>
+                    {/if}
+                  </button>
+                {/each}
+              </div>
+            {/if}
+          </div>
+
+          <div class="relative w-60 sm:w-72">
             <button
               type="button"
-              onclick={() => setSelectedFilter(option.value)}
-              class={`rounded-full px-3 py-1.5 text-sm font-medium whitespace-nowrap transition-colors ${filter === option.value ? 'bg-black text-white' : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200'}`}
+              onclick={() => {
+                primaryMenuOpen = false;
+                sourceMenuOpen = !sourceMenuOpen;
+              }}
+              aria-expanded={sourceMenuOpen}
+              data-discover-source-trigger="true"
+              class={`inline-flex w-full items-center justify-between gap-1 rounded-full px-3 py-1.5 text-sm font-medium whitespace-nowrap transition-colors ${sourceMenuButtonClass()}`}
             >
-              {option.label}
+              <span class="truncate">{sourceMenuLabel()}</span>
+              <span aria-hidden="true" class={`text-[10px] ${filter === 'latest' || filter === 'upcoming' ? 'text-zinc-500' : 'text-white/80'}`}>▼</span>
             </button>
-          {/each}
+
+            {#if sourceMenuOpen}
+              <div
+                class="absolute top-full left-0 z-40 mt-2 w-[min(18rem,calc(100vw-2rem))] min-w-full overflow-hidden rounded-2xl border border-zinc-200 bg-white py-1 shadow-[0_16px_50px_-24px_rgba(0,0,0,0.45)]"
+                data-discover-source-menu="true"
+              >
+                {#each SOURCE_FILTER_OPTIONS as option (option.value)}
+                  <button
+                    type="button"
+                    onclick={() => setSelectedFilter(option.value)}
+                    class={`flex w-full items-start justify-between gap-3 px-3 py-2 text-left transition-colors hover:bg-zinc-50 ${filter === option.value ? 'bg-zinc-50' : ''}`}
+                  >
+                    <span class="min-w-0">
+                      <span class="block text-sm font-medium text-zinc-900">{option.label}</span>
+                      {#if option.description}
+                        <span class="mt-0.5 block text-xs leading-5 text-zinc-500">{option.description}</span>
+                      {/if}
+                    </span>
+                    {#if filter === option.value}
+                      <span aria-hidden="true" class="pt-0.5 text-sm text-zinc-700">✓</span>
+                    {/if}
+                  </button>
+                {/each}
+              </div>
+            {/if}
+          </div>
         </div>
 
         {#if !isInitialError}
