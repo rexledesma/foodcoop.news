@@ -61,13 +61,6 @@
     rotateEnd: number;
     durationMs: number;
   };
-  type RowTapState = {
-    rowName: string;
-    time: number;
-    x: number;
-    y: number;
-  };
-
   type ProduceAnalyticsClientState = {
     data: ProduceRow[];
     history: ProduceHistoryMap;
@@ -123,9 +116,6 @@
     'w-1/3 min-w-[33.333%] max-w-[33.333%] md:w-2/5 md:min-w-0 md:max-w-none';
   const DATA_COL_CLASS = 'w-1/3 min-w-[33.333%] max-w-[33.333%] md:w-auto md:min-w-0 md:max-w-none';
   const METRIC_VALUE_CLASS = 'w-[7ch] shrink-0 text-right font-mono';
-  const DOUBLE_TAP_WINDOW_MS = 320;
-  const DOUBLE_TAP_MAX_DRIFT_PX = 36;
-  const SUPPRESS_DBLCLICK_AFTER_TOUCH_MS = 700;
   const FAVORITE_BURST_MIN_LIFETIME_MS = 500;
   const FAVORITE_BURST_MAX_LIFETIME_MS = 1000;
   const WINDOW_TRANSITION_MS = 750;
@@ -160,8 +150,6 @@
   let favoriteBurstLayerRef = $state<HTMLDivElement | null>(null);
   let virtualRowsAnchorRef = $state<HTMLDivElement | null>(null);
   let favoriteBursts = $state<FavoriteBurst[]>([]);
-  let lastRowTap = $state<RowTapState | null>(null);
-  let lastTouchDoubleTapAt = $state(0);
   let nextFavoriteBurstId = $state(0);
   let virtualScrollMargin = $state(0);
   let actionsMenuCopyTimeout = 0;
@@ -1008,56 +996,6 @@
     );
   }
 
-  function handleRowTouchEnd(event: TouchEvent, rowName: string) : void {
-    if (event.changedTouches.length !== 1) {
-      lastRowTap = null;
-      return;
-    }
-
-    const touch = event.changedTouches[0];
-    const now = Date.now();
-    const previousTap = lastRowTap;
-
-    if (previousTap && previousTap.rowName === rowName && now - previousTap.time <= DOUBLE_TAP_WINDOW_MS) {
-      const drift = Math.hypot(touch.clientX - previousTap.x, touch.clientY - previousTap.y);
-      if (drift <= DOUBLE_TAP_MAX_DRIFT_PX) {
-        event.preventDefault();
-        const currentTarget = event.currentTarget;
-        if (currentTarget instanceof HTMLTableRowElement) {
-          toggleFavoriteWithBurst(rowName, currentTarget, touch.clientX, touch.clientY);
-        }
-        lastTouchDoubleTapAt = now;
-        lastRowTap = null;
-        return;
-      }
-    }
-
-    lastRowTap = {
-      rowName,
-      time: now,
-      x: touch.clientX,
-      y: touch.clientY,
-    };
-  }
-
-  function handleRowDoubleClick(event: MouseEvent, rowName: string) : void {
-    if (Date.now() - lastTouchDoubleTapAt <= SUPPRESS_DBLCLICK_AFTER_TOUCH_MS) {
-      return;
-    }
-
-    const target = event.target;
-    if (!(target instanceof Element)) {return;}
-    if (target.closest('button, input, textarea, select, [role="button"]')) {
-      return;
-    }
-
-    event.preventDefault();
-    const currentTarget = event.currentTarget;
-    if (currentTarget instanceof HTMLTableRowElement) {
-      toggleFavoriteWithBurst(rowName, currentTarget, event.clientX, event.clientY);
-    }
-  }
-
   function updateVirtualScrollMargin() : void {
     if (typeof window === 'undefined') {return;}
     const anchor = virtualRowsAnchorRef;
@@ -1266,7 +1204,6 @@
       window.removeEventListener('scroll', handleViewportChange, true);
       window.removeEventListener('resize', handleViewportChange);
       favoriteBursts = [];
-      lastRowTap = null;
       hideActionsMenu();
     };
   });
@@ -1658,8 +1595,6 @@
               in:fade={{ duration: 220 }}
               out:fade={{ duration: 180 }}
               class={`group select-none border-b border-zinc-100 ${actionsMenu?.itemName === row.name ? 'relative z-30' : ''} ${favorites.has(row.name) ? 'bg-amber-50' : 'hover:bg-zinc-50'}`}
-              ontouchend={(event) => handleRowTouchEnd(event, row.name)}
-              ondblclick={(event) => handleRowDoubleClick(event, row.name)}
             >
                 <td
                   class={`${NAME_COL_CLASS} sticky left-0 box-border border-r border-zinc-200 p-2 md:w-auto md:border-r-0 ${
