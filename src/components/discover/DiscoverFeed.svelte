@@ -385,15 +385,11 @@
     <div class="pb-4">
       {#if isInitialLoading}
         <div class="space-y-3">
-          <div class="flex gap-1">
-            <div class="feed-shimmer h-8 w-16 rounded-full"></div>
-            <div class="feed-shimmer h-8 w-20 rounded-full"></div>
-          </div>
-          <div class="flex gap-1">
+          <div class="flex flex-wrap gap-1">
             <div class="feed-shimmer h-8 w-28 rounded-full"></div>
-            <div class="feed-shimmer h-8 w-36 rounded-full"></div>
-            <div class="feed-shimmer h-8 w-20 rounded-full"></div>
+            <div class="feed-shimmer h-8 w-60 rounded-full sm:w-72"></div>
           </div>
+          <div class="feed-shimmer h-5 w-40 rounded-full"></div>
         </div>
       {:else}
         <div class="flex flex-wrap gap-1">
@@ -554,17 +550,25 @@
 {#snippet FeedItemSkeleton()}
   <div class="rounded-xl border border-zinc-200 bg-white p-4">
     <div class="flex items-start gap-3">
-      <div class="feed-shimmer h-10 w-10 rounded-full"></div>
+      <div class="feed-shimmer h-10 w-10 shrink-0 rounded-full"></div>
       <div class="min-w-0 flex-1 space-y-3">
-        <div class="feed-shimmer h-4 w-40 rounded-full"></div>
+        <div class="flex flex-wrap items-center gap-2">
+          <div class="feed-shimmer h-4 w-28 rounded-full"></div>
+          <div class="feed-shimmer h-4 w-36 rounded-full"></div>
+        </div>
+        <div class="feed-shimmer h-5 w-11/12 rounded-full"></div>
         <div class="space-y-2">
           <div class="feed-shimmer h-3 w-full rounded-full"></div>
           <div class="feed-shimmer h-3 w-5/6 rounded-full"></div>
-          <div class="feed-shimmer h-3 w-2/3 rounded-full"></div>
+          <div class="feed-shimmer h-3 w-3/4 rounded-full"></div>
+        </div>
+        <div class="flex flex-wrap gap-1.5">
+          <div class="feed-shimmer h-6 w-24 rounded-full"></div>
+          <div class="feed-shimmer h-6 w-28 rounded-full"></div>
         </div>
       </div>
     </div>
-    <div class="feed-shimmer mt-4 h-32 rounded-lg"></div>
+    <div class="feed-shimmer mt-4 h-44 rounded-lg"></div>
   </div>
 {/snippet}
 
