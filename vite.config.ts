@@ -1,4 +1,5 @@
 import { sveltekit } from '@sveltejs/kit/vite';
+import tailwindcss from '@tailwindcss/vite';
 import { defineConfig } from 'vite-plus';
 
 export default defineConfig({
@@ -47,5 +48,5 @@ export default defineConfig({
     },
   },
   envPrefix: ['VITE_', 'PUBLIC_'],
-  plugins: [sveltekit()],
+  plugins: [tailwindcss(), sveltekit()],
 });
