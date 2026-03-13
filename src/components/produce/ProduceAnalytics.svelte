@@ -104,6 +104,15 @@
     '5Y': '5Y',
     MAX: 'Max',
   };
+  const PERIOD_MENU_LABELS: Record<TimePeriod, string> = {
+    '1D': 'Past day',
+    '1W': 'Past week',
+    '1M': 'Past month',
+    '1Y': 'Past year',
+    YTD: 'Year to date',
+    '5Y': 'Past 5 years',
+    MAX: 'All time',
+  };
   const PERIOD_METRIC_LABELS: Record<TimePeriod, string> = {
     '1D': 'Past day',
     '1W': 'Past week',
@@ -119,6 +128,13 @@
     { value: 'new', label: 'New Arrivals', className: 'text-[#3F7540]' },
     { value: 'recently_unavailable', label: 'Out of Stock', className: 'text-red-700' },
   ];
+  const FILTER_COMPACT_LABELS: Record<Exclude<QuickFilter, null>, string> = {
+    favorites: 'Favorites',
+    drops: 'Drops',
+    increases: 'Hikes',
+    new: 'New',
+    recently_unavailable: 'Out',
+  };
   const SORT_MENU_OPTIONS: {
     label: string;
     shortLabel: string;
@@ -198,31 +214,31 @@
       apply: () : void => applySortSelection('name', 'desc'),
     },
     {
-      label: 'Popular',
+      label: 'Favorites: Popular',
       shortLabel: 'Popular',
       isActive: (field, direction) => field === 'favorite_count' && direction === 'desc',
       apply: () : void => applySortSelection('favorite_count', 'desc'),
     },
     {
-      label: 'Price: Low to High',
-      shortLabel: 'Low-High',
+      label: 'Price: Low to High ($-$$)',
+      shortLabel: '$-$$',
       isActive: (field, direction) => field === 'price' && direction === 'asc',
       apply: () : void => applySortSelection('price', 'asc'),
     },
     {
-      label: 'Price: High to Low',
-      shortLabel: 'High-Low',
+      label: 'Price: High to Low ($$-$)',
+      shortLabel: '$$-$',
       isActive: (field, direction) => field === 'price' && direction === 'desc',
       apply: () : void => applySortSelection('price', 'desc'),
     },
     {
-      label: 'Price Drops',
+      label: 'Trends: Price Drops',
       shortLabel: 'Drops',
       isActive: (field, direction) => field === 'change' && direction === 'asc',
       apply: () : void => applySortSelection('change', 'asc'),
     },
     {
-      label: 'Price Hikes',
+      label: 'Trends: Price Hikes',
       shortLabel: 'Hikes',
       isActive: (field, direction) => field === 'change' && direction === 'desc',
       apply: () : void => applySortSelection('change', 'desc'),
@@ -754,7 +770,7 @@
     const filter = activeViewFilter();
     if (filter === 'date' && dateFilter) {return formatShortDate(dateFilter);}
     if (filter === 'date') {return 'All';}
-    return filter ? quickFilterPillLabel(filter) : 'All';
+    return filter ? FILTER_COMPACT_LABELS[filter] : 'All';
   }
 
   function activeFilterPillClass(): string {
@@ -902,9 +918,9 @@
   }
 
   function sortOptionPillClass(label: string) : string {
-    if (label === 'Popular') {return 'bg-amber-100 text-amber-800';}
-    if (label === 'Price Drops') {return 'bg-green-100 text-green-700';}
-    if (label === 'Price Hikes') {return 'bg-red-100 text-red-700';}
+    if (label === 'Favorites: Popular') {return 'bg-amber-100 text-amber-800';}
+    if (label === 'Trends: Price Drops') {return 'bg-green-100 text-green-700';}
+    if (label === 'Trends: Price Hikes') {return 'bg-red-100 text-red-700';}
     return 'bg-zinc-100 text-zinc-700';
   }
 
@@ -1413,6 +1429,9 @@
                 class="absolute top-full left-0 z-40 mt-2 w-[min(14rem,calc(100vw-2.5rem))] max-w-[calc(100vw-2.5rem)] overflow-hidden rounded-2xl border border-zinc-200 bg-white py-1 shadow-[0_16px_50px_-24px_rgba(0,0,0,0.45)] sm:right-0 sm:left-auto sm:w-44 sm:max-w-none"
                 data-produce-controls-menu="true"
               >
+                <div class="px-4 py-2 text-xs font-semibold tracking-[0.08em] text-zinc-500 uppercase">
+                  Filter by
+                </div>
                 {#each FILTER_MENU_OPTIONS as option (option.label)}
                   <button
                     type="button"
@@ -1456,6 +1475,9 @@
                 class="absolute top-full left-1/2 z-40 mt-2 w-[min(14rem,calc(100vw-2.5rem))] max-w-[calc(100vw-2.5rem)] -translate-x-1/2 overflow-hidden rounded-2xl border border-zinc-200 bg-white py-1 shadow-[0_16px_50px_-24px_rgba(0,0,0,0.45)] sm:right-0 sm:left-auto sm:w-44 sm:max-w-none sm:translate-x-0"
                 data-produce-controls-menu="true"
               >
+                <div class="px-4 py-2 text-xs font-semibold tracking-[0.08em] text-zinc-500 uppercase">
+                  Sort by
+                </div>
                 {#each SORT_MENU_OPTIONS as option (option.label)}
                   <button
                     type="button"
@@ -1500,6 +1522,9 @@
                 class="absolute top-full right-0 z-40 mt-2 w-[min(10rem,calc(100vw-2.5rem))] max-w-[calc(100vw-2.5rem)] overflow-hidden rounded-2xl border border-zinc-200 bg-white py-1 shadow-[0_16px_50px_-24px_rgba(0,0,0,0.45)] sm:w-32 sm:max-w-none"
                 data-produce-controls-menu="true"
               >
+                <div class="px-4 py-2 text-xs font-semibold tracking-[0.08em] text-zinc-500 uppercase">
+                  Range by
+                </div>
                 {#each TIME_PERIODS as period (period)}
                   <button
                     type="button"
@@ -1512,7 +1537,7 @@
                     <span
                       class={`inline-flex items-center rounded-full px-2.5 py-1 text-sm font-medium ${periodOptionPillClass(period)}`}
                     >
-                      {PERIOD_LABELS[period]}
+                      {PERIOD_MENU_LABELS[period]}
                     </span>
                     {#if timePeriod === period}
                       <span aria-hidden="true">✓</span>
