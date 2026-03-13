@@ -28,7 +28,14 @@
     | 'YTD';
   type SortField = 'name' | 'price' | 'change' | 'first_seen' | 'last_seen';
   type SortDirection = 'asc' | 'desc' | null;
-  type QuickFilter = 'favorites' | 'drops' | 'increases' | 'new' | 'recently_unavailable' | null;
+  type QuickFilter =
+    | 'favorites'
+    | 'popular'
+    | 'drops'
+    | 'increases'
+    | 'new'
+    | 'recently_unavailable'
+    | null;
   type ProduceSearchDocument = {
     id: string;
     name: string;
@@ -271,6 +278,8 @@
 
     if (quickFilter === 'favorites') {
       result = result.filter((row) : boolean => favorites.has(row.name));
+    } else if (quickFilter === 'popular') {
+      result = result.filter((row) : boolean => favoriteCount(row.name) > 0);
     } else if (quickFilter === 'new') {
       result = result.filter((row) : boolean => row.is_new);
     } else if (quickFilter === 'recently_unavailable') {
@@ -282,6 +291,14 @@
         const aScore = searchScores.get(produceHash(a.name)) ?? Number.MAX_VALUE;
         const bScore = searchScores.get(produceHash(b.name)) ?? Number.MAX_VALUE;
         return aScore - bScore;
+      });
+    }
+
+    if (quickFilter === 'popular') {
+      return [...result].sort((a, b) : number => {
+        const countDelta = favoriteCount(b.name) - favoriteCount(a.name);
+        if (countDelta !== 0) {return countDelta;}
+        return a.name.localeCompare(b.name);
       });
     }
 
@@ -323,7 +340,10 @@
   const hasActiveResultFilter = $derived.by(() : boolean => {
     if (itemFilter || dateFilter) {return true;}
     return (
-      quickFilter === 'favorites' || quickFilter === 'new' || quickFilter === 'recently_unavailable'
+      quickFilter === 'favorites' ||
+      quickFilter === 'popular' ||
+      quickFilter === 'new' ||
+      quickFilter === 'recently_unavailable'
     );
   });
 
@@ -347,6 +367,9 @@
     }
     if (quickFilter === 'favorites') {
       return base.filter((row) : boolean => favorites.has(row.name)).length;
+    }
+    if (quickFilter === 'popular') {
+      return base.filter((row) : boolean => favoriteCount(row.name) > 0).length;
     }
     if (quickFilter === 'new') {
       return base.filter((row) : boolean => row.is_new).length;
@@ -646,6 +669,7 @@
 
   function quickFilterPillLabel(filter: QuickFilter): string {
     if (filter === 'favorites') {return 'Favorites';}
+    if (filter === 'popular') {return 'Popular';}
     if (filter === 'new') {return 'New Arrivals';}
     if (filter === 'recently_unavailable') {return 'Out of Stock';}
     return 'Filter';
@@ -653,14 +677,22 @@
 
   function quickFilterPillClass(filter: QuickFilter): string {
     if (filter === 'favorites') {return 'bg-amber-100 text-amber-800';}
+    if (filter === 'popular') {return 'bg-amber-100 text-amber-800';}
     if (filter === 'new') {return 'bg-[rgb(255,246,220)] text-[#3F7540]';}
     if (filter === 'recently_unavailable') {return 'bg-red-100 text-red-700';}
     return 'bg-zinc-100 text-zinc-700';
   }
 
-  function activeViewFilter(): 'favorites' | 'new' | 'recently_unavailable' | 'date' | null {
+  function activeViewFilter():
+    | 'favorites'
+    | 'popular'
+    | 'new'
+    | 'recently_unavailable'
+    | 'date'
+    | null {
     if (dateFilter) {return 'date';}
     if (quickFilter === 'favorites') {return 'favorites';}
+    if (quickFilter === 'popular') {return 'popular';}
     if (quickFilter === 'new') {return 'new';}
     if (quickFilter === 'recently_unavailable') {return 'recently_unavailable';}
     return null;
@@ -688,7 +720,12 @@
     if (produceFilterDisplayName) {return produceFilterDisplayName;}
     const filter = activeViewFilter();
     if (filter === 'date' && dateFilter) {return formatShortDate(dateFilter).toLowerCase();}
-    if (filter === 'favorites' || filter === 'new' || filter === 'recently_unavailable') {
+    if (
+      filter === 'favorites' ||
+      filter === 'popular' ||
+      filter === 'new' ||
+      filter === 'recently_unavailable'
+    ) {
       return quickFilterPillLabel(filter).toLowerCase();
     }
     return 'current filter';
@@ -1151,6 +1188,7 @@
           const persistedQuickFilter = parsed.quickFilter;
           quickFilter =
             persistedQuickFilter === 'favorites' ||
+            persistedQuickFilter === 'popular' ||
             persistedQuickFilter === 'new' ||
             persistedQuickFilter === 'recently_unavailable'
               ? persistedQuickFilter
@@ -1366,6 +1404,23 @@
           }`}
         >
           Favorites
+        </button>
+
+        <button
+          type="button"
+          onclick={() => {
+            clearQueryFilters();
+            quickFilter = quickFilter === 'popular' ? null : 'popular';
+            sortField = null;
+            sortDirection = null;
+          }}
+          class={`rounded-full px-3 py-1.5 text-sm font-medium whitespace-nowrap transition-colors ${
+            quickFilter === 'popular'
+              ? 'bg-amber-100 text-amber-800'
+              : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200'
+          }`}
+        >
+          Popular
         </button>
 
         <button

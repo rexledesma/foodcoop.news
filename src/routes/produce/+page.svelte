@@ -12,7 +12,7 @@
     ProduceRow,
     ProduceSWRPeriod,
   } from '@/lib/produce-types';
-  type ProduceQuickFilter = 'favorites' | 'new' | 'recently_unavailable';
+  type ProduceQuickFilter = 'favorites' | 'popular' | 'new' | 'recently_unavailable';
 
   const SWR_REVALIDATE_INTERVAL_MS = 5 * 60 * 1000;
   const SWR_PERIODS = new Set<ProduceSWRPeriod>([
@@ -272,6 +272,7 @@
   function initialQuickFilterFromParams(params: URLSearchParams): ProduceQuickFilter | null {
     const filterParam = params.get('filter')?.trim().toLowerCase();
     if (filterParam === 'favorites') {return 'favorites';}
+    if (filterParam === 'popular') {return 'popular';}
     if (filterParam === 'new') {return 'new';}
     if (filterParam === 'recently_unavailable') {return 'recently_unavailable';}
     return null;
