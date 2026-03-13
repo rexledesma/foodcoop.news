@@ -885,11 +885,6 @@
     openActionsMenu(rowName, specialtyUrl, button);
   }
 
-  function handleActionsMenuFavoriteToggle() : void {
-    if (!actionsMenu) {return;}
-    toggleFavorite(actionsMenu.itemName);
-  }
-
   async function handleActionsMenuShare() : Promise<void> {
     if (!actionsMenu) {return;}
     const url = `${window.location.origin}${produceItemUrl(actionsMenu.itemName)}`;
@@ -1795,10 +1790,6 @@
                                       <p class="line-clamp-3 break-words text-[11px] leading-relaxed text-zinc-600 sm:line-clamp-4 sm:text-xs">
                                         {currentActionsMenu.data.description}
                                       </p>
-                                    {:else if !currentActionsMenu.url}
-                                      <p class="break-words text-[11px] leading-relaxed text-zinc-600 sm:text-xs">
-                                        Favorite this item or share its internal produce page.
-                                      </p>
                                     {/if}
                                   </div>
                                 {/if}
@@ -1818,23 +1809,13 @@
                                     {/if}
                                     <button
                                       type="button"
-                                      onclick={handleActionsMenuFavoriteToggle}
-                                      class="flex w-full items-center gap-2 px-3 py-2 text-left text-[13px] text-zinc-700 transition-colors hover:bg-zinc-100 sm:gap-3 sm:px-4 sm:py-2.5 sm:text-sm"
-                                    >
-                                      <span class="inline-flex h-5 w-5 items-center justify-center">
-                                        {favorites.has(currentActionsMenu.itemName) ? '💔' : '⭐'}
-                                      </span>
-                                      <span class="min-w-0 flex-1 break-words leading-snug">{favorites.has(currentActionsMenu.itemName) ? 'Remove Favorite' : 'Add Favorite'}</span>
-                                    </button>
-                                    <button
-                                      type="button"
                                       onclick={() => {
                                         void handleActionsMenuShare();
                                       }}
                                       class="flex w-full items-center gap-2 px-3 py-2 text-left text-[13px] text-zinc-700 transition-colors hover:bg-zinc-100 sm:gap-3 sm:px-4 sm:py-2.5 sm:text-sm"
                                     >
                                       <span class="inline-flex h-5 w-5 items-center justify-center">
-                                        {actionsMenuCopied ? '✅' : '🔗'}
+                                        {actionsMenuCopied ? '✅' : '⤴'}
                                       </span>
                                       <span class="min-w-0 flex-1 break-words leading-snug">{actionsMenuCopied ? 'Copied!' : 'Share'}</span>
                                     </button>
