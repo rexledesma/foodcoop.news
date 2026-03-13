@@ -12,20 +12,21 @@
   import type { FeedItem } from '@/lib/discover-feed';
   import { getFeedItemKey } from '@/lib/discover-feed';
 
-  type FilterType =
-    | 'latest'
+  type PrimaryFilterType = 'latest' | 'upcoming';
+  type SourceFilterType =
     | 'foodcoop'
     | 'gazette'
     | 'bluesky'
     | 'foodcoopcooks'
     | 'wordsprouts'
     | 'concert-series'
-    | 'upcoming'
     | 'produce';
 
-  const FILTER_OPTIONS: { value: FilterType; label: string; description?: string }[] = [
+  const PRIMARY_FILTER_OPTIONS: { value: PrimaryFilterType; label: string }[] = [
     { value: 'latest', label: 'Latest' },
     { value: 'upcoming', label: 'Upcoming' },
+  ];
+  const SOURCE_FILTER_OPTIONS: { value: SourceFilterType; label: string; description?: string }[] = [
     {
       value: 'foodcoop',
       label: 'Announcements',
@@ -62,10 +63,6 @@
       description: 'Concert series performances and events',
     },
   ];
-  const PRIMARY_FILTERS: FilterType[] = ['latest', 'upcoming'];
-  const SOURCE_FILTER_OPTIONS = FILTER_OPTIONS.filter(
-    (option) : boolean => !PRIMARY_FILTERS.includes(option.value),
-  );
 
   const DISCOVER_FILTER_STORAGE_KEY = 'discover-filter';
 
@@ -87,7 +84,8 @@
     initialState: DiscoverFeedClientState;
   } = $props();
 
-  let filter = $state<FilterType>('latest');
+  let primaryFilter = $state<PrimaryFilterType>('latest');
+  let sourceFilter = $state<SourceFilterType | null>(null);
   let items = $state<FeedItem[]>([]);
   let loading = $state(true);
   let error = $state('');
@@ -106,36 +104,33 @@
     const now = new Date();
 
     return items.filter((item) : boolean => {
-      if (filter === 'latest') {
-        return !isEventItem(item) || item.date < now;
-      }
-      if (filter === 'foodcoopcooks') {
+      const matchesPrimary = primaryFilter === 'upcoming'
+        ? isEventItem(item) && item.date >= now
+        : !isEventItem(item) || item.date < now;
+
+      if (!matchesPrimary) {return false;}
+      if (sourceFilter === null) {return true;}
+      if (sourceFilter === 'foodcoopcooks') {
         return item.type === 'foodcoopcooks' || item.type === 'foodcoopcooks-events';
       }
-      if (filter === 'wordsprouts') {
+      if (sourceFilter === 'wordsprouts') {
         return item.type === 'wordsprouts-events';
       }
-      if (filter === 'concert-series') {
+      if (sourceFilter === 'concert-series') {
         return item.type === 'concert-series-events';
       }
-      if (filter === 'upcoming') {
-        return isEventItem(item) && item.date >= now;
-      }
-      if (filter === 'foodcoop') {
+      if (sourceFilter === 'foodcoop') {
         return item.type === 'foodcoop' || item.type === 'gm-events';
       }
-      if (filter === 'produce') {
-        return item.type === 'produce';
-      }
-      if (filter === 'gazette') {
+      if (sourceFilter === 'gazette') {
         return item.type === 'gazette' || item.type === 'gazette-deadline';
       }
-      return item.type === filter;
+      return item.type === sourceFilter;
     });
   });
 
   const displayedItems = $derived(
-    filter === 'upcoming'
+    primaryFilter === 'upcoming'
       ? [...filteredItems].sort((a, b) : number => a.date.getTime() - b.date.getTime())
       : filteredItems,
   );
@@ -153,8 +148,19 @@
     );
   }
 
-  function isFilterType(value: string): value is FilterType {
-    return FILTER_OPTIONS.some((option) : boolean => option.value === value);
+  function isPrimaryFilterType(value: string): value is PrimaryFilterType {
+    return PRIMARY_FILTER_OPTIONS.some((option) : boolean => option.value === value);
+  }
+
+  function isSourceFilterType(value: string): value is SourceFilterType {
+    return SOURCE_FILTER_OPTIONS.some((option) : boolean => option.value === value);
+  }
+
+  function persistFilters() : void {
+    localStorage.setItem(
+      DISCOVER_FILTER_STORAGE_KEY,
+      JSON.stringify({ primaryFilter, sourceFilter }),
+    );
   }
 
   function formatRelativeTime(date: Date): string | null {
@@ -248,35 +254,34 @@
     fetchFeeds = next.fetchFeeds;
   }
 
-  function setSelectedFilter(nextFilter: FilterType) : void {
-    filter = nextFilter;
+  function setPrimaryFilter(nextFilter: PrimaryFilterType) : void {
+    primaryFilter = nextFilter;
+    primaryMenuOpen = false;
+    persistFilters();
+  }
+
+  function setSourceFilter(nextFilter: SourceFilterType | null) : void {
+    sourceFilter = nextFilter;
     primaryMenuOpen = false;
     sourceMenuOpen = false;
-    localStorage.setItem(DISCOVER_FILTER_STORAGE_KEY, nextFilter);
+    persistFilters();
   }
 
   function primaryMenuLabel() : string {
-    const selected = FILTER_OPTIONS.find((option) : boolean => option.value === filter);
-    if (selected && PRIMARY_FILTERS.includes(selected.value)) {return selected.label;}
-    return 'View';
+    return PRIMARY_FILTER_OPTIONS.find((option) : boolean => option.value === primaryFilter)?.label ?? 'View';
   }
 
   function primaryMenuButtonClass() : string {
-    return PRIMARY_FILTERS.includes(filter)
-      ? 'bg-black text-white'
-      : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200';
+    return 'bg-black text-white';
   }
 
   function sourceMenuLabel() : string {
-    const selected = SOURCE_FILTER_OPTIONS.find((option) : boolean => option.value === filter);
+    const selected = SOURCE_FILTER_OPTIONS.find((option) : boolean => option.value === sourceFilter);
     return selected ? `Source: ${selected.label}` : 'Browse by source';
   }
 
   function sourceMenuButtonClass() : string {
-    const active = SOURCE_FILTER_OPTIONS.some((option) : boolean => option.value === filter);
-    return active
-      ? 'bg-black text-white'
-      : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200';
+    return 'bg-blue-100 text-blue-800 hover:bg-blue-200';
   }
 
   onMount(() : () => void => {
@@ -289,8 +294,29 @@
     fetchFeeds = initialState.fetchFeeds;
 
     const storedFilter = localStorage.getItem(DISCOVER_FILTER_STORAGE_KEY);
-    if (storedFilter && isFilterType(storedFilter)) {
-      filter = storedFilter;
+    if (storedFilter) {
+      try {
+        const parsed = JSON.parse(storedFilter) as {
+          primaryFilter?: string;
+          sourceFilter?: string | null;
+        };
+        if (parsed.primaryFilter && isPrimaryFilterType(parsed.primaryFilter)) {
+          primaryFilter = parsed.primaryFilter;
+        }
+        if (
+          parsed.sourceFilter !== undefined &&
+          parsed.sourceFilter !== null &&
+          isSourceFilterType(parsed.sourceFilter)
+        ) {
+          sourceFilter = parsed.sourceFilter;
+        }
+      } catch {
+        if (isPrimaryFilterType(storedFilter)) {
+          primaryFilter = storedFilter;
+        } else if (isSourceFilterType(storedFilter)) {
+          sourceFilter = storedFilter;
+        }
+      }
     }
 
     const handler = (event: Event) : void => handleStateUpdate(event);
@@ -385,7 +411,7 @@
               <span>{primaryMenuLabel()}</span>
               <span
                 aria-hidden="true"
-                class={`text-[10px] ${PRIMARY_FILTERS.includes(filter) ? 'text-white/80' : 'text-zinc-500'}`}
+                class="text-[10px] text-white/80"
               >
                 ▼
               </span>
@@ -396,14 +422,14 @@
                 class="absolute top-full left-0 z-40 mt-2 w-[min(14rem,calc(100vw-2rem))] overflow-hidden rounded-2xl border border-zinc-200 bg-white py-1 shadow-[0_16px_50px_-24px_rgba(0,0,0,0.45)]"
                 data-discover-primary-menu="true"
               >
-                {#each FILTER_OPTIONS.filter((option) => PRIMARY_FILTERS.includes(option.value)) as option (option.value)}
+                {#each PRIMARY_FILTER_OPTIONS as option (option.value)}
                   <button
                     type="button"
-                    onclick={() => setSelectedFilter(option.value)}
-                    class={`flex w-full items-center justify-between gap-3 px-3 py-2 text-left text-sm transition-colors hover:bg-zinc-50 ${filter === option.value ? 'bg-zinc-50' : ''}`}
+                    onclick={() => setPrimaryFilter(option.value)}
+                    class={`flex w-full items-center justify-between gap-3 px-3 py-2 text-left text-sm transition-colors hover:bg-zinc-50 ${primaryFilter === option.value ? 'bg-zinc-50' : ''}`}
                   >
                     <span class="font-medium text-zinc-900">{option.label}</span>
-                    {#if filter === option.value}
+                    {#if primaryFilter === option.value}
                       <span aria-hidden="true" class="text-sm text-zinc-700">✓</span>
                     {/if}
                   </button>
@@ -424,7 +450,7 @@
               class={`inline-flex w-full items-center justify-between gap-1 rounded-full px-3 py-1.5 text-sm font-medium whitespace-nowrap transition-colors ${sourceMenuButtonClass()}`}
             >
               <span class="truncate">{sourceMenuLabel()}</span>
-              <span aria-hidden="true" class={`text-[10px] ${filter === 'latest' || filter === 'upcoming' ? 'text-zinc-500' : 'text-white/80'}`}>▼</span>
+              <span aria-hidden="true" class="text-[10px] text-blue-800/80">▼</span>
             </button>
 
             {#if sourceMenuOpen}
@@ -432,11 +458,21 @@
                 class="absolute top-full left-0 z-40 mt-2 w-[min(18rem,calc(100vw-2rem))] min-w-full overflow-hidden rounded-2xl border border-zinc-200 bg-white py-1 shadow-[0_16px_50px_-24px_rgba(0,0,0,0.45)]"
                 data-discover-source-menu="true"
               >
+                <button
+                  type="button"
+                  onclick={() => setSourceFilter(null)}
+                  class={`flex w-full items-center justify-between gap-3 px-3 py-2 text-left text-sm transition-colors hover:bg-zinc-50 ${sourceFilter === null ? 'bg-zinc-50' : ''}`}
+                >
+                  <span class="font-medium text-zinc-900">All sources</span>
+                  {#if sourceFilter === null}
+                    <span aria-hidden="true" class="text-sm text-zinc-700">✓</span>
+                  {/if}
+                </button>
                 {#each SOURCE_FILTER_OPTIONS as option (option.value)}
                   <button
                     type="button"
-                    onclick={() => setSelectedFilter(option.value)}
-                    class={`flex w-full items-start justify-between gap-3 px-3 py-2 text-left transition-colors hover:bg-zinc-50 ${filter === option.value ? 'bg-zinc-50' : ''}`}
+                    onclick={() => setSourceFilter(option.value)}
+                    class={`flex w-full items-start justify-between gap-3 px-3 py-2 text-left transition-colors hover:bg-zinc-50 ${sourceFilter === option.value ? 'bg-zinc-50' : ''}`}
                   >
                     <span class="min-w-0">
                       <span class="block text-sm font-medium text-zinc-900">{option.label}</span>
@@ -444,7 +480,7 @@
                         <span class="mt-0.5 block text-xs leading-5 text-zinc-500">{option.description}</span>
                       {/if}
                     </span>
-                    {#if filter === option.value}
+                    {#if sourceFilter === option.value}
                       <span aria-hidden="true" class="pt-0.5 text-sm text-zinc-700">✓</span>
                     {/if}
                   </button>
