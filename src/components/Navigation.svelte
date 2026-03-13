@@ -386,7 +386,7 @@
     showSticky ? 'opacity-100' : 'pointer-events-none opacity-0'
   }`}
 >
-    <div class="mx-auto grid h-12 max-w-3xl grid-cols-[2.5rem_1fr_2.5rem] items-center px-4">
+    <div class="relative mx-auto grid h-12 max-w-3xl grid-cols-[2.5rem_1fr_2.5rem] items-center px-4">
       <button
         type="button"
         onclick={toggleSidebar}
@@ -410,7 +410,17 @@
       >
         FOODCOOP.NEWS
       </a>
-      <div aria-hidden="true" class="h-4 w-7"></div>
+      {#if showSidebarInstallAppButton}
+        <button
+          type="button"
+          class="absolute top-1/2 right-4 inline-flex -translate-y-1/2 items-center justify-center rounded-full bg-black px-3 py-1.5 text-xs font-semibold whitespace-nowrap text-white transition-colors hover:bg-zinc-800 md:hidden"
+          onclick={openInstallPromptFromSidebar}
+        >
+          Get the app
+        </button>
+      {:else}
+        <div aria-hidden="true" class="h-4 w-7"></div>
+      {/if}
     </div>
     <div
       bind:this={mobileScrollRef}
@@ -584,7 +594,7 @@
             class="inline-flex w-full items-center justify-center rounded-lg bg-black px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-zinc-800"
             onclick={openInstallPromptFromSidebar}
           >
-            Add to home screen
+            Get the app
           </button>
         </div>
       {/if}
