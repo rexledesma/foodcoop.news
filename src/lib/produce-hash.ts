@@ -10,5 +10,6 @@ export function produceHash(name: string): string {
 }
 
 export function produceItemUrl(name: string): string {
-  return `/produce?item=${produceHash(name)}&name=${encodeURIComponent(name)}`;
+  const encodedName = encodeURIComponent(name);
+  return `/produce?item=${produceHash(name)}&produce=${encodedName}&name=${encodedName}`;
 }

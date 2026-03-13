@@ -226,7 +226,7 @@
 
   function computePageTitle(pathname: string, searchParams: URLSearchParams): string {
     if (pathname === '/produce') {
-      const produceName = decodeParam(searchParams.get('name'));
+      const produceName = decodeParam(searchParams.get('name') ?? searchParams.get('produce'));
       const isHashedProduceId = /^[a-f0-9]{7}$/i.test(produceName);
       if (produceName && !isHashedProduceId) {
         return `${produceName} · ${SITE_NAME}`;
@@ -251,7 +251,7 @@
 
   function computePageDescription(pathname: string, searchParams: URLSearchParams): string {
     if (pathname === '/produce') {
-      const produceName = decodeParam(searchParams.get('name'));
+      const produceName = decodeParam(searchParams.get('name') ?? searchParams.get('produce'));
       const isHashedProduceId = /^[a-f0-9]{7}$/i.test(produceName);
       if (produceName && !isHashedProduceId) {
         return `Track ${produceName} prices over time from Park Slope Food Coop produce inventory.`;

@@ -42,14 +42,11 @@
     siteName?: string;
     image?: string;
   };
-  type LinkPreviewState = {
+  type ActionsMenuState = {
     itemName: string;
     url: string | null;
-    left: number;
-    top: number;
     loading: boolean;
     data: LinkPreviewData | null;
-    pinned: boolean;
   };
   type FavoriteBurst = {
     id: number;
@@ -125,7 +122,6 @@
     'w-1/3 min-w-[33.333%] max-w-[33.333%] md:w-2/5 md:min-w-0 md:max-w-none';
   const DATA_COL_CLASS = 'w-1/3 min-w-[33.333%] max-w-[33.333%] md:w-auto md:min-w-0 md:max-w-none';
   const METRIC_VALUE_CLASS = 'w-[7ch] shrink-0 text-right font-mono';
-  const MAX_PREVIEW_SCROLL_DRIFT_PX = 180;
   const DOUBLE_TAP_WINDOW_MS = 320;
   const DOUBLE_TAP_MAX_DRIFT_PX = 36;
   const SUPPRESS_DBLCLICK_AFTER_TOUCH_MS = 700;
@@ -156,15 +152,9 @@
   let favoritesSnapshot = $state('[]');
   let toggleFavorite = $state<(name: string) => void>(() : void => {});
   let stickyHeaderRef = $state<HTMLDivElement | null>(null);
-  let linkPreview = $state<LinkPreviewState | null>(null);
-  let linkPreviewHoverTimeout = $state<number | null>(null);
-  let linkPreviewHideTimeout = $state<number | null>(null);
-  let linkPreviewRequestToken = $state(0);
-  let linkPreviewCopied = $state(false);
-  let supportsNativeShare = $state(false);
-  let linkPreviewAnchorEl = $state<HTMLElement | null>(null);
-  let linkPreviewAnchorStartTop = $state<number | null>(null);
-  let linkPreviewCardRef = $state<HTMLElement | null>(null);
+  let actionsMenu = $state<ActionsMenuState | null>(null);
+  let actionsMenuAnchorEl = $state<HTMLElement | null>(null);
+  let actionsMenuCopied = $state(false);
   let favoriteBurstLayerRef = $state<HTMLDivElement | null>(null);
   let virtualRowsAnchorRef = $state<HTMLDivElement | null>(null);
   let favoriteBursts = $state<FavoriteBurst[]>([]);
@@ -172,10 +162,10 @@
   let lastTouchDoubleTapAt = $state(0);
   let nextFavoriteBurstId = $state(0);
   let virtualScrollMargin = $state(0);
-  const linkPreviewCache = new Map<string, LinkPreviewData>();
-  const linkPreviewRequests = new Map<string, Promise<LinkPreviewData>>();
-  const linkPreviewObserverTargets = new Map<HTMLElement, string>();
-  let linkPreviewViewportObserver = $state<IntersectionObserver | null>(null);
+  let actionsMenuCopyTimeout = 0;
+  let actionsMenuRequestToken = $state(0);
+  const actionsMenuPreviewCache = new Map<string, LinkPreviewData>();
+  const actionsMenuPreviewRequests = new Map<string, Promise<LinkPreviewData>>();
   const VIRTUAL_ROW_ESTIMATE = 140;
   const VIRTUAL_ROW_BUFFER = 50;
   const VIRTUAL_ROW_CHUNK = 50;
@@ -796,259 +786,131 @@
     void goto(url.pathname + url.search, { keepFocus: true, noScroll: true, replaceState: true });
   }
 
-  function clearLinkPreviewTimer() : void {
-    if (linkPreviewHoverTimeout === null) {return;}
-    window.clearTimeout(linkPreviewHoverTimeout);
-    linkPreviewHoverTimeout = null;
+  function clearActionsMenuCopyFeedback() : void {
+    if (actionsMenuCopyTimeout === 0) {return;}
+    window.clearTimeout(actionsMenuCopyTimeout);
+    actionsMenuCopyTimeout = 0;
   }
 
-  function clearLinkPreviewHideTimer() : void {
-    if (linkPreviewHideTimeout === null) {return;}
-    window.clearTimeout(linkPreviewHideTimeout);
-    linkPreviewHideTimeout = null;
-  }
-
-  function hideLinkPreview() : void {
-    clearLinkPreviewTimer();
-    clearLinkPreviewHideTimer();
-    linkPreview = null;
-    linkPreviewCopied = false;
-    linkPreviewAnchorEl = null;
-    linkPreviewAnchorStartTop = null;
-  }
-
-  function getPreviewHeightFallback(url: string | null): number {
-    return url ? 440 : 230;
-  }
-
-  function getCurrentPreviewCardHeight(url: string | null): number {
-    const measured = linkPreviewCardRef?.offsetHeight ?? 0;
-    if (measured > 0) {return measured;}
-    return getPreviewHeightFallback(url);
-  }
-
-  function computeLinkPreviewPosition(
-    anchorEl: HTMLElement,
-    previewUrl: string | null,
-  ): { left: number; top: number } {
-    if (typeof window === 'undefined') {return { left: 0, top: 0 };}
-    const rect = anchorEl.getBoundingClientRect();
-
-    const cardWidth = 340;
-    const cardHeight = getCurrentPreviewCardHeight(previewUrl);
-    const gap = 14;
-    const margin = 12;
-
-    const anchorX = rect.left + rect.width / 2;
-
-    const roomRight = window.innerWidth - anchorX;
-    const preferredLeft =
-      roomRight >= cardWidth + gap ? anchorX + gap : anchorX - cardWidth - gap;
-    const left = Math.max(margin, Math.min(preferredLeft, window.innerWidth - cardWidth - margin));
-
-    const roomBelow = window.innerHeight - rect.bottom - margin;
-    const roomAbove = rect.top - margin;
-    const shouldRenderAbove = roomBelow < cardHeight + gap && roomAbove > roomBelow;
-    const preferredTop = shouldRenderAbove ? rect.top - cardHeight - gap : rect.bottom + gap;
-    const top = Math.max(margin, Math.min(preferredTop, window.innerHeight - cardHeight - margin));
-
-    return { left, top };
-  }
-
-  async function fetchLinkPreview(
-    itemName: string,
-    url: string,
-    left: number,
-    top: number,
-    pinned: boolean,
-  ) : Promise<void> {
-    const currentToken = ++linkPreviewRequestToken;
-
-    linkPreview = { itemName, url, left, top, loading: true, data: null, pinned };
-
-    try {
-      const payload = await requestLinkPreview(url);
-
-      if (currentToken !== linkPreviewRequestToken) {return;}
-      linkPreview = { itemName, url, left, top, loading: false, data: payload, pinned };
-    } catch {
-      if (currentToken !== linkPreviewRequestToken) {return;}
-      linkPreview = null;
-    }
+  function hideActionsMenu() : void {
+    actionsMenu = null;
+    actionsMenuAnchorEl = null;
+    actionsMenuCopied = false;
+    clearActionsMenuCopyFeedback();
   }
 
   async function requestLinkPreview(url: string): Promise<LinkPreviewData> {
-    const cached = linkPreviewCache.get(url);
-    if (cached) {
-      return cached;
-    }
+    const cached = actionsMenuPreviewCache.get(url);
+    if (cached) {return cached;}
 
-    const pendingRequest = linkPreviewRequests.get(url);
-    if (pendingRequest) {
-      return pendingRequest;
-    }
+    const pending = actionsMenuPreviewRequests.get(url);
+    if (pending) {return pending;}
 
     const request = (async () : Promise<LinkPreviewData> => {
       const response = await fetch(`/api/produce/link-preview?url=${encodeURIComponent(url)}`);
       if (!response.ok) {throw new Error(`HTTP ${response.status}`);}
       const payload = (await response.json()) as LinkPreviewData;
-      linkPreviewCache.set(url, payload);
+      actionsMenuPreviewCache.set(url, payload);
       return payload;
     })();
 
-    linkPreviewRequests.set(url, request);
+    actionsMenuPreviewRequests.set(url, request);
     try {
       return await request;
     } finally {
-      if (linkPreviewRequests.get(url) === request) {
-        linkPreviewRequests.delete(url);
+      if (actionsMenuPreviewRequests.get(url) === request) {
+        actionsMenuPreviewRequests.delete(url);
       }
     }
   }
 
-  function prefetchLinkPreview(url: string) : void {
-    if (linkPreviewCache.has(url)) {return;}
-    void requestLinkPreview(url).catch(() : void => {});
-  }
-
-  function observeLinkPreviewTrigger(
-    node: HTMLElement,
-    { url }: { url: string | null },
-  ): { update: ({ url }: { url: string | null }) => void; destroy: () => void } {
-    const observeNode = (nextUrl: string | null) : void => {
-      linkPreviewViewportObserver?.unobserve(node);
-      if (!nextUrl || linkPreviewCache.has(nextUrl)) {
-        linkPreviewObserverTargets.delete(node);
-        return;
-      }
-      linkPreviewObserverTargets.set(node, nextUrl);
-      linkPreviewViewportObserver?.observe(node);
-    };
-
-    observeNode(url);
-
-    return {
-      update(next) : void {
-        observeNode(next.url);
-      },
-      destroy() : void {
-        linkPreviewViewportObserver?.unobserve(node);
-        linkPreviewObserverTargets.delete(node);
-      },
-    };
-  }
-
-  function queueLinkPreview(
+  async function loadActionsMenuPreview(
     itemName: string,
-    url: string | null,
-    anchorEl: HTMLElement,
-    pinned = false,
-  ) : void {
-    clearLinkPreviewTimer();
-    clearLinkPreviewHideTimer();
-    const { left, top } = computeLinkPreviewPosition(anchorEl, url);
-    linkPreviewAnchorEl = anchorEl;
-    linkPreviewAnchorStartTop = anchorEl.getBoundingClientRect().top;
+    specialtyUrl: string | null,
+  ) : Promise<void> {
+    const currentToken = ++actionsMenuRequestToken;
+    actionsMenu = {
+      itemName,
+      url: specialtyUrl,
+      loading: specialtyUrl !== null,
+      data: null,
+    };
 
-    if (!url) {
-      linkPreview = { itemName, url: null, left, top, loading: false, data: null, pinned };
-      return;
+    if (!specialtyUrl) {return;}
+
+    try {
+      const payload = await requestLinkPreview(specialtyUrl);
+      if (currentToken !== actionsMenuRequestToken) {return;}
+      actionsMenu = {
+        itemName,
+        url: specialtyUrl,
+        loading: false,
+        data: payload,
+      };
+    } catch {
+      if (currentToken !== actionsMenuRequestToken) {return;}
+      actionsMenu = {
+        itemName,
+        url: specialtyUrl,
+        loading: false,
+        data: null,
+      };
     }
-
-    linkPreviewHoverTimeout = window.setTimeout(() : void => {
-      linkPreviewHoverTimeout = null;
-      void fetchLinkPreview(itemName, url, left, top, pinned);
-    }, 180);
   }
 
-  function syncLinkPreviewPositionOrClose() : void {
-    if (!linkPreview || !linkPreviewAnchorEl) {return;}
-    const rect = linkPreviewAnchorEl.getBoundingClientRect();
+  function openActionsMenu(
+    itemName: string,
+    specialtyUrl: string | null,
+    anchorEl: HTMLElement,
+  ) : void {
+    clearActionsMenuCopyFeedback();
+    actionsMenuCopied = false;
+    actionsMenuAnchorEl = anchorEl;
+    void loadActionsMenuPreview(itemName, specialtyUrl);
+  }
 
-    if (linkPreviewAnchorStartTop !== null) {
-      const drift = Math.abs(rect.top - linkPreviewAnchorStartTop);
-      if (drift > MAX_PREVIEW_SCROLL_DRIFT_PX) {
-        hideLinkPreview();
+  function handleRowActionsButtonClick(
+    event: MouseEvent,
+    rowName: string,
+    specialtyUrl: string | null,
+  ) : void {
+    event.preventDefault();
+    event.stopPropagation();
+    const button = event.currentTarget;
+    if (!(button instanceof HTMLElement)) {return;}
+    if (actionsMenu?.itemName === rowName && actionsMenuAnchorEl === button) {
+      hideActionsMenu();
+      return;
+    }
+    openActionsMenu(rowName, specialtyUrl, button);
+  }
+
+  function handleActionsMenuFavoriteToggle() : void {
+    if (!actionsMenu) {return;}
+    toggleFavorite(actionsMenu.itemName);
+  }
+
+  async function handleActionsMenuShare() : Promise<void> {
+    if (!actionsMenu) {return;}
+    const url = `${window.location.origin}${produceItemUrl(actionsMenu.itemName)}`;
+    const shareData = { title: actionsMenu.itemName, url };
+
+    if (typeof navigator !== 'undefined' && typeof navigator.share === 'function') {
+      try {
+        await navigator.share(shareData);
         return;
+      } catch {
+        // Ignore share cancellations.
       }
     }
 
-    if (rect.bottom < 0 || rect.top > window.innerHeight) {
-      hideLinkPreview();
-      return;
-    }
-
-    const { left, top } = computeLinkPreviewPosition(linkPreviewAnchorEl, linkPreview.url);
-    if (linkPreview.left === left && linkPreview.top === top) {return;}
-    linkPreview = { ...linkPreview, left, top };
-  }
-
-  function scheduleLinkPreviewHide() : void {
-    clearLinkPreviewHideTimer();
-    if (linkPreview?.pinned) {return;}
-    linkPreviewHideTimeout = window.setTimeout(() : void => {
-      linkPreviewHideTimeout = null;
-      if (!linkPreview?.pinned) {hideLinkPreview();}
-    }, 160);
-  }
-
-  function handleProduceLinkEnter(event: MouseEvent, itemName: string, url: string | null) : void {
-    const target = event.currentTarget;
-    if (!(target instanceof HTMLElement)) {return;}
-    queueLinkPreview(itemName, url, target);
-  }
-
-  function handleProduceLinkMove() : void {
-    if (!linkPreview) {return;}
-    if (linkPreview.pinned || !linkPreviewAnchorEl) {return;}
-    const { left, top } = computeLinkPreviewPosition(linkPreviewAnchorEl, linkPreview.url);
-    if (linkPreview.left === left && linkPreview.top === top) {return;}
-    linkPreview = { ...linkPreview, left, top };
-  }
-
-  function handleProduceLinkLeave() : void {
-    scheduleLinkPreviewHide();
-  }
-
-  function handleProduceLinkFocus(event: FocusEvent, itemName: string, url: string | null) : void {
-    const target = event.currentTarget;
-    if (!(target instanceof HTMLElement)) {return;}
-    queueLinkPreview(itemName, url, target);
-  }
-
-  function handleProduceLinkClick(event: MouseEvent, itemName: string, url: string | null) : void {
-    if (!url) {
-      event.preventDefault();
-      const target = event.currentTarget;
-      if (!(target instanceof HTMLElement)) {return;}
-      queueLinkPreview(itemName, null, target, true);
-      return;
-    }
-
-    if (linkPreview?.url === url && linkPreview.pinned) {
-      return;
-    }
-    event.preventDefault();
-    const target = event.currentTarget;
-    if (!(target instanceof HTMLElement)) {return;}
-    queueLinkPreview(itemName, url, target, true);
-  }
-
-  function handlePreviewMouseEnter() : void {
-    clearLinkPreviewHideTimer();
-  }
-
-  function handlePreviewMouseLeave() : void {
-    scheduleLinkPreviewHide();
-  }
-
-  function closePinnedLinkPreview() : void {
-    if (linkPreview?.pinned) {hideLinkPreview();}
-  }
-
-  function handlePreviewFavoriteToggle() : void {
-    if (!linkPreview) {return;}
-    toggleFavorite(linkPreview.itemName);
+    await navigator.clipboard.writeText(url);
+    actionsMenuCopied = true;
+    clearActionsMenuCopyFeedback();
+    actionsMenuCopyTimeout = window.setTimeout(() : void => {
+      actionsMenuCopyTimeout = 0;
+      actionsMenuCopied = false;
+    }, 1600);
   }
 
   function randomInRange(min: number, max: number): number {
@@ -1149,17 +1011,6 @@
     );
   }
 
-  function handleRowActionsButtonClick(
-    event: MouseEvent,
-    rowName: string,
-    url: string | null,
-  ) : void {
-    event.preventDefault();
-    const button = event.currentTarget;
-    if (!(button instanceof HTMLElement)) {return;}
-    queueLinkPreview(rowName, url, button, true);
-  }
-
   function handleRowTouchEnd(event: TouchEvent, rowName: string) : void {
     if (event.changedTouches.length !== 1) {
       lastRowTap = null;
@@ -1199,9 +1050,7 @@
 
     const target = event.target;
     if (!(target instanceof Element)) {return;}
-    if (
-      target.closest('a, button, input, textarea, select, [role="button"], [data-produce-preview-trigger="true"]')
-    ) {
+    if (target.closest('button, input, textarea, select, [role="button"]')) {
       return;
     }
 
@@ -1230,23 +1079,6 @@
         virtualizer.measureElement(node);
       },
     };
-  }
-
-  async function handlePreviewShareOrCopy() : Promise<void> {
-    if (!linkPreview) {return;}
-    const url = `${window.location.origin}${produceItemUrl(linkPreview.itemName)}`;
-    const shareData = { title: linkPreview.itemName, url };
-    if (supportsNativeShare && typeof navigator.share === 'function') {
-      try {
-        await navigator.share(shareData);
-      } catch {
-        // Ignore share cancellations.
-      }
-      return;
-    }
-
-    await navigator.clipboard.writeText(url);
-    linkPreviewCopied = true;
   }
 
   function handleSort(field: SortField) : void {
@@ -1396,53 +1228,28 @@
 
     const handler = (event: Event) : void => handleStateUpdate(event);
     window.addEventListener(`produce-analytics-state:update:${channel}`, handler as EventListener);
-    if (typeof navigator !== 'undefined' && typeof navigator.share === 'function') {
-      supportsNativeShare = true;
-    }
-
     const handlePointerDown = (event: MouseEvent | TouchEvent) : void => {
-      if (!linkPreview?.pinned) {return;}
+      if (!actionsMenu) {return;}
       const target = event.target;
       if (!(target instanceof Element)) {return;}
       if (
-        target.closest('[data-produce-preview-card="true"]') ||
-        target.closest('[data-produce-preview-trigger="true"]')
+        target.closest('[data-produce-actions-menu="true"]') ||
+        target.closest('[data-produce-actions-trigger="true"]')
       ) {
         return;
       }
-      hideLinkPreview();
+      hideActionsMenu();
     };
     const handleKeyDown = (event: KeyboardEvent) : void => {
       if (event.key !== 'Escape') {return;}
-      closePinnedLinkPreview();
+      hideActionsMenu();
     };
     const handleViewportChange = () : void => {
       updateVirtualScrollMargin();
-      syncLinkPreviewPositionOrClose();
-    };
-    if (typeof IntersectionObserver !== 'undefined') {
-      linkPreviewViewportObserver = new IntersectionObserver(
-        (entries) : void => {
-          for (const entry of entries) {
-            if (!entry.isIntersecting) {continue;}
-            if (!(entry.target instanceof HTMLElement)) {continue;}
-            const previewUrl = linkPreviewObserverTargets.get(entry.target);
-            if (!previewUrl) {continue;}
-            linkPreviewViewportObserver?.unobserve(entry.target);
-            prefetchLinkPreview(previewUrl);
-          }
-        },
-        {
-          root: null,
-          rootMargin: '120px 0px',
-          threshold: 0.01,
-        },
-      );
-
-      for (const node of linkPreviewObserverTargets.keys()) {
-        linkPreviewViewportObserver.observe(node);
+      if (!actionsMenuAnchorEl?.isConnected) {
+        hideActionsMenu();
       }
-    }
+    };
     document.addEventListener('mousedown', handlePointerDown);
     document.addEventListener('touchstart', handlePointerDown, { passive: true });
     document.addEventListener('keydown', handleKeyDown);
@@ -1456,12 +1263,9 @@
       document.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('scroll', handleViewportChange, true);
       window.removeEventListener('resize', handleViewportChange);
-      linkPreviewViewportObserver?.disconnect();
-      linkPreviewViewportObserver = null;
-      linkPreviewObserverTargets.clear();
       favoriteBursts = [];
       lastRowTap = null;
-      hideLinkPreview();
+      hideActionsMenu();
     };
   });
 
@@ -1487,11 +1291,6 @@
     observer.observe(element);
 
     return () : void => observer.disconnect();
-  });
-
-  $effect(() : void => {
-    if (!linkPreview || !linkPreviewAnchorEl || !linkPreviewCardRef) {return;}
-    syncLinkPreviewPositionOrClose();
   });
 </script>
 
@@ -1760,7 +1559,7 @@
 
   <div
     bind:this={virtualRowsAnchorRef}
-    class="overflow-x-hidden transition-opacity duration-300 ease-in-out motion-reduce:transition-none"
+    class={`${actionsMenu ? 'overflow-x-visible' : 'overflow-x-hidden'} transition-opacity duration-300 ease-in-out motion-reduce:transition-none`}
   >
     <table class="w-full min-w-full table-fixed text-sm">
       <colgroup>
@@ -1856,12 +1655,14 @@
               animate:flip={{ duration: 420, easing: cubicOut }}
               in:fade={{ duration: 220 }}
               out:fade={{ duration: 180 }}
-              class={`group select-none border-b border-zinc-100 ${favorites.has(row.name) ? 'bg-amber-50' : 'hover:bg-zinc-50'}`}
+              class={`group select-none border-b border-zinc-100 ${actionsMenu?.itemName === row.name ? 'relative z-30' : ''} ${favorites.has(row.name) ? 'bg-amber-50' : 'hover:bg-zinc-50'}`}
               ontouchend={(event) => handleRowTouchEnd(event, row.name)}
               ondblclick={(event) => handleRowDoubleClick(event, row.name)}
             >
                 <td
-                  class={`${NAME_COL_CLASS} sticky left-0 z-10 box-border border-r border-zinc-200 p-2 md:w-auto md:border-r-0 ${
+                  class={`${NAME_COL_CLASS} sticky left-0 box-border border-r border-zinc-200 p-2 md:w-auto md:border-r-0 ${
+                    actionsMenu?.itemName === row.name ? 'z-30 overflow-visible' : 'z-10'
+                  } ${
                     favorites.has(row.name) ? 'bg-amber-50' : 'bg-white group-hover:bg-zinc-50'
                   }`}
                 >
@@ -1871,42 +1672,7 @@
                         class="line-clamp-3 text-sm font-medium text-zinc-900 md:line-clamp-none"
                         data-produce-name="true"
                       >
-                        {#if specialtyUrl}
-                          <a
-                            href={specialtyUrl}
-                            target="_blank"
-                            rel="noreferrer"
-                            use:observeLinkPreviewTrigger={{ url: specialtyUrl }}
-                            onmouseenter={(event) => handleProduceLinkEnter(event, row.name, specialtyUrl)}
-                            onmousemove={handleProduceLinkMove}
-                            onmouseleave={handleProduceLinkLeave}
-                            onfocus={(event) => handleProduceLinkFocus(event, row.name, specialtyUrl)}
-                            onblur={handleProduceLinkLeave}
-                            onclick={(event) => handleProduceLinkClick(event, row.name, specialtyUrl)}
-                            data-produce-preview-trigger="true"
-                            class="underline decoration-current underline-offset-2 hover:decoration-2"
-                          >
-                            <span class={row.is_unavailable ? 'line-through' : undefined}>
-                              {row.name} ↗
-                            </span>
-                          </a>
-                        {:else}
-                          <button
-                            type="button"
-                            onmouseenter={(event) => handleProduceLinkEnter(event, row.name, null)}
-                            onmousemove={handleProduceLinkMove}
-                            onmouseleave={handleProduceLinkLeave}
-                            onfocus={(event) => handleProduceLinkFocus(event, row.name, null)}
-                            onblur={handleProduceLinkLeave}
-                            onclick={(event) => handleProduceLinkClick(event, row.name, null)}
-                            data-produce-preview-trigger="true"
-                            class="text-left underline decoration-current underline-offset-2 hover:decoration-2"
-                          >
-                            <span class={row.is_unavailable ? 'line-through' : undefined}>
-                              {row.name}
-                            </span>
-                          </button>
-                        {/if}
+                        {row.name}
                       </div>
 
                       <div class="text-xs text-zinc-500">
@@ -1978,14 +1744,106 @@
                         >
                           <span aria-hidden="true" class="text-sm leading-none">{favorites.has(row.name) ? '♥' : '♡'}</span>
                         </button>
-                        <button
-                          type="button"
-                          onclick={(event) => handleRowActionsButtonClick(event, row.name, specialtyUrl)}
-                          aria-label={`More actions for ${row.name}`}
-                          class="inline-flex h-6 w-6 items-center justify-center rounded-full text-zinc-500 transition-colors hover:bg-zinc-100 hover:text-zinc-700"
-                        >
-                          <span aria-hidden="true" class="text-sm leading-none">⋯</span>
-                        </button>
+                        <div class={`relative ${actionsMenu?.itemName === row.name ? 'z-50' : ''}`}>
+                          <button
+                            type="button"
+                            onclick={(event) => handleRowActionsButtonClick(event, row.name, specialtyUrl)}
+                            aria-expanded={actionsMenu?.itemName === row.name}
+                            aria-label={`More actions for ${row.name}`}
+                            data-produce-actions-trigger="true"
+                            class="inline-flex h-6 w-6 items-center justify-center rounded-full text-zinc-500 transition-colors hover:bg-zinc-100 hover:text-zinc-700"
+                          >
+                            <span aria-hidden="true" class="text-sm leading-none">⋯</span>
+                          </button>
+
+                          {#if actionsMenu?.itemName === row.name}
+                            {@const currentActionsMenu = actionsMenu!}
+                            <div
+                              class="absolute top-1/2 left-full z-[80] ml-2 w-[min(248px,calc(100vw-48px))] max-w-[calc(100vw-48px)] -translate-y-1/2 overflow-hidden rounded-xl border border-zinc-200 bg-white text-left shadow-[0_16px_50px_-24px_rgba(0,0,0,0.65)] sm:w-[min(340px,calc(100vw-32px))] sm:max-w-[calc(100vw-32px)]"
+                              style="max-height:min(28rem,calc(100vh-40px));"
+                              data-produce-actions-menu="true"
+                              aria-live="polite"
+                            >
+                              <div class="max-h-[min(28rem,calc(100vh-40px))] overflow-y-auto">
+                                {#if currentActionsMenu.loading}
+                                  <div>
+                                    <div class="feed-shimmer h-28 w-full border-b border-zinc-100 sm:h-44"></div>
+                                    <div class="space-y-1.5 p-2.5 sm:space-y-2 sm:p-3">
+                                      <div class="feed-shimmer h-3 w-24 rounded sm:w-28"></div>
+                                      <div class="feed-shimmer h-4 w-3/4 rounded sm:w-4/5"></div>
+                                      <div class="feed-shimmer h-3 w-full rounded"></div>
+                                      <div class="feed-shimmer h-3 w-11/12 rounded"></div>
+                                    </div>
+                                  </div>
+                                {:else}
+                                  {#if currentActionsMenu.data?.image}
+                                    <img
+                                      src={currentActionsMenu.data.image}
+                                      alt=""
+                                      class="h-28 w-full border-b border-zinc-100 object-cover sm:h-44"
+                                      loading="lazy"
+                                    />
+                                  {/if}
+                                  <div class="space-y-1 p-2.5 sm:p-3">
+                                    <div class="text-[11px] font-medium tracking-wide text-zinc-500 uppercase">
+                                      {currentActionsMenu.data?.siteName ?? (currentActionsMenu.url ? 'Specialty Produce' : 'Produce')}
+                                    </div>
+                                    <div class="line-clamp-2 break-words text-[13px] font-semibold text-zinc-900 sm:text-sm">
+                                      {currentActionsMenu.data?.title ?? currentActionsMenu.itemName}
+                                    </div>
+                                    {#if currentActionsMenu.data?.description}
+                                      <p class="line-clamp-3 break-words text-[11px] leading-relaxed text-zinc-600 sm:line-clamp-4 sm:text-xs">
+                                        {currentActionsMenu.data.description}
+                                      </p>
+                                    {:else if !currentActionsMenu.url}
+                                      <p class="break-words text-[11px] leading-relaxed text-zinc-600 sm:text-xs">
+                                        Favorite this item or share its internal produce page.
+                                      </p>
+                                    {/if}
+                                  </div>
+                                {/if}
+
+                                {#if !currentActionsMenu.loading}
+                                  <div class="border-t border-zinc-100 py-1">
+                                    {#if currentActionsMenu.url}
+                                      <a
+                                        href={currentActionsMenu.url}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                        class="flex w-full items-center gap-2 px-3 py-2 text-left text-[13px] text-zinc-700 transition-colors hover:bg-zinc-100 sm:gap-3 sm:px-4 sm:py-2.5 sm:text-sm"
+                                      >
+                                        <span class="inline-flex h-5 w-5 items-center justify-center">↗</span>
+                                        <span class="min-w-0 flex-1 break-words leading-snug">Visit Specialty Produce</span>
+                                      </a>
+                                    {/if}
+                                    <button
+                                      type="button"
+                                      onclick={handleActionsMenuFavoriteToggle}
+                                      class="flex w-full items-center gap-2 px-3 py-2 text-left text-[13px] text-zinc-700 transition-colors hover:bg-zinc-100 sm:gap-3 sm:px-4 sm:py-2.5 sm:text-sm"
+                                    >
+                                      <span class="inline-flex h-5 w-5 items-center justify-center">
+                                        {favorites.has(currentActionsMenu.itemName) ? '💔' : '⭐'}
+                                      </span>
+                                      <span class="min-w-0 flex-1 break-words leading-snug">{favorites.has(currentActionsMenu.itemName) ? 'Remove Favorite' : 'Add Favorite'}</span>
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onclick={() => {
+                                        void handleActionsMenuShare();
+                                      }}
+                                      class="flex w-full items-center gap-2 px-3 py-2 text-left text-[13px] text-zinc-700 transition-colors hover:bg-zinc-100 sm:gap-3 sm:px-4 sm:py-2.5 sm:text-sm"
+                                    >
+                                      <span class="inline-flex h-5 w-5 items-center justify-center">
+                                        {actionsMenuCopied ? '✅' : '🔗'}
+                                      </span>
+                                      <span class="min-w-0 flex-1 break-words leading-snug">{actionsMenuCopied ? 'Copied!' : 'Share'}</span>
+                                    </button>
+                                  </div>
+                                {/if}
+                              </div>
+                            </div>
+                          {/if}
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -2069,126 +1927,6 @@
       </tbody>
     </table>
   </div>
-
-  {#if linkPreview}
-    <aside
-      bind:this={linkPreviewCardRef}
-      class="fixed z-50 w-[340px] overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-[0_16px_50px_-24px_rgba(0,0,0,0.65)]"
-      style={`left:${linkPreview.left}px;top:${linkPreview.top}px;`}
-      aria-live="polite"
-      data-produce-preview-card="true"
-      onmouseenter={handlePreviewMouseEnter}
-      onmouseleave={handlePreviewMouseLeave}
-    >
-      {#if linkPreview.loading}
-        <div>
-          <div class="feed-shimmer h-44 w-full border-b border-zinc-100"></div>
-          <div class="space-y-2 p-3">
-            <div class="feed-shimmer h-3 w-28 rounded"></div>
-            <div class="feed-shimmer h-4 w-4/5 rounded"></div>
-            <div class="feed-shimmer h-3 w-full rounded"></div>
-            <div class="feed-shimmer h-3 w-11/12 rounded"></div>
-            <div class="feed-shimmer h-3 w-3/4 rounded"></div>
-          </div>
-          <div class="border-t border-zinc-100 py-1">
-            <div class="px-4 py-2.5">
-              <div class="feed-shimmer h-4 w-32 rounded"></div>
-            </div>
-            <div class="px-4 py-2.5">
-              <div class="feed-shimmer h-4 w-36 rounded"></div>
-            </div>
-            <div class="px-4 py-2.5">
-              <div class="feed-shimmer h-4 w-28 rounded"></div>
-            </div>
-          </div>
-        </div>
-      {:else if linkPreview.data}
-        {#if linkPreview.data.image}
-          <img
-            src={linkPreview.data.image}
-            alt=""
-            class="h-44 w-full border-b border-zinc-100 object-cover"
-            loading="lazy"
-          />
-        {/if}
-        <div class="space-y-1 p-3">
-          <div class="flex items-center justify-between gap-2 text-[11px] font-medium tracking-wide text-zinc-500 uppercase">
-            {linkPreview.data.siteName ?? 'Specialty Produce'}
-            <button
-              type="button"
-              onclick={hideLinkPreview}
-              class={`rounded p-1 text-zinc-400 transition-colors hover:bg-zinc-100 hover:text-zinc-700 ${
-                linkPreview.pinned ? 'visible' : 'pointer-events-none invisible'
-              }`}
-              aria-label="Close produce preview"
-            >
-              ✕
-            </button>
-          </div>
-          <div class="line-clamp-2 text-sm font-semibold text-zinc-900">{linkPreview.data.title}</div>
-          {#if linkPreview.data.description}
-            <p class="line-clamp-4 text-xs leading-relaxed text-zinc-600">
-              {linkPreview.data.description}
-            </p>
-          {/if}
-        </div>
-      {:else}
-        <div class="space-y-1 p-3">
-          <div class="flex items-center justify-between gap-2 text-[11px] font-medium tracking-wide text-zinc-500 uppercase">
-            Produce
-            <button
-              type="button"
-              onclick={hideLinkPreview}
-              class={`rounded p-1 text-zinc-400 transition-colors hover:bg-zinc-100 hover:text-zinc-700 ${
-                linkPreview.pinned ? 'visible' : 'pointer-events-none invisible'
-              }`}
-              aria-label="Close produce preview"
-            >
-              ✕
-            </button>
-          </div>
-          <div class="line-clamp-2 text-sm font-semibold text-zinc-900">{linkPreview.itemName}</div>
-        </div>
-      {/if}
-      {#if linkPreview && !linkPreview.loading}
-        <div class="border-t border-zinc-100 py-1">
-          {#if linkPreview.url}
-            <a
-              href={linkPreview.url}
-              target="_blank"
-              rel="noreferrer"
-              class="flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm text-zinc-700 transition-colors hover:bg-zinc-100"
-            >
-              <span class="inline-flex h-5 w-5 items-center justify-center">↗</span>
-              <span>View Produce</span>
-            </a>
-          {/if}
-          <button
-            type="button"
-            onclick={handlePreviewFavoriteToggle}
-            class="flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm text-zinc-700 transition-colors hover:bg-zinc-100"
-          >
-            <span class="inline-flex h-5 w-5 items-center justify-center"
-              >{favorites.has(linkPreview.itemName) ? '💔' : '⭐'}</span
-            >
-            <span>{favorites.has(linkPreview.itemName) ? 'Remove Favorite' : 'Add Favorite'}</span>
-          </button>
-          <button
-            type="button"
-            onclick={() => {
-              void handlePreviewShareOrCopy();
-            }}
-            class="flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm text-zinc-700 transition-colors hover:bg-zinc-100"
-          >
-            <span class="inline-flex h-5 w-5 items-center justify-center"
-              >{supportsNativeShare ? '📤' : linkPreviewCopied ? '✅' : '🔗'}</span
-            >
-            <span>{supportsNativeShare ? 'Share' : linkPreviewCopied ? 'Copied!' : 'Copy Link'}</span>
-          </button>
-        </div>
-      {/if}
-    </aside>
-  {/if}
 
   <div bind:this={favoriteBurstLayerRef} class="favorite-burst-layer" aria-hidden="true">
     {#each favoriteBursts as burst (burst.id)}
