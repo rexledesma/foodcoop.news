@@ -59,8 +59,8 @@ This is a SvelteKit application for Park Slope Food Coop members, using Convex a
 
 Required environment variables (set in `.env.local` and Convex dashboard):
 
-- `NEXT_PUBLIC_CONVEX_URL` - Convex deployment URL
-- `NEXT_PUBLIC_CONVEX_SITE_URL` - Convex HTTP actions URL
+- `PUBLIC_CONVEX_URL` - Convex deployment URL
+- `PUBLIC_CONVEX_SITE_URL` - Convex HTTP actions URL
 - `SITE_URL` - Production site URL for auth callbacks
 - `EVENTBRITE_API_KEY` - Eventbrite API token for event feeds
 - `CRON_SECRET` - Authorization secret for cron scraping endpoints

@@ -2,8 +2,8 @@ import { getToken, type GetTokenOptions } from '@convex-dev/better-auth/utils';
 import { ConvexHttpClient } from 'convex/browser';
 import type { FunctionReference, FunctionReturnType, OptionalRestArgs } from 'convex/server';
 
-const convexUrl = process.env.NEXT_PUBLIC_CONVEX_URL!;
-const convexSiteUrl = process.env.NEXT_PUBLIC_CONVEX_SITE_URL!;
+const convexUrl = process.env.PUBLIC_CONVEX_URL!;
+const convexSiteUrl = process.env.PUBLIC_CONVEX_SITE_URL!;
 
 const authOptions: GetTokenOptions = {
   jwtCache: {
@@ -14,12 +14,10 @@ const authOptions: GetTokenOptions = {
 
 const parseConvexSiteUrl = (url: string): string => {
   if (!url) {
-    throw new Error('NEXT_PUBLIC_CONVEX_SITE_URL is not set');
+    throw new Error('PUBLIC_CONVEX_SITE_URL is not set');
   }
   if (url.endsWith('.convex.cloud')) {
-    throw new Error(
-      `NEXT_PUBLIC_CONVEX_SITE_URL must end in .convex.site. Currently set to ${url}`,
-    );
+    throw new Error(`PUBLIC_CONVEX_SITE_URL must end in .convex.site. Currently set to ${url}`);
   }
   return url;
 };

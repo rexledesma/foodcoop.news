@@ -33,9 +33,9 @@ export async function subscribeToPush(): Promise<PushSubscription> {
     throw new Error('Notification permission denied');
   }
 
-  const vapidPublicKey = import.meta.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY as string | undefined;
+  const vapidPublicKey = import.meta.env.PUBLIC_VAPID_PUBLIC_KEY as string | undefined;
   if (!vapidPublicKey) {
-    throw new Error('Missing NEXT_PUBLIC_VAPID_PUBLIC_KEY');
+    throw new Error('Missing PUBLIC_VAPID_PUBLIC_KEY');
   }
 
   const registration = await navigator.serviceWorker.ready;

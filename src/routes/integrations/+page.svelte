@@ -16,7 +16,7 @@
   const channel = `integrations-${Math.random().toString(36).slice(2)}`;
   const CALENDAR_PROXY_PATH = '/api/calendar';
   const DRAFT_STORAGE_KEY = 'integrations:draft';
-  const NOTIFICATIONS_ALLOWED_EMAILS = (import.meta.env.NEXT_PUBLIC_NOTIFICATIONS_ALLOWED_EMAILS ?? '')
+  const NOTIFICATIONS_ALLOWED_EMAILS = (import.meta.env.PUBLIC_NOTIFICATIONS_ALLOWED_EMAILS ?? '')
     .split(',')
     .map((email: string) : string => email.trim())
     .filter(Boolean);
