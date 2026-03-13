@@ -3,6 +3,7 @@
   import { injectAnalytics } from '@vercel/analytics/sveltekit';
   import '../styles/globals.css';
   import { onMount } from 'svelte';
+  import type { Action } from 'svelte/action';
   import { page } from '$app/stores';
   import Navigation from '@/components/Navigation.svelte';
   import { signOut } from '@/lib/auth-client';
@@ -107,6 +108,50 @@
   let swipeSnapTimer: ReturnType<typeof setTimeout> | null = null;
   let swipeCommitTimer: ReturnType<typeof setTimeout> | null = null;
   let authMetadataInFlight: Promise<AuthNavMetadata> | null = null;
+  let unauthenticatedFooterElement: HTMLElement | null = null;
+
+  function setUnauthenticatedFooterHeight(height: number): void {
+    if (typeof document === 'undefined') {return;}
+    document.documentElement.style.setProperty('--unauth-footer-height', `${Math.max(0, height)}px`);
+  }
+
+  const measureUnauthenticatedFooter: Action<HTMLElement> = (node) => {
+    unauthenticatedFooterElement = node;
+
+    const updateHeight = () : void => {
+      setUnauthenticatedFooterHeight(node.getBoundingClientRect().height);
+    };
+
+    updateHeight();
+
+    if (typeof ResizeObserver === 'undefined') {
+      window.addEventListener('resize', updateHeight);
+      return {
+        destroy() : void {
+          if (unauthenticatedFooterElement === node) {
+            unauthenticatedFooterElement = null;
+          }
+          window.removeEventListener('resize', updateHeight);
+          setUnauthenticatedFooterHeight(0);
+        },
+      };
+    }
+
+    const observer = new ResizeObserver(updateHeight);
+    observer.observe(node);
+    window.addEventListener('resize', updateHeight);
+
+    return {
+      destroy() : void {
+        if (unauthenticatedFooterElement === node) {
+          unauthenticatedFooterElement = null;
+        }
+        observer.disconnect();
+        window.removeEventListener('resize', updateHeight);
+        setUnauthenticatedFooterHeight(0);
+      }
+    };
+  };
 
   function serializeJsonLd(payload: unknown): string {
     return JSON.stringify(payload).replaceAll('<', '\\u003c');
@@ -569,6 +614,7 @@
     document.addEventListener('touchcancel', handleTouchCancel, { passive: true });
 
     return () : void => {
+      setUnauthenticatedFooterHeight(0);
       window.removeEventListener('sticky-visibility', stickyVisibilityHandler as EventListener);
       window.removeEventListener('navigation:sidebar-opened', sidebarOpenedRevalidateHandler);
       window.removeEventListener('pointerdown', handleInteraction);
@@ -657,9 +703,10 @@
 {/if}
 
 <div
-  class={`relative overflow-x-clip ${isSwipePreviewMode ? '' : 'pt-[5.5rem]'} ${
-    showUnauthenticatedFooter ? 'pb-32' : ''
-  }`}
+  class={`relative min-h-[100dvh] min-h-[100svh] overflow-x-clip ${isSwipePreviewMode ? '' : 'pt-[5.5rem]'}`}
+  style={showUnauthenticatedFooter
+    ? 'padding-bottom: calc(var(--unauth-footer-height, 0px) + env(safe-area-inset-bottom));'
+    : undefined}
 >
   {#if swipePreviewUrl}
     <div
@@ -685,9 +732,13 @@
 
 {#if showUnauthenticatedFooter}
   <footer
-    class="safe-area-pb fixed right-0 bottom-0 left-0 z-40 border-t border-zinc-200 bg-white"
+    bind:this={unauthenticatedFooterElement}
+    use:measureUnauthenticatedFooter
+    class="fixed right-0 bottom-0 left-0 z-40 border-t border-zinc-200 bg-white"
   >
-    <div class="mx-auto flex max-w-3xl items-center justify-between gap-3 px-4 py-3">
+    <div
+      class="mx-auto flex max-w-3xl items-center justify-between gap-3 px-4 pt-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)]"
+    >
       <a
         href="/"
         data-sveltekit-preload-data="hover"
