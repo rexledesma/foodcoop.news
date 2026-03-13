@@ -4,6 +4,14 @@
 
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
+import {
+  APPLE_PASS_CERT_BASE64,
+  APPLE_PASS_KEY_BASE64,
+  APPLE_PASS_KEY_PASSPHRASE,
+  APPLE_PASS_TYPE_ID,
+  APPLE_TEAM_ID,
+  APPLE_WWDR_CERT_BASE64,
+} from '$env/static/private';
 import { PKPass } from 'passkit-generator';
 import sharp from 'sharp';
 
@@ -74,15 +82,15 @@ export async function generatePKPass(config: {
   const pass = new PKPass(
     {},
     {
-      wwdr: Buffer.from(process.env.APPLE_WWDR_CERT_BASE64!, 'base64'),
-      signerCert: Buffer.from(process.env.APPLE_PASS_CERT_BASE64!, 'base64'),
-      signerKey: Buffer.from(process.env.APPLE_PASS_KEY_BASE64!, 'base64'),
-      signerKeyPassphrase: process.env.APPLE_PASS_KEY_PASSPHRASE,
+      wwdr: Buffer.from(APPLE_WWDR_CERT_BASE64, 'base64'),
+      signerCert: Buffer.from(APPLE_PASS_CERT_BASE64, 'base64'),
+      signerKey: Buffer.from(APPLE_PASS_KEY_BASE64, 'base64'),
+      signerKeyPassphrase: APPLE_PASS_KEY_PASSPHRASE,
     },
     {
       serialNumber: config.serialNumber,
-      passTypeIdentifier: process.env.APPLE_PASS_TYPE_ID!,
-      teamIdentifier: process.env.APPLE_TEAM_ID!,
+      passTypeIdentifier: APPLE_PASS_TYPE_ID,
+      teamIdentifier: APPLE_TEAM_ID,
       organizationName: 'Park Slope Food Coop',
       description: 'Park Slope Food Coop Member Card',
       foregroundColor: 'rgb(51, 51, 51)',

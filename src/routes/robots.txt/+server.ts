@@ -1,4 +1,4 @@
-import { env } from '$env/dynamic/private';
+import { PUBLIC_SITE_URL } from '$env/static/public';
 
 function toAbsoluteUrl(origin: string, pathname: string): string {
   const normalizedOrigin = origin.replace(/\/+$/, '');
@@ -6,7 +6,7 @@ function toAbsoluteUrl(origin: string, pathname: string): string {
 }
 
 export function GET({ url }: { url: URL }): Response {
-  const origin = env.SITE_URL || url.origin;
+  const origin = PUBLIC_SITE_URL || url.origin;
   const sitemapUrl = toAbsoluteUrl(origin, '/sitemap.xml');
   const body = `User-agent: *
 Allow: /

@@ -1,7 +1,8 @@
 import { ConvexHttpClient } from 'convex/browser';
+import { PUBLIC_CONVEX_URL } from '$env/static/public';
 import { api } from '../../../../../convex/_generated/api';
 
-const convex = new ConvexHttpClient(process.env.PUBLIC_CONVEX_URL!);
+const convex = new ConvexHttpClient(PUBLIC_CONVEX_URL);
 
 type Body = {
   itemNames?: unknown;

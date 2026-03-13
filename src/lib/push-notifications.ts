@@ -1,3 +1,5 @@
+import { PUBLIC_VAPID_PUBLIC_KEY } from '$env/static/public';
+
 export function isPushSupported(): boolean {
   return (
     typeof window !== 'undefined' &&
@@ -33,7 +35,7 @@ export async function subscribeToPush(): Promise<PushSubscription> {
     throw new Error('Notification permission denied');
   }
 
-  const vapidPublicKey = import.meta.env.PUBLIC_VAPID_PUBLIC_KEY as string | undefined;
+  const vapidPublicKey = PUBLIC_VAPID_PUBLIC_KEY;
   if (!vapidPublicKey) {
     throw new Error('Missing PUBLIC_VAPID_PUBLIC_KEY');
   }

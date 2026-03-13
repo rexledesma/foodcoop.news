@@ -61,7 +61,7 @@ Required environment variables (set in `.env.local` and Convex dashboard):
 
 - `PUBLIC_CONVEX_URL` - Convex deployment URL
 - `PUBLIC_CONVEX_SITE_URL` - Convex HTTP actions URL
-- `SITE_URL` - Production site URL for auth callbacks
+- `PUBLIC_SITE_URL` - Production site URL for auth callbacks
 - `EVENTBRITE_API_KEY` - Eventbrite API token for event feeds
 - `CRON_SECRET` - Authorization secret for cron scraping endpoints
 - `AWS_ACCESS_KEY_ID` - IAM access key ID for S3 access

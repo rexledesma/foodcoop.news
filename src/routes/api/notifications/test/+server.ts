@@ -1,12 +1,10 @@
 import webpush from 'web-push';
 import { fetchAuthQueryFromHeaders, isUnauthenticatedError } from '@/lib/auth';
+import { VAPID_PRIVATE_KEY, VAPID_SUBJECT } from '$env/static/private';
+import { PUBLIC_VAPID_PUBLIC_KEY } from '$env/static/public';
 import { api } from '../../../../../convex/_generated/api';
 
-webpush.setVapidDetails(
-  process.env.VAPID_SUBJECT!,
-  process.env.PUBLIC_VAPID_PUBLIC_KEY!,
-  process.env.VAPID_PRIVATE_KEY!,
-);
+webpush.setVapidDetails(VAPID_SUBJECT, PUBLIC_VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY);
 
 export async function POST({ request }: { request: Request }) {
   try {

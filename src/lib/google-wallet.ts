@@ -4,9 +4,11 @@
  */
 
 import { randomUUID } from 'crypto';
+import { dev } from '$app/environment';
+import { GOOGLE_APPLICATION_CREDENTIALS, GOOGLE_WALLET_ISSUER_ID } from '$env/static/private';
 import jwt from 'jsonwebtoken';
 
-const ISSUER_ID = process.env.GOOGLE_WALLET_ISSUER_ID!;
+const ISSUER_ID = GOOGLE_WALLET_ISSUER_ID;
 const CLASS_ID = `${ISSUER_ID}.foodcoop.news.wallet`;
 
 // Load service account credentials from GOOGLE_APPLICATION_CREDENTIALS (base64 JSON string)
@@ -15,7 +17,7 @@ function getServiceAccountCredentials(): {
   private_key: string;
   private_key_id: string;
 } {
-  const credentialsJson = process.env.GOOGLE_APPLICATION_CREDENTIALS;
+  const credentialsJson = GOOGLE_APPLICATION_CREDENTIALS;
   if (!credentialsJson) {
     throw new Error('GOOGLE_APPLICATION_CREDENTIALS environment variable not set');
   }
@@ -233,7 +235,7 @@ function buildGoogleWalletClaims(params: {
   serialNumber: string;
 } {
   const credentials = getServiceAccountCredentials();
-  const serialNumber = process.env.NODE_ENV === 'production' ? params.serialNumber : randomUUID();
+  const serialNumber = dev ? randomUUID() : params.serialNumber;
   const genericObject = createGenericObject({
     ...params,
     serialNumber,

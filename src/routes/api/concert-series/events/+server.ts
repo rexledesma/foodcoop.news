@@ -1,5 +1,6 @@
 import { fetchEventbriteEventsById } from '@/lib/eventbrite-events';
 import type { EventbriteEvent } from '@/lib/types';
+import { EVENTBRITE_API_KEY } from '$env/static/private';
 
 const EVENTBRITE_ORGANIZER_PAGE_URL =
   'https://www.eventbrite.com/o/park-slope-food-coop-concert-series-111655166091';
@@ -10,7 +11,7 @@ let cacheTime = 0;
 const CACHE_DURATION = 5 * 60 * 1000;
 
 async function fetchConcertSeriesEvents(): Promise<EventbriteEvent[]> {
-  const apiKey = process.env.EVENTBRITE_API_KEY;
+  const apiKey = EVENTBRITE_API_KEY;
   if (!apiKey) {
     throw new Error('Missing EVENTBRITE_API_KEY');
   }

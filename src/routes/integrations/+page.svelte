@@ -1,5 +1,6 @@
 <script lang="ts">
   import { goto } from '$app/navigation';
+  import { env as publicEnv } from '$env/dynamic/public';
   import { onMount } from 'svelte';
   import Integrations from '@/components/integrations/Integrations.svelte';
   import { withNextParam } from '@/lib/auth-redirect';
@@ -16,7 +17,7 @@
   const channel = `integrations-${Math.random().toString(36).slice(2)}`;
   const CALENDAR_PROXY_PATH = '/api/calendar';
   const DRAFT_STORAGE_KEY = 'integrations:draft';
-  const NOTIFICATIONS_ALLOWED_EMAILS = (import.meta.env.PUBLIC_NOTIFICATIONS_ALLOWED_EMAILS ?? '')
+  const NOTIFICATIONS_ALLOWED_EMAILS = (publicEnv.PUBLIC_NOTIFICATIONS_ALLOWED_EMAILS ?? '')
     .split(',')
     .map((email: string) : string => email.trim())
     .filter(Boolean);

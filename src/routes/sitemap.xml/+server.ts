@@ -1,4 +1,4 @@
-import { env } from '$env/dynamic/private';
+import { PUBLIC_SITE_URL } from '$env/static/public';
 import { encode } from 'html-entities';
 
 const INDEXABLE_PATHS = ['/', '/produce', '/integrations', '/about'] as const;
@@ -13,7 +13,7 @@ function escapeXml(value: string): string {
 }
 
 export function GET({ url }: { url: URL }): Response {
-  const origin = env.SITE_URL || url.origin;
+  const origin = PUBLIC_SITE_URL || url.origin;
   const urls = INDEXABLE_PATHS.map((pathname): string => toAbsoluteUrl(origin, pathname));
   const body = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">

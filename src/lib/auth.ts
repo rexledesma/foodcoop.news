@@ -1,9 +1,10 @@
 import { getToken, type GetTokenOptions } from '@convex-dev/better-auth/utils';
+import { PUBLIC_CONVEX_SITE_URL, PUBLIC_CONVEX_URL } from '$env/static/public';
 import { ConvexHttpClient } from 'convex/browser';
 import type { FunctionReference, FunctionReturnType, OptionalRestArgs } from 'convex/server';
 
-const convexUrl = process.env.PUBLIC_CONVEX_URL!;
-const convexSiteUrl = process.env.PUBLIC_CONVEX_SITE_URL!;
+const convexUrl = PUBLIC_CONVEX_URL;
+const convexSiteUrl = PUBLIC_CONVEX_SITE_URL;
 
 const authOptions: GetTokenOptions = {
   jwtCache: {

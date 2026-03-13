@@ -4,12 +4,13 @@ import {
   regenerateDerivedProduceParquets,
   regenerateMonthParquet,
 } from '@/lib/produce-parquet-utils';
+import { CRON_SECRET } from '$env/static/private';
 
 // POST /api/cron/backfill-produce
 // Regenerates all monthly parquet files from stored HTML snapshots
 export async function POST({ request }: { request: Request }): Promise<Response> {
   const authHeader = request.headers.get('authorization');
-  if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+  if (authHeader !== `Bearer ${CRON_SECRET}`) {
     return Response.json({ error: 'Unauthorized' }, { status: 401 });
   }
 

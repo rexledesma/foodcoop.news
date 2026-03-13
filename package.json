@@ -16,7 +16,7 @@
     "format:check": "pnpm exec oxfmt . --check",
     "typecheck": "pnpm exec tsgo --noEmit",
     "check": "pnpm exec vp check && pnpm svelte:check && pnpm knip && pnpm typecheck",
-    "backfill": "curl -X POST \"$SITE_URL/api/cron/backfill-produce\" -H \"Authorization: Bearer $CRON_SECRET\""
+    "backfill": "curl -X POST \"$PUBLIC_SITE_URL/api/cron/backfill-produce\" -H \"Authorization: Bearer $CRON_SECRET\""
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.994.0",

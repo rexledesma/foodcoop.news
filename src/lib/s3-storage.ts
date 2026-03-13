@@ -6,6 +6,13 @@ import {
   PutObjectCommand,
   S3Client,
 } from '@aws-sdk/client-s3';
+import {
+  AWS_ACCESS_KEY_ID,
+  AWS_REGION,
+  AWS_SECRET_ACCESS_KEY,
+  S3_BUCKET_NAME,
+} from '$env/static/private';
+import { env as privateEnv } from '$env/dynamic/private';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 
 type ListOptions = {
@@ -35,28 +42,24 @@ const DEFAULT_SIGNED_URL_TTL_SECONDS = 3600;
 
 let s3Client: S3Client | null = null;
 
-function getEnv(name: string): string {
-  const value = process.env[name];
-  if (!value) {
-    throw new Error(`Missing required environment variable: ${name}`);
-  }
-  return value;
-}
-
-function getBucketName(): string {
-  return getEnv('S3_BUCKET_NAME');
-}
+const optionalPrivateEnv = privateEnv as Record<string, string | undefined>;
 
 function getS3Client(): S3Client {
   if (s3Client) {
     return s3Client;
   }
 
-  const forcePathStyle = process.env.AWS_S3_FORCE_PATH_STYLE === 'true';
-  const endpoint = process.env.S3_ENDPOINT;
+  const forcePathStyle = optionalPrivateEnv.AWS_S3_FORCE_PATH_STYLE === 'true';
+  const endpoint = optionalPrivateEnv.S3_ENDPOINT;
+  const sessionToken = optionalPrivateEnv.AWS_SESSION_TOKEN;
 
   s3Client = new S3Client({
-    region: getEnv('AWS_REGION'),
+    region: AWS_REGION,
+    credentials: {
+      accessKeyId: AWS_ACCESS_KEY_ID,
+      secretAccessKey: AWS_SECRET_ACCESS_KEY,
+      ...(sessionToken ? { sessionToken } : {}),
+    },
     ...(endpoint ? { endpoint } : {}),
     forcePathStyle,
   });
@@ -72,7 +75,7 @@ function encodeS3Key(pathname: string): string {
 }
 
 function getSignedUrlTtlSeconds(): number {
-  const raw = process.env.S3_SIGNED_URL_TTL_SECONDS;
+  const raw = optionalPrivateEnv.S3_SIGNED_URL_TTL_SECONDS;
   if (!raw) {
     return DEFAULT_SIGNED_URL_TTL_SECONDS;
   }
@@ -84,14 +87,13 @@ function getSignedUrlTtlSeconds(): number {
 }
 
 async function getObjectUrl(pathname: string): Promise<string> {
-  const publicBaseUrl = process.env.S3_PUBLIC_BASE_URL;
+  const publicBaseUrl = optionalPrivateEnv.S3_PUBLIC_BASE_URL;
   if (publicBaseUrl) {
     return `${publicBaseUrl.replace(/\/+$/, '')}/${encodeS3Key(pathname)}`;
   }
 
   const client = getS3Client();
-  const bucket = getBucketName();
-  return getSignedUrl(client, new GetObjectCommand({ Bucket: bucket, Key: pathname }), {
+  return getSignedUrl(client, new GetObjectCommand({ Bucket: S3_BUCKET_NAME, Key: pathname }), {
     expiresIn: getSignedUrlTtlSeconds(),
   });
 }
@@ -125,7 +127,6 @@ function isNotFoundError(error: unknown): boolean {
 
 export async function list(options: ListOptions = {}): Promise<{ blobs: S3Blob[] }> {
   const client = getS3Client();
-  const bucket = getBucketName();
 
   const listed: S3Blob[] = [];
   let continuationToken: string | undefined;
@@ -133,7 +134,7 @@ export async function list(options: ListOptions = {}): Promise<{ blobs: S3Blob[]
   do {
     const response = await client.send(
       new ListObjectsV2Command({
-        Bucket: bucket,
+        Bucket: S3_BUCKET_NAME,
         Prefix: options.prefix,
         ContinuationToken: continuationToken,
       }),
@@ -167,13 +168,12 @@ export async function put(
   options: PutOptions = {},
 ): Promise<S3Blob> {
   const client = getS3Client();
-  const bucket = getBucketName();
 
   if (!options.allowOverwrite) {
     try {
       await client.send(
         new HeadObjectCommand({
-          Bucket: bucket,
+          Bucket: S3_BUCKET_NAME,
           Key: pathname,
         }),
       );
@@ -187,7 +187,7 @@ export async function put(
 
   await client.send(
     new PutObjectCommand({
-      Bucket: bucket,
+      Bucket: S3_BUCKET_NAME,
       Key: pathname,
       Body: toPutObjectBody(body),
       ContentType: options.contentType,
@@ -208,13 +208,12 @@ export async function del(pathnames: string[], _options: DeleteOptions = {}): Pr
   }
 
   const client = getS3Client();
-  const bucket = getBucketName();
 
   for (let i = 0; i < pathnames.length; i += 1000) {
     const chunk = pathnames.slice(i, i + 1000);
     await client.send(
       new DeleteObjectsCommand({
-        Bucket: bucket,
+        Bucket: S3_BUCKET_NAME,
         Delete: {
           Objects: chunk.map((pathname) => ({ Key: pathname })),
           Quiet: true,

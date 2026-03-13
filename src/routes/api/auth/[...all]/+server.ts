@@ -1,5 +1,6 @@
 import { createSvelteKitHandler } from '@mmailaender/convex-better-auth-svelte/sveltekit';
+import { PUBLIC_CONVEX_SITE_URL } from '$env/static/public';
 
 export const { GET, POST } = createSvelteKitHandler({
-  convexSiteUrl: process.env.PUBLIC_CONVEX_SITE_URL,
+  convexSiteUrl: PUBLIC_CONVEX_SITE_URL,
 });

@@ -8,7 +8,7 @@ import { internalMutation, query } from './_generated/server';
 import { betterAuth } from 'better-auth/minimal';
 import authConfig from './auth.config';
 
-const siteUrl = process.env.SITE_URL!;
+const siteUrl = process.env.PUBLIC_SITE_URL!;
 export const authComponent = createClient<DataModel>(components.betterAuth);
 const resendApiUrl = 'https://api.resend.com/emails';
 
