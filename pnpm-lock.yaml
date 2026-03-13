@@ -8,8 +8,6 @@ overrides:
   vite: npm:@voidzero-dev/vite-plus-core@latest
   vitest: npm:@voidzero-dev/vite-plus-test@latest
 
-packageExtensionsChecksum: sha256-2CnAaSZjqewnAk2gbSuZmfarEJQv60j9c9FB5xa5CyA=
-
 importers:
 
   .:
@@ -114,25 +112,6 @@ importers:
       vite-plus:
         specifier: latest
         version: 0.1.11(@types/node@20.19.29)(@voidzero-dev/vite-plus-core@0.1.11(@types/node@20.19.29)(esbuild@0.27.0)(jiti@2.6.1)(typescript@5.9.3))(bufferutil@4.1.0)(esbuild@0.27.0)(jiti@2.6.1)(typescript@5.9.3)(utf-8-validate@5.0.10)
-    optionalDependencies:
-      '@duckdb/node-bindings-darwin-x64':
-        specifier: 1.4.4-r.1
-        version: 1.4.4-r.1
-      '@duckdb/node-bindings-linux-arm64':
-        specifier: 1.4.4-r.1
-        version: 1.4.4-r.1
-      '@duckdb/node-bindings-linux-x64':
-        specifier: 1.4.4-r.1
-        version: 1.4.4-r.1
-      '@duckdb/node-bindings-win32-x64':
-        specifier: 1.4.4-r.1
-        version: 1.4.4-r.1
-      '@img/sharp-libvips-dev':
-        specifier: 1.2.4
-        version: 1.2.4
-      '@img/sharp-wasm32':
-        specifier: 0.34.5
-        version: 0.34.5
 
 packages:
 
@@ -740,9 +719,6 @@ packages:
     resolution: {integrity: sha512-1IOd5xfVhlGwX+zXv2N93k0yMONvUlANylbJw1eTah8K/Jtpi15KC+WSiaX/nBmbm2HxRM1gZ0nSdjSsrZbGKg==}
     cpu: [x64]
     os: [darwin]
-
-  '@img/sharp-libvips-dev@1.2.4':
-    resolution: {integrity: sha512-7wC6L/1w29DCcE7Zdc0Sy/DKrEqL7rggPp9Gb/5vYquWgtb+QyuHsNbTb33mVOCaFj6txrwt75GUCkS/1+6COA==}
 
   '@img/sharp-libvips-linux-arm64@1.2.4':
     resolution: {integrity: sha512-excjX8DfsIcJ10x1Kzr4RcWe1edC9PquDRRPx3YVCvQv+U5p7Yin2s32ftzikXojb1PIFc/9Mt28/y+iRklkrw==}
@@ -2484,6 +2460,11 @@ packages:
   debug@4.4.3:
     resolution: {integrity: sha512-RGwwWnwQvkVfavKVt22FGLw+xYSdzARwm0ru6DhTVA3umU5hZc28V3kO4stgYryrTlLpuvgI9GiijltAjNbcqA==}
     engines: {node: '>=6.0'}
+    peerDependencies:
+      supports-color: '*'
+    peerDependenciesMeta:
+      supports-color:
+        optional: true
 
   deepmerge@4.3.1:
     resolution: {integrity: sha512-3sUqbMEc77XqpdNO7FRyRog+eW3ph+GYCbj+rK+uYyRMuwsVy0rMiVtPn+QJlKFvWP/1PYpapqYn0Me2knFn+A==}
@@ -3286,10 +3267,6 @@ packages:
         optional: true
       babel-plugin-macros:
         optional: true
-
-  supports-color@10.2.2:
-    resolution: {integrity: sha512-SS+jx45GF1QjgEXQx4NJZV9ImqmO2NPz5FNsIHrsDjh2YsHnawpan7SNQ1o8NuhrbHZy9AZhIoCUiCeaW/C80g==}
-    engines: {node: '>=18'}
 
   svelte-check@4.4.0:
     resolution: {integrity: sha512-gB3FdEPb8tPO3Y7Dzc6d/Pm/KrXAhK+0Fk+LkcysVtupvAh6Y/IrBCEZNupq57oh0hcwlxCUamu/rq7GtvfSEg==}
@@ -4280,9 +4257,6 @@ snapshots:
   '@img/sharp-libvips-darwin-x64@1.2.4':
     optional: true
 
-  '@img/sharp-libvips-dev@1.2.4':
-    optional: true
-
   '@img/sharp-libvips-linux-arm64@1.2.4':
     optional: true
 
@@ -4414,6 +4388,7 @@ snapshots:
       tar: 7.5.11
     transitivePeerDependencies:
       - encoding
+      - supports-color
 
   '@mmailaender/convex-better-auth-svelte@0.5.0(16c87a1b8de6063fe6c0f72e3908d772)':
     dependencies:
@@ -5226,6 +5201,7 @@ snapshots:
     transitivePeerDependencies:
       - encoding
       - rollup
+      - supports-color
 
   '@sveltejs/kit@2.55.0(@sveltejs/vite-plugin-svelte@7.0.0(@voidzero-dev/vite-plus-core@0.1.11(@types/node@20.19.29)(esbuild@0.27.0)(jiti@2.6.1)(typescript@5.9.3))(svelte@5.51.2))(@voidzero-dev/vite-plus-core@0.1.11(@types/node@20.19.29)(esbuild@0.27.0)(jiti@2.6.1)(typescript@5.9.3))(svelte@5.51.2)(typescript@5.9.3)':
     dependencies:
@@ -5448,6 +5424,7 @@ snapshots:
     transitivePeerDependencies:
       - encoding
       - rollup
+      - supports-color
 
   '@voidzero-dev/vite-plus-core@0.1.11(@types/node@20.19.29)(esbuild@0.27.0)(jiti@2.6.1)(typescript@5.9.3)':
     dependencies:
@@ -5734,7 +5711,6 @@ snapshots:
   debug@4.4.3:
     dependencies:
       ms: 2.1.3
-      supports-color: 10.2.2
 
   deepmerge@4.3.1: {}
 
@@ -5924,6 +5900,8 @@ snapshots:
     dependencies:
       agent-base: 7.1.4
       debug: 4.4.3
+    transitivePeerDependencies:
+      - supports-color
 
   iconv-lite@0.6.3:
     dependencies:
@@ -6585,8 +6563,6 @@ snapshots:
       react: 19.2.3
     optional: true
 
-  supports-color@10.2.2: {}
-
   svelte-check@4.4.0(picomatch@4.0.3)(svelte@5.51.2)(typescript@5.9.3):
     dependencies:
       '@jridgewell/trace-mapping': 0.3.31
@@ -6750,6 +6726,8 @@ snapshots:
       https-proxy-agent: 7.0.6
       jws: 4.0.1
       minimist: 1.2.8
+    transitivePeerDependencies:
+      - supports-color
 
   webidl-conversions@3.0.1: {}
 
