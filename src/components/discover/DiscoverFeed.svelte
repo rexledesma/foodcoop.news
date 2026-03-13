@@ -65,6 +65,8 @@
   ];
 
   const DISCOVER_FILTER_STORAGE_KEY = 'discover-filter';
+  const DISCOVER_MENU_PILL_BASE_CLASS =
+    'inline-flex items-center rounded-full px-2.5 py-1 text-sm font-medium';
 
   type DiscoverFeedClientState = {
     items: FeedItem[];
@@ -275,13 +277,25 @@
     return 'bg-black text-white';
   }
 
+  function primaryOptionPillClass(option: PrimaryFilterType) : string {
+    return primaryFilter === option
+      ? 'bg-black text-white'
+      : 'bg-zinc-100 text-zinc-700';
+  }
+
   function sourceMenuLabel() : string {
     const selected = SOURCE_FILTER_OPTIONS.find((option) : boolean => option.value === sourceFilter);
-    return selected ? `Source: ${selected.label}` : 'Browse by source';
+    return selected ? selected.label : 'All';
   }
 
   function sourceMenuButtonClass() : string {
     return 'bg-blue-100 text-blue-800 hover:bg-blue-200';
+  }
+
+  function sourceOptionPillClass(option: SourceFilterType | null) : string {
+    return sourceFilter === option
+      ? 'bg-blue-100 text-blue-800'
+      : 'bg-zinc-100 text-zinc-700';
   }
 
   onMount(() : () => void => {
@@ -386,13 +400,71 @@
       {#if isInitialLoading}
         <div class="space-y-3">
           <div class="flex flex-wrap gap-1">
-            <div class="feed-shimmer h-8 w-28 rounded-full"></div>
             <div class="feed-shimmer h-8 w-60 rounded-full sm:w-72"></div>
+            <div class="feed-shimmer h-8 w-28 rounded-full"></div>
           </div>
           <div class="feed-shimmer h-5 w-40 rounded-full"></div>
         </div>
       {:else}
         <div class="flex flex-wrap gap-1">
+          <div class="relative w-60 sm:w-72">
+            <button
+              type="button"
+              onclick={() => {
+                sourceMenuOpen = false;
+                sourceMenuOpen = !sourceMenuOpen;
+                primaryMenuOpen = false;
+              }}
+              aria-expanded={sourceMenuOpen}
+              data-discover-source-trigger="true"
+              class={`inline-flex w-full items-center justify-between gap-1 rounded-full px-3 py-1.5 text-sm font-medium whitespace-nowrap transition-colors ${sourceMenuButtonClass()}`}
+            >
+              <span class="truncate">{sourceMenuLabel()}</span>
+              <span aria-hidden="true" class="text-[10px] text-blue-800/80">▼</span>
+            </button>
+
+            {#if sourceMenuOpen}
+              <div
+                class="absolute top-full left-0 z-40 mt-2 max-h-[min(26rem,calc(100vh-9rem))] w-[min(18rem,calc(100vw-2rem))] max-w-[calc(100vw-2rem)] overflow-y-auto overflow-x-hidden rounded-2xl border border-zinc-200 bg-white py-1 shadow-[0_16px_50px_-24px_rgba(0,0,0,0.45)] sm:left-0"
+                data-discover-source-menu="true"
+                style="right: min(0px, calc(100% - 100vw + 2rem));"
+              >
+                <div class="px-4 py-2 text-xs font-semibold tracking-[0.08em] text-zinc-500 uppercase">
+                  Source by
+                </div>
+                <button
+                  type="button"
+                  onclick={() => setSourceFilter(null)}
+                  class={`flex w-full items-center justify-between gap-3 px-3 py-2 text-left text-sm transition-colors hover:bg-zinc-50 ${sourceFilter === null ? 'bg-zinc-50' : ''}`}
+                >
+                  <span class={`${DISCOVER_MENU_PILL_BASE_CLASS} ${sourceOptionPillClass(null)}`}>All</span>
+                  {#if sourceFilter === null}
+                    <span aria-hidden="true" class="text-sm text-zinc-700">✓</span>
+                  {/if}
+                </button>
+                {#each SOURCE_FILTER_OPTIONS as option (option.value)}
+                  <button
+                    type="button"
+                    onclick={() => setSourceFilter(option.value)}
+                    class={`flex w-full items-start justify-between gap-3 px-3 py-2 text-left transition-colors hover:bg-zinc-50 ${sourceFilter === option.value ? 'bg-zinc-50' : ''}`}
+                  >
+                    <span class="min-w-0">
+                      <span class={`${DISCOVER_MENU_PILL_BASE_CLASS} ${sourceOptionPillClass(option.value)}`}>
+                        {option.label}
+                      </span>
+                      {#if option.description}
+                        <span class="mt-0.5 block text-xs leading-5 text-zinc-500">{option.description}</span>
+                      {/if}
+                    </span>
+                    {#if sourceFilter === option.value}
+                      <span aria-hidden="true" class="pt-0.5 text-sm text-zinc-700">✓</span>
+                    {/if}
+                  </button>
+                {/each}
+              </div>
+            {/if}
+          </div>
+
           <div class="relative w-28 sm:w-32">
             <button
               type="button"
@@ -415,69 +487,23 @@
 
             {#if primaryMenuOpen}
               <div
-                class="absolute top-full left-0 z-40 mt-2 w-[min(14rem,calc(100vw-2rem))] overflow-hidden rounded-2xl border border-zinc-200 bg-white py-1 shadow-[0_16px_50px_-24px_rgba(0,0,0,0.45)]"
+                class="absolute top-full right-0 z-40 mt-2 w-[min(14rem,calc(100vw-2rem))] max-w-[calc(100vw-2rem)] overflow-hidden rounded-2xl border border-zinc-200 bg-white py-1 shadow-[0_16px_50px_-24px_rgba(0,0,0,0.45)]"
                 data-discover-primary-menu="true"
               >
+                <div class="px-4 py-2 text-xs font-semibold tracking-[0.08em] text-zinc-500 uppercase">
+                  Range by
+                </div>
                 {#each PRIMARY_FILTER_OPTIONS as option (option.value)}
                   <button
                     type="button"
                     onclick={() => setPrimaryFilter(option.value)}
                     class={`flex w-full items-center justify-between gap-3 px-3 py-2 text-left text-sm transition-colors hover:bg-zinc-50 ${primaryFilter === option.value ? 'bg-zinc-50' : ''}`}
                   >
-                    <span class="font-medium text-zinc-900">{option.label}</span>
+                    <span class={`${DISCOVER_MENU_PILL_BASE_CLASS} ${primaryOptionPillClass(option.value)}`}>
+                      {option.label}
+                    </span>
                     {#if primaryFilter === option.value}
                       <span aria-hidden="true" class="text-sm text-zinc-700">✓</span>
-                    {/if}
-                  </button>
-                {/each}
-              </div>
-            {/if}
-          </div>
-
-          <div class="relative w-60 sm:w-72">
-            <button
-              type="button"
-              onclick={() => {
-                primaryMenuOpen = false;
-                sourceMenuOpen = !sourceMenuOpen;
-              }}
-              aria-expanded={sourceMenuOpen}
-              data-discover-source-trigger="true"
-              class={`inline-flex w-full items-center justify-between gap-1 rounded-full px-3 py-1.5 text-sm font-medium whitespace-nowrap transition-colors ${sourceMenuButtonClass()}`}
-            >
-              <span class="truncate">{sourceMenuLabel()}</span>
-              <span aria-hidden="true" class="text-[10px] text-blue-800/80">▼</span>
-            </button>
-
-            {#if sourceMenuOpen}
-              <div
-                class="absolute top-full left-0 z-40 mt-2 w-[min(18rem,calc(100vw-2rem))] min-w-full overflow-hidden rounded-2xl border border-zinc-200 bg-white py-1 shadow-[0_16px_50px_-24px_rgba(0,0,0,0.45)]"
-                data-discover-source-menu="true"
-              >
-                <button
-                  type="button"
-                  onclick={() => setSourceFilter(null)}
-                  class={`flex w-full items-center justify-between gap-3 px-3 py-2 text-left text-sm transition-colors hover:bg-zinc-50 ${sourceFilter === null ? 'bg-zinc-50' : ''}`}
-                >
-                  <span class="font-medium text-zinc-900">All sources</span>
-                  {#if sourceFilter === null}
-                    <span aria-hidden="true" class="text-sm text-zinc-700">✓</span>
-                  {/if}
-                </button>
-                {#each SOURCE_FILTER_OPTIONS as option (option.value)}
-                  <button
-                    type="button"
-                    onclick={() => setSourceFilter(option.value)}
-                    class={`flex w-full items-start justify-between gap-3 px-3 py-2 text-left transition-colors hover:bg-zinc-50 ${sourceFilter === option.value ? 'bg-zinc-50' : ''}`}
-                  >
-                    <span class="min-w-0">
-                      <span class="block text-sm font-medium text-zinc-900">{option.label}</span>
-                      {#if option.description}
-                        <span class="mt-0.5 block text-xs leading-5 text-zinc-500">{option.description}</span>
-                      {/if}
-                    </span>
-                    {#if sourceFilter === option.value}
-                      <span aria-hidden="true" class="pt-0.5 text-sm text-zinc-700">✓</span>
                     {/if}
                   </button>
                 {/each}
