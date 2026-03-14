@@ -9,8 +9,7 @@
     "preview": "vp preview",
     "svelte:check": "svelte-check --tsconfig ./tsconfig.json --fail-on-warnings",
     "knip": "knip",
-    "typecheck": "tsgo --noEmit",
-    "check": "vp check && vp run svelte:check && vp run knip && vp run typecheck",
+    "check": "vp check && vp run svelte:check && vp run knip",
     "backfill": "curl -X POST \"$PUBLIC_SITE_URL/api/cron/backfill-produce\" -H \"Authorization: Bearer $CRON_SECRET\""
   },
   "dependencies": {
@@ -42,7 +41,6 @@
     "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^20",
     "@types/web-push": "^3.6.4",
-    "@typescript/native-preview": "7.0.0-dev.20260225.1",
     "knip": "^5.83.1",
     "svelte-check": "^4.4.0",
     "tailwindcss": "^4",

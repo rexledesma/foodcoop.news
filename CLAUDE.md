@@ -8,10 +8,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 vp run dev               # Start local dev server
 vp run build             # Build production app
 vp run preview           # Alias for start
-vp run check             # Run vp check + svelte-check + knip + tsgo typecheck
+vp run check             # Run vp check + svelte-check + knip
 vp run svelte:check      # Run svelte-check --fail-on-warnings
 vp run knip              # Run unused code/dependency checks
-vp run typecheck         # Run tsgo --noEmit
 vp exec convex dev       # Start Convex dev server
 vp run backfill          # Trigger /api/cron/backfill-produce with CRON_SECRET
 ```
