@@ -2,13 +2,14 @@ import type { EventbriteEvent, FoodcoopEvent } from '@/lib/types';
 import type { PageServerLoad } from './$types';
 
 const DISCOVER_EVENT_SOURCES =
-  'foodcoopcooks-events,wordsprouts-events,concert-series-events,gm-events';
+  'foodcoopcooks-events,wordsprouts-events,concert-series-events,gm-events,foodcoop-orientation-events';
 const DISCOVER_NEWS_SOURCES = 'foodcoop,gazette,foodcoopcooks,produce,bluesky';
 const EVENT_ITEM_TYPES = new Set([
   'foodcoopcooks-events',
   'wordsprouts-events',
   'concert-series-events',
   'gm-events',
+  'foodcoop-orientation-events',
 ]);
 const NEWS_ITEM_TYPES = new Set(['foodcoop', 'gazette', 'foodcoopcooks', 'produce', 'bluesky']);
 

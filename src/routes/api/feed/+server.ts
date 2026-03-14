@@ -27,6 +27,7 @@ type SourceName =
   | 'gazette'
   | 'bluesky'
   | 'foodcoop'
+  | 'foodcoop-orientation-events'
   | 'foodcoopcooks'
   | 'foodcoopcooks-events'
   | 'wordsprouts-events'
@@ -187,6 +188,20 @@ const SOURCE_DEFINITIONS: SourceDefinition[] = [
           type: 'foodcoop',
           data: article,
           date: new Date(article.pubDate),
+        }),
+      );
+    },
+  },
+  {
+    name: 'foodcoop-orientation-events',
+    path: '/api/foodcoop/orientation-events',
+    map: (payload): { type: 'foodcoop-orientation-events'; data: FoodcoopEvent; date: Date }[] => {
+      const data = payload as SourceResponse & { events?: FoodcoopEvent[] };
+      return (data.events ?? []).map(
+        (event): { type: 'foodcoop-orientation-events'; data: FoodcoopEvent; date: Date } => ({
+          type: 'foodcoop-orientation-events',
+          data: event,
+          date: new Date(event.startUtc),
         }),
       );
     },
@@ -414,6 +429,7 @@ export async function GET({
       | { date: string; type: 'gazette-deadline'; data: GazetteDeadlineEvent }
       | { date: string; type: 'bluesky'; data: FeedPost }
       | { date: string; type: 'foodcoop'; data: FoodCoopAnnouncement }
+      | { date: string; type: 'foodcoop-orientation-events'; data: FoodcoopEvent }
       | { date: string; type: 'foodcoopcooks'; data: FoodCoopCooksArticle }
       | { date: string; type: 'foodcoopcooks-events'; data: EventbriteEvent }
       | { date: string; type: 'wordsprouts-events'; data: EventbriteEvent }

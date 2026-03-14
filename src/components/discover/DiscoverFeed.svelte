@@ -7,6 +7,7 @@
     FoodCoopAnnouncement,
     FoodCoopCooksArticle,
     EventbriteEvent,
+    FoodcoopEvent,
     ProduceEvent,
   } from '@/lib/types';
   import type { FeedItem } from '@/lib/discover-feed';
@@ -135,7 +136,11 @@
         return item.type === 'concert-series-events';
       }
       if (sourceFilter === 'foodcoop') {
-        return item.type === 'foodcoop' || item.type === 'gm-events';
+        return (
+          item.type === 'foodcoop' ||
+          item.type === 'gm-events' ||
+          item.type === 'foodcoop-orientation-events'
+        );
       }
       if (sourceFilter === 'gazette') {
         return item.type === 'gazette' || item.type === 'gazette-deadline';
@@ -159,6 +164,7 @@
       item.type === 'wordsprouts-events' ||
       item.type === 'concert-series-events' ||
       item.type === 'gm-events' ||
+      item.type === 'foodcoop-orientation-events' ||
       item.type === 'gazette-deadline'
     );
   }
@@ -261,6 +267,22 @@
     } catch {
       return new Set();
     }
+  }
+
+  function formatOrientationCardTitle(event: FoodcoopEvent): string {
+    const titleMatch = event.title.match(/\(([A-Za-z]+)\s+(\d{1,2}\/\d{1,2}\/\d{4})\)/);
+    if (titleMatch) {
+      return `Orientation Registration: ${titleMatch[1]} ${titleMatch[2]}`;
+    }
+
+    const descriptionMatch = (event.description ?? '').match(
+      /on\s+([A-Za-z]+)\s+(\d{1,2}\/\d{1,2}\/\d{4})\s+at/i,
+    );
+    if (descriptionMatch) {
+      return `Orientation Registration: ${descriptionMatch[1]} ${descriptionMatch[2]}`;
+    }
+
+    return 'Orientation Registration';
   }
 
   function handleStateUpdate(event: Event) : void {
@@ -574,6 +596,13 @@
               {@render EventbriteEventCard({ event: item.data, label: "Concerts", emoji: "🎶" })}
             {:else if item.type === 'gm-events'}
               {@render EventbriteEventCard({ event: item.data, label: "General Meeting", emoji: "🗳️" })}
+            {:else if item.type === 'foodcoop-orientation-events'}
+              {@render EventbriteEventCard({
+                event: item.data,
+                label: "New Member Orientation",
+                emoji: "🧭",
+                titleOverride: formatOrientationCardTitle(item.data),
+              })}
             {:else if item.type === 'produce'}
               {@render ProduceCard({ update: item.data, date: item.date, favorites })}
             {:else}
@@ -739,10 +768,12 @@
   event,
   label,
   emoji,
+  titleOverride,
 }: {
-  event: EventbriteEvent;
+  event: EventbriteEvent | FoodcoopEvent;
   label: string;
   emoji: string;
+  titleOverride?: string;
 })}
   <a
     href={event.url}
@@ -757,7 +788,7 @@
           <span class="font-semibold text-zinc-900">{label}</span>
           <span class="shrink-0 text-sm text-zinc-400">{formatEventDateTime(event.startUtc, event.timezone)}</span>
         </div>
-        <p class="mt-2 font-medium text-zinc-700">{event.title}</p>
+        <p class="mt-2 font-medium text-zinc-700">{titleOverride ?? event.title}</p>
         {#if event.description}
           <p
             class={label === 'General Meeting'
