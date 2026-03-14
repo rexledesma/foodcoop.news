@@ -6,16 +6,11 @@
   "scripts": {
     "dev": "vp dev",
     "build": "vp build",
-    "start": "vp preview",
     "preview": "vp preview",
-    "lint": "pnpm exec vp lint --fix",
-    "lint:check": "pnpm exec vp lint",
-    "svelte:check": "pnpm exec svelte-check --tsconfig ./tsconfig.json --fail-on-warnings",
+    "svelte:check": "svelte-check --tsconfig ./tsconfig.json --fail-on-warnings",
     "knip": "knip",
-    "format": "pnpm exec oxfmt .",
-    "format:check": "pnpm exec oxfmt . --check",
-    "typecheck": "pnpm exec tsgo --noEmit",
-    "check": "pnpm exec vp check && pnpm svelte:check && pnpm knip && pnpm typecheck",
+    "typecheck": "tsgo --noEmit",
+    "check": "vp check && vp run svelte:check && vp run knip && vp run typecheck",
     "backfill": "curl -X POST \"$PUBLIC_SITE_URL/api/cron/backfill-produce\" -H \"Authorization: Bearer $CRON_SECRET\""
   },
   "dependencies": {
@@ -55,15 +50,9 @@
     "vite": "npm:@voidzero-dev/vite-plus-core@latest",
     "vite-plus": "latest"
   },
-  "packageManager": "pnpm@10.32.1",
-  "pnpm": {
-    "ignoredBuiltDependencies": [
-      "sharp",
-      "unrs-resolver"
-    ],
-    "overrides": {
-      "vite": "npm:@voidzero-dev/vite-plus-core@latest",
-      "vitest": "npm:@voidzero-dev/vite-plus-test@latest"
-    }
-  }
+  "overrides": {
+    "vite": "npm:@voidzero-dev/vite-plus-core@latest",
+    "vitest": "npm:@voidzero-dev/vite-plus-test@latest"
+  },
+  "packageManager": "pnpm@10.32.1"
 }

@@ -5,74 +5,132 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Development Commands
 
 ```bash
-pnpm dev              # Development server (Vite/SvelteKit)
-pnpm build            # Production build
-pnpm start            # Preview built app locally
-pnpm check            # Run lint, svelte-check, knip, format, and TypeScript checks
-pnpm typecheck        # Run tsgo --noEmit (TypeScript Go)
-pnpm lint             # Run Oxlint only
-pnpm svelte:check     # Run svelte-check only
-pnpm knip             # Run knip unused code/deps checks
-pnpm format           # Format with Oxfmt
-pnpm format:check     # Check formatting with Oxfmt
-npx convex dev        # Start Convex development server
+vp run dev               # Start local dev server
+vp run build             # Build production app
+vp run preview           # Alias for start
+vp run check             # Run vp check + svelte-check + knip + tsgo typecheck
+vp run svelte:check      # Run svelte-check --fail-on-warnings
+vp run knip              # Run unused code/dependency checks
+vp run typecheck         # Run tsgo --noEmit
+vp exec convex dev       # Start Convex dev server
+vp run backfill          # Trigger /api/cron/backfill-produce with CRON_SECRET
 ```
 
-**Important:** After generating or modifying code, run `pnpm check` to fix any lint/svelte-check/knip/format/TypeScript errors. This command should always succeed with no errors.
+**Important:** After generating or modifying code, run `vp run check`. This command should succeed with no errors.
 
 ## Architecture
 
-This is a SvelteKit application for Park Slope Food Coop members, using Convex as the backend database.
+This is a SvelteKit app for Park Slope Food Coop members, with Convex for auth/profile/favorites/subscriptions and S3-backed produce analytics.
 
-**Stack:** SvelteKit 2, Svelte 5, TypeScript (strict mode), Tailwind CSS 4, Convex, Better Auth, DuckDB WASM, Amazon S3
+**Stack:** SvelteKit 2, Svelte 5, TypeScript strict mode, Tailwind CSS 4, Convex, Better Auth, DuckDB, AWS S3, Vercel Cron, Web Push, Apple/Google Wallet.
 
-**Path alias:** `@/*` → `./src/*`
+**Path alias:** `@/*` -> `./src/*`
 
-### Project Structure
+## Project Structure
 
-- `src/routes/` - Pages and API routes
-- `src/routes/api/` - Backend endpoints: auth, feed, gazette, foodcoop, foodcoopcooks, events, calendar, wallet, produce, cron
-- `src/components/` - Svelte components
-- `src/lib/` - Utilities, shared types, auth client, feed/produce helpers, wallet utilities
-- `convex/` - Convex schema, functions, and auth configuration
+- `src/routes/` - Pages and route handlers
+- `src/routes/api/` - API routes:
+  - `auth`, `calendar`, `feed`, `foodcoop`, `foodcoopcooks`, `gazette`
+  - `concert-series/events`, `wordsprouts/events`, `notifications/test`
+  - `me/profile`, `me/produce-favorites`, `me/push-subscriptions`
+  - `produce/current|data|metadata|updates|favorite-counts|link-preview`
+  - `wallet/pass`, `wallet/google`
+  - `cron/scrape-produce*`, `cron/backfill-produce`
+- `src/components/` - UI components for auth, navigation, discover, produce, about, integrations
+- `src/lib/` - Shared logic: auth helpers, feed parsing, Eventbrite scraping, produce parsing/caching/parquet utils, S3 storage, wallet generation, push helpers
+- `convex/` - Schema and backend functions for auth, member profiles, produce favorites, and push subscriptions
+- `static/sw.js` - Service worker for push notifications
 
-### Data Flow
+## Core Data Flows
 
-1. **Authentication**: Better Auth with Convex adapter (`convex/auth.ts`, `src/lib/auth.ts`, `src/routes/api/auth/[...all]/+server.ts`)
-2. **Member Profiles**: Stored in Convex (`convex/memberProfiles.ts`) with member ID, name, calendar ID, job filters, and pass serial number
-3. **Discover Feed**: Aggregates RSS (foodcoop.com, Gazette, Food Coop Cooks), Bluesky posts, and Eventbrite/GM events with 5-minute caching
-4. **Calendar Syncing**: Proxies Google Calendar iCal feed, filters events by member job filters via `src/routes/api/calendar/[calendarId]/+server.ts`
-5. **Wallet Passes**: Generates Apple Wallet `.pkpass` and Google Wallet save URLs from member profiles
-6. **Produce Pipeline**: Cron scrapes the Coop produce page, stores HTML + monthly Parquet in Amazon S3, client loads via DuckDB WASM for analytics
+1. **Auth**: Better Auth + Convex adapter (`convex/auth.ts`, `src/routes/api/auth/[...all]/+server.ts`, `src/lib/auth.ts`).
+2. **Member profiles**: Auto-created on signup via Convex auth hook; include member name/id, `calendarId`, `passSerialNumber`, and `jobFilters`.
+3. **Discover feed**: `/api/feed` aggregates multiple sources (RSS, Bluesky, Eventbrite, GM events, produce updates), dedupes, and returns merged items.
+4. **Calendar integration**: `/api/calendar/[calendarId]` proxies and filters the public coop ICS feed by saved `jobFilters`.
+5. **Wallet passes**: `/api/wallet/pass` (Apple `.pkpass`) and `/api/wallet/google` (Google save URL) generated from member profile data.
+6. **Produce pipeline**:
+   - Cron fetches `foodcoop.com/produce` HTML snapshots into S3 (`produce/YYYY-MM-DD.html`).
+   - Server upserts yearly parquet files (`produce-data-yearly/`).
+   - Derived parquet datasets are generated (`produce-data-derived/ytd-*`, `long-range-downsampled-*`).
+   - `/api/produce/data` queries parquet data with DuckDB.
+7. **Push notifications**: Browser subscribes via service worker and VAPID keys; subscriptions stored in Convex; `/api/notifications/test` sends test notifications.
 
-### Key Technical Details
+## Caching and Runtime Notes
 
-- **Database**: Convex for member profiles and auth state
-- **Authentication**: Better Auth with email/password, integrated via `@convex-dev/better-auth`
-- **Feeds**: RSS parsing + Bluesky API, 5-minute in-memory caching for feed/event APIs
-- **Events**: Eventbrite organizers for Food Coop Cooks, Wordsprouts, and Concert Series; GM events scraped from foodcoop.com
-- **Wallet Passes**: `passkit-generator` for Apple Wallet, Google Wallet JWTs with PDF417 barcodes
-- **Produce Analytics**: Scrape + Parquet generation on the server, DuckDB WASM on the client
-- **Image Processing**: `sharp` for server-side image manipulation
+- Most feed/event endpoints use 5-minute in-memory caches.
+- `api/feed` applies source timeouts and partial-success responses.
+- Produce metadata has its own cache layer (`src/lib/produce-metadata-cache.ts`) and is invalidated after cron/backfill writes.
+- `src/lib/s3-storage.ts` supports S3-compatible endpoints and signed/public URL modes.
 
-### Environment Variables
+## Convex Data Model
 
-Required environment variables (set in `.env.local` and Convex dashboard):
+Tables in `convex/schema.ts`:
 
-- `PUBLIC_CONVEX_URL` - Convex deployment URL
-- `PUBLIC_CONVEX_SITE_URL` - Convex HTTP actions URL
-- `PUBLIC_SITE_URL` - Production site URL for auth callbacks
-- `EVENTBRITE_API_KEY` - Eventbrite API token for event feeds
-- `CRON_SECRET` - Authorization secret for cron scraping endpoints
-- `AWS_ACCESS_KEY_ID` - IAM access key ID for S3 access
-- `AWS_SECRET_ACCESS_KEY` - IAM secret access key for S3 access
-- `AWS_REGION` - AWS region for the S3 bucket
-- `S3_BUCKET_NAME` - S3 bucket name for produce data
-- `GOOGLE_WALLET_ISSUER_ID` - Google Wallet issuer ID
-- `GOOGLE_APPLICATION_CREDENTIALS` - Base64-encoded Google service account JSON
-- `APPLE_WWDR_CERT_BASE64` - Apple WWDR certificate (base64)
-- `APPLE_PASS_CERT_BASE64` - Apple pass certificate (base64)
-- `APPLE_PASS_KEY_BASE64` - Apple pass private key (base64)
-- `APPLE_PASS_KEY_PASSPHRASE` - Apple pass key passphrase
-- `APPLE_PASS_TYPE_ID` - Apple pass type identifier
-- `APPLE_TEAM_ID` - Apple developer team ID
+- `memberProfiles` (`by_userId`, `by_memberId`, `by_calendarId`)
+- `produceFavorites` (`by_userId`, `by_itemName`, `by_userId_itemName`)
+- `pushSubscriptions` (`by_userId`, `by_endpoint`)
+
+## Environment Variables
+
+Set local values in `.env.local`. Deploy equivalents in Vercel/Convex as appropriate.
+
+### Required for baseline app/auth
+
+- `PUBLIC_SITE_URL`
+- `PUBLIC_CONVEX_URL`
+- `PUBLIC_CONVEX_SITE_URL`
+
+### Required for produce pipeline and cron
+
+- `CRON_SECRET`
+- `AWS_ACCESS_KEY_ID`
+- `AWS_SECRET_ACCESS_KEY`
+- `AWS_REGION`
+- `S3_BUCKET_NAME`
+
+### Optional integrations/features
+
+- `EVENTBRITE_API_KEY` - Eventbrite-backed event endpoints
+- `GOOGLE_WALLET_ISSUER_ID` - Google Wallet pass generation
+- `GOOGLE_APPLICATION_CREDENTIALS` - Base64 service account JSON for Google Wallet signing
+- `APPLE_WWDR_CERT_BASE64`
+- `APPLE_PASS_CERT_BASE64`
+- `APPLE_PASS_KEY_BASE64`
+- `APPLE_PASS_KEY_PASSPHRASE`
+- `APPLE_PASS_TYPE_ID`
+- `APPLE_TEAM_ID`
+- `PUBLIC_VAPID_PUBLIC_KEY` - Browser push subscription
+- `VAPID_PRIVATE_KEY` - Server push sending
+- `VAPID_SUBJECT` - Web push subject (mailto or URL)
+- `PUBLIC_NOTIFICATIONS_ALLOWED_EMAILS` - Comma-separated allowlist for notifications UI
+- `RESEND_API_KEY` - Signup notification emails
+- `RESEND_SIGNUP_NOTIFICATION_EMAIL_FROM`
+- `RESEND_SIGNUP_NOTIFICATION_EMAIL_TO` - Comma-separated recipients
+- `TRUSTED_ORIGINS` - Comma-separated extra Better Auth trusted origins
+
+### Optional S3 compatibility/runtime tuning
+
+- `S3_ENDPOINT`
+- `S3_PUBLIC_BASE_URL`
+- `AWS_S3_FORCE_PATH_STYLE` (`true`/`false`)
+- `AWS_SESSION_TOKEN`
+- `S3_SIGNED_URL_TTL_SECONDS`
+
+## Deployment and Cron
+
+`vercel.json` schedules these cron routes:
+
+- `/api/cron/scrape-produce` at `0 12 * * *`
+- `/api/cron/scrape-produce-10am` at `0 15 * * *`
+- `/api/cron/scrape-produce-12pm` at `0 17 * * *`
+- `/api/cron/scrape-produce-5pm` at `0 22 * * *`
+- `/api/cron/scrape-produce-10pm` at `0 3 * * *`
+
+All cron endpoints require `Authorization: Bearer $CRON_SECRET`.
+
+## Working Conventions
+
+- Keep TypeScript strict and lint-clean.
+- Prefer existing helpers in `src/lib/` before adding new utilities.
+- Preserve current route/API naming patterns and cache behavior when extending endpoints.
+- Avoid editing `convex/_generated/*` files directly.
