@@ -1185,6 +1185,19 @@
     return favoriteCounts[name] ?? 0;
   }
 
+  function setForceSticky(enabled: boolean) : void {
+    if (typeof window === 'undefined') {return;}
+    window.dispatchEvent(new CustomEvent('force-sticky', { detail: enabled }));
+  }
+
+  function handleSearchFocus() : void {
+    setForceSticky(true);
+  }
+
+  function handleSearchBlur() : void {
+    setForceSticky(false);
+  }
+
   function applyState(next: ProduceAnalyticsClientState) : void {
     data = next.data;
     history = next.history;
@@ -1367,6 +1380,7 @@
       document.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('scroll', handleViewportChange, true);
       window.removeEventListener('resize', handleViewportChange);
+      setForceSticky(false);
       favoriteBursts = [];
       hideActionsMenu();
       hideControlsMenu();
@@ -1575,6 +1589,8 @@
             oninput={(e) => {
               search = e.currentTarget.value;
             }}
+            onfocus={handleSearchFocus}
+            onblur={handleSearchBlur}
             placeholder="Search produce..."
             class="min-w-[12rem] flex-1 bg-transparent text-zinc-900 placeholder-zinc-500 outline-none"
           />
