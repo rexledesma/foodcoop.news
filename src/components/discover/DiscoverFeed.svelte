@@ -554,7 +554,7 @@
 
   <div class="transition-opacity duration-300 ease-in-out motion-reduce:transition-none">
     {#if isInitialLoading}
-      <div class="grid gap-4">
+      <div class="grid gap-4 [&>*]:min-w-0">
         {@render FeedItemSkeleton()}
         {@render FeedItemSkeleton()}
         {@render FeedItemSkeleton()}
@@ -567,9 +567,9 @@
         </button>
       </div>
     {:else}
-      <div class="grid gap-4">
+      <div class="grid gap-4 [&>*]:min-w-0">
         {#if primaryFilter === 'latest' && upcomingWeekEvents.length > 0}
-          <div class="feed-item-enter">
+          <div class="feed-item-enter min-w-0">
             {@render UpcomingWeekSummaryCard({
               count: upcomingWeekEvents.length,
               events: upcomingWeekEvents,
@@ -584,7 +584,7 @@
         {/if}
 
         {#each displayedItems as item (getFeedItemKey(item))}
-          <div class="feed-item-enter">
+          <div class="feed-item-enter min-w-0">
             {@render FeedCard({ item, favorites })}
           </div>
         {/each}
