@@ -195,14 +195,17 @@
 
   function formatExactDateTime(date: Date): string {
     return date.toLocaleString('en-US', {
-      dateStyle: 'medium',
-      timeStyle: 'short',
+      month: 'short',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
     });
   }
 
   function formatDate(date: Date): string {
     return date.toLocaleDateString('en-US', {
-      dateStyle: 'medium',
+      month: 'short',
+      day: 'numeric',
     });
   }
 
@@ -226,8 +229,10 @@
     });
 
     const fullDateTime = date.toLocaleString('en-US', {
-      dateStyle: 'medium',
-      timeStyle: 'short',
+      month: 'short',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
       timeZone: timezone,
     });
 
