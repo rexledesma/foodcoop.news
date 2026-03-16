@@ -159,6 +159,7 @@
   const displayedItems = $derived(
     primaryFilter === 'upcoming' ? upcomingItems : latestCurrentItems,
   );
+  const usingDefaultFilters = $derived(primaryFilter === 'latest' && sourceFilter === null);
 
   const isInitialLoading = $derived(loading && items.length === 0);
   const isInitialError = $derived(Boolean(error) && items.length === 0);
@@ -326,6 +327,13 @@
     sourceMenuOpen = false;
   }
 
+  function resetFilters() : void {
+    sourceFilter = null;
+    primaryFilter = 'latest';
+    primaryMenuOpen = false;
+    sourceMenuOpen = false;
+  }
+
   function primaryMenuLabel() : string {
     return PRIMARY_FILTER_OPTIONS.find((option) : boolean => option.value === primaryFilter)?.compactLabel ?? 'View';
   }
@@ -439,8 +447,8 @@
           <div class="feed-shimmer h-5 w-40 rounded-full"></div>
         </div>
       {:else}
-        <div class="flex gap-1">
-          <div class="relative min-w-0 flex-1 sm:w-32 sm:flex-none">
+          <div class="flex gap-1">
+          <div class="relative min-w-0 flex-[1.15] sm:w-32 sm:flex-none">
             <button
               type="button"
               onclick={() => {
@@ -498,7 +506,7 @@
             {/if}
           </div>
 
-          <div class="relative min-w-0 flex-1 sm:w-32 sm:flex-none">
+          <div class="relative min-w-0 flex-[0.85] sm:w-32 sm:flex-none">
             <button
               type="button"
               onclick={() => {
@@ -507,7 +515,7 @@
               }}
               aria-expanded={primaryMenuOpen}
               data-discover-primary-trigger="true"
-              class={`inline-flex w-full items-center justify-between gap-1 rounded-full px-3 py-1.5 text-sm font-medium whitespace-nowrap transition-colors ${primaryMenuButtonClass()}`}
+              class={`inline-flex w-full items-center justify-between gap-1 rounded-full px-2.5 py-1.5 text-sm font-medium whitespace-nowrap transition-colors sm:px-3 ${primaryMenuButtonClass()}`}
             >
               <span class="truncate whitespace-nowrap">{primaryMenuLabel()}</span>
               <span
@@ -543,6 +551,17 @@
               </div>
             {/if}
           </div>
+          <button
+            type="button"
+            onclick={resetFilters}
+            class={`inline-flex flex-none items-center justify-center rounded-full border border-zinc-300 bg-white px-3 py-1.5 text-sm font-medium whitespace-nowrap text-zinc-700 transition-colors hover:bg-zinc-100 ${usingDefaultFilters ? 'invisible pointer-events-none' : ''}`}
+            aria-label="Reset filters to All and Latest"
+            disabled={usingDefaultFilters}
+            aria-hidden={usingDefaultFilters}
+            tabindex={usingDefaultFilters ? -1 : 0}
+          >
+            Reset
+          </button>
         </div>
 
         {#if !isInitialError}
