@@ -107,7 +107,7 @@ function createGazetteDeadlineEvents(now = new Date()): GazetteDeadlineEvent[] {
       const dueDate = toIsoDate(articleDueUtc);
       events.push({
         id: `${issueDate}-article`,
-        title: `Member Article Submission Deadline`,
+        title: `Member-Submitted Article Deadline`,
         description: `For the ${formatIssueLabel(issueDate)} issue, member article submissions are due on ${formatDueDateLabel(dueDate)}.`,
         issueDate,
         dueDate,
