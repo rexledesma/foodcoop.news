@@ -69,7 +69,6 @@
     },
   ];
 
-  const DISCOVER_FILTER_STORAGE_KEY = 'discover-filter';
   const DISCOVER_MENU_PILL_BASE_CLASS =
     'inline-flex items-center rounded-full px-2.5 py-1 text-sm font-medium';
 
@@ -175,25 +174,8 @@
     );
   }
 
-  function isPrimaryFilterType(value: string): value is PrimaryFilterType {
-    return PRIMARY_FILTER_OPTIONS.some((option) : boolean => option.value === value);
-  }
-
-  function normalizePrimaryFilter(value: string | undefined): PrimaryFilterType | null {
-    if (!value) {return null;}
-    if (value === 'latest' || value === 'latest_45_days' || value === 'latest_week') {return 'latest';}
-    return isPrimaryFilterType(value) ? value : null;
-  }
-
   function isSourceFilterType(value: string): value is SourceFilterType {
     return SOURCE_FILTER_OPTIONS.some((option) : boolean => option.value === value);
-  }
-
-  function persistFilters() : void {
-    localStorage.setItem(
-      DISCOVER_FILTER_STORAGE_KEY,
-      JSON.stringify({ primaryFilter, sourceFilter }),
-    );
   }
 
   function formatRelativeTime(date: Date): string | null {
@@ -306,14 +288,12 @@
   function setPrimaryFilter(nextFilter: PrimaryFilterType) : void {
     primaryFilter = nextFilter;
     primaryMenuOpen = false;
-    persistFilters();
   }
 
   function openUpcomingFilter() : void {
     primaryFilter = 'upcoming';
     primaryMenuOpen = false;
     sourceMenuOpen = false;
-    persistFilters();
   }
 
   function upcomingEventSourceName(item: EventFeedItem): string {
@@ -344,7 +324,6 @@
     sourceFilter = nextFilter;
     primaryMenuOpen = false;
     sourceMenuOpen = false;
-    persistFilters();
   }
 
   function primaryMenuLabel() : string {
@@ -385,33 +364,7 @@
     favoritesSnapshot = initialState.favoritesSnapshot;
     fetchFeeds = initialState.fetchFeeds;
 
-    const storedFilter = localStorage.getItem(DISCOVER_FILTER_STORAGE_KEY);
-    if (storedFilter) {
-      try {
-        const parsed = JSON.parse(storedFilter) as {
-          primaryFilter?: string;
-          sourceFilter?: string | null;
-        };
-        const normalizedPrimaryFilter = normalizePrimaryFilter(parsed.primaryFilter);
-        if (normalizedPrimaryFilter) {
-          primaryFilter = normalizedPrimaryFilter;
-        }
-        if (
-          parsed.sourceFilter !== undefined &&
-          parsed.sourceFilter !== null &&
-          isSourceFilterType(parsed.sourceFilter)
-        ) {
-          sourceFilter = parsed.sourceFilter;
-        }
-      } catch {
-        const normalizedPrimaryFilter = normalizePrimaryFilter(storedFilter);
-        if (normalizedPrimaryFilter) {
-          primaryFilter = normalizedPrimaryFilter;
-        } else if (isSourceFilterType(storedFilter)) {
-          sourceFilter = storedFilter;
-        }
-      }
-    }
+    // Filters intentionally do not persist; always default to All + Latest.
 
     const handler = (event: Event) : void => handleStateUpdate(event);
     window.addEventListener(`discover-feed-state:update:${channel}`, handler as EventListener);
