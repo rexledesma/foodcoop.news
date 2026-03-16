@@ -13,7 +13,7 @@
   import type { FeedItem } from '@/lib/discover-feed';
   import { getFeedItemKey } from '@/lib/discover-feed';
 
-  type PrimaryFilterType = 'latest_45_days' | 'latest_week' | 'upcoming';
+  type PrimaryFilterType = 'latest' | 'upcoming';
   type SourceFilterType =
     | 'foodcoop'
     | 'gazette'
@@ -28,8 +28,7 @@
     label: string;
     compactLabel: string;
   }[] = [
-    { value: 'latest_45_days', label: 'Latest: Past 45 days', compactLabel: '45D' },
-    { value: 'latest_week', label: 'Latest: Past week', compactLabel: '1W' },
+    { value: 'latest', label: 'Latest', compactLabel: 'Latest' },
     { value: 'upcoming', label: 'Upcoming', compactLabel: 'Upcoming' },
   ];
   const SOURCE_FILTER_OPTIONS: { value: SourceFilterType; label: string; description?: string }[] = [
@@ -83,6 +82,10 @@
     favoritesSnapshot: string;
     fetchFeeds: () => void;
   };
+  type EventFeedItem = Extract<
+    FeedItem,
+    { type: 'foodcoopcooks-events' | 'wordsprouts-events' | 'concert-series-events' | 'gm-events' | 'foodcoop-orientation-events' | 'gazette-deadline' }
+  >;
 
   let {
     channel,
@@ -92,7 +95,7 @@
     initialState: DiscoverFeedClientState;
   } = $props();
 
-  let primaryFilter = $state<PrimaryFilterType>('latest_45_days');
+  let primaryFilter = $state<PrimaryFilterType>('latest');
   let sourceFilter = $state<SourceFilterType | null>(null);
   let items = $state<FeedItem[]>([]);
   let loading = $state(true);
@@ -108,23 +111,8 @@
 
   const favorites = $derived(parseFavorites(favoritesSnapshot));
 
-  const filteredItems = $derived.by(() : FeedItem[] => {
-    const now = new Date();
-    const fortyFiveDaysAgo = new Date(now);
-    fortyFiveDaysAgo.setDate(fortyFiveDaysAgo.getDate() - 45);
-    const oneWeekAgo = new Date(now);
-    oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
-
-    return items.filter((item) : boolean => {
-      const matchesPrimary = primaryFilter === 'upcoming'
-        ? isEventItem(item) && item.date >= now
-        : item.date < now && item.date >= (
-          primaryFilter === 'latest_week'
-            ? oneWeekAgo
-            : fortyFiveDaysAgo
-        );
-
-      if (!matchesPrimary) {return false;}
+  const sourceFilteredItems = $derived.by(() : FeedItem[] =>
+    items.filter((item) : boolean => {
       if (sourceFilter === null) {return true;}
       if (sourceFilter === 'foodcoopcooks') {
         return item.type === 'foodcoopcooks' || item.type === 'foodcoopcooks-events';
@@ -146,19 +134,37 @@
         return item.type === 'gazette' || item.type === 'gazette-deadline';
       }
       return item.type === sourceFilter;
-    });
+    }),
+  );
+
+  const upcomingItems = $derived.by(() : EventFeedItem[] => {
+    const now = new Date();
+    return sourceFilteredItems
+      .filter((item): item is EventFeedItem => isEventItem(item))
+      .filter((item) : boolean => item.date >= now)
+      .sort((a, b) : number => a.date.getTime() - b.date.getTime());
+  });
+
+  const upcomingWeekEvents = $derived.by(() : EventFeedItem[] => {
+    const now = new Date();
+    const nextWeek = new Date(now);
+    nextWeek.setDate(nextWeek.getDate() + 7);
+    return upcomingItems.filter((item) : boolean => item.date <= nextWeek);
+  });
+
+  const latestCurrentItems = $derived.by(() : FeedItem[] => {
+    const now = new Date();
+    return sourceFilteredItems.filter((item) : boolean => !(isEventItem(item) && item.date >= now));
   });
 
   const displayedItems = $derived(
-    primaryFilter === 'upcoming'
-      ? [...filteredItems].sort((a, b) : number => a.date.getTime() - b.date.getTime())
-      : filteredItems,
+    primaryFilter === 'upcoming' ? upcomingItems : latestCurrentItems,
   );
 
   const isInitialLoading = $derived(loading && items.length === 0);
   const isInitialError = $derived(Boolean(error) && items.length === 0);
 
-  function isEventItem(item: FeedItem) : boolean {
+  function isEventItem(item: FeedItem) : item is EventFeedItem {
     return (
       item.type === 'foodcoopcooks-events' ||
       item.type === 'wordsprouts-events' ||
@@ -175,7 +181,7 @@
 
   function normalizePrimaryFilter(value: string | undefined): PrimaryFilterType | null {
     if (!value) {return null;}
-    if (value === 'latest') {return 'latest_45_days';}
+    if (value === 'latest' || value === 'latest_45_days' || value === 'latest_week') {return 'latest';}
     return isPrimaryFilterType(value) ? value : null;
   }
 
@@ -301,6 +307,37 @@
     primaryFilter = nextFilter;
     primaryMenuOpen = false;
     persistFilters();
+  }
+
+  function openUpcomingFilter() : void {
+    primaryFilter = 'upcoming';
+    primaryMenuOpen = false;
+    sourceMenuOpen = false;
+    persistFilters();
+  }
+
+  function upcomingEventSourceName(item: EventFeedItem): string {
+    if (item.type === 'foodcoopcooks-events') {return 'Cooking';}
+    if (item.type === 'wordsprouts-events') {return 'Wordsprouts';}
+    if (item.type === 'concert-series-events') {return 'Concerts';}
+    if (item.type === 'gm-events') {return 'General Meeting';}
+    if (item.type === 'foodcoop-orientation-events') {return 'New Member Orientation';}
+    if (item.type === 'gazette-deadline') {return "Linewaiters' Gazette";}
+    return 'Events';
+  }
+
+  function upcomingEventTitle(item: EventFeedItem): string {
+    if (item.type === 'foodcoop-orientation-events') {
+      return formatOrientationCardTitle(item.data);
+    }
+    return item.data.title;
+  }
+
+  function upcomingEventDateTime(item: EventFeedItem): string {
+    if (item.type === 'gazette-deadline') {
+      return formatExactDateTime(item.date);
+    }
+    return formatEventDateTime(item.data.startUtc, item.data.timezone);
   }
 
   function setSourceFilter(nextFilter: SourceFilterType | null) : void {
@@ -578,36 +615,24 @@
       </div>
     {:else}
       <div class="grid gap-4">
+        {#if primaryFilter === 'latest' && upcomingWeekEvents.length > 0}
+          <div class="feed-item-enter">
+            {@render UpcomingWeekSummaryCard({
+              count: upcomingWeekEvents.length,
+              events: upcomingWeekEvents,
+              onOpenUpcoming: openUpcomingFilter,
+            })}
+          </div>
+          <div class="flex items-center gap-3 px-1 py-1" aria-label="Now">
+            <div class="h-px flex-1 bg-zinc-200"></div>
+            <span class="text-xs font-semibold tracking-[0.08em] text-zinc-500 uppercase">Now</span>
+            <div class="h-px flex-1 bg-zinc-200"></div>
+          </div>
+        {/if}
+
         {#each displayedItems as item (getFeedItemKey(item))}
           <div class="feed-item-enter">
-            {#if item.type === 'gazette'}
-              {@render GazetteCard({ article: item.data })}
-            {:else if item.type === 'gazette-deadline'}
-              {@render GazetteDeadlineCard({ deadline: item.data })}
-            {:else if item.type === 'foodcoop'}
-              {@render FoodCoopCard({ article: item.data })}
-            {:else if item.type === 'foodcoopcooks'}
-              {@render FoodCoopCooksCard({ article: item.data })}
-            {:else if item.type === 'foodcoopcooks-events'}
-              {@render EventbriteEventCard({ event: item.data, label: "Cooking", emoji: "🧑‍🍳" })}
-            {:else if item.type === 'wordsprouts-events'}
-              {@render EventbriteEventCard({ event: item.data, label: "Wordsprouts", emoji: "🌱" })}
-            {:else if item.type === 'concert-series-events'}
-              {@render EventbriteEventCard({ event: item.data, label: "Concerts", emoji: "🎶" })}
-            {:else if item.type === 'gm-events'}
-              {@render EventbriteEventCard({ event: item.data, label: "General Meeting", emoji: "🗳️" })}
-            {:else if item.type === 'foodcoop-orientation-events'}
-              {@render EventbriteEventCard({
-                event: item.data,
-                label: "New Member Orientation",
-                emoji: "🧭",
-                titleOverride: formatOrientationCardTitle(item.data),
-              })}
-            {:else if item.type === 'produce'}
-              {@render ProduceCard({ update: item.data, date: item.date, favorites })}
-            {:else}
-              {@render BlueskyCard({ post: item.data })}
-            {/if}
+            {@render FeedCard({ item, favorites })}
           </div>
         {/each}
 
@@ -616,12 +641,80 @@
         {/if}
       </div>
 
-      {#if filteredItems.length === 0 && pendingSources === 0}
+      {#if displayedItems.length === 0 && pendingSources === 0 && !(primaryFilter === 'latest' && upcomingWeekEvents.length > 0)}
         <p class="py-8 text-center text-zinc-500">No items found.</p>
       {/if}
     {/if}
   </div>
 </div>
+
+{#snippet FeedCard({ item, favorites }: { item: FeedItem; favorites: Set<string> })}
+  {#if item.type === 'gazette'}
+    {@render GazetteCard({ article: item.data })}
+  {:else if item.type === 'gazette-deadline'}
+    {@render GazetteDeadlineCard({ deadline: item.data })}
+  {:else if item.type === 'foodcoop'}
+    {@render FoodCoopCard({ article: item.data })}
+  {:else if item.type === 'foodcoopcooks'}
+    {@render FoodCoopCooksCard({ article: item.data })}
+  {:else if item.type === 'foodcoopcooks-events'}
+    {@render EventbriteEventCard({ event: item.data, label: "Cooking", emoji: "🧑‍🍳" })}
+  {:else if item.type === 'wordsprouts-events'}
+    {@render EventbriteEventCard({ event: item.data, label: "Wordsprouts", emoji: "🌱" })}
+  {:else if item.type === 'concert-series-events'}
+    {@render EventbriteEventCard({ event: item.data, label: "Concerts", emoji: "🎶" })}
+  {:else if item.type === 'gm-events'}
+    {@render EventbriteEventCard({ event: item.data, label: "General Meeting", emoji: "🗳️" })}
+  {:else if item.type === 'foodcoop-orientation-events'}
+    {@render EventbriteEventCard({
+      event: item.data,
+      label: "New Member Orientation",
+      emoji: "🧭",
+      titleOverride: formatOrientationCardTitle(item.data),
+    })}
+  {:else if item.type === 'produce'}
+    {@render ProduceCard({ update: item.data, date: item.date, favorites })}
+  {:else}
+    {@render BlueskyCard({ post: item.data })}
+  {/if}
+{/snippet}
+
+{#snippet UpcomingWeekSummaryCard({
+  count,
+  events,
+  onOpenUpcoming,
+}: {
+  count: number;
+  events: EventFeedItem[];
+  onOpenUpcoming: () => void;
+})}
+  <button
+    type="button"
+    onclick={onOpenUpcoming}
+    class="block w-full rounded-xl border border-zinc-200 bg-white p-4 text-left transition-colors hover:border-green-300"
+  >
+    <div class="flex items-start gap-3">
+      <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-rose-100 text-xl">📅</div>
+      <div class="min-w-0 flex-1">
+        <div class="flex flex-wrap items-center gap-2">
+          <span class="font-semibold text-zinc-900">Upcoming Events</span>
+          <span class="shrink-0 text-sm text-zinc-400">Next 7 days</span>
+        </div>
+        <p class="mt-2 font-medium text-zinc-700">
+          {count} event{count === 1 ? '' : 's'} coming up next
+        </p>
+        <ul class="mt-2 list-disc space-y-2 pl-5 text-sm text-zinc-600">
+          {#each events as event (getFeedItemKey(event))}
+            <li>
+              <p class="font-medium text-zinc-800">{upcomingEventTitle(event)}</p>
+              <p class="text-xs text-zinc-500">{upcomingEventSourceName(event)} · {upcomingEventDateTime(event)}</p>
+            </li>
+          {/each}
+        </ul>
+      </div>
+    </div>
+  </button>
+{/snippet}
 
 {#snippet FeedItemSkeleton()}
   <div class="rounded-xl border border-zinc-200 bg-white p-4">
