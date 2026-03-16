@@ -1,6 +1,5 @@
 <script lang="ts">
   import { goto, preloadData } from '$app/navigation';
-  import { injectAnalytics } from '@vercel/analytics/sveltekit';
   import '../styles/globals.css';
   import { onMount } from 'svelte';
   import type { Action } from 'svelte/action';
@@ -421,7 +420,6 @@
       isPwaInstallReady = true;
     });
 
-    injectAnalytics();
     initStickyVisibility($page.url.pathname);
     void prefetchProduceCache();
 
