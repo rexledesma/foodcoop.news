@@ -1,4 +1,5 @@
 import { fetchAuthQueryFromHeaders } from '@/lib/auth';
+import { sendOpsNotification } from '@/lib/ops-notifications';
 import { api } from '../../../../../convex/_generated/api';
 import { generateGoogleWalletURL } from '@/lib/google-wallet';
 
@@ -20,6 +21,23 @@ export async function GET({ request }: { request: Request }) {
       serialNumber: profile.passSerialNumber,
     };
     const url = generateGoogleWalletURL(params);
+
+    const currentUser = await fetchAuthQueryFromHeaders(
+      request.headers,
+      api.auth.getCurrentUser,
+      {},
+    );
+    const actorEmail = currentUser?.email?.trim() || 'unknown-user';
+    void sendOpsNotification(
+      {
+        title: 'foodcoop.news',
+        body: `${actorEmail} generated a Google Wallet pass.`,
+        url: '/integrations',
+      },
+      request,
+    ).catch((error) => {
+      console.error('Failed to send Google Wallet pass notification:', error);
+    });
 
     return Response.json({ url });
   } catch (error) {

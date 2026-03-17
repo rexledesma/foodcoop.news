@@ -1,5 +1,5 @@
 import { v } from 'convex/values';
-import { mutation, query } from './_generated/server';
+import { internalQuery, mutation, query } from './_generated/server';
 import { authComponent } from './auth';
 
 export const savePushSubscription = mutation({
@@ -105,5 +105,45 @@ export const getUserPushSubscriptionsWithKeys = query({
     } catch {
       return [];
     }
+  },
+});
+
+export const getPushSubscriptionsByUserIds = internalQuery({
+  args: {
+    userIds: v.array(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const uniqueUserIds = new Set(args.userIds);
+    if (uniqueUserIds.size === 0) {
+      return [];
+    }
+
+    const endpointSet = new Set<string>();
+    const subscriptions: Array<{
+      endpoint: string;
+      p256dh: string;
+      auth: string;
+    }> = [];
+
+    for (const userId of uniqueUserIds) {
+      const userSubscriptions = await ctx.db
+        .query('pushSubscriptions')
+        .withIndex('by_userId', (q) => q.eq('userId', userId))
+        .collect();
+
+      for (const subscription of userSubscriptions) {
+        if (endpointSet.has(subscription.endpoint)) {
+          continue;
+        }
+        endpointSet.add(subscription.endpoint);
+        subscriptions.push({
+          endpoint: subscription.endpoint,
+          p256dh: subscription.p256dh,
+          auth: subscription.auth,
+        });
+      }
+    }
+
+    return subscriptions;
   },
 });

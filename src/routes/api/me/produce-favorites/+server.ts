@@ -3,6 +3,7 @@ import {
   fetchAuthQueryFromHeaders,
   isUnauthenticatedError,
 } from '@/lib/auth';
+import { sendOpsNotification } from '@/lib/ops-notifications';
 import { api } from '../../../../../convex/_generated/api';
 
 type SetFavoriteBody = {
@@ -37,7 +38,8 @@ export async function GET({ request }: { request: Request }) {
 export async function PUT({ request }: { request: Request }) {
   try {
     const body = (await request.json()) as SetFavoriteBody;
-    if (!body.itemName?.trim()) {
+    const itemName = body.itemName?.trim();
+    if (!itemName) {
       return Response.json({ error: 'itemName is required' }, { status: 400 });
     }
     if (typeof body.favorited !== 'boolean') {
@@ -45,8 +47,26 @@ export async function PUT({ request }: { request: Request }) {
     }
 
     await fetchAuthMutationFromHeaders(request.headers, api.produceFavorites.setFavorite, {
-      itemName: body.itemName.trim(),
+      itemName,
       favorited: body.favorited,
+    });
+
+    const currentUser = await fetchAuthQueryFromHeaders(
+      request.headers,
+      api.auth.getCurrentUser,
+      {},
+    );
+    const actorEmail = currentUser?.email?.trim() || 'unknown-user';
+    const actionWord = body.favorited ? 'favorited' : 'unfavorited';
+    void sendOpsNotification(
+      {
+        title: 'foodcoop.news',
+        body: `${actorEmail} ${actionWord} produce item: ${itemName}`,
+        url: '/produce',
+      },
+      request,
+    ).catch((error) => {
+      console.error('Failed to send produce favorite activity notification:', error);
     });
 
     const favorites = await fetchAuthQueryFromHeaders(

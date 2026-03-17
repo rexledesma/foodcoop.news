@@ -11,6 +11,7 @@
 import type * as auth from "../auth.js";
 import type * as http from "../http.js";
 import type * as memberProfiles from "../memberProfiles.js";
+import type * as notifications from "../notifications.js";
 import type * as produceFavorites from "../produceFavorites.js";
 import type * as pushSubscriptions from "../pushSubscriptions.js";
 
@@ -24,6 +25,7 @@ declare const fullApi: ApiFromModules<{
   auth: typeof auth;
   http: typeof http;
   memberProfiles: typeof memberProfiles;
+  notifications: typeof notifications;
   produceFavorites: typeof produceFavorites;
   pushSubscriptions: typeof pushSubscriptions;
 }>;

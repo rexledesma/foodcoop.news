@@ -1,4 +1,5 @@
 import { fetchAuthQueryFromHeaders } from '@/lib/auth';
+import { sendOpsNotification } from '@/lib/ops-notifications';
 import { api } from '../../../../../convex/_generated/api';
 import { generatePKPass } from '@/lib/apple-pass';
 
@@ -18,6 +19,23 @@ export async function GET({ request }: { request: Request }) {
       memberId: profile.memberId,
       memberName: profile.memberName,
       serialNumber: profile.passSerialNumber,
+    });
+
+    const currentUser = await fetchAuthQueryFromHeaders(
+      request.headers,
+      api.auth.getCurrentUser,
+      {},
+    );
+    const actorEmail = currentUser?.email?.trim() || 'unknown-user';
+    void sendOpsNotification(
+      {
+        title: 'foodcoop.news',
+        body: `${actorEmail} generated an Apple Wallet pass.`,
+        url: '/integrations',
+      },
+      request,
+    ).catch((error) => {
+      console.error('Failed to send Apple Wallet pass notification:', error);
     });
 
     return new Response(new Uint8Array(passBuffer), {

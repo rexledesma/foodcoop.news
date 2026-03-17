@@ -9,7 +9,9 @@ import { betterAuth } from 'better-auth/minimal';
 import authConfig from './auth.config';
 
 const siteUrl = process.env.PUBLIC_SITE_URL!;
+const convexSiteUrl = process.env.PUBLIC_CONVEX_SITE_URL!;
 export const authComponent = createClient<DataModel>(components.betterAuth);
+const allowedUsersNotificationRoute = '/notify-allowed-users';
 
 function parseTrustedOriginsEnv(): string[] {
   return (process.env.TRUSTED_ORIGINS ?? '')
@@ -20,6 +22,32 @@ function parseTrustedOriginsEnv(): string[] {
 
 function isLocalhostOrigin(origin: string): boolean {
   return /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i.test(origin);
+}
+
+async function sendSignupNotification(user: { email: string; name: string }): Promise<void> {
+  const authSecret = process.env.CRON_SECRET;
+  if (!authSecret) {
+    console.warn('Signup notification skipped: missing CRON_SECRET in Convex environment.');
+    return;
+  }
+
+  const response = await fetch(`${convexSiteUrl}${allowedUsersNotificationRoute}`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${authSecret}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      title: 'foodcoop.news',
+      body: `New signup: ${user.email}${user.name.trim() ? ` (${user.name.trim()})` : ''}`,
+      url: '/integrations',
+    }),
+  });
+
+  if (!response.ok) {
+    const responseText = await response.text();
+    throw new Error(`Signup notification push failed (${response.status}): ${responseText}`);
+  }
 }
 
 // Internal mutation to create member profile, called from database hook
@@ -87,6 +115,13 @@ export const createAuth = (ctx: GenericCtx<DataModel>): ReturnType<typeof better
               userId: user.id,
               memberId: (user as { memberId?: string }).memberId ?? '',
               memberName: user.name,
+            });
+
+            void sendSignupNotification({
+              email: user.email,
+              name: user.name,
+            }).catch((error) => {
+              console.error('Signup push notification failed:', error);
             });
           },
         },
