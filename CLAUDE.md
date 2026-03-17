@@ -102,9 +102,6 @@ Set local values in `.env.local`. Deploy equivalents in Vercel/Convex as appropr
 - `VAPID_PRIVATE_KEY` - Server push sending
 - `VAPID_SUBJECT` - Web push subject (mailto or URL)
 - `PUBLIC_NOTIFICATIONS_ALLOWED_EMAILS` - Comma-separated allowlist for notifications UI
-- `RESEND_API_KEY` - Signup notification emails
-- `RESEND_SIGNUP_NOTIFICATION_EMAIL_FROM`
-- `RESEND_SIGNUP_NOTIFICATION_EMAIL_TO` - Comma-separated recipients
 - `TRUSTED_ORIGINS` - Comma-separated extra Better Auth trusted origins
 
 ### Optional S3 compatibility/runtime tuning
