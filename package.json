@@ -30,7 +30,8 @@
     "passkit-generator": "^3.5.7",
     "sharp": "^0.34.5",
     "svelte": "^5.51.2",
-    "web-push": "^3.6.7"
+    "web-push": "^3.6.7",
+    "zod": "^4.3.6"
   },
   "devDependencies": {
     "@sveltejs/adapter-vercel": "^6.3.3",

@@ -1,22 +1,28 @@
 import { ConvexHttpClient } from 'convex/browser';
+import { z } from 'zod';
+import { parseJsonBody, validatedJson } from '@/lib/http-validation';
 import { PUBLIC_CONVEX_URL } from '$env/static/public';
 import { api } from '../../../../../convex/_generated/api';
 
 const convex = new ConvexHttpClient(PUBLIC_CONVEX_URL);
 
-type Body = {
-  email: string;
-};
+const checkEmailRequestSchema = z.object({
+  email: z.string().trim().email(),
+});
+
+const checkEmailResponseSchema = z.object({
+  exists: z.boolean(),
+});
 
 export async function POST({ request }: { request: Request }) {
   try {
-    const body = (await request.json()) as Body;
-    if (!body.email) {
-      return Response.json({ error: 'Missing email' }, { status: 400 });
+    const parsed = await parseJsonBody(request, checkEmailRequestSchema);
+    if (!parsed.success) {
+      return parsed.response;
     }
 
-    const result = await convex.query(api.auth.checkEmailExists, { email: body.email });
-    return Response.json(result);
+    const result = await convex.query(api.auth.checkEmailExists, { email: parsed.data.email });
+    return validatedJson(checkEmailResponseSchema, result);
   } catch (error) {
     console.error('Failed to check email:', error);
     return Response.json({ error: 'Failed to check email' }, { status: 500 });

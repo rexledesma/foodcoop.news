@@ -1,10 +1,17 @@
 import webpush from 'web-push';
 import { fetchAuthQueryFromHeaders, isUnauthenticatedError } from '@/lib/auth';
+import { validatedJson } from '@/lib/http-validation';
 import { VAPID_PRIVATE_KEY, VAPID_SUBJECT } from '$env/static/private';
 import { PUBLIC_VAPID_PUBLIC_KEY } from '$env/static/public';
+import { z } from 'zod';
 import { api } from '../../../../../convex/_generated/api';
 
 webpush.setVapidDetails(VAPID_SUBJECT, PUBLIC_VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY);
+
+const testNotificationResponseSchema = z.object({
+  sent: z.number().int().nonnegative(),
+  failed: z.number().int().nonnegative(),
+});
 
 export async function POST({ request }: { request: Request }) {
   try {
@@ -52,7 +59,7 @@ export async function POST({ request }: { request: Request }) {
     const sent = results.filter((r) => r.status === 'fulfilled').length;
     const failed = results.filter((r) => r.status === 'rejected').length;
 
-    return Response.json({ sent, failed });
+    return validatedJson(testNotificationResponseSchema, { sent, failed });
   } catch (error) {
     if (isUnauthenticatedError(error)) {
       return Response.json({ error: 'Not authenticated' }, { status: 401 });

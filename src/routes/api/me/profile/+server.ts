@@ -3,14 +3,33 @@ import {
   fetchAuthQueryFromHeaders,
   isUnauthenticatedError,
 } from '@/lib/auth';
+import { parseJsonBody, validatedJson } from '@/lib/http-validation';
 import { sendOpsNotification } from '@/lib/ops-notifications';
+import { z } from 'zod';
 import { api } from '../../../../../convex/_generated/api';
 
-type UpdateProfileBody = {
-  memberName?: string;
-  memberId?: string;
-  jobFilters?: string[];
-};
+const updateProfileRequestSchema = z.object({
+  memberName: z.string().trim().optional(),
+  memberId: z.string().trim().optional(),
+  jobFilters: z.array(z.string()).optional(),
+});
+
+const memberProfileSchema = z.object({
+  _id: z.string(),
+  _creationTime: z.number(),
+  userId: z.string(),
+  memberId: z.string(),
+  memberName: z.string(),
+  passSerialNumber: z.string(),
+  calendarId: z.string(),
+  jobFilters: z.array(z.string()),
+  createdAt: z.number(),
+  updatedAt: z.number(),
+});
+
+const profileResponseSchema = z.object({
+  profile: memberProfileSchema.nullable(),
+});
 
 export async function GET({ request }: { request: Request }) {
   try {
@@ -21,13 +40,13 @@ export async function GET({ request }: { request: Request }) {
     );
 
     if (!profile) {
-      return Response.json({ profile: null }, { status: 401 });
+      return validatedJson(profileResponseSchema, { profile: null }, { status: 401 });
     }
 
-    return Response.json({ profile });
+    return validatedJson(profileResponseSchema, { profile });
   } catch (error) {
     if (isUnauthenticatedError(error)) {
-      return Response.json({ profile: null }, { status: 401 });
+      return validatedJson(profileResponseSchema, { profile: null }, { status: 401 });
     }
     console.error('Failed to get profile:', error);
     return Response.json({ error: 'Failed to load profile' }, { status: 500 });
@@ -36,7 +55,12 @@ export async function GET({ request }: { request: Request }) {
 
 export async function POST({ request }: { request: Request }) {
   try {
-    const body = (await request.json()) as UpdateProfileBody;
+    const parsed = await parseJsonBody(request, updateProfileRequestSchema);
+    if (!parsed.success) {
+      return parsed.response;
+    }
+
+    const body = parsed.data;
     const previousProfile = await fetchAuthQueryFromHeaders(
       request.headers,
       api.memberProfiles.getMemberProfile,
@@ -89,7 +113,7 @@ export async function POST({ request }: { request: Request }) {
       }
     }
 
-    return Response.json({ profile });
+    return validatedJson(profileResponseSchema, { profile });
   } catch (error) {
     if (isUnauthenticatedError(error)) {
       return Response.json({ error: 'Not authenticated' }, { status: 401 });

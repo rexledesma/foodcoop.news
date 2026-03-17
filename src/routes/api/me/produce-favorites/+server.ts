@@ -3,13 +3,19 @@ import {
   fetchAuthQueryFromHeaders,
   isUnauthenticatedError,
 } from '@/lib/auth';
+import { parseJsonBody, validatedJson } from '@/lib/http-validation';
 import { sendOpsNotification } from '@/lib/ops-notifications';
+import { z } from 'zod';
 import { api } from '../../../../../convex/_generated/api';
 
-type SetFavoriteBody = {
-  itemName?: string;
-  favorited?: boolean;
-};
+const setFavoriteRequestSchema = z.object({
+  itemName: z.string().trim().min(1),
+  favorited: z.boolean(),
+});
+
+const favoritesResponseSchema = z.object({
+  favorites: z.array(z.string()),
+});
 
 function isNotAuthenticated(error: unknown): boolean {
   if (isUnauthenticatedError(error)) {
@@ -25,10 +31,10 @@ export async function GET({ request }: { request: Request }) {
       api.produceFavorites.getUserFavorites,
       {},
     );
-    return Response.json({ favorites });
+    return validatedJson(favoritesResponseSchema, { favorites });
   } catch (error) {
     if (isNotAuthenticated(error)) {
-      return Response.json({ favorites: [] }, { status: 401 });
+      return validatedJson(favoritesResponseSchema, { favorites: [] }, { status: 401 });
     }
     console.error('Failed to load produce favorites:', error);
     return Response.json({ error: 'Failed to load produce favorites' }, { status: 500 });
@@ -37,17 +43,15 @@ export async function GET({ request }: { request: Request }) {
 
 export async function PUT({ request }: { request: Request }) {
   try {
-    const body = (await request.json()) as SetFavoriteBody;
-    const itemName = body.itemName?.trim();
-    if (!itemName) {
-      return Response.json({ error: 'itemName is required' }, { status: 400 });
-    }
-    if (typeof body.favorited !== 'boolean') {
-      return Response.json({ error: 'favorited must be a boolean' }, { status: 400 });
+    const parsed = await parseJsonBody(request, setFavoriteRequestSchema);
+    if (!parsed.success) {
+      return parsed.response;
     }
 
+    const body = parsed.data;
+
     await fetchAuthMutationFromHeaders(request.headers, api.produceFavorites.setFavorite, {
-      itemName,
+      itemName: body.itemName,
       favorited: body.favorited,
     });
 
@@ -61,7 +65,7 @@ export async function PUT({ request }: { request: Request }) {
     void sendOpsNotification(
       {
         title: 'foodcoop.news',
-        body: `${actorEmail} ${actionWord} produce item: ${itemName}`,
+        body: `${actorEmail} ${actionWord} produce item: ${body.itemName}`,
         url: '/produce',
       },
       request,
@@ -74,7 +78,7 @@ export async function PUT({ request }: { request: Request }) {
       api.produceFavorites.getUserFavorites,
       {},
     );
-    return Response.json({ favorites });
+    return validatedJson(favoritesResponseSchema, { favorites });
   } catch (error) {
     if (isNotAuthenticated(error)) {
       return Response.json({ error: 'Not authenticated' }, { status: 401 });
