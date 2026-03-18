@@ -144,11 +144,11 @@
       .sort((a, b) : number => a.date.getTime() - b.date.getTime());
   });
 
-  const upcomingWeekEvents = $derived.by(() : EventFeedItem[] => {
+  const upcomingFortnightEvents = $derived.by(() : EventFeedItem[] => {
     const now = new Date();
-    const nextWeek = new Date(now);
-    nextWeek.setDate(nextWeek.getDate() + 7);
-    return upcomingItems.filter((item) : boolean => item.date <= nextWeek);
+    const nextFourteenDays = new Date(now);
+    nextFourteenDays.setDate(nextFourteenDays.getDate() + 14);
+    return upcomingItems.filter((item) : boolean => item.date <= nextFourteenDays);
   });
 
   const latestCurrentItems = $derived.by(() : FeedItem[] => {
@@ -592,11 +592,11 @@
       </div>
     {:else}
       <div class="grid gap-4 [&>*]:min-w-0">
-        {#if primaryFilter === 'latest' && upcomingWeekEvents.length > 0}
+        {#if primaryFilter === 'latest' && upcomingFortnightEvents.length > 0}
           <div class="feed-item-enter min-w-0">
             {@render UpcomingWeekSummaryCard({
-              count: upcomingWeekEvents.length,
-              events: upcomingWeekEvents,
+              count: upcomingFortnightEvents.length,
+              events: upcomingFortnightEvents,
               onOpenUpcoming: openUpcomingFilter,
             })}
           </div>
@@ -618,7 +618,7 @@
         {/if}
       </div>
 
-      {#if displayedItems.length === 0 && pendingSources === 0 && !(primaryFilter === 'latest' && upcomingWeekEvents.length > 0)}
+      {#if displayedItems.length === 0 && pendingSources === 0 && !(primaryFilter === 'latest' && upcomingFortnightEvents.length > 0)}
         <p class="py-8 text-center text-zinc-500">No items found.</p>
       {/if}
     {/if}
@@ -675,7 +675,7 @@
       <div class="min-w-0 flex-1">
         <div class="flex flex-wrap items-center gap-2">
           <span class="font-semibold text-zinc-900">Upcoming Events</span>
-          <span class="shrink-0 text-sm text-zinc-400">Next 7 days</span>
+          <span class="shrink-0 text-sm text-zinc-400">Next 14 days</span>
         </div>
         <p class="mt-2 font-medium text-zinc-700">
           {count} event{count === 1 ? '' : 's'} coming up next
