@@ -615,6 +615,7 @@
             }
           })();
         } else {
+          window.dispatchEvent(new CustomEvent('force-sticky', { detail: true }));
           const draft = loadDraft();
           if (draft) {
             state = {
@@ -638,6 +639,7 @@
     dispatchState();
 
     return () : void => {
+      window.dispatchEvent(new CustomEvent('force-sticky', { detail: false }));
       window.removeEventListener('sticky-visibility', stickyVisibilityHandler as EventListener);
     };
   });

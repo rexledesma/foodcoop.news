@@ -103,11 +103,20 @@
   }
 
   onMount(() : void => {
+    const prefillEmail = sessionStorage.getItem('auth:prefill-email') ?? '';
+    if (prefillEmail) {
+      sessionStorage.removeItem('auth:prefill-email');
+    }
     state = {
       ...state,
+      email: prefillEmail || state.email,
       signupHref: withNextParam('/signup', get(page).url.searchParams.get('next')),
     };
     dispatchState();
+
+    if (prefillEmail) {
+      void state.onEmailSubmit();
+    }
   });
 </script>
 

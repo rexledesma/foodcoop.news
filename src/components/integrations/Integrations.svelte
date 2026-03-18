@@ -114,6 +114,46 @@
   let cardRef = $state<HTMLDivElement | null>(null);
   let shineRef = $state<HTMLDivElement | null>(null);
 
+  let paywallEmail = $state('');
+  let paywallLoading = $state(false);
+  let paywallError = $state('');
+  let paywallEmailRef = $state<HTMLInputElement | null>(null);
+
+  async function handlePaywallSubmit(event: Event): Promise<void> {
+    event.preventDefault();
+    const trimmed = paywallEmail.trim();
+    if (!trimmed) return;
+
+    paywallLoading = true;
+    paywallError = '';
+
+    try {
+      const response = await fetch('/api/auth/check-email', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ email: trimmed }),
+      });
+
+      if (!response.ok) {
+        paywallError = 'Something went wrong. Please try again.';
+        return;
+      }
+
+      const data = (await response.json()) as { exists: boolean };
+      sessionStorage.setItem('auth:prefill-email', trimmed);
+
+      if (data.exists) {
+        window.location.href = '/login?next=%2Fintegrations';
+      } else {
+        window.location.href = '/signup?next=%2Fintegrations';
+      }
+    } catch {
+      paywallError = 'Something went wrong. Please try again.';
+    } finally {
+      paywallLoading = false;
+    }
+  }
+
   function applyState(next: IntegrationsClientState) : void {
     isInitialLoading = next.isInitialLoading;
     showSticky = next.showSticky;
@@ -219,17 +259,21 @@
 
     return () : void => observer.disconnect();
   });
+
+  $effect(() : void => {
+    paywallEmailRef?.focus();
+  });
 </script>
 
-<div>
+<div class="flex min-h-screen flex-col">
   <div
     bind:this={headerRef}
-    class={`sticky top-[5.5rem] z-20 bg-white transition-opacity duration-250 ease-in-out motion-reduce:transition-none ${showSticky ? 'opacity-100' : 'pointer-events-none opacity-0'}`}
+    class={`sticky top-[5.5rem] z-20 bg-white transition-opacity duration-250 ease-in-out motion-reduce:transition-none ${showSticky || (!isSignedIn && !sessionPending) ? 'opacity-100' : 'pointer-events-none opacity-0'}`}
   >
     <h1 class="mx-auto max-w-3xl px-4 pt-6 pb-6 text-2xl font-bold text-zinc-900">Integrations</h1>
   </div>
 
-  <div class="mx-auto max-w-3xl px-4 pb-6">
+  <div class="mx-auto flex w-full max-w-3xl grow flex-col px-4 pb-6">
     {#if isInitialLoading}
       <div class="animate-pulse">
         <div class="mb-6 h-8 w-32 rounded bg-zinc-200"></div>
@@ -239,19 +283,12 @@
         </div>
       </div>
     {:else}
-      {#if !isSignedIn && !sessionPending}
-        <div class="mb-6 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-          <a href={signupHref} class="font-semibold underline underline-offset-4">Create an account</a>
-          to save changes, add wallet passes, and subscribe to the shift calendar.
-        </div>
-      {/if}
-
       <form
         onsubmit={(event) => {
           event.preventDefault();
           void onSave();
         }}
-        class="space-y-6"
+        class={`space-y-6 ${!isSignedIn && !sessionPending ? 'sticky top-[9rem] z-10 bg-white pb-4' : ''}`}
       >
         <section class="space-y-4">
           <h2 class="text-lg font-semibold text-zinc-900">Profile</h2>
@@ -346,7 +383,7 @@
         <div class="flex gap-2">
           <button
             type="submit"
-            disabled={isSaving}
+            disabled={isSaving || !isSignedIn}
             class="rounded-lg bg-black px-4 py-1.5 text-sm font-medium text-white transition-colors hover:bg-zinc-800 disabled:bg-zinc-400 disabled:opacity-60"
           >
             {isSaving ? 'Saving...' : 'Save'}
@@ -354,7 +391,7 @@
           <button
             type="button"
             onclick={() => void onAddToWallet()}
-            disabled={isGeneratingPass || !memberId || !displayFullName}
+            disabled={!isSignedIn || isGeneratingPass || !memberId || !displayFullName}
             class="transition-opacity hover:opacity-80 disabled:opacity-40"
           >
             <img src="/apple-wallet.svg" alt="Add to Apple Wallet" class="h-[34px]" />
@@ -362,7 +399,7 @@
           <button
             type="button"
             onclick={() => void onAddToGoogleWallet()}
-            disabled={isGeneratingGooglePass || !memberId || !displayFullName}
+            disabled={!isSignedIn || isGeneratingGooglePass || !memberId || !displayFullName}
             class="transition-opacity hover:opacity-80 disabled:opacity-40"
           >
             <img src="/google-wallet.svg" alt="Add to Google Wallet" class="h-[34px]" />
@@ -370,144 +407,184 @@
         </div>
       </form>
 
-      <section class="mt-10">
-        <h2 class="text-lg font-semibold text-zinc-900">Calendar</h2>
-        <p class="mt-2 text-sm text-zinc-600">
-          Link your account to your calendar to view your prospective shifts.
-        </p>
-
-        <div class="mt-6 rounded-xl border border-zinc-200 bg-white p-4">
-          <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <h3 class="text-base font-semibold text-zinc-900">Shift Calendar Syncing</h3>
-              <p class="mt-1 text-sm text-zinc-600">
-                Sync the shift calendar with your Google, Outlook, or Apple calendar.
+      {#if !isSignedIn && !sessionPending}
+        <div class="relative z-20 -mx-4 mt-10 flex grow justify-center bg-white px-4">
+            <div class="pointer-events-none absolute inset-x-0 bottom-full h-screen" style="background: linear-gradient(to top, rgba(0,0,0,0.5) 0%, rgba(0,0,0,0.15) 30%, rgba(0,0,0,0) 100%);"></div>
+            <div class="w-full max-w-sm pt-8">
+              <p class="text-center text-xl font-bold text-zinc-900">Stay in the loop with the<br />Park Slope Food Coop.</p>
+              <h2 class="mt-3 text-center text-xl font-bold text-zinc-900">Create a free account, or log in.</h2>
+              <p class="mt-2 text-center text-sm text-zinc-600">
+                Gain access to wallet passes, shift calendar subscriptions, and produce favorites.
               </p>
-            </div>
-            <button
-              type="button"
-              onclick={onOpenCalendarModal}
-              class="rounded-xl bg-black px-4 py-2 font-medium text-white transition-colors hover:bg-zinc-800"
-            >
-              Add iCal subscription
-            </button>
-          </div>
 
-          <div class="mt-6 space-y-3">
-            <div class="space-y-1">
-              <h3 class="text-base font-semibold text-zinc-900">Selected Shifts</h3>
-              <p class="text-sm text-zinc-600">Filter the shift calendar for your preferred shifts.</p>
-            </div>
-            <div class="relative">
-              <input
-                type="text"
-                value={jobSearch}
-                oninput={(event) =>
-                  onJobSearchChange((event.currentTarget as HTMLInputElement).value)}
-                onfocus={onJobSearchFocus}
-                onblur={onJobSearchBlur}
-                onkeydown={(event) => onJobSearchKeyDown(event)}
-                placeholder="Search jobs"
-                class="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 shadow-sm focus:ring-2 focus:ring-green-500 focus:outline-none"
-              />
-              {#if isJobDropdownOpen}
-                <div class="absolute z-10 mt-2 w-full rounded-xl border border-zinc-200 bg-white shadow-lg">
-                  <div class="max-h-48 overflow-y-auto">
-                    {#if filteredJobOptions.length > 0}
-                      {#each filteredJobOptions as job, index (job)}
-                        {@const isSelected = selectedJobs.includes(job)}
-                        {@const isHighlighted = index === highlightedJobIndex}
-                        <button
-                          type="button"
-                          onclick={() => onToggleJob(job)}
-                          onmouseenter={() => onHighlightJobIndex(index)}
-                          class={`flex w-full items-center justify-between px-3 py-2 text-left text-sm transition-colors ${
-                            isSelected ? 'bg-green-50 text-green-700' : 'text-zinc-700 hover:bg-zinc-100'
-                          } ${isHighlighted && !isSelected ? 'bg-zinc-100' : ''}`}
-                        >
-                          <span>{job}</span>
-                          {#if isSelected}
-                            <span class="text-xs">Selected</span>
-                          {/if}
-                        </button>
-                      {/each}
-                    {:else}
-                      <div class="px-3 py-2 text-sm text-zinc-500">No matching jobs.</div>
-                    {/if}
-                  </div>
+              <form onsubmit={(event) => void handlePaywallSubmit(event)} class="mt-6 space-y-3">
+                <div>
+                  <label for="paywallEmail" class="block text-sm font-medium text-zinc-700">Email address</label>
+                  <input
+                    type="email"
+                    id="paywallEmail"
+                    bind:this={paywallEmailRef}
+                    bind:value={paywallEmail}
+                    required
+                    placeholder="you@example.com"
+                    class="mt-1 w-full rounded-lg border border-zinc-300 px-3 py-2.5 text-sm text-zinc-900 shadow-sm placeholder:text-zinc-400 focus:border-zinc-500 focus:ring-2 focus:ring-zinc-500 focus:outline-none"
+                  />
                 </div>
-              {/if}
-            </div>
 
-            <div class="flex flex-wrap gap-2">
-              {#if selectedJobs.length > 0}
-                {#each selectedJobs as job (job)}
-                  <span
-                    class="group inline-flex items-center gap-2 rounded-full bg-zinc-100 px-3 py-1 text-xs font-medium text-zinc-700 transition-colors hover:bg-red-50 hover:text-red-700"
-                  >
-                    {job}
-                    <button
-                      type="button"
-                      onclick={() => onRemoveJob(job)}
-                      class="text-xs font-semibold text-zinc-400 transition-colors group-hover:text-red-600"
-                      aria-label={`Remove ${job}`}
-                    >
-                      ×
-                    </button>
-                  </span>
-                {/each}
-              {:else}
-                <span class="text-sm text-zinc-500">All shifts included.</span>
-              {/if}
+                {#if paywallError}
+                  <p class="text-sm text-red-600">{paywallError}</p>
+                {/if}
+
+                <button
+                  type="submit"
+                  disabled={paywallLoading}
+                  class="w-full rounded-lg bg-black px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-zinc-800 disabled:bg-zinc-400"
+                >
+                  {paywallLoading ? 'Checking...' : 'Continue'}
+                </button>
+              </form>
             </div>
-          </div>
         </div>
-      </section>
-
-      {#if pushSupported && canManageNotifications}
+      {:else}
         <section class="mt-10">
-          <h2 class="text-lg font-semibold text-zinc-900">Notifications</h2>
-          <p class="mt-2 text-sm text-zinc-600">Receive push notifications from foodcoop.news.</p>
+          <h2 class="text-lg font-semibold text-zinc-900">Calendar</h2>
+          <p class="mt-2 text-sm text-zinc-600">
+            Link your account to your calendar to view your prospective shifts.
+          </p>
 
           <div class="mt-6 rounded-xl border border-zinc-200 bg-white p-4">
-            <div class="flex items-center justify-between">
+            <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <h3 class="text-base font-semibold text-zinc-900">Push Notifications</h3>
-                <p class="mt-1 text-sm text-zinc-600">Get notified about updates and announcements.</p>
+                <h3 class="text-base font-semibold text-zinc-900">Shift Calendar Syncing</h3>
+                <p class="mt-1 text-sm text-zinc-600">
+                  Sync the shift calendar with your Google, Outlook, or Apple calendar.
+                </p>
               </div>
               <button
                 type="button"
-                role="switch"
-                aria-checked={pushEnabled}
-                aria-label="Toggle push notifications"
-                disabled={pushLoading}
-                onclick={() => void onTogglePush()}
-                class={`relative inline-flex h-7 w-12 shrink-0 cursor-pointer items-center rounded-full transition-colors duration-200 ease-in-out disabled:opacity-50 ${
-                  pushEnabled ? 'bg-green-600' : 'bg-zinc-300'
-                }`}
+                onclick={onOpenCalendarModal}
+                class="rounded-xl bg-black px-4 py-2 font-medium text-white transition-colors hover:bg-zinc-800"
               >
-                <span
-                  class={`inline-block h-5 w-5 rounded-full bg-white shadow-sm transition-transform duration-200 ease-in-out ${
-                    pushEnabled ? 'translate-x-6' : 'translate-x-1'
-                  }`}
-                ></span>
+                Add iCal subscription
               </button>
             </div>
 
-            {#if pushEnabled}
-              <div class="mt-4 border-t border-zinc-100 pt-4">
-                <button
-                  type="button"
-                  onclick={() => void onSendTestNotification()}
-                  disabled={isSendingTest}
-                  class="rounded-xl bg-green-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-green-700 disabled:bg-green-400 disabled:opacity-60"
-                >
-                  {isSendingTest ? 'Sending...' : 'Send test notification'}
-                </button>
+            <div class="mt-6 space-y-3">
+              <div class="space-y-1">
+                <h3 class="text-base font-semibold text-zinc-900">Selected Shifts</h3>
+                <p class="text-sm text-zinc-600">Filter the shift calendar for your preferred shifts.</p>
               </div>
-            {/if}
+              <div class="relative">
+                <input
+                  type="text"
+                  value={jobSearch}
+                  oninput={(event) =>
+                    onJobSearchChange((event.currentTarget as HTMLInputElement).value)}
+                  onfocus={onJobSearchFocus}
+                  onblur={onJobSearchBlur}
+                  onkeydown={(event) => onJobSearchKeyDown(event)}
+                  placeholder="Search jobs"
+                  class="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 shadow-sm focus:ring-2 focus:ring-green-500 focus:outline-none"
+                />
+                {#if isJobDropdownOpen}
+                  <div class="absolute z-10 mt-2 w-full rounded-xl border border-zinc-200 bg-white shadow-lg">
+                    <div class="max-h-48 overflow-y-auto">
+                      {#if filteredJobOptions.length > 0}
+                        {#each filteredJobOptions as job, index (job)}
+                          {@const isSelected = selectedJobs.includes(job)}
+                          {@const isHighlighted = index === highlightedJobIndex}
+                          <button
+                            type="button"
+                            onclick={() => onToggleJob(job)}
+                            onmouseenter={() => onHighlightJobIndex(index)}
+                            class={`flex w-full items-center justify-between px-3 py-2 text-left text-sm transition-colors ${
+                              isSelected ? 'bg-green-50 text-green-700' : 'text-zinc-700 hover:bg-zinc-100'
+                            } ${isHighlighted && !isSelected ? 'bg-zinc-100' : ''}`}
+                          >
+                            <span>{job}</span>
+                            {#if isSelected}
+                              <span class="text-xs">Selected</span>
+                            {/if}
+                          </button>
+                        {/each}
+                      {:else}
+                        <div class="px-3 py-2 text-sm text-zinc-500">No matching jobs.</div>
+                      {/if}
+                    </div>
+                  </div>
+                {/if}
+              </div>
+
+              <div class="flex flex-wrap gap-2">
+                {#if selectedJobs.length > 0}
+                  {#each selectedJobs as job (job)}
+                    <span
+                      class="group inline-flex items-center gap-2 rounded-full bg-zinc-100 px-3 py-1 text-xs font-medium text-zinc-700 transition-colors hover:bg-red-50 hover:text-red-700"
+                    >
+                      {job}
+                      <button
+                        type="button"
+                        onclick={() => onRemoveJob(job)}
+                        class="text-xs font-semibold text-zinc-400 transition-colors group-hover:text-red-600"
+                        aria-label={`Remove ${job}`}
+                      >
+                        ×
+                      </button>
+                    </span>
+                  {/each}
+                {:else}
+                  <span class="text-sm text-zinc-500">All shifts included.</span>
+                {/if}
+              </div>
+            </div>
           </div>
         </section>
+
+        {#if pushSupported && canManageNotifications}
+          <section class="mt-10">
+            <h2 class="text-lg font-semibold text-zinc-900">Notifications</h2>
+            <p class="mt-2 text-sm text-zinc-600">Receive push notifications from foodcoop.news.</p>
+
+            <div class="mt-6 rounded-xl border border-zinc-200 bg-white p-4">
+              <div class="flex items-center justify-between">
+                <div>
+                  <h3 class="text-base font-semibold text-zinc-900">Push Notifications</h3>
+                  <p class="mt-1 text-sm text-zinc-600">Get notified about updates and announcements.</p>
+                </div>
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={pushEnabled}
+                  aria-label="Toggle push notifications"
+                  disabled={pushLoading}
+                  onclick={() => void onTogglePush()}
+                  class={`relative inline-flex h-7 w-12 shrink-0 cursor-pointer items-center rounded-full transition-colors duration-200 ease-in-out disabled:opacity-50 ${
+                    pushEnabled ? 'bg-green-600' : 'bg-zinc-300'
+                  }`}
+                >
+                  <span
+                    class={`inline-block h-5 w-5 rounded-full bg-white shadow-sm transition-transform duration-200 ease-in-out ${
+                      pushEnabled ? 'translate-x-6' : 'translate-x-1'
+                    }`}
+                  ></span>
+                </button>
+              </div>
+
+              {#if pushEnabled}
+                <div class="mt-4 border-t border-zinc-100 pt-4">
+                  <button
+                    type="button"
+                    onclick={() => void onSendTestNotification()}
+                    disabled={isSendingTest}
+                    class="rounded-xl bg-green-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-green-700 disabled:bg-green-400 disabled:opacity-60"
+                  >
+                    {isSendingTest ? 'Sending...' : 'Send test notification'}
+                  </button>
+                </div>
+              {/if}
+            </div>
+          </section>
+        {/if}
       {/if}
 
     {/if}

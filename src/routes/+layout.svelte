@@ -669,7 +669,7 @@
     url: siteOrigin,
     logo: `${siteOrigin}${OG_IMAGE_PATH}`,
   });
-  $: showUnauthenticatedFooter = !isSwipePreviewMode && !state.isPending && !state.isAuthenticated;
+  $: showUnauthenticatedFooter = !isSwipePreviewMode && !state.isPending && !state.isAuthenticated && ['/', '/produce'].includes($page.url.pathname);
   $: signupHref = getSignupHref(state.loginHref);
 </script>
 

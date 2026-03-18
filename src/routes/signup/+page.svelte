@@ -76,9 +76,13 @@
 
   onMount(() : void => {
     const next = get(page).url.searchParams.get('next');
+    const prefillEmail = sessionStorage.getItem('auth:prefill-email') ?? '';
+    if (prefillEmail) {
+      sessionStorage.removeItem('auth:prefill-email');
+    }
     state = {
       ...state,
-      email: get(page).url.searchParams.get('email') ?? '',
+      email: prefillEmail || (get(page).url.searchParams.get('email') ?? ''),
       showIntegrationsPrompt: getNextPathname(next) === '/integrations',
       signinHref: withNextParam('/login', next),
     };
