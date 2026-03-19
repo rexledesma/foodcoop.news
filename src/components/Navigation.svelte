@@ -19,11 +19,12 @@
     onSignOut: () => Promise<void>;
   };
 
-  type NavIconName = 'news' | 'produce' | 'carrot' | 'gear' | 'info';
+  type NavIconName = 'news' | 'produce' | 'governance' | 'carrot' | 'gear' | 'info';
 
   const navItems: { href: string; label: string; icon: NavIconName }[] = [
     { href: '/', label: 'News', icon: 'news' },
     { href: '/produce', label: 'Produce', icon: 'produce' },
+    { href: '/governance', label: 'Governance', icon: 'governance' },
     { href: '/integrations', label: 'Integrations', icon: 'gear' },
   ];
 
@@ -159,6 +160,8 @@
         return '🗞️';
       case 'produce':
         return '🥬';
+      case 'governance':
+        return '🏛️';
       case 'carrot':
         return '🥕';
       case 'gear':
@@ -171,7 +174,7 @@
   }
 
   function preloadModeForHref(href: string): 'hover' | undefined {
-    return href === '/' || href === '/produce' ? 'hover' : undefined;
+    return href === '/' || href === '/produce' || href === '/governance' ? 'hover' : undefined;
   }
 
   function applyState(next: NavigationClientState) : void {

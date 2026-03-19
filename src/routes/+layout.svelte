@@ -25,7 +25,7 @@
   const PWA_INSTALL_DESCRIPTION =
     'This site has app functionality. Install foodcoop.news on your device for easy access.';
   const DOUBLE_TAP_DELAY_MS = 350;
-  const SWIPE_NAV_ROUTES = ['/about', '/integrations', '/produce', '/'] as const;
+  const SWIPE_NAV_ROUTES = ['/about', '/integrations', '/governance', '/produce', '/'] as const;
   const SWIPE_CAPTURE_THRESHOLD_PX = 14;
   const SWIPE_MAX_VERTICAL_DRIFT_PX = 90;
   const SWIPE_PEEK_MAX_TRAVEL_RATIO = 0.88;
@@ -285,6 +285,7 @@
     }
 
     if (pathname === '/discover' || pathname === '/') {return `News · ${SITE_NAME}`;}
+    if (pathname === '/governance') {return `Governance · ${SITE_NAME}`;}
     if (pathname === '/integrations') {return `Integrations · ${SITE_NAME}`;}
     if (pathname === '/about') {return `About · ${SITE_NAME}`;}
     if (pathname === '/login') {return `Login · ${SITE_NAME}`;}
@@ -315,6 +316,10 @@
 
     if (pathname === '/integrations') {
       return 'Set up personalized integrations for your Park Slope Food Coop membership.';
+    }
+
+    if (pathname === '/governance') {
+      return 'Pending agenda items provided by the Park Slope Food Coop Agenda Committee.';
     }
 
     if (pathname === '/about') {
