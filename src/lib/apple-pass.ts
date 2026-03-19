@@ -2,8 +2,7 @@
  * Apple Wallet Pass data structure and generation for PSFC member cards.
  */
 
-import { readFile } from 'node:fs/promises';
-import path from 'node:path';
+import { read } from '$app/server';
 import {
   APPLE_PASS_CERT_BASE64,
   APPLE_PASS_KEY_BASE64,
@@ -12,25 +11,28 @@ import {
   APPLE_TEAM_ID,
   APPLE_WWDR_CERT_BASE64,
 } from '$env/static/private';
+import coopIconAsset from '$lib/assets/coop.png';
+import coopLogoAsset from '$lib/assets/coop-padded.png';
+import coopStripAsset from '$lib/assets/coop-strip.png';
 import { PKPass } from 'passkit-generator';
 import sharp from 'sharp';
 
-async function loadIconAsset(): Promise<Buffer> {
-  const sourcePath = path.join(process.cwd(), 'static', 'assets', 'coop.png');
-
-  return readFile(sourcePath);
+async function loadAssetBuffer(asset: string): Promise<Buffer> {
+  const response = read(asset);
+  const arrayBuffer = await response.arrayBuffer();
+  return Buffer.from(arrayBuffer);
 }
 
-async function loadLogoAsset(): Promise<Buffer> {
-  const sourcePath = path.join(process.cwd(), 'static', 'assets', 'coop-padded.png');
-
-  return readFile(sourcePath);
+function loadIconAsset(): Promise<Buffer> {
+  return loadAssetBuffer(coopIconAsset);
 }
 
-async function loadStripAsset(): Promise<Buffer> {
-  const sourcePath = path.join(process.cwd(), 'static', 'assets', 'coop-strip.png');
+function loadLogoAsset(): Promise<Buffer> {
+  return loadAssetBuffer(coopLogoAsset);
+}
 
-  return readFile(sourcePath);
+function loadStripAsset(): Promise<Buffer> {
+  return loadAssetBuffer(coopStripAsset);
 }
 
 function generateIconFromAsset(sourceBuffer: Buffer, size: number): Promise<Buffer> {
