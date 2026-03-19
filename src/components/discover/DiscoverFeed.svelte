@@ -246,6 +246,28 @@
     return fullDateTime;
   }
 
+  function formatGeneralMeetingDescriptionForNews(description?: string): string {
+    if (!description) {
+      return '';
+    }
+
+    const romanHeaderPattern = /^[IVXLCDM]+\.\s+/i;
+    const topLevelItemPattern = /^Item\s+\d+\s*:/i;
+
+    const topLevelLines = description
+      .split(/\r?\n/)
+      .map((line): string => line.trim())
+      .filter((line): boolean => line.length > 0)
+      .filter((line): boolean => romanHeaderPattern.test(line) || topLevelItemPattern.test(line))
+      .map((line): string => (topLevelItemPattern.test(line) ? `\t${line}` : line));
+
+    if (topLevelLines.length === 0) {
+      return description;
+    }
+
+    return topLevelLines.join('\n');
+  }
+
   function getPostUrl(uri: string): string {
     const parts = uri.replace('at://', '').split('/');
     const handle = parts[0];
@@ -860,12 +882,16 @@
         </div>
         <p class="mt-2 font-medium text-zinc-700">{titleOverride ?? event.title}</p>
         {#if event.description}
+          {@const displayDescription =
+            label === 'General Meeting'
+              ? formatGeneralMeetingDescriptionForNews(event.description)
+              : event.description}
           <p
             class={label === 'General Meeting'
               ? 'mt-1 text-sm whitespace-pre-wrap text-zinc-500 [tab-size:4]'
               : 'mt-1 line-clamp-3 text-sm text-zinc-500'}
           >
-            {event.description}
+            {displayDescription}
           </p>
         {/if}
         {#if event.venueName || event.venueAddress}

@@ -68,7 +68,10 @@ function formatGMDescription(agendaLines: string[]): string {
     return '';
   }
 
-  return agendaLines.map((line) => (/^Item\s+\d+:/i.test(line) ? `\t${line}` : line)).join('\n');
+  const topLevelItemPattern = /^Item\s+\d+\s*:/i;
+  return agendaLines
+    .map((line) => (topLevelItemPattern.test(line) ? `\t${line}` : line))
+    .join('\n');
 }
 
 function parseGMDateTime(text: string): Date | null {
