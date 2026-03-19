@@ -46,11 +46,15 @@ function parseGMAgendaDetails(html: string): {
   const blocks = textRoot
     .find('p, li')
     .toArray()
-    .map((el) => {
+    .flatMap((el): string[] => {
       const rawHtml = $(el).html() ?? '';
-      const beforeBreakHtml = rawHtml.split(/<br\s*\/?>/i)[0] ?? rawHtml;
-      const fragment = cheerio.load(`<div>${beforeBreakHtml}</div>`);
-      return normalizeWhitespace(fragment('div').text());
+      const htmlWithLineBreaks = rawHtml.replace(/<br\s*\/?>/gi, '\n');
+      const fragment = cheerio.load(`<div>${htmlWithLineBreaks}</div>`);
+      return fragment('div')
+        .text()
+        .split(/\r?\n/)
+        .map((line): string => normalizeWhitespace(line))
+        .filter(Boolean);
     })
     .filter(Boolean);
 

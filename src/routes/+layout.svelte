@@ -319,7 +319,7 @@
     }
 
     if (pathname === '/governance') {
-      return 'Pending agenda items provided by the Park Slope Food Coop Agenda Committee.';
+      return 'Current and pending agenda items for Park Slope Food Coop general meetings.';
     }
 
     if (pathname === '/about') {
