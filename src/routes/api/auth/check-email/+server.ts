@@ -2,7 +2,7 @@ import { ConvexHttpClient } from 'convex/browser';
 import { z } from 'zod';
 import { parseJsonBody, validatedJson } from '@/lib/http-validation';
 import { PUBLIC_CONVEX_URL } from '$env/static/public';
-import { api } from '../../../../../convex/_generated/api';
+import { api } from '@convex/_generated/api';
 
 const convex = new ConvexHttpClient(PUBLIC_CONVEX_URL);
 

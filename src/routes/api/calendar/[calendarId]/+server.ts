@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 import { PUBLIC_CONVEX_URL } from '$env/static/public';
 import { ConvexHttpClient } from 'convex/browser';
-import { api } from '../../../../../convex/_generated/api';
+import { api } from '@convex/_generated/api';
 
 const SHIFT_CALENDAR_URL =
   'https://calendar.google.com/calendar/ical/9b8f99f4caf33d2afbd17ac5f64a5113c7e373686247a7126b6a0b96a8cbd462%40group.calendar.google.com/public/basic.ics';

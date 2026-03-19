@@ -1,6 +1,6 @@
 import { fetchAuthQueryFromHeaders } from '@/lib/auth';
 import { sendOpsNotification } from '@/lib/ops-notifications';
-import { api } from '../../../../../convex/_generated/api';
+import { api } from '@convex/_generated/api';
 import { generateGoogleWalletURL } from '@/lib/google-wallet';
 
 export async function GET({ request }: { request: Request }) {

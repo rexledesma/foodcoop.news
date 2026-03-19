@@ -6,6 +6,7 @@ const config = {
     adapter: adapter(),
     alias: {
       '@': './src',
+      '@convex': './convex',
     },
   },
 };
