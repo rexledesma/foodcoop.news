@@ -68,7 +68,7 @@ async function fetchFoodCoopCooksWordPressFeed(): Promise<FoodCoopCooksArticle[]
     if (!match) {
       break;
     }
-    const itemXml = match[1];
+    const itemXml = match[1] ?? '';
 
     const title = decode(extractTextContent(itemXml, 'title'));
     const rawDescription = extractTextContent(itemXml, 'description');
@@ -79,7 +79,8 @@ async function fetchFoodCoopCooksWordPressFeed(): Promise<FoodCoopCooksArticle[]
     const guid = extractTextContent(itemXml, 'guid');
 
     const postIdMatch = guid.match(/[?&]p=(\d+)/);
-    const id = postIdMatch ? postIdMatch[1] : Buffer.from(link).toString('base64').slice(0, 20);
+    const postId = postIdMatch?.[1];
+    const id = postId ?? Buffer.from(link).toString('base64').slice(0, 20);
 
     parsedItems.push({
       id,
@@ -117,7 +118,7 @@ async function fetchFoodCoopCooksYouTubeFeed(): Promise<FoodCoopCooksArticle[]> 
       break;
     }
 
-    const entryXml = match[1];
+    const entryXml = match[1] ?? '';
     const videoId = extractTextContent(entryXml, 'yt:videoId');
     const title = decode(extractTextContent(entryXml, 'title'));
     const description = decode(extractTextContent(entryXml, 'media:description')).trim();

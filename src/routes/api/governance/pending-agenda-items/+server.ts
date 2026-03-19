@@ -36,7 +36,13 @@ function parsePendingAgendaItemsFromRows(rawRows: string[][]): GovernancePending
     return [];
   }
 
-  const headerCells = [rows[0][0] ?? '', rows[0][1] ?? '', rows[0][2] ?? '', rows[0][3] ?? ''];
+  const headerRow = rows[0] ?? [];
+  const headerCells = [
+    headerRow[0] ?? '',
+    headerRow[1] ?? '',
+    headerRow[2] ?? '',
+    headerRow[3] ?? '',
+  ];
   const headerResult = governanceSheetHeaderSchema.safeParse(headerCells);
   if (!headerResult.success) {
     throw new Error(

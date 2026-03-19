@@ -28,7 +28,7 @@ function parseCurrentAgendaItemsFromDescription(description: string | undefined)
 
   const agendaSectionLines: string[] = [];
   for (let i = agendaStartIndex; i < lines.length; i += 1) {
-    const line = lines[i];
+    const line = lines[i] ?? '';
     if (i > agendaStartIndex && /^[IVXLCDM]+\.\s+/i.test(line)) {
       break;
     }

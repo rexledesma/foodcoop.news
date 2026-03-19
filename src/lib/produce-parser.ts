@@ -71,7 +71,7 @@ function parsePrice(priceStr: string): {
   unit: ProduceUnit;
 } {
   const match = priceStr.match(/\$?([\d.]+)/);
-  const price = match ? parseFloat(match[1]) : 0;
+  const price = match?.[1] ? parseFloat(match[1]) : 0;
 
   let unit: ProduceUnit = 'each';
   const lower = priceStr.toLowerCase();

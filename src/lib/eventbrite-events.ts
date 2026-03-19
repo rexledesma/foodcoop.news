@@ -77,7 +77,9 @@ async function fetchEventIdsFromOrganizerPage(
   }
 
   const html = await response.text();
-  const matches = Array.from(html.matchAll(EVENT_ID_PATTERN), (match) => match[1]);
+  const matches = Array.from(html.matchAll(EVENT_ID_PATTERN), (match) => match[1]).filter(
+    (id): id is string => typeof id === 'string' && id.length > 0,
+  );
   return Array.from(new Set(matches)).slice(0, maxEventIds);
 }
 

@@ -33,7 +33,7 @@ async function fetchTwitterImage(url: string): Promise<string | undefined> {
       html.match(/<meta[^>]+name=["']twitter:image["'][^>]+content=["']([^"']+)["']/i) ||
       html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+name=["']twitter:image["']/i);
 
-    if (match) {
+    if (match?.[1]) {
       // Decode HTML entities in URL
       return match[1].replace(/&#038;/g, '&').replace(/&amp;/g, '&');
     }
@@ -65,7 +65,7 @@ async function fetchGazetteFeed(): Promise<GazetteArticle[]> {
   let match;
 
   while ((match = itemRegex.exec(xml)) !== null) {
-    const itemXml = match[1];
+    const itemXml = match[1] ?? '';
 
     const title = decode(extractTextContent(itemXml, 'title'));
     const link = extractTextContent(itemXml, 'link');
@@ -74,7 +74,8 @@ async function fetchGazetteFeed(): Promise<GazetteArticle[]> {
 
     // Extract post ID from guid (e.g., "https://linewaitersgazette.com/?p=12345")
     const postIdMatch = guid.match(/[?&]p=(\d+)/);
-    const id = postIdMatch ? postIdMatch[1] : Buffer.from(link).toString('base64').slice(0, 20);
+    const postId = postIdMatch?.[1];
+    const id = postId ?? Buffer.from(link).toString('base64').slice(0, 20);
 
     parsedItems.push({
       id,

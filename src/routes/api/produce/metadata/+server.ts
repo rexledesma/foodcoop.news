@@ -47,6 +47,9 @@ async function loadProduceMetadata(): Promise<{
       continue;
     }
     const year = match[1];
+    if (!year) {
+      continue;
+    }
     const yearNum = Number.parseInt(year, 10);
     if (Number.isNaN(yearNum) || yearNum < earliestSupportedYear || yearNum > currentYearNum) {
       continue;

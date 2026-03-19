@@ -465,11 +465,14 @@
   const virtualTotalSize = $derived(Math.max(0, $rowVirtualizer.getTotalSize() - virtualScrollMargin));
   const virtualPaddingTop = $derived.by(() : number => {
     if (virtualRows.length === 0) {return 0;}
-    return Math.max(0, virtualRows[0].start - virtualScrollMargin);
+    const firstItem = virtualRows[0];
+    if (!firstItem) {return 0;}
+    return Math.max(0, firstItem.start - virtualScrollMargin);
   });
   const virtualPaddingBottom = $derived.by(() : number => {
     if (virtualRows.length === 0) {return 0;}
     const lastItem = virtualRows[virtualRows.length - 1];
+    if (!lastItem) {return 0;}
     const adjustedLastEnd = Math.max(0, lastItem.end - virtualScrollMargin);
     return Math.max(0, virtualTotalSize - adjustedLastEnd);
   });
@@ -600,9 +603,11 @@
     useAnimatedStart = true,
   ): number | null {
     if (!points || points.length === 0) {return null;}
+    const latestPoint = points[points.length - 1];
+    if (!latestPoint) {return null;}
     const endMs = activeRange
       ? new Date(activeRange.end + 'T00:00:00').getTime()
-      : new Date(points[points.length - 1].date + 'T00:00:00').getTime();
+      : new Date(latestPoint.date + 'T00:00:00').getTime();
     const startMs = useAnimatedStart
       ? getAnimatedPeriodStartMs(period, endMs)
       : getPeriodStartMs(period, endMs);
@@ -672,10 +677,14 @@
     if (!points || points.length === 0) {
       return { prev: null, high: null, low: null };
     }
+    const latestPoint = points[points.length - 1];
+    if (!latestPoint) {
+      return { prev: null, high: null, low: null };
+    }
 
     const endMs = activeRange
       ? new Date(activeRange.end + 'T00:00:00').getTime()
-      : new Date(points[points.length - 1].date + 'T00:00:00').getTime();
+      : new Date(latestPoint.date + 'T00:00:00').getTime();
     const periodStartMs = getAnimatedPeriodStartMs(period, endMs);
     let prev: number | null = null;
     let closestPrevDist = Number.POSITIVE_INFINITY;
@@ -706,9 +715,11 @@
     period: TimePeriod,
   ): number {
     if (!points || points.length === 0) {return 0;}
+    const latestPoint = points[points.length - 1];
+    if (!latestPoint) {return 0;}
     const endMs = activeRange
       ? new Date(activeRange.end + 'T00:00:00').getTime()
-      : new Date(points[points.length - 1].date + 'T00:00:00').getTime();
+      : new Date(latestPoint.date + 'T00:00:00').getTime();
     const periodStartMs = getAnimatedPeriodStartMs(period, endMs);
     return points.filter((point) : boolean => {
       const pointMs = new Date(point.date + 'T00:00:00').getTime();
@@ -722,9 +733,11 @@
     period: TimePeriod,
   ): boolean {
     if (!points || points.length === 0) {return false;}
+    const latestPoint = points[points.length - 1];
+    if (!latestPoint) {return false;}
     const endMs = activeRange
       ? new Date(activeRange.end + 'T00:00:00').getTime()
-      : new Date(points[points.length - 1].date + 'T00:00:00').getTime();
+      : new Date(latestPoint.date + 'T00:00:00').getTime();
     const periodStartMs = getPeriodStartMs(period, endMs);
     for (const point of points) {
       const pointMs = new Date(point.date + 'T00:00:00').getTime();
@@ -1278,7 +1291,7 @@
       overscan: VIRTUAL_ROW_BUFFER,
       rangeExtractor: extractVirtualRowRange,
       scrollMargin: virtualScrollMargin,
-      getItemKey: (index) : string => filteredRows[index]?.name ?? index,
+      getItemKey: (index) : string => String(filteredRows[index]?.name ?? index),
     });
   });
 

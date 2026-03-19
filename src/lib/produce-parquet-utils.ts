@@ -29,6 +29,9 @@ export async function regenerateMonthParquet(month: string): Promise<{
     }
 
     const date = match[1];
+    if (!date) {
+      continue;
+    }
     daysCount++;
 
     const response = await fetch(blob.url);
@@ -265,6 +268,9 @@ async function loadAllYearlyProduceItems(): Promise<ProduceItem[]> {
       continue;
     }
     const year = match[1];
+    if (!year) {
+      continue;
+    }
     const previousBlob = byYear.get(year);
     if (!previousBlob) {
       byYear.set(year, blob);
@@ -333,7 +339,11 @@ export async function regenerateDerivedProduceParquets(): Promise<{
     throw new Error('No yearly produce rows found to build derived parquet datasets');
   }
 
-  const maxDate = allItems[allItems.length - 1].date;
+  const latestItem = allItems[allItems.length - 1];
+  if (!latestItem) {
+    throw new Error('No yearly produce rows found to build derived parquet datasets');
+  }
+  const maxDate = latestItem.date;
   const maxMs = isoDateToMs(maxDate);
   const ytdStart = `${maxDate.slice(0, 4)}-01-01`;
   const fiveYearStart = clampIsoDateFloor(msToIsoDate(maxMs - 1825 * DAY_MS), SINCE_2013_START);
@@ -385,7 +395,11 @@ export async function regenerateYtdDerivedParquet(): Promise<{ url: string; rows
     throw new Error('No yearly produce rows found to build YTD parquet dataset');
   }
 
-  const maxDate = allItems[allItems.length - 1].date;
+  const latestItem = allItems[allItems.length - 1];
+  if (!latestItem) {
+    throw new Error('No yearly produce rows found to build YTD parquet dataset');
+  }
+  const maxDate = latestItem.date;
   const ytdStart = `${maxDate.slice(0, 4)}-01-01`;
   const ytdItems = filterByDateRange(allItems, ytdStart, maxDate);
   return putDerivedParquet('ytd', ytdItems);

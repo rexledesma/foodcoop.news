@@ -24,7 +24,7 @@ export async function POST({ request }: { request: Request }): Promise<Response>
     const months = new Set<string>();
     for (const blob of blobs) {
       const match = blob.pathname.match(/produce\/(\d{4}-\d{2})-\d{2}\.html$/);
-      if (match) {
+      if (match?.[1]) {
         months.add(match[1]);
       }
     }

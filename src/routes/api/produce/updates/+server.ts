@@ -97,6 +97,9 @@ export async function GET(): Promise<Response> {
         continue;
       }
       const year = match[1];
+      if (!year) {
+        continue;
+      }
       const previous = latestByYear.get(year);
       if (
         !previous ||
@@ -122,7 +125,17 @@ export async function GET(): Promise<Response> {
     const currentYear = new Date()
       .toLocaleDateString('en-CA', { timeZone: 'America/New_York' })
       .slice(0, 4);
-    const referenceYear = latestByYear.has(currentYear) ? currentYear : availableYears[0];
+    const fallbackYear = availableYears[0];
+    if (!fallbackYear) {
+      cachedEvents = [];
+      cacheTime = now;
+      return Response.json({
+        events: [],
+        total: 0,
+        lastUpdated: new Date(cacheTime).toISOString(),
+      });
+    }
+    const referenceYear = latestByYear.has(currentYear) ? currentYear : fallbackYear;
 
     const selectedYears = [referenceYear];
     const previousYear = String(Number.parseInt(referenceYear, 10) - 1);
@@ -151,9 +164,19 @@ export async function GET(): Promise<Response> {
       });
     }
 
+    const firstRow = rows[0];
+    if (!firstRow) {
+      cachedEvents = [];
+      cacheTime = now;
+      return Response.json({
+        events: [],
+        total: 0,
+        lastUpdated: new Date(cacheTime).toISOString(),
+      });
+    }
     const maxDate = rows.reduce(
       (latest, row): string => (row.date > latest ? row.date : latest),
-      rows[0].date,
+      firstRow.date,
     );
     const arrivalCutoff = addDaysIso(maxDate, -30);
     const unavailableCutoff = addDaysIso(maxDate, -30);

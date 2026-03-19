@@ -69,6 +69,10 @@ export function createSwipeNavigator(config: SwipeNavigatorConfig): {
     isTrackingSwipe = true;
     isHorizontalSwipe = false;
     const touch = event.touches[0];
+    if (!touch) {
+      resetTracking();
+      return;
+    }
     touchStartX = touch.clientX;
     touchStartY = touch.clientY;
     touchCurrentX = touch.clientX;
@@ -95,6 +99,10 @@ export function createSwipeNavigator(config: SwipeNavigatorConfig): {
     }
 
     const touch = event.touches[0];
+    if (!touch) {
+      resetTracking();
+      return;
+    }
     touchCurrentX = touch.clientX;
     touchCurrentY = touch.clientY;
 

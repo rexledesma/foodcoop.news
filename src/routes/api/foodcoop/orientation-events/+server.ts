@@ -22,9 +22,15 @@ function parseUsDate(value: string): { year: number; month: number; day: number 
     return null;
   }
 
-  const month = Number.parseInt(match[1], 10);
-  const day = Number.parseInt(match[2], 10);
-  const year = Number.parseInt(match[3], 10);
+  const monthStr = match[1];
+  const dayStr = match[2];
+  const yearStr = match[3];
+  if (!monthStr || !dayStr || !yearStr) {
+    return null;
+  }
+  const month = Number.parseInt(monthStr, 10);
+  const day = Number.parseInt(dayStr, 10);
+  const year = Number.parseInt(yearStr, 10);
 
   if (
     !Number.isInteger(month) ||
@@ -57,7 +63,7 @@ function easternDateTimeToUtc(
   const parts = formatter.formatToParts(refDate);
   const tzPart = parts.find((part) => part.type === 'timeZoneName');
   const offsetMatch = tzPart?.value.match(/GMT([+-]\d+)/);
-  const offsetHours = offsetMatch ? Number.parseInt(offsetMatch[1], 10) : -5;
+  const offsetHours = offsetMatch?.[1] ? Number.parseInt(offsetMatch[1], 10) : -5;
   const utcHour = hour - offsetHours;
   return new Date(Date.UTC(year, month, day, utcHour, minute, 0));
 }
@@ -97,7 +103,11 @@ function parseOrientationEvents(html: string): FoodcoopEvent[] {
       /^([A-Za-z]+)\s+(\d{1,2}\/\d{1,2}\/\d{4})\s*:\s*(\d+)\s+appointments?,\s*(\d{1,2}:\d{2}\s*[ap]m)$/i,
     );
 
-    const releaseParts = parseUsDate(releaseMatch[1]);
+    const releaseDateText = releaseMatch[1];
+    if (!releaseDateText) {
+      continue;
+    }
+    const releaseParts = parseUsDate(releaseDateText);
     if (!releaseParts) {
       continue;
     }
@@ -114,11 +124,11 @@ function parseOrientationEvents(html: string): FoodcoopEvent[] {
 
     let title = 'Orientation registration opens';
     let description = 'Schedule an in-person orientation to join the Park Slope Food Coop.';
-    let appointmentIdPart = releaseMatch[1];
+    let appointmentIdPart = releaseDateText;
 
     if (appointmentMatch) {
       const weekday = appointmentMatch[1];
-      const appointmentDate = appointmentMatch[2];
+      const appointmentDate = appointmentMatch[2] ?? releaseDateText;
       const appointmentsCount = appointmentMatch[3];
       const appointmentTime = appointmentMatch[4];
       title = `Orientation registration opens (${weekday} ${appointmentDate})`;
@@ -126,7 +136,7 @@ function parseOrientationEvents(html: string): FoodcoopEvent[] {
       appointmentIdPart = appointmentDate;
     }
 
-    const releaseId = releaseMatch[1].replaceAll('/', '-');
+    const releaseId = releaseDateText.replaceAll('/', '-');
     const appointmentId = appointmentIdPart.replaceAll('/', '-');
     events.push({
       id: `orientation-registration-${releaseId}-${appointmentId}`,

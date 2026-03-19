@@ -88,6 +88,9 @@ function parseGMDateTime(text: string): Date | null {
   }
 
   const [, monthStr, dayStr, yearStr, hourStr, minuteStr, ampm] = dateMatch;
+  if (!monthStr || !dayStr || !yearStr || !hourStr || !minuteStr || !ampm) {
+    return null;
+  }
   const months: Record<string, number> = {
     january: 0,
     jan: 0,
@@ -146,7 +149,7 @@ function parseGMDateTime(text: string): Date | null {
   const tzPart = parts.find((p) => p.type === 'timeZoneName');
   // tzPart.value will be like "GMT-5" or "GMT-4"
   const offsetMatch = tzPart?.value.match(/GMT([+-]\d+)/);
-  const offsetHours = offsetMatch ? parseInt(offsetMatch[1], 10) : -5;
+  const offsetHours = offsetMatch?.[1] ? parseInt(offsetMatch[1], 10) : -5;
 
   // Create UTC date by subtracting the Eastern Time offset
   // e.g., 7:00 PM ET (GMT-5) = 7:00 PM - (-5) = 7:00 PM + 5 = 12:00 AM UTC next day
@@ -198,7 +201,7 @@ async function fetchGMEvents(): Promise<FoodcoopEvent[]> {
 
   // Look for location pattern like "Picnic House, Prospect Park, 95 Prospect Park West..."
   const locationMatch = sectionText.match(/(Prospect Park Picnic House|Picnic House)/i);
-  if (locationMatch) {
+  if (locationMatch?.[1]) {
     venueName = locationMatch[1].trim();
   }
 

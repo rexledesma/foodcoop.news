@@ -41,14 +41,11 @@ async function loadLatestSnapshot(): Promise<LatestSnapshot> {
     return { names: new Set(), snapshotDate: null };
   }
 
-  const latest = htmlBlobs.reduce((currentLatest, blob) => {
-    if (!currentLatest) {
-      return blob;
-    }
-    return new Date(blob.uploadedAt).getTime() > new Date(currentLatest.uploadedAt).getTime()
+  const latest = htmlBlobs.reduce((currentLatest, blob) =>
+    new Date(blob.uploadedAt).getTime() > new Date(currentLatest.uploadedAt).getTime()
       ? blob
-      : currentLatest;
-  }, htmlBlobs[0]);
+      : currentLatest,
+  );
 
   const dateMatch = latest.pathname.match(/produce\/(\d{4}-\d{2}-\d{2})\.html$/);
   const snapshotDate = dateMatch?.[1] ?? null;

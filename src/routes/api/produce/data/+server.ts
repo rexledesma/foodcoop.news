@@ -93,6 +93,9 @@ async function loadProduceMetadata(): Promise<ProduceMetadata> {
       continue;
     }
     const year = match[1];
+    if (!year) {
+      continue;
+    }
     const yearNum = Number.parseInt(year, 10);
     if (Number.isNaN(yearNum) || yearNum < earliestSupportedYear || yearNum > currentYearNum) {
       continue;
@@ -507,9 +510,13 @@ async function computePayload({
   }
 
   const currentYearEntry = meta.years.find((entry): boolean => entry.isCurrentYear);
+  const fallbackYearEntry = meta.years[0];
+  if (!fallbackYearEntry) {
+    return { data: [], history: [], dateRange: null };
+  }
   const currentYear = currentYearEntry
     ? Number.parseInt(currentYearEntry.year, 10)
-    : Number.parseInt(meta.years[0].year, 10);
+    : Number.parseInt(fallbackYearEntry.year, 10);
   const previousYearEntries = meta.years.filter((entry): boolean => {
     const yearNum = Number.parseInt(entry.year, 10);
     return yearNum === currentYear - 1;

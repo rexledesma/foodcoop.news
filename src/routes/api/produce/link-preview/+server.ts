@@ -45,7 +45,8 @@ function findMetaContent(html: string, key: string, value: string): string | nul
     'i',
   );
   const match = html.match(directPattern) ?? html.match(reversePattern);
-  return match ? match[1].trim() : null;
+  const content = match?.[1];
+  return content ? content.trim() : null;
 }
 
 function findTitle(html: string): string | null {
@@ -53,7 +54,8 @@ function findTitle(html: string): string | null {
   if (!titleMatch) {
     return null;
   }
-  return normalizeMetaText(titleMatch[1]);
+  const title = titleMatch[1];
+  return title ? normalizeMetaText(title) : null;
 }
 
 function resolveAbsoluteUrl(candidate: string | null, baseUrl: URL): string | undefined {

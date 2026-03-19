@@ -57,6 +57,9 @@ export async function GET() {
     const latest = [...htmlBlobs].sort((a, b) => {
       return new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime();
     })[0];
+    if (!latest) {
+      return Response.json({ rows: [], dateRange: null, history: [] });
+    }
 
     const dateMatch = latest.pathname.match(/produce\/(\d{4}-\d{2}-\d{2})\.html$/);
     const date = dateMatch?.[1];

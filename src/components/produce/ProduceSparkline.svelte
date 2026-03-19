@@ -131,7 +131,9 @@
       if (sampledPoints.length === 0) {return [latestSourcePoint];}
 
       const lastIndex = sampledPoints.length - 1;
-      if (sampledPoints[lastIndex].date === latestSourcePoint.date) {
+      const sampledLast = sampledPoints[lastIndex];
+      if (!sampledLast) {return [latestSourcePoint];}
+      if (sampledLast.date === latestSourcePoint.date) {
         sampledPoints[lastIndex] = latestSourcePoint;
         return sampledPoints;
       }
@@ -152,7 +154,10 @@
           sampled.push(point);
           activeBucket = bucket;
         } else {
-          sampled[sampled.length - 1] = point;
+          const latestSampledIndex = sampled.length - 1;
+          if (latestSampledIndex >= 0) {
+            sampled[latestSampledIndex] = point;
+          }
         }
       }
 
@@ -250,12 +255,15 @@
 
     const periodStartPoint = (() : SparklinePoint | null => {
       if (normalized.length < 2) {return null;}
-      let closest = normalized[0];
+      const first = normalized[0];
+      if (!first) {return null;}
+      let closest = first;
       let closestDist = Infinity;
       for (const [index, point] of pointsInScale.entries()) {
         const pointMs = toDateMs(point.date);
         const dist = Math.abs(pointMs - periodStartMs);
         const normPoint = normalized[index];
+        if (!normPoint) {continue;}
         if (dist < closestDist) {
           closestDist = dist;
           closest = normPoint;
@@ -272,11 +280,14 @@
 
     if (normalized.length > 1) {
       const gapThresholdMs = getConnectedGapThresholdMs(period);
-      const contiguousChunks: (typeof normalized)[] = [];
-      let activeChunk = [normalized[0]];
+      const contiguousChunks: SparklinePoint[][] = [];
+      const first = normalized[0];
+      if (!first) {return null;}
+      let activeChunk: SparklinePoint[] = [first];
       for (let i = 1; i < normalized.length; i += 1) {
         const prevPoint = normalized[i - 1];
         const currentPoint = normalized[i];
+        if (!prevPoint || !currentPoint) {continue;}
         const gapMs = currentPoint.pointMs - prevPoint.pointMs;
         if (gapMs > gapThresholdMs) {
           contiguousChunks.push(activeChunk);
@@ -307,6 +318,7 @@
         for (let i = 1; i < chunk.length; i += 1) {
           const prev = chunk[i - 1];
           const curr = chunk[i];
+          if (!prev || !curr) {continue;}
           const prevPos = positionY(prev);
           const currPos = positionY(curr);
 
@@ -376,9 +388,11 @@
 
   const targetModel = $derived.by((): SparklineModel | null => {
     if (!points || points.length === 0) {return null;}
+    const latestPoint = points[points.length - 1];
+    if (!latestPoint) {return null;}
     const scaleEndMs = dateRange
       ? toDateMs(dateRange.end)
-      : toDateMs(points[points.length - 1].date);
+      : toDateMs(latestPoint.date);
     const scaleStartMs = Math.max(SINCE_2013_START_MS, getPeriodStartMs(timePeriod, scaleEndMs));
     const periodStartMs = getPeriodStartMs(timePeriod, scaleEndMs);
 
@@ -397,9 +411,12 @@
     if (activeIndex === null) {return null;}
     if (activeIndex < 0 || activeIndex >= displayModel.normalized.length) {return null;}
     if (activeIndex >= displayModel.pointsInScale.length) {return null;}
+    const coordinates = displayModel.normalized[activeIndex];
+    const data = displayModel.pointsInScale[activeIndex];
+    if (!coordinates || !data) {return null;}
     return {
-      coordinates: displayModel.normalized[activeIndex],
-      data: displayModel.pointsInScale[activeIndex],
+      coordinates,
+      data,
     };
   });
 
@@ -608,11 +625,15 @@
     const rect = canvasRef.getBoundingClientRect();
     if (rect.width === 0) {return;}
     const canvasX = ((e.clientX - rect.left) / rect.width) * displayModel.svgWidth;
+    const first = displayModel.normalized[0];
+    if (!first) {return;}
     let closest = 0;
-    let closestDist = Math.abs(displayModel.normalized[0].x - canvasX);
+    let closestDist = Math.abs(first.x - canvasX);
 
     for (let i = 1; i < displayModel.normalized.length; i += 1) {
-      const dist = Math.abs(displayModel.normalized[i].x - canvasX);
+      const candidate = displayModel.normalized[i];
+      if (!candidate) {continue;}
+      const dist = Math.abs(candidate.x - canvasX);
       if (dist < closestDist) {
         closestDist = dist;
         closest = i;
@@ -653,10 +674,13 @@
     width = 2,
   ) : void {
     if (points.length < 2) {return;}
+    const first = points[0];
+    if (!first) {return;}
     ctx.beginPath();
-    ctx.moveTo(points[0].x, points[0].y);
+    ctx.moveTo(first.x, first.y);
     for (let i = 1; i < points.length; i += 1) {
       const point = points[i];
+      if (!point) {continue;}
       ctx.lineTo(point.x, point.y);
     }
     ctx.lineWidth = width;
@@ -743,11 +767,13 @@
       if (segment.points.length < 2) {continue;}
       const start = segment.points[0];
       const end = segment.points[segment.points.length - 1];
+      if (!start || !end) {continue;}
       ctx.beginPath();
       ctx.moveTo(start.x, drawModel.baselineY);
       ctx.lineTo(start.x, start.y);
       for (let i = 1; i < segment.points.length; i += 1) {
         const point = segment.points[i];
+        if (!point) {continue;}
         ctx.lineTo(point.x, point.y);
       }
       ctx.lineTo(end.x, drawModel.baselineY);
