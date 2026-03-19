@@ -437,18 +437,9 @@
         memberName: state.fullName.trim(),
         memberId: state.memberId.trim(),
       });
-      const response = await fetch('/api/wallet/pass');
-      if (!response.ok) {throw new Error('Failed to generate pass');}
-      const blob = await response.blob();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'psfc-member-card.pkpass';
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-      pushToast('success', 'Pass downloaded successfully.');
+      const passUrl = '/api/wallet/pass';
+      window.location.assign(passUrl);
+      pushToast('success', 'Opening Apple Wallet pass...');
     } catch (error) {
       pushToast('error', error instanceof Error ? error.message : 'Failed to generate pass');
     } finally {

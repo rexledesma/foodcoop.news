@@ -41,7 +41,8 @@ export async function GET({ request }: { request: Request }) {
     return new Response(new Uint8Array(passBuffer), {
       headers: {
         'Content-Type': 'application/vnd.apple.pkpass',
-        'Content-Disposition': 'attachment; filename="psfc-member-card.pkpass"',
+        'Content-Disposition': 'inline; filename="psfc-member-card.pkpass"',
+        'Cache-Control': 'no-store',
       },
     });
   } catch (error) {
