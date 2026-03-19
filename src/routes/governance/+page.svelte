@@ -16,23 +16,6 @@
     };
   } = $props();
 
-  function formatTimestamp(value: string | null): string {
-    if (!value) {
-      return 'Unavailable';
-    }
-    const date = new Date(value);
-    if (Number.isNaN(date.getTime())) {
-      return 'Unavailable';
-    }
-    return date.toLocaleString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-      hour: 'numeric',
-      minute: '2-digit',
-    });
-  }
-
   function formatEventDateTime(value: string | null, timezone: string | null): string {
     if (!value || !timezone) {
       return 'Date unavailable';
@@ -66,20 +49,6 @@
 <div class="mx-auto w-full max-w-3xl px-4 pb-16">
   <div class="py-6">
     <h1 class="text-2xl font-bold text-zinc-900">Governance</h1>
-    <p class="mt-1 text-sm text-zinc-600">
-      Current and pending agenda items for Park Slope Food Coop general meetings.
-    </p>
-    <div class="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2 text-xs text-zinc-500">
-      <span>Last updated: {formatTimestamp(data.lastUpdated)}</span>
-      <a
-        href={data.sourceUrl}
-        target="_blank"
-        rel="noopener noreferrer"
-        class="font-medium text-zinc-700 underline decoration-zinc-300 underline-offset-2 hover:text-black"
-      >
-        View source PDF
-      </a>
-    </div>
   </div>
 
   {#if data.error}
@@ -139,26 +108,23 @@
   {:else}
     <div class="space-y-4">
       {#each data.items as item}
-        <article class="rounded-xl border border-zinc-200 bg-white p-4">
-          <dl class="space-y-3">
-            <div>
-              <dt class="text-xs font-semibold tracking-[0.08em] text-zinc-500 uppercase">Agenda Item Number</dt>
-              <dd class="mt-1 text-sm text-zinc-900">{item.agendaItemNumber}</dd>
+        <a
+          href={data.sourceUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          class="block rounded-xl border border-zinc-200 bg-white p-4 transition-colors hover:border-zinc-400"
+        >
+          <div class="flex items-start gap-3">
+            <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-amber-100 text-xl">⚠️</div>
+            <div class="min-w-0 flex-1">
+              <p class="font-semibold text-zinc-900">
+                {item.agendaItemNumber} · {item.subject}
+              </p>
+              <p class="mt-1 text-sm text-zinc-400">{item.submittedRevisionDate || 'Unavailable'}</p>
+              <p class="mt-2 text-sm text-zinc-700">{item.discussion || '—'}</p>
             </div>
-            <div>
-              <dt class="text-xs font-semibold tracking-[0.08em] text-zinc-500 uppercase">Submitted/Revision Date</dt>
-              <dd class="mt-1 text-sm text-zinc-900">{item.submittedRevisionDate || 'Unavailable'}</dd>
-            </div>
-            <div>
-              <dt class="text-xs font-semibold tracking-[0.08em] text-zinc-500 uppercase">Subject</dt>
-              <dd class="mt-1 text-sm text-zinc-900">{item.subject}</dd>
-            </div>
-            <div>
-              <dt class="text-xs font-semibold tracking-[0.08em] text-zinc-500 uppercase">Discussion</dt>
-              <dd class="mt-1 text-sm text-zinc-900">{item.discussion || '—'}</dd>
-            </div>
-          </dl>
-        </article>
+          </div>
+        </a>
       {/each}
     </div>
   {/if}
