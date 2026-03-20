@@ -49,9 +49,9 @@ function getS3Client(): S3Client {
     return s3Client;
   }
 
-  const forcePathStyle = optionalPrivateEnv.AWS_S3_FORCE_PATH_STYLE === 'true';
-  const endpoint = optionalPrivateEnv.S3_ENDPOINT;
-  const sessionToken = optionalPrivateEnv.AWS_SESSION_TOKEN;
+  const forcePathStyle = optionalPrivateEnv['AWS_S3_FORCE_PATH_STYLE'] === 'true';
+  const endpoint = optionalPrivateEnv['S3_ENDPOINT'];
+  const sessionToken = optionalPrivateEnv['AWS_SESSION_TOKEN'];
 
   s3Client = new S3Client({
     region: AWS_REGION,
@@ -75,7 +75,7 @@ function encodeS3Key(pathname: string): string {
 }
 
 function getSignedUrlTtlSeconds(): number {
-  const raw = optionalPrivateEnv.S3_SIGNED_URL_TTL_SECONDS;
+  const raw = optionalPrivateEnv['S3_SIGNED_URL_TTL_SECONDS'];
   if (!raw) {
     return DEFAULT_SIGNED_URL_TTL_SECONDS;
   }
@@ -87,7 +87,7 @@ function getSignedUrlTtlSeconds(): number {
 }
 
 async function getObjectUrl(pathname: string): Promise<string> {
-  const publicBaseUrl = optionalPrivateEnv.S3_PUBLIC_BASE_URL;
+  const publicBaseUrl = optionalPrivateEnv['S3_PUBLIC_BASE_URL'];
   if (publicBaseUrl) {
     return `${publicBaseUrl.replace(/\/+$/, '')}/${encodeS3Key(pathname)}`;
   }

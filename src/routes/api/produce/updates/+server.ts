@@ -52,8 +52,8 @@ async function loadParquetNameDateRows(
         break;
       }
 
-      const name = parseName(row.name);
-      const date = parseIsoDate(row.date);
+      const name = parseName(row['name']);
+      const date = parseIsoDate(row['date']);
       if (!name || !date) {
         continue;
       }

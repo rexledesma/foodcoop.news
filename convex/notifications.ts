@@ -1,7 +1,7 @@
 import { components, internal } from './_generated/api';
 import { httpAction, type ActionCtx } from './_generated/server';
 
-const cronSecret = process.env.CRON_SECRET;
+const cronSecret = process.env['CRON_SECRET'];
 
 type NotificationPayload = {
   title: string;
@@ -16,7 +16,7 @@ type PushSubscriptionWithKeys = {
 };
 
 function parseAllowedNotificationEmails(): string[] {
-  return (process.env.PUBLIC_NOTIFICATIONS_ALLOWED_EMAILS ?? '')
+  return (process.env['PUBLIC_NOTIFICATIONS_ALLOWED_EMAILS'] ?? '')
     .split(',')
     .map((email): string => email.trim())
     .filter(Boolean);

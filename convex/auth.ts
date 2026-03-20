@@ -8,13 +8,13 @@ import { internalMutation, query } from './_generated/server';
 import { betterAuth } from 'better-auth/minimal';
 import authConfig from './auth.config';
 
-const siteUrl = process.env.PUBLIC_SITE_URL!;
-const convexSiteUrl = process.env.PUBLIC_CONVEX_SITE_URL!;
+const siteUrl = process.env['PUBLIC_SITE_URL']!;
+const convexSiteUrl = process.env['PUBLIC_CONVEX_SITE_URL']!;
 export const authComponent = createClient<DataModel>(components.betterAuth);
 const allowedUsersNotificationRoute = '/notify-allowed-users';
 
 function parseTrustedOriginsEnv(): string[] {
-  return (process.env.TRUSTED_ORIGINS ?? '')
+  return (process.env['TRUSTED_ORIGINS'] ?? '')
     .split(',')
     .map((origin): string => origin.trim())
     .filter(Boolean);
@@ -25,7 +25,7 @@ function isLocalhostOrigin(origin: string): boolean {
 }
 
 async function sendSignupNotification(user: { email: string; name: string }): Promise<void> {
-  const authSecret = process.env.CRON_SECRET;
+  const authSecret = process.env['CRON_SECRET'];
   if (!authSecret) {
     console.warn('Signup notification skipped: missing CRON_SECRET in Convex environment.');
     return;

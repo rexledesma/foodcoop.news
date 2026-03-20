@@ -123,8 +123,8 @@ function toDiscoverNews(item: SerializedFeedItem): DiscoverNewsItem | null {
       return null;
     }
 
-    const newArrivalsCount = Array.isArray(data.newArrivals) ? data.newArrivals.length : 0;
-    const outOfStockCount = Array.isArray(data.outOfStock) ? data.outOfStock.length : 0;
+    const newArrivalsCount = Array.isArray(data['newArrivals']) ? data['newArrivals'].length : 0;
+    const outOfStockCount = Array.isArray(data['outOfStock']) ? data['outOfStock'].length : 0;
 
     return {
       title: `Produce update: ${newArrivalsCount} new arrivals, ${outOfStockCount} out of stock`,
@@ -162,14 +162,18 @@ function toDiscoverNews(item: SerializedFeedItem): DiscoverNewsItem | null {
   }
 
   const url =
-    typeof data.link === 'string' ? data.link : typeof data.url === 'string' ? data.url : '';
+    typeof data['link'] === 'string'
+      ? data['link']
+      : typeof data['url'] === 'string'
+        ? data['url']
+        : '';
   if (!url) {
     return null;
   }
 
   const description =
-    typeof data.description === 'string' && data.description.length > 0
-      ? data.description
+    typeof data['description'] === 'string' && data['description'].length > 0
+      ? data['description']
       : undefined;
 
   return {

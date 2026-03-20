@@ -90,8 +90,8 @@ function resolveSheetConfig(): {
     throw new Error('GOOGLE_SHEETS_CLIENT_EMAIL and GOOGLE_SHEETS_PRIVATE_KEY are required.');
   }
 
-  const spreadsheetId = env.GOVERNANCE_SHEET_ID?.trim() || DEFAULT_SHEET_ID;
-  const range = env.GOVERNANCE_SHEET_RANGE?.trim() || DEFAULT_SHEET_RANGE;
+  const spreadsheetId = env['GOVERNANCE_SHEET_ID']?.trim() || DEFAULT_SHEET_ID;
+  const range = env['GOVERNANCE_SHEET_RANGE']?.trim() || DEFAULT_SHEET_RANGE;
 
   return {
     spreadsheetId,

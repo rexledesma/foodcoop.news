@@ -119,17 +119,17 @@ function parseParquetUnit(value: unknown): ProduceItem['unit'] {
 
 function toProduceItemFromParquetRow(row: Record<string, unknown>): ProduceItem {
   return {
-    id: parseParquetString(row.id),
-    date: parseParquetString(row.date),
-    name: parseParquetString(row.name),
-    price: parseParquetNumber(row.price),
-    unit: parseParquetUnit(row.unit),
-    isOrganic: parseParquetBoolean(row.is_organic),
-    isIpm: parseParquetBoolean(row.is_ipm),
-    isWaxed: parseParquetBoolean(row.is_waxed),
-    isLocal: parseParquetBoolean(row.is_local),
-    isHydroponic: parseParquetBoolean(row.is_hydroponic),
-    origin: parseParquetString(row.origin),
+    id: parseParquetString(row['id']),
+    date: parseParquetString(row['date']),
+    name: parseParquetString(row['name']),
+    price: parseParquetNumber(row['price']),
+    unit: parseParquetUnit(row['unit']),
+    isOrganic: parseParquetBoolean(row['is_organic']),
+    isIpm: parseParquetBoolean(row['is_ipm']),
+    isWaxed: parseParquetBoolean(row['is_waxed']),
+    isLocal: parseParquetBoolean(row['is_local']),
+    isHydroponic: parseParquetBoolean(row['is_hydroponic']),
+    origin: parseParquetString(row['origin']),
   };
 }
 
