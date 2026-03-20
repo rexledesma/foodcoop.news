@@ -3,9 +3,12 @@
   "compilerOptions": {
     "allowJs": true,
     "esModuleInterop": true,
+    "noFallthroughCasesInSwitch": true,
+    "noImplicitReturns": true,
+    "noUncheckedIndexedAccess": true,
+    "useUnknownInCatchVariables": true,
     "resolveJsonModule": true,
     "skipLibCheck": true,
-    "strict": true,
-    "noUncheckedIndexedAccess": true
+    "strict": true
   }
 }
