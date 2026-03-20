@@ -175,10 +175,6 @@
     );
   }
 
-  function isSourceFilterType(value: string): value is SourceFilterType {
-    return SOURCE_FILTER_OPTIONS.some((option) : boolean => option.value === value);
-  }
-
   function formatRelativeTime(date: Date): string | null {
     const now = new Date();
     const diffMs = now.getTime() - date.getTime();

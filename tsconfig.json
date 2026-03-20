@@ -5,6 +5,8 @@
     "esModuleInterop": true,
     "noFallthroughCasesInSwitch": true,
     "noImplicitReturns": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
     "noUncheckedIndexedAccess": true,
     "useUnknownInCatchVariables": true,
     "resolveJsonModule": true,

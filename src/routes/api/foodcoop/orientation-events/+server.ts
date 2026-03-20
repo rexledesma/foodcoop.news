@@ -129,8 +129,6 @@ function parseOrientationEvents(html: string): FoodcoopEvent[] {
     if (appointmentMatch) {
       const weekday = appointmentMatch[1];
       const appointmentDate = appointmentMatch[2] ?? releaseDateText;
-      const appointmentsCount = appointmentMatch[3];
-      const appointmentTime = appointmentMatch[4];
       title = `Orientation registration opens (${weekday} ${appointmentDate})`;
       description = `Schedule an in-person orientation to join the Park Slope Food Coop on ${weekday} ${appointmentDate}.`;
       appointmentIdPart = appointmentDate;

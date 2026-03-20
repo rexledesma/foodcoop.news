@@ -792,11 +792,6 @@
     return filter ? quickFilterPillClass(filter) : 'bg-zinc-900 text-white';
   }
 
-  function shouldShowViewFilterPill(): boolean {
-    if (produceFilterDisplayName) {return false;}
-    return true;
-  }
-
   function activeResultFilterLabel(): string {
     if (produceFilterDisplayName) {return produceFilterDisplayName;}
     const filter = activeViewFilter();
@@ -937,7 +932,7 @@
     return 'bg-zinc-100 text-zinc-700';
   }
 
-  function periodOptionPillClass(period: TimePeriod) : string {
+  function periodOptionPillClass(_period: TimePeriod) : string {
     return 'bg-blue-100 text-blue-800';
   }
 

@@ -15,8 +15,6 @@
     showSticky: boolean;
     sessionPending: boolean;
     isSignedIn: boolean;
-    signupHref: string;
-    fullName: string;
     memberId: string;
     displayFullName: string;
     isSaving: boolean;
@@ -69,8 +67,6 @@
   let showSticky = $state(true);
   let sessionPending = $state(true);
   let isSignedIn = $state(false);
-  let signupHref = $state('/signup?next=%2Fintegrations');
-  let fullName = $state('');
   let memberId = $state('');
   let displayFullName = $state('');
   let isSaving = $state(false);
@@ -111,7 +107,6 @@
   let onSendTestNotification = $state<() => Promise<void>>(async () : Promise<void> => {});
 
   let headerRef = $state<HTMLDivElement | null>(null);
-  let cardRef = $state<HTMLDivElement | null>(null);
   let shineRef = $state<HTMLDivElement | null>(null);
 
   let paywallEmail = $state('');
@@ -159,8 +154,6 @@
     showSticky = next.showSticky;
     sessionPending = next.sessionPending;
     isSignedIn = next.isSignedIn;
-    signupHref = next.signupHref;
-    fullName = next.fullName;
     memberId = next.memberId;
     displayFullName = next.displayFullName;
     isSaving = next.isSaving;
@@ -296,7 +289,6 @@
 
           <div class="w-full max-w-sm" style="perspective: 1000px;">
             <div
-              bind:this={cardRef}
               class="relative aspect-[1.586/1] w-full overflow-hidden rounded-2xl shadow-xl transition-transform duration-300 ease-out hover:shadow-2xl"
               style="background-color: rgb(255, 246, 220); background-image: url('/assets/coop-strip.png'); background-position: center 12%; background-repeat: no-repeat; background-size: 20% auto; transform-style: preserve-3d;"
               role="img"

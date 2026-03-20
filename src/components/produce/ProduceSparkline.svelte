@@ -250,8 +250,6 @@
       baselineYOverride === undefined
         ? defaultBaselineY
         : clamp(baselineYOverride, padding, height + padding);
-    const periodStartX =
-      (totalMs === 0 ? width / 2 : ((periodStartMs - scaleStartMs) / totalMs) * width) + padding;
 
     const periodStartPoint = (() : SparklinePoint | null => {
       if (normalized.length < 2) {return null;}
