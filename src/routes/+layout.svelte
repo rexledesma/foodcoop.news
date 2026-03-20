@@ -1,7 +1,8 @@
 <script lang="ts">
   import { goto, preloadData } from '$app/navigation';
   import '../styles/globals.css';
-  import { onMount } from 'svelte';
+  import { onMount, untrack } from 'svelte';
+  import type { Snippet } from 'svelte';
   import type { Action } from 'svelte/action';
   import { page } from '$app/stores';
   import Navigation from '@/components/Navigation.svelte';
@@ -51,9 +52,9 @@
   const BRAND_FONT_FAMILY =
     "'DIN 1451 Std Engschrift', 'DIN 1451 Engschrift', Bahnschrift, 'DIN Alternate', 'Franklin Gothic Medium', sans-serif";
 
-  export let data = {} as LayoutData;
+  let { data = {} as LayoutData, children } = $props<{ data: LayoutData; children: Snippet }>();
 
-  let state = {
+  const initialState = {
     pathname: initialPathname,
     loginHref: withNextParam('/login', initialPathname),
     showSticky: true,
@@ -68,11 +69,11 @@
     swipeProgress: 0,
     isSwipeActive: false,
     onToggleDropdown: () : void => {
-      state = { ...state, isDropdownOpen: !state.isDropdownOpen };
+      navState = { ...navState, isDropdownOpen: !navState.isDropdownOpen };
       dispatchState();
     },
     onCloseDropdown: () : void => {
-      state = { ...state, isDropdownOpen: false };
+      navState = { ...navState, isDropdownOpen: false };
       dispatchState();
     },
     onSignOut: async () : Promise<void> => {
@@ -82,32 +83,23 @@
     },
   };
 
-  const initialState = state;
-  let documentTitle = SITE_NAME;
-  let pageDescription = SITE_DESCRIPTION;
-  let canonicalUrl = '';
-  let ogUrl = '';
-  let ogImageUrl = '';
-  let siteOrigin = '';
-  let websiteJsonLd = '';
-  let organizationJsonLd = '';
-  let isPwaInstallReady = false;
-  let pwaInstallElement: (HTMLElement & { showDialog?: (force?: boolean) => void; manualHowTo?: boolean }) | null = null;
-  let shouldForcePwaInstallDialog = false;
-  let shouldExpandPwaInstallHowTo = false;
-  let hasAutoShownPwaInstall = false;
-  let shouldOpenPwaInstallDialog = false;
-  let hasDismissedPwaInstall = false;
-  let isSwipePreviewMode = false;
-  let swipePreviewUrl = '';
-  let swipePreviewOffsetX = 0;
-  let swipeForegroundOffsetX = 0;
-  let isSwipeDragging = false;
-  let isSwipeSnapAnimating = false;
+  let navState = $state(initialState);
+  let isPwaInstallReady = $state(false);
+  let pwaInstallElement: (HTMLElement & { showDialog?: (force?: boolean) => void; manualHowTo?: boolean }) | null = $state(null);
+  let shouldForcePwaInstallDialog = $state(false);
+  let shouldExpandPwaInstallHowTo = $state(false);
+  let hasAutoShownPwaInstall = $state(false);
+  let shouldOpenPwaInstallDialog = $state(false);
+  let hasDismissedPwaInstall = $state(false);
+  let swipePreviewUrl = $state('');
+  let swipePreviewOffsetX = $state(0);
+  let swipeForegroundOffsetX = $state(0);
+  let isSwipeDragging = $state(false);
+  let isSwipeSnapAnimating = $state(false);
   let swipeSnapTimer: ReturnType<typeof setTimeout> | null = null;
   let swipeCommitTimer: ReturnType<typeof setTimeout> | null = null;
   let authMetadataInFlight: Promise<AuthNavMetadata> | null = null;
-  let unauthenticatedFooterElement: HTMLElement | null = null;
+  let unauthenticatedFooterElement: HTMLElement | null = $state(null);
 
   function setUnauthenticatedFooterHeight(height: number): void {
     if (typeof document === 'undefined') {return;}
@@ -158,7 +150,7 @@
 
   function dispatchState() : void {
     if (typeof window === 'undefined') {return;}
-    window.dispatchEvent(new CustomEvent(`navigation-state:update:${channel}`, { detail: state }));
+    window.dispatchEvent(new CustomEvent(`navigation-state:update:${channel}`, { detail: navState }));
   }
 
   function decodeParam(value: string | null): string {
@@ -225,9 +217,9 @@
   }
 
   function resetNavSwipeState() : void {
-    if (!state.isSwipeActive && state.swipeFromPath === null && state.swipeToPath === null) {return;}
-    state = {
-      ...state,
+    if (!navState.isSwipeActive && navState.swipeFromPath === null && navState.swipeToPath === null) {return;}
+    navState = {
+      ...navState,
       swipeFromPath: null,
       swipeToPath: null,
       swipeProgress: 0,
@@ -338,8 +330,8 @@
   }
 
   function applyAuthMetadata(metadata: AuthNavMetadata) : void {
-    state = {
-      ...state,
+    navState = {
+      ...navState,
       pathname: $page.url.pathname,
       loginHref: withNextParam('/login', $page.url.pathname),
       isPending: false,
@@ -392,8 +384,8 @@
       const fresh = await fetchAuthMetadata();
       applyAuthMetadata(fresh);
     } catch {
-      state = {
-        ...state,
+      navState = {
+        ...navState,
         pathname: $page.url.pathname,
         loginHref: withNextParam('/login', $page.url.pathname),
         isPending: false,
@@ -402,17 +394,20 @@
     }
   }
 
-  $: if (typeof window !== 'undefined') {
+  $effect(() : void => {
+    if (typeof window === 'undefined') {return;}
     const pathname = $page.url.pathname;
-    state = {
-      ...state,
-      pathname,
-      loginHref: withNextParam('/login', pathname),
-    };
-    dispatchState();
-  }
+    untrack(() : void => {
+      navState = {
+        ...navState,
+        pathname,
+        loginHref: withNextParam('/login', pathname),
+      };
+      dispatchState();
+    });
+  });
 
-  $: isSwipePreviewMode = $page.url.searchParams.get('swipePreview') === '1';
+  const isSwipePreviewMode = $derived($page.url.searchParams.get('swipePreview') === '1');
 
   onMount(() : (() => void) | undefined => {
     if (isSwipePreviewMode) {
@@ -430,7 +425,7 @@
 
     const stickyVisibilityHandler = (event: Event) : void => {
       if (!(event instanceof CustomEvent)) {return;}
-      state = { ...state, showSticky: Boolean(event.detail) };
+      navState = { ...navState, showSticky: Boolean(event.detail) };
       dispatchState();
     };
     const sidebarOpenedRevalidateHandler = () : void => {
@@ -440,7 +435,7 @@
     window.addEventListener('sticky-visibility', stickyVisibilityHandler as EventListener);
     window.addEventListener('navigation:sidebar-opened', sidebarOpenedRevalidateHandler);
 
-    state = { ...state, showSticky: getCurrentStickyVisibility() };
+    navState = { ...navState, showSticky: getCurrentStickyVisibility() };
     dispatchState();
     void hydrateNavState();
 
@@ -563,8 +558,8 @@
         const swipeFromPath = normalizePathname(window.location.pathname);
         const swipeToPath = swipeActiveTargetRoute ?? getSwipeTarget(step);
         if (!swipeToPath) {return;}
-        state = {
-          ...state,
+        navState = {
+          ...navState,
           swipeFromPath,
           swipeToPath: normalizePathname(swipeToPath),
           swipeProgress: progress,
@@ -583,8 +578,8 @@
         isSwipeSnapAnimating = true;
         swipePreviewOffsetX = 0;
         swipeForegroundOffsetX = step * Math.max(window.innerWidth, 1);
-        state = {
-          ...state,
+        navState = {
+          ...navState,
           swipeFromPath: normalizePathname(window.location.pathname),
           swipeToPath: normalizePathname(route),
           swipeProgress: 1,
@@ -643,39 +638,41 @@
     localStorage.setItem(PWA_DISMISSED_STORAGE_KEY, 'true');
   }
 
-  $: if (typeof window !== 'undefined') {
+  $effect(() : void => {
+    if (typeof window === 'undefined') {return;}
     setStickyVisibilityRoute($page.url.pathname);
-  }
+  });
 
-  $: if (shouldOpenPwaInstallDialog && isPwaInstallReady && pwaInstallElement?.showDialog) {
+  $effect(() : void => {
+    if (!shouldOpenPwaInstallDialog || !isPwaInstallReady || !pwaInstallElement?.showDialog) {return;}
     pwaInstallElement.manualHowTo = shouldExpandPwaInstallHowTo;
     pwaInstallElement.showDialog(shouldForcePwaInstallDialog);
     shouldOpenPwaInstallDialog = false;
     shouldForcePwaInstallDialog = false;
     shouldExpandPwaInstallHowTo = false;
-  }
+  });
 
-  $: documentTitle = computePageTitle($page.url.pathname, $page.url.searchParams);
-  $: pageDescription = computePageDescription($page.url.pathname, $page.url.searchParams);
-  $: canonicalUrl = `${data.canonicalOrigin}${$page.url.pathname}`;
-  $: ogUrl = canonicalUrl;
-  $: ogImageUrl = `${data.canonicalOrigin}${OG_IMAGE_PATH}`;
-  $: siteOrigin = data.canonicalOrigin;
-  $: websiteJsonLd = serializeJsonLd({
+  const documentTitle = $derived(computePageTitle($page.url.pathname, $page.url.searchParams));
+  const pageDescription = $derived(computePageDescription($page.url.pathname, $page.url.searchParams));
+  const canonicalUrl = $derived(`${data.canonicalOrigin}${$page.url.pathname}`);
+  const ogUrl = $derived(canonicalUrl);
+  const siteOrigin = $derived(data.canonicalOrigin);
+  const ogImageUrl = $derived(`${siteOrigin}${OG_IMAGE_PATH}`);
+  const websiteJsonLd = $derived(serializeJsonLd({
     '@context': 'https://schema.org',
     '@type': 'WebSite',
     name: SITE_NAME,
     url: siteOrigin,
-  });
-  $: organizationJsonLd = serializeJsonLd({
+  }));
+  const organizationJsonLd = $derived(serializeJsonLd({
     '@context': 'https://schema.org',
     '@type': 'Organization',
     name: SITE_NAME,
     url: siteOrigin,
     logo: `${siteOrigin}${OG_IMAGE_PATH}`,
-  });
-  $: showUnauthenticatedFooter = !isSwipePreviewMode && !state.isPending && !state.isAuthenticated && ['/', '/produce'].includes($page.url.pathname);
-  $: signupHref = getSignupHref(state.loginHref);
+  }));
+  const showUnauthenticatedFooter = $derived(!isSwipePreviewMode && !navState.isPending && !navState.isAuthenticated && ['/', '/produce'].includes($page.url.pathname));
+  const signupHref = $derived(getSignupHref(navState.loginHref));
 </script>
 
 <svelte:head>
@@ -729,7 +726,7 @@
     class="relative z-10 bg-white transition-transform ease-out motion-reduce:transition-none"
     style={`transform: translate3d(${swipeForegroundOffsetX}px, 0, 0); transition-duration: ${getSwipeTransitionDurationMs()}ms;`}
   >
-    <slot />
+    {@render children()}
   </div>
 </div>
 
@@ -758,7 +755,7 @@
           Create account
         </a>
         <a
-          href={state.loginHref}
+          href={navState.loginHref}
           class="rounded-lg border border-zinc-300 px-3 py-2 text-sm font-medium text-zinc-800 transition-colors hover:bg-zinc-100"
         >
           Sign in
@@ -771,7 +768,7 @@
 {#if isPwaInstallReady && !isSwipePreviewMode}
   <pwa-install
     bind:this={pwaInstallElement}
-    on:pwa-user-choice-result-event={handlePwaUserChoiceResult}
+    onpwa-user-choice-result-event={handlePwaUserChoiceResult}
     install-description={PWA_INSTALL_DESCRIPTION}
     manual-apple
     manual-chrome
