@@ -276,7 +276,7 @@
       return `Produce · ${SITE_NAME}`;
     }
 
-    if (pathname === '/discover' || pathname === '/') {return `News · ${SITE_NAME}`;}
+    if (pathname === '/') {return `News · ${SITE_NAME}`;}
     if (pathname === '/governance') {return `Governance · ${SITE_NAME}`;}
     if (pathname === '/integrations') {return `Integrations · ${SITE_NAME}`;}
     if (pathname === '/about') {return `About · ${SITE_NAME}`;}
@@ -302,7 +302,7 @@
       return 'Explore price history, trends, and updates from Park Slope Food Coop produce inventory.';
     }
 
-    if (pathname === '/discover' || pathname === '/') {
+    if (pathname === '/') {
       return 'News from Park Slope Food Coop, including events, produce, and community updates in one feed.';
     }
 

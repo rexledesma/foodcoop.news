@@ -1,4 +1,4 @@
-const ALLOWED_NEXT_PATHS = new Set(['/', '/discover', '/produce', '/integrations', '/about']);
+const ALLOWED_NEXT_PATHS = new Set(['/', '/produce', '/integrations', '/about']);
 
 function getPathname(path: string): string {
   try {
