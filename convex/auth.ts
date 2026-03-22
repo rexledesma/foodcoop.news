@@ -1,11 +1,12 @@
 import { createClient, type GenericCtx } from '@convex-dev/better-auth';
 import { convex } from '@convex-dev/better-auth/plugins';
-import { v } from 'convex/values';
+import { betterAuth } from 'better-auth/minimal';
 import type { GenericActionCtx } from 'convex/server';
+import { v } from 'convex/values';
+
 import { components, internal } from './_generated/api';
 import type { DataModel } from './_generated/dataModel';
 import { internalMutation, query } from './_generated/server';
-import { betterAuth } from 'better-auth/minimal';
 import authConfig from './auth.config';
 
 const siteUrl = process.env['PUBLIC_SITE_URL']!;

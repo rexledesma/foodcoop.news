@@ -1,11 +1,12 @@
+import { api } from '@convex/_generated/api';
+import { z } from 'zod';
+
 import {
   fetchAuthMutationFromHeaders,
   fetchAuthQueryFromHeaders,
   isUnauthenticatedError,
 } from '@/lib/auth';
 import { parseJsonBody, validatedJson } from '@/lib/http-validation';
-import { z } from 'zod';
-import { api } from '@convex/_generated/api';
 
 const saveSubscriptionRequestSchema = z.object({
   endpoint: z.string().min(1),

@@ -11,9 +11,9 @@ import {
   APPLE_TEAM_ID,
   APPLE_WWDR_CERT_BASE64,
 } from '$env/static/private';
-import coopIconAsset from '$lib/assets/coop.png';
 import coopLogoAsset from '$lib/assets/coop-padded.png';
 import coopStripAsset from '$lib/assets/coop-strip.png';
+import coopIconAsset from '$lib/assets/coop.png';
 import { PKPass } from 'passkit-generator';
 import sharp from 'sharp';
 

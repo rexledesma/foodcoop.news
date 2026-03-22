@@ -1,4 +1,5 @@
 import { decode } from 'html-entities';
+
 import type { FoodCoopCooksArticle } from '@/lib/types';
 
 const FOODCOOP_COOKS_RSS_URL = 'https://foodcoopcooks.org/feed/';

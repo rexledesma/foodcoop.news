@@ -1,3 +1,5 @@
+import type { FeedItem } from '@/lib/discover-feed';
+import { getFeedItemKey } from '@/lib/discover-feed';
 import type {
   EventbriteEvent,
   FeedPost,
@@ -8,8 +10,6 @@ import type {
   GazetteDeadlineEvent,
   ProduceEvent,
 } from '@/lib/types';
-import type { FeedItem } from '@/lib/discover-feed';
-import { getFeedItemKey } from '@/lib/discover-feed';
 
 const COOP_BLUESKY_HANDLE = 'foodcoop.bsky.social';
 const SOURCE_FETCH_TIMEOUT_MS = 4500;

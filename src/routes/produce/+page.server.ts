@@ -1,5 +1,5 @@
-import type { ProduceEvent } from '@/lib/types';
 import type { PageServerLoad } from './$types';
+import type { ProduceEvent } from '@/lib/types';
 
 type ProduceJsonLdItem = {
   name: string;

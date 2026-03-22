@@ -1,4 +1,5 @@
 import * as cheerio from 'cheerio';
+
 import type { FoodcoopEvent } from '@/lib/types';
 
 const ORIENTATION_SOURCE_URL = 'https://ort.foodcoop.com/home/';

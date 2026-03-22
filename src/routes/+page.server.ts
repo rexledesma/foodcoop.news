@@ -1,5 +1,5 @@
-import type { EventbriteEvent, FoodcoopEvent } from '@/lib/types';
 import type { PageServerLoad } from './$types';
+import type { EventbriteEvent, FoodcoopEvent } from '@/lib/types';
 
 const DISCOVER_EVENT_SOURCES =
   'foodcoopcooks-events,wordsprouts-events,concert-series-events,gm-events,foodcoop-orientation-events';

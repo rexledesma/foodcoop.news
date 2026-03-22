@@ -1,7 +1,8 @@
+import { api } from '@convex/_generated/api';
+
+import { generatePKPass } from '@/lib/apple-pass';
 import { fetchAuthQueryFromHeaders } from '@/lib/auth';
 import { sendOpsNotification } from '@/lib/ops-notifications';
-import { api } from '@convex/_generated/api';
-import { generatePKPass } from '@/lib/apple-pass';
 
 export async function GET({ request }: { request: Request }) {
   try {

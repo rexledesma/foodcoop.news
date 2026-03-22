@@ -3,9 +3,9 @@
  * Uses JWT-based Generic passes with PDF417 barcode.
  */
 
-import { randomUUID } from 'crypto';
 import { dev } from '$app/environment';
 import { GOOGLE_APPLICATION_CREDENTIALS, GOOGLE_WALLET_ISSUER_ID } from '$env/static/private';
+import { randomUUID } from 'crypto';
 import jwt from 'jsonwebtoken';
 
 const ISSUER_ID = GOOGLE_WALLET_ISSUER_ID;

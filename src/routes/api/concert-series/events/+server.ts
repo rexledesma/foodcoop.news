@@ -1,6 +1,7 @@
+import { EVENTBRITE_API_KEY } from '$env/static/private';
+
 import { fetchEventbriteEventsById } from '@/lib/eventbrite-events';
 import type { EventbriteEvent } from '@/lib/types';
-import { EVENTBRITE_API_KEY } from '$env/static/private';
 
 const EVENTBRITE_ORGANIZER_PAGE_URL =
   'https://www.eventbrite.com/o/park-slope-food-coop-concert-series-111655166091';

@@ -1,5 +1,6 @@
-import { list } from '@/lib/s3-storage';
 import { ParquetReader } from '@dsnp/parquetjs';
+
+import { list } from '@/lib/s3-storage';
 import type { ProduceEvent } from '@/lib/types';
 
 const CACHE_DURATION = 5 * 60 * 1000;

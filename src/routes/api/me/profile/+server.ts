@@ -1,3 +1,6 @@
+import { api } from '@convex/_generated/api';
+import { z } from 'zod';
+
 import {
   fetchAuthMutationFromHeaders,
   fetchAuthQueryFromHeaders,
@@ -5,8 +8,6 @@ import {
 } from '@/lib/auth';
 import { parseJsonBody, validatedJson } from '@/lib/http-validation';
 import { sendOpsNotification } from '@/lib/ops-notifications';
-import { z } from 'zod';
-import { api } from '@convex/_generated/api';
 
 const updateProfileRequestSchema = z.object({
   memberName: z.string().trim().optional(),

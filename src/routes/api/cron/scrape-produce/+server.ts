@@ -1,8 +1,9 @@
-import { put } from '@/lib/s3-storage';
-import { parseProduceHtml } from '@/lib/produce-parser';
+import { CRON_SECRET } from '$env/static/private';
+
 import { invalidateProduceMetadataCache } from '@/lib/produce-metadata-cache';
 import { regenerateYtdDerivedParquet, upsertYearParquetForDate } from '@/lib/produce-parquet-utils';
-import { CRON_SECRET } from '$env/static/private';
+import { parseProduceHtml } from '@/lib/produce-parser';
+import { put } from '@/lib/s3-storage';
 
 // https://vercel.com/docs/cron-jobs/manage-cron-jobs#securing-cron-jobs
 export async function GET({ request }: { request: Request }): Promise<Response> {

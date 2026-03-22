@@ -1,4 +1,5 @@
 import { PUBLIC_SITE_URL } from '$env/static/public';
+
 import type { LayoutServerLoad } from './$types';
 
 const DEFAULT_CANONICAL_ORIGIN = 'https://foodcoop.news';

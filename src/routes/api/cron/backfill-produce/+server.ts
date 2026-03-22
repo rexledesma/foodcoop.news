@@ -1,10 +1,11 @@
-import { list } from '@/lib/s3-storage';
+import { CRON_SECRET } from '$env/static/private';
+
 import { invalidateProduceMetadataCache } from '@/lib/produce-metadata-cache';
 import {
   regenerateDerivedProduceParquets,
   regenerateMonthParquet,
 } from '@/lib/produce-parquet-utils';
-import { CRON_SECRET } from '$env/static/private';
+import { list } from '@/lib/s3-storage';
 
 // POST /api/cron/backfill-produce
 // Regenerates all monthly parquet files from stored HTML snapshots

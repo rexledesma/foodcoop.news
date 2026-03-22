@@ -1,11 +1,12 @@
+import { DuckDBInstance, type DuckDBConnection } from '@duckdb/node-api';
 import { randomUUID } from 'node:crypto';
 import { unlink, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { DuckDBInstance, type DuckDBConnection } from '@duckdb/node-api';
-import { list } from '@/lib/s3-storage';
+
 import type { RequestHandler } from './$types';
 import type { ProduceDateRange, ProduceHistoryPoint, ProduceRow } from '@/lib/produce-types';
+import { list } from '@/lib/s3-storage';
 
 const FRESH_CACHE_DURATION_MS = 5 * 60 * 1000;
 const STALE_CACHE_DURATION_MS = 60 * 60 * 1000;

@@ -1,4 +1,5 @@
 import { decode } from 'html-entities';
+
 import type { GazetteArticle } from '@/lib/types';
 
 const GAZETTE_RSS_URL = 'https://linewaitersgazette.com/feed/';

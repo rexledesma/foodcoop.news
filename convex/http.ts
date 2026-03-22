@@ -1,4 +1,5 @@
 import { httpRouter } from 'convex/server';
+
 import { authComponent, createAuth } from './auth';
 import { notifyAllowedUsersHttp } from './notifications';
 

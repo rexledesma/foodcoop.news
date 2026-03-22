@@ -1,4 +1,5 @@
 import * as cheerio from 'cheerio';
+
 import type { FoodcoopEvent } from '@/lib/types';
 
 const GM_SOURCE_URL = 'https://www.foodcoop.com/';

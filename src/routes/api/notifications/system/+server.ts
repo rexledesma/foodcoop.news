@@ -1,8 +1,9 @@
-import webpush from 'web-push';
-import { z } from 'zod';
-import { parseJsonBody, validatedJson } from '@/lib/http-validation';
 import { CRON_SECRET, VAPID_PRIVATE_KEY, VAPID_SUBJECT } from '$env/static/private';
 import { PUBLIC_VAPID_PUBLIC_KEY } from '$env/static/public';
+import webpush from 'web-push';
+import { z } from 'zod';
+
+import { parseJsonBody, validatedJson } from '@/lib/http-validation';
 
 webpush.setVapidDetails(VAPID_SUBJECT, PUBLIC_VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY);
 

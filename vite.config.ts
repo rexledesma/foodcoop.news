@@ -9,6 +9,14 @@ export default defineConfig({
     trailingComma: 'all',
     printWidth: 100,
     tabWidth: 2,
+    sortImports: {
+      groups: [
+        ['builtin', 'external', 'subpath'],
+        ['internal', 'parent', 'sibling', 'index'],
+        'style',
+        'unknown',
+      ],
+    },
     experimentalTailwindcss: {},
     experimentalSortPackageJson: false,
     ignorePatterns: [

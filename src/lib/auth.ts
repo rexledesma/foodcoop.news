@@ -1,5 +1,5 @@
-import { getToken, type GetTokenOptions } from '@convex-dev/better-auth/utils';
 import { PUBLIC_CONVEX_SITE_URL, PUBLIC_CONVEX_URL } from '$env/static/public';
+import { getToken, type GetTokenOptions } from '@convex-dev/better-auth/utils';
 import { ConvexHttpClient } from 'convex/browser';
 import type { FunctionReference, FunctionReturnType, OptionalRestArgs } from 'convex/server';
 

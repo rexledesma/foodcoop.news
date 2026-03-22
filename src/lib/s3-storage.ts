@@ -1,3 +1,10 @@
+import { env as privateEnv } from '$env/dynamic/private';
+import {
+  AWS_ACCESS_KEY_ID,
+  AWS_REGION,
+  AWS_SECRET_ACCESS_KEY,
+  S3_BUCKET_NAME,
+} from '$env/static/private';
 import {
   DeleteObjectsCommand,
   GetObjectCommand,
@@ -6,13 +13,6 @@ import {
   PutObjectCommand,
   S3Client,
 } from '@aws-sdk/client-s3';
-import {
-  AWS_ACCESS_KEY_ID,
-  AWS_REGION,
-  AWS_SECRET_ACCESS_KEY,
-  S3_BUCKET_NAME,
-} from '$env/static/private';
-import { env as privateEnv } from '$env/dynamic/private';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 
 type ListOptions = {
