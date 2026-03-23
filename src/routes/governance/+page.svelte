@@ -115,7 +115,7 @@
           class="block rounded-xl border border-zinc-200 bg-white p-4 transition-colors hover:border-zinc-400"
         >
           <div class="flex items-start gap-3">
-            <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-amber-100 text-xl">⚠️</div>
+            <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-amber-100 text-xl">🔜</div>
             <div class="min-w-0 flex-1">
               <p class="font-semibold text-zinc-900">
                 {item.agendaItemNumber} · {item.subject}
