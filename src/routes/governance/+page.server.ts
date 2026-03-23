@@ -7,6 +7,20 @@ import {
 } from '@/lib/governance';
 
 const DEFAULT_GM_AGENDA_URL = 'https://www.foodcoop.com/gmagenda/';
+const FALLBACK_SOURCE_URL =
+  'https://www.foodcoop.com/wp-content/uploads/2026/02/2026_02_03_agenda_committee.pdf';
+
+type GovernancePagePayload = {
+  sourceUrl: string;
+  lastUpdated: string | null;
+  items: GovernancePendingAgendaItem[];
+  previousItems: GovernancePreviousAgendaItem[];
+  currentItems: string[];
+  currentAgendaUrl: string;
+  currentMeetingStartUtc: string | null;
+  currentMeetingTimezone: string | null;
+  error: string | null;
+};
 
 function collapseWhitespace(value: string): string {
   return value.replace(/\s+/g, ' ').trim();
@@ -91,20 +105,9 @@ function parseCurrentAgendaItemsFromDescription(description: string | undefined)
   return segmentedItems.length > 1 ? segmentedItems : [agendaItemsText];
 }
 
-export async function load({ fetch }: { fetch: typeof globalThis.fetch }): Promise<{
-  sourceUrl: string;
-  lastUpdated: string | null;
-  items: GovernancePendingAgendaItem[];
-  previousItems: GovernancePreviousAgendaItem[];
-  currentItems: string[];
-  currentAgendaUrl: string;
-  currentMeetingStartUtc: string | null;
-  currentMeetingTimezone: string | null;
-  error: string | null;
-}> {
-  const fallbackSourceUrl =
-    'https://www.foodcoop.com/wp-content/uploads/2026/02/2026_02_03_agenda_committee.pdf';
-
+async function loadGovernancePayload(
+  fetch: typeof globalThis.fetch,
+): Promise<GovernancePagePayload> {
   let currentItems: string[] = [];
   let currentAgendaUrl = DEFAULT_GM_AGENDA_URL;
   let currentMeetingStartUtc: string | null = null;
@@ -136,7 +139,7 @@ export async function load({ fetch }: { fetch: typeof globalThis.fetch }): Promi
     const payload: GovernanceApiPayload | null = parsedPayload.success ? parsedPayload.data : null;
 
     return {
-      sourceUrl: payload?.sourceUrl ?? fallbackSourceUrl,
+      sourceUrl: payload?.sourceUrl ?? FALLBACK_SOURCE_URL,
       lastUpdated: payload?.lastUpdated ?? null,
       items: payload?.items ?? [],
       previousItems: payload?.previousItems ?? [],
@@ -148,7 +151,7 @@ export async function load({ fetch }: { fetch: typeof globalThis.fetch }): Promi
     };
   } catch {
     return {
-      sourceUrl: fallbackSourceUrl,
+      sourceUrl: FALLBACK_SOURCE_URL,
       lastUpdated: null,
       items: [],
       previousItems: [],
@@ -159,4 +162,12 @@ export async function load({ fetch }: { fetch: typeof globalThis.fetch }): Promi
       error: 'Unable to load pending agenda items.',
     };
   }
+}
+
+export function load({ fetch }: { fetch: typeof globalThis.fetch }): {
+  governanceData: Promise<GovernancePagePayload>;
+} {
+  return {
+    governanceData: loadGovernancePayload(fetch),
+  };
 }
