@@ -3,6 +3,7 @@ import {
   type GovernanceApiPayload,
   gmEventsApiPayloadSchema,
   type GovernancePendingAgendaItem,
+  type GovernancePreviousAgendaItem,
 } from '@/lib/governance';
 
 const DEFAULT_GM_AGENDA_URL = 'https://www.foodcoop.com/gmagenda/';
@@ -94,6 +95,7 @@ export async function load({ fetch }: { fetch: typeof globalThis.fetch }): Promi
   sourceUrl: string;
   lastUpdated: string | null;
   items: GovernancePendingAgendaItem[];
+  previousItems: GovernancePreviousAgendaItem[];
   currentItems: string[];
   currentAgendaUrl: string;
   currentMeetingStartUtc: string | null;
@@ -137,6 +139,7 @@ export async function load({ fetch }: { fetch: typeof globalThis.fetch }): Promi
       sourceUrl: payload?.sourceUrl ?? fallbackSourceUrl,
       lastUpdated: payload?.lastUpdated ?? null,
       items: payload?.items ?? [],
+      previousItems: payload?.previousItems ?? [],
       currentItems,
       currentAgendaUrl,
       currentMeetingStartUtc,
@@ -148,6 +151,7 @@ export async function load({ fetch }: { fetch: typeof globalThis.fetch }): Promi
       sourceUrl: fallbackSourceUrl,
       lastUpdated: null,
       items: [],
+      previousItems: [],
       currentItems,
       currentAgendaUrl,
       currentMeetingStartUtc,
