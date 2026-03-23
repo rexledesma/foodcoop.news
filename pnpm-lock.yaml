@@ -99,9 +99,6 @@ importers:
       tailwindcss:
         specifier: ^4
         version: 4.1.18
-      typescript:
-        specifier: ^5
-        version: 5.9.3
       vite:
         specifier: npm:@voidzero-dev/vite-plus-core@latest
         version: '@voidzero-dev/vite-plus-core@0.1.11(@types/node@20.19.29)(esbuild@0.27.0)(jiti@2.6.1)(typescript@5.9.3)'

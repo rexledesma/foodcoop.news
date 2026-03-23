@@ -45,7 +45,6 @@
     "knip": "^5.83.1",
     "svelte-check": "^4.4.0",
     "tailwindcss": "^4",
-    "typescript": "^5",
     "vite": "npm:@voidzero-dev/vite-plus-core@latest",
     "vite-plus": "latest"
   },
