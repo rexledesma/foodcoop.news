@@ -96,37 +96,32 @@
   {/if}
 
   <section>
-    <div class="mb-3 flex items-center gap-3 px-1 py-1" aria-label="Pending">
-      <div class="h-px flex-1 bg-zinc-200"></div>
-      <span class="text-xs font-semibold tracking-[0.08em] text-zinc-500 uppercase">Pending</span>
-      <div class="h-px flex-1 bg-zinc-200"></div>
-    </div>
   {#if data.items.length === 0}
     <div class="rounded-xl border border-zinc-200 bg-white px-4 py-6 text-sm text-zinc-500">
       No pending agenda items found.
     </div>
   {:else}
-    <div class="space-y-4">
-      {#each data.items as item}
-        <a
-          href={data.sourceUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          class="block rounded-xl border border-zinc-200 bg-white p-4 transition-colors hover:border-zinc-400"
-        >
-          <div class="flex items-start gap-3">
-            <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-amber-100 text-xl">🔜</div>
-            <div class="min-w-0 flex-1">
-              <p class="font-semibold text-zinc-900">
-                {item.agendaItemNumber} · {item.subject}
-              </p>
-              <p class="mt-1 text-sm text-zinc-400">{item.submittedRevisionDate || 'Unavailable'}</p>
-              <p class="mt-2 text-sm text-zinc-700">{item.discussion || '—'}</p>
-            </div>
-          </div>
-        </a>
-      {/each}
-    </div>
+    <a
+      href={data.sourceUrl}
+      target="_blank"
+      rel="noopener noreferrer"
+      class="block rounded-xl border border-zinc-200 bg-white p-4 transition-colors hover:border-zinc-400"
+    >
+      <div class="flex items-start gap-3">
+        <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-amber-100 text-xl">🔜</div>
+        <div class="min-w-0 flex-1">
+          <p class="font-semibold text-zinc-900">Pending Agenda Items</p>
+          <ul class="mt-2 list-disc space-y-2 pl-5 text-sm text-zinc-700 marker:text-zinc-400">
+            {#each data.items as item}
+              <li>
+                <p class="font-semibold text-zinc-900">{item.agendaItemNumber} · {item.subject}</p>
+                <p class="mt-0.5 text-xs text-zinc-500">{item.submittedRevisionDate || 'Unavailable'}</p>
+              </li>
+            {/each}
+          </ul>
+        </div>
+      </div>
+    </a>
   {/if}
   </section>
 </div>
