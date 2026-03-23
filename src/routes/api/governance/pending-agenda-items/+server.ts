@@ -9,7 +9,7 @@ import {
 } from '@/lib/governance';
 
 const DEFAULT_SHEET_ID = '1yuBxeKZlTtbJLqabrzv2g3SiaxANppmy7GkaHlr8GbA';
-const DEFAULT_SHEET_RANGE = 'A:D';
+const DEFAULT_SHEET_RANGE = 'Pending!A:D';
 const SOURCE_PDF_URL =
   'https://www.foodcoop.com/wp-content/uploads/2026/02/2026_02_03_agenda_committee.pdf';
 const HARDCODED_LAST_UPDATED_ISO = '2026-02-03T12:00:00.000Z';
