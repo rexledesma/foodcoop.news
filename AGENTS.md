@@ -8,14 +8,14 @@ This file provides guidance to coding agents when working with code in this repo
 vp run dev               # Start local dev server
 vp run build             # Build production app
 vp run preview           # Alias for start
-vp run check             # Run vp check + svelte-check + knip
+vp run fix               # Run vp check --fix + svelte-check + knip
 vp run svelte:check      # Run svelte-check --fail-on-warnings
 vp run knip              # Run unused code/dependency checks
 vp exec convex dev       # Start Convex dev server
 vp run backfill          # Trigger /api/cron/backfill-produce with CRON_SECRET
 ```
 
-**Important:** After generating or modifying code, run `vp run check`. This command should succeed with no errors.
+**Important:** After generating or modifying code, run `vp run fix`. This command should succeed with no errors.
 
 ## Architecture
 

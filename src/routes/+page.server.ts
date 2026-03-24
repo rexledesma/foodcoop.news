@@ -1,9 +1,6 @@
 import type { PageServerLoad } from './$types';
 import type { EventbriteEvent, FoodcoopEvent } from '@/lib/types';
 
-const DISCOVER_EVENT_SOURCES =
-  'foodcoopcooks-events,wordsprouts-events,concert-series-events,gm-events,foodcoop-orientation-events';
-const DISCOVER_NEWS_SOURCES = 'foodcoop,gazette,foodcoopcooks,produce,bluesky';
 const EVENT_ITEM_TYPES = new Set([
   'foodcoopcooks-events',
   'wordsprouts-events',
@@ -37,15 +34,11 @@ type SerializedFeedItem = {
 
 type FeedResponse = {
   items?: SerializedFeedItem[];
+  successfulSources?: string[];
+  failedSources?: string[];
+  isPartial?: boolean;
+  pendingSources?: number;
 };
-
-function isGooglebotUserAgent(userAgent: string): boolean {
-  const value = userAgent.toLowerCase();
-  if (!value) {
-    return false;
-  }
-  return value.includes('googlebot');
-}
 
 function isEventType(value: string): boolean {
   return EVENT_ITEM_TYPES.has(value);
@@ -192,51 +185,39 @@ function sortNewsByDateDesc(a: DiscoverNewsItem, b: DiscoverNewsItem): number {
   return new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime();
 }
 
-export const load: PageServerLoad = async ({ fetch, request, url }) => {
-  const userAgent = request.headers.get('user-agent') ?? '';
-  if (!isGooglebotUserAgent(userAgent)) {
-    return {
-      latestNews: [] as DiscoverNewsItem[],
-      upcomingEvents: [] as DiscoverEventItem[],
-    };
-  }
-
+export const load: PageServerLoad = async ({ fetch, url }) => {
   try {
-    const eventParams = new URLSearchParams();
-    eventParams.set('sources', DISCOVER_EVENT_SOURCES);
-    const newsParams = new URLSearchParams();
-    newsParams.set('sources', DISCOVER_NEWS_SOURCES);
-
-    const [eventsResponse, newsResponse] = await Promise.all([
-      fetch(`/api/feed?${eventParams.toString()}`),
-      fetch(`/api/feed?${newsParams.toString()}`),
-    ]);
-
-    if (!eventsResponse.ok || !newsResponse.ok) {
+    const feedResponse = await fetch('/api/feed');
+    if (!feedResponse.ok) {
       return {
+        initialItems: [] as SerializedFeedItem[],
+        initialPendingSources: 0,
+        initialFeedError: 'Failed to load feed',
         latestNews: [] as DiscoverNewsItem[],
         upcomingEvents: [] as DiscoverEventItem[],
       };
     }
 
-    const eventsPayload = (await eventsResponse.json()) as FeedResponse;
-    const newsPayload = (await newsResponse.json()) as FeedResponse;
+    const feedPayload = (await feedResponse.json()) as FeedResponse;
     const now = new Date();
     const fortyFiveDaysAgo = new Date(now);
     fortyFiveDaysAgo.setDate(fortyFiveDaysAgo.getDate() - 45);
     const fortyFiveDaysAhead = new Date(now);
     fortyFiveDaysAhead.setDate(fortyFiveDaysAhead.getDate() + 45);
+    const initialItems = (feedPayload.items ?? [])
+      .filter((item) => {
+        const date = parseDate(item.date);
+        return Boolean(date && date >= fortyFiveDaysAgo && date <= fortyFiveDaysAhead);
+      })
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
-    const eventItems = (eventsPayload.items ?? [])
+    const eventItems = initialItems
       .filter((item) => isEventType(item.type))
       .map(toDiscoverEvent)
       .filter((item): item is DiscoverEventItem => Boolean(item))
-      .filter((item) => {
-        const eventDate = new Date(item.startUtc);
-        return eventDate >= fortyFiveDaysAgo && eventDate <= fortyFiveDaysAhead;
-      });
+      .filter((item) => new Date(item.startUtc) >= fortyFiveDaysAgo);
 
-    const latestNews = (newsPayload.items ?? [])
+    const latestNews = initialItems
       .filter((item) => isNewsType(item.type))
       .map(toDiscoverNews)
       .filter((item): item is DiscoverNewsItem => Boolean(item))
@@ -253,11 +234,22 @@ export const load: PageServerLoad = async ({ fetch, request, url }) => {
       .slice(0, 10);
 
     return {
+      initialItems,
+      initialPendingSources: feedPayload.pendingSources ?? 0,
+      initialFeedError:
+        (feedPayload.items ?? []).length === 0 &&
+        (feedPayload.successfulSources?.length ?? 0) === 0 &&
+        (feedPayload.failedSources?.length ?? 0) > 0
+          ? 'Failed to load feed'
+          : '',
       latestNews,
       upcomingEvents,
     };
-  } catch {
+  } catch (_error) {
     return {
+      initialItems: [] as SerializedFeedItem[],
+      initialPendingSources: 0,
+      initialFeedError: 'Failed to load feed',
       latestNews: [] as DiscoverNewsItem[],
       upcomingEvents: [] as DiscoverEventItem[],
     };

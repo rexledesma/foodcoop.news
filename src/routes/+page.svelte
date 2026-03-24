@@ -7,12 +7,16 @@
   import type { PageData } from './$types';
 
   const channel = `discover-${Math.random().toString(36).slice(2)}`;
-  let { data }: { data: PageData } = $props();
+  const { data }: { data: PageData } = $props();
 
-  type SerializedFeedItem = Omit<FeedItem, 'date'> & { date: string };
+  type SerializedFeedApiItem = {
+    type: string;
+    date: string;
+    data?: unknown;
+  };
 
   type FeedAggregatorResponse = {
-    items?: SerializedFeedItem[];
+    items?: SerializedFeedApiItem[];
     successfulSources?: string[];
     failedSources?: string[];
     isPartial?: boolean;
@@ -31,18 +35,6 @@
   ] as const;
 
   let loadFeedToken = 0;
-
-  let state = {
-    items: [] as FeedItem[],
-    loading: true,
-    error: '',
-    pendingSources: 0,
-    showSticky: getCurrentStickyVisibility(),
-    favoritesSnapshot: '[]',
-    fetchFeeds: () : Promise<void> => loadFeeds(),
-  };
-
-  const initialState = state;
 
   function serializeJsonLd(payload: unknown): string {
     return JSON.stringify(payload).replaceAll('<', '\\u003c');
@@ -150,44 +142,59 @@
       .filter((item) : boolean => item.date >= fortyFiveDaysAgo && item.date <= fortyFiveDaysAhead);
   }
 
+  function parseAndDedupeItems(payload: Pick<FeedAggregatorResponse, 'items'>): FeedItem[] {
+    const parsedItems = (payload.items ?? [])
+      .map(
+        (item) : FeedItem =>
+          ({
+            ...item,
+            date: new Date(item.date),
+          }) as FeedItem,
+      )
+      .filter((item) : boolean => !Number.isNaN(item.date.getTime()));
+
+    const deduped: FeedItem[] = [];
+    const seen = new Set<string>();
+    for (const item of parsedItems) {
+      const key = getFeedItemKey(item);
+      if (seen.has(key)) {continue;}
+      seen.add(key);
+      deduped.push(item);
+    }
+    return deduped;
+  }
+
+  function readInitialServerFeedState(): {
+    items: FeedItem[];
+    error: string;
+    pendingSources: number;
+  } {
+    return {
+      items: sortAndPrune(parseAndDedupeItems({ items: data.initialItems })),
+      error: data.initialFeedError,
+      pendingSources: data.initialPendingSources,
+    };
+  }
+
+  const initialServerFeedState = readInitialServerFeedState();
+
   async function loadFeeds() : Promise<void> {
     const token = ++loadFeedToken;
-
-    const parseAndDedupe = (payload: FeedAggregatorResponse): FeedItem[] => {
-      const parsedItems = (payload.items ?? [])
-        .map(
-          (item) : FeedItem =>
-            ({
-              ...item,
-              date: new Date(item.date),
-            }) as FeedItem,
-        )
-        .filter((item) : boolean => !Number.isNaN(item.date.getTime()));
-
-      const deduped: FeedItem[] = [];
-      const seen = new Set<string>();
-      for (const item of parsedItems) {
-        const key = getFeedItemKey(item);
-        if (seen.has(key)) {continue;}
-        seen.add(key);
-        deduped.push(item);
-      }
-      return deduped;
-    };
 
     const isStale = () : boolean => token !== loadFeedToken;
 
     state = {
       ...state,
-      loading: true,
+      loading: state.items.length === 0,
       error: '',
       pendingSources: FEED_SOURCE_GROUPS.length,
-      items: [],
     };
     dispatchState();
 
-    let hasAnySuccess = false;
-    const mergedItems = new Map<string, FeedItem>();
+    let hasAnySuccess = state.items.length > 0;
+    const mergedItems = new Map<string, FeedItem>(
+      state.items.map((item): [string, FeedItem] => [getFeedItemKey(item), item]),
+    );
     let pendingGroups: number = FEED_SOURCE_GROUPS.length;
 
     const groupRequests = FEED_SOURCE_GROUPS.map(async (group) : Promise<void> => {
@@ -197,7 +204,7 @@
       try {
         const response = await fetch(`/api/feed?${params.toString()}`);
         const payload = (await response.json().catch(() : Record<string, never> => ({}))) as FeedAggregatorResponse;
-        const items = parseAndDedupe(payload);
+        const items = parseAndDedupeItems(payload);
         const successCount = payload.successfulSources?.length ?? 0;
 
         if (successCount > 0 || items.length > 0) {
@@ -230,6 +237,18 @@
 
     await Promise.allSettled(groupRequests);
   }
+
+  let state = {
+    items: initialServerFeedState.items,
+    loading: false,
+    error: initialServerFeedState.error,
+    pendingSources: initialServerFeedState.pendingSources,
+    showSticky: getCurrentStickyVisibility(),
+    favoritesSnapshot: '[]',
+    fetchFeeds: () : Promise<void> => loadFeeds(),
+  };
+
+  const initialState = state;
 
   onMount(() : () => void => {
     const stickyVisibilityHandler = (event: Event) : void => {
