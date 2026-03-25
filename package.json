@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vp dev",
+    "ios-dev": "bash ./scripts/dev-with-simulator.sh",
     "build": "vp build",
     "preview": "vp preview",
     "svelte:check": "svelte-check --tsconfig ./tsconfig.json --fail-on-warnings",
