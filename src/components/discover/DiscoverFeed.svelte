@@ -80,6 +80,7 @@
     pendingSources: number;
     showSticky: boolean;
     favoritesSnapshot: string;
+    shiftFavoritesSnapshot: string;
     fetchFeeds: () => void;
   };
   type EventFeedItem = Extract<
@@ -112,6 +113,7 @@
   let pendingSources = $state(0);
   let showSticky = $state(true);
   let favoritesSnapshot = $state('[]');
+  let shiftFavoritesSnapshot = $state('[]');
   let fetchFeeds = $state<() => void>(() : void => {});
   let primaryMenuOpen = $state(false);
   let sourceMenuOpen = $state(false);
@@ -122,6 +124,17 @@
   let filtersRef = $state<HTMLDivElement | null>(null);
 
   const favorites = $derived(parseFavorites(favoritesSnapshot));
+  const shiftFavorites = $derived(parseFavorites(shiftFavoritesSnapshot));
+  const normalizedShiftFavorites = $derived.by(() : Set<string> => {
+    const normalized = new Set<string>();
+    for (const favorite of shiftFavorites) {
+      const value = normalizeShiftName(favorite);
+      if (value) {
+        normalized.add(value);
+      }
+    }
+    return normalized;
+  });
 
   const sourceFilteredItems = $derived.by(() : FeedItem[] =>
     items.filter((item) : boolean => {
@@ -307,6 +320,23 @@
     }
   }
 
+  function normalizeShiftName(name: string): string {
+    return name
+      .toLowerCase()
+      .replace(/\*+/g, '')
+      .replace(/\p{Extended_Pictographic}/gu, '')
+      .replace(/\s+/g, ' ')
+      .trim();
+  }
+
+  function isShiftFavorited(shiftName: string, savedShifts: Set<string>): boolean {
+    const normalizedShiftName = normalizeShiftName(shiftName);
+    if (!normalizedShiftName) {
+      return false;
+    }
+    return savedShifts.has(normalizedShiftName);
+  }
+
   function formatOrientationCardTitle(event: FoodcoopEvent): string {
     const titleMatch = event.title.match(/\(([A-Za-z]+)\s+(\d{1,2}\/\d{1,2}\/\d{4})\)/);
     if (titleMatch) {
@@ -332,6 +362,7 @@
     pendingSources = next.pendingSources;
     showSticky = next.showSticky;
     favoritesSnapshot = next.favoritesSnapshot;
+    shiftFavoritesSnapshot = next.shiftFavoritesSnapshot;
     fetchFeeds = next.fetchFeeds;
   }
 
@@ -462,6 +493,7 @@
     pendingSources = initialState.pendingSources;
     showSticky = initialState.showSticky;
     favoritesSnapshot = initialState.favoritesSnapshot;
+    shiftFavoritesSnapshot = initialState.shiftFavoritesSnapshot;
     fetchFeeds = initialState.fetchFeeds;
     void loadUpcomingShifts();
 
@@ -694,6 +726,7 @@
           <div class="feed-item-enter min-w-0">
             {@render UpcomingShiftsCard({
               shifts: upcomingShifts,
+              shiftFavorites: normalizedShiftFavorites,
               onOpenIntegrations: openIntegrations,
             })}
           </div>
@@ -800,9 +833,11 @@
 
 {#snippet UpcomingShiftsCard({
   shifts,
+  shiftFavorites,
   onOpenIntegrations,
 }: {
   shifts: UpcomingShiftCount[];
+  shiftFavorites: Set<string>;
   onOpenIntegrations: () => void;
 })}
   <button
@@ -820,12 +855,18 @@
         <div class="mt-3 max-h-72 overflow-y-auto pr-1">
           <div class="flex flex-wrap gap-1.5">
             {#each shifts as shift, index (shift.name)}
+              {@const isFavorited = isShiftFavorited(shift.name, shiftFavorites)}
               <span
                 class={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs ${
-                  index < 5 ? 'bg-amber-100 text-amber-800' : 'bg-sky-100 text-sky-900'
+                  index < 5 || isFavorited
+                    ? 'bg-amber-100 text-amber-800'
+                    : 'bg-sky-100 text-sky-900'
                 }`}
               >
-                <span>{shift.name}</span>
+                {#if isFavorited}
+                  <span class="text-[12px] leading-none text-amber-700">♥</span>
+                {/if}
+                <span class={isFavorited ? 'font-bold' : ''}>{shift.name}</span>
                 <span class="font-semibold">{shift.count}</span>
               </span>
             {/each}

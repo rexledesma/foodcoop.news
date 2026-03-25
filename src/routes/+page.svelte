@@ -98,6 +98,12 @@
     return local ?? cache ?? '[]';
   }
 
+  function readShiftFavoritesSnapshot() : string {
+    const local = localStorage.getItem('shift-favorites');
+    const cache = localStorage.getItem('shift-favorites-cache');
+    return local ?? cache ?? '[]';
+  }
+
   function writeFavoritesSnapshot(favorites: string[]) : void {
     try {
       const snapshot = JSON.stringify(favorites);
@@ -107,6 +113,20 @@
       dispatchState();
       window.dispatchEvent(new Event('produce-favorites'));
       window.dispatchEvent(new Event('produce-favorites-cache'));
+    } catch {
+      // Ignore local storage errors.
+    }
+  }
+
+  function writeShiftFavoritesSnapshot(jobFilters: string[]) : void {
+    try {
+      const snapshot = JSON.stringify(jobFilters);
+      localStorage.setItem('shift-favorites', snapshot);
+      localStorage.setItem('shift-favorites-cache', snapshot);
+      state = { ...state, shiftFavoritesSnapshot: snapshot };
+      dispatchState();
+      window.dispatchEvent(new Event('shift-favorites'));
+      window.dispatchEvent(new Event('shift-favorites-cache'));
     } catch {
       // Ignore local storage errors.
     }
@@ -124,6 +144,28 @@
       writeFavoritesSnapshot(data.favorites);
     } catch {
       // Ignore sync failures and keep local favorites.
+    }
+  }
+
+  async function syncShiftFavoritesFromServer() : Promise<void> {
+    try {
+      const response = await fetch('/api/me/profile', {
+        method: 'GET',
+        cache: 'no-store',
+      });
+      if (!response.ok) {
+        if (response.status === 401) {
+          writeShiftFavoritesSnapshot([]);
+        }
+        return;
+      }
+      const data = (await response.json()) as {
+        profile?: { jobFilters?: string[] } | null;
+      };
+      const filters = Array.isArray(data.profile?.jobFilters) ? data.profile.jobFilters : [];
+      writeShiftFavoritesSnapshot(filters);
+    } catch {
+      // Ignore sync failures and keep local shift favorites.
     }
   }
 
@@ -245,6 +287,7 @@
     pendingSources: initialServerFeedState.pendingSources,
     showSticky: getCurrentStickyVisibility(),
     favoritesSnapshot: '[]',
+    shiftFavoritesSnapshot: '[]',
     fetchFeeds: () : Promise<void> => loadFeeds(),
   };
 
@@ -257,26 +300,33 @@
       dispatchState();
     };
 
-    const syncFavorites = () : void => {
+    const syncLocalSnapshots = () : void => {
       state = { ...state, favoritesSnapshot: readFavoritesSnapshot() };
+      state = { ...state, shiftFavoritesSnapshot: readShiftFavoritesSnapshot() };
       dispatchState();
     };
 
     state = { ...state, favoritesSnapshot: readFavoritesSnapshot() };
+    state = { ...state, shiftFavoritesSnapshot: readShiftFavoritesSnapshot() };
     dispatchState();
     void syncFavoritesFromServer();
+    void syncShiftFavoritesFromServer();
     void loadFeeds();
 
     window.addEventListener('sticky-visibility', stickyVisibilityHandler as EventListener);
-    window.addEventListener('produce-favorites', syncFavorites);
-    window.addEventListener('produce-favorites-cache', syncFavorites);
-    window.addEventListener('storage', syncFavorites);
+    window.addEventListener('produce-favorites', syncLocalSnapshots);
+    window.addEventListener('produce-favorites-cache', syncLocalSnapshots);
+    window.addEventListener('shift-favorites', syncLocalSnapshots);
+    window.addEventListener('shift-favorites-cache', syncLocalSnapshots);
+    window.addEventListener('storage', syncLocalSnapshots);
 
     return () : void => {
       window.removeEventListener('sticky-visibility', stickyVisibilityHandler as EventListener);
-      window.removeEventListener('produce-favorites', syncFavorites);
-      window.removeEventListener('produce-favorites-cache', syncFavorites);
-      window.removeEventListener('storage', syncFavorites);
+      window.removeEventListener('produce-favorites', syncLocalSnapshots);
+      window.removeEventListener('produce-favorites-cache', syncLocalSnapshots);
+      window.removeEventListener('shift-favorites', syncLocalSnapshots);
+      window.removeEventListener('shift-favorites-cache', syncLocalSnapshots);
+      window.removeEventListener('storage', syncLocalSnapshots);
     };
   });
 
