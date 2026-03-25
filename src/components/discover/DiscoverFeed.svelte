@@ -338,19 +338,7 @@
   }
 
   function formatOrientationCardTitle(event: FoodcoopEvent): string {
-    const titleMatch = event.title.match(/\(([A-Za-z]+)\s+(\d{1,2}\/\d{1,2}\/\d{4})\)/);
-    if (titleMatch) {
-      return `Orientation Registration: ${titleMatch[1]} ${titleMatch[2]}`;
-    }
-
-    const descriptionMatch = (event.description ?? '').match(
-      /on\s+([A-Za-z]+)\s+(\d{1,2}\/\d{1,2}\/\d{4})\s+at/i,
-    );
-    if (descriptionMatch) {
-      return `Orientation Registration: ${descriptionMatch[1]} ${descriptionMatch[2]}`;
-    }
-
-    return 'Orientation Registration';
+    return event.title || 'Registration for New Members';
   }
 
   function handleStateUpdate(event: Event) : void {
@@ -382,7 +370,7 @@
     if (item.type === 'wordsprouts-events') {return 'Wordsprouts';}
     if (item.type === 'concert-series-events') {return 'Concerts';}
     if (item.type === 'gm-events') {return 'General Meeting';}
-    if (item.type === 'foodcoop-orientation-events') {return 'New Member Orientation';}
+    if (item.type === 'foodcoop-orientation-events') {return 'Orientation';}
     if (item.type === 'gazette-deadline') {return "Linewaiters' Gazette";}
     return 'Events';
   }
@@ -783,9 +771,10 @@
   {:else if item.type === 'foodcoop-orientation-events'}
     {@render EventbriteEventCard({
       event: item.data,
-      label: "New Member Orientation",
+      label: "Orientation",
       emoji: "🧭",
       titleOverride: formatOrientationCardTitle(item.data),
+      datePrefix: "Opens",
     })}
   {:else if item.type === 'produce'}
     {@render ProduceCard({ update: item.data, date: item.date, favorites })}
@@ -1049,11 +1038,13 @@
   label,
   emoji,
   titleOverride,
+  datePrefix,
 }: {
   event: EventbriteEvent | FoodcoopEvent;
   label: string;
   emoji: string;
   titleOverride?: string;
+  datePrefix?: string;
 })}
   <a
     href={event.url}
@@ -1066,7 +1057,9 @@
       <div class="min-w-0 flex-1">
         <div class="flex flex-wrap items-center gap-2">
           <span class="font-semibold text-zinc-900">{label}</span>
-          <span class="shrink-0 text-sm text-zinc-400">{formatEventDateTime(event.startUtc, event.timezone)}</span>
+          <span class="shrink-0 text-sm text-zinc-400">
+            {datePrefix ? `${datePrefix} ${formatEventDateTime(event.startUtc, event.timezone)}` : formatEventDateTime(event.startUtc, event.timezone)}
+          </span>
         </div>
         <p class="mt-2 font-medium text-zinc-700">{titleOverride ?? event.title}</p>
         {#if event.description}

@@ -123,15 +123,14 @@ function parseOrientationEvents(html: string): FoodcoopEvent[] {
       continue;
     }
 
-    let title = 'Orientation registration opens';
-    let description = 'Schedule an in-person orientation to join the Park Slope Food Coop.';
+    let title = 'Registration for New Members';
+    let description = `New member registration opens ${releaseDateText}.`;
     let appointmentIdPart = releaseDateText;
 
     if (appointmentMatch) {
-      const weekday = appointmentMatch[1];
       const appointmentDate = appointmentMatch[2] ?? releaseDateText;
-      title = `Orientation registration opens (${weekday} ${appointmentDate})`;
-      description = `Schedule an in-person orientation to join the Park Slope Food Coop on ${weekday} ${appointmentDate}.`;
+      title = 'Registration for New Members';
+      description = `New member registration opens ${releaseDateText} for the ${appointmentDate} orientation.`;
       appointmentIdPart = appointmentDate;
     }
 
