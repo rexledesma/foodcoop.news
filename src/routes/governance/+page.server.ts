@@ -164,10 +164,12 @@ async function loadGovernancePayload(
   }
 }
 
-export function load({ fetch }: { fetch: typeof globalThis.fetch }): {
-  governanceData: Promise<GovernancePagePayload>;
-} {
+export async function load({ fetch }: { fetch: typeof globalThis.fetch }): Promise<{
+  governanceData: GovernancePagePayload;
+}> {
+  const governanceData = await loadGovernancePayload(fetch);
+
   return {
-    governanceData: loadGovernancePayload(fetch),
+    governanceData,
   };
 }
