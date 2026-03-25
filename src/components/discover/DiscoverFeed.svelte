@@ -841,7 +841,7 @@
           <span class="font-semibold text-zinc-900">Upcoming Shifts</span>
           <span class="shrink-0 text-sm text-zinc-400">Next 6 weeks</span>
         </div>
-        <div class="mt-3 max-h-72 overflow-y-auto pr-1">
+        <div class="mt-3">
           <div class="flex flex-wrap gap-1.5">
             {#each shifts as shift, index (shift.name)}
               {@const isFavorited = isShiftFavorited(shift.name, shiftFavorites)}
