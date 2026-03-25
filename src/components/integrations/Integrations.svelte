@@ -64,7 +64,6 @@
   } = $props();
 
   let isInitialLoading = $state(true);
-  let showSticky = $state(true);
   let sessionPending = $state(true);
   let isSignedIn = $state(false);
   let memberId = $state('');
@@ -106,7 +105,6 @@
   let onTogglePush = $state<() => Promise<void>>(async () : Promise<void> => {});
   let onSendTestNotification = $state<() => Promise<void>>(async () : Promise<void> => {});
 
-  let headerRef = $state<HTMLDivElement | null>(null);
   let shineRef = $state<HTMLDivElement | null>(null);
 
   let paywallEmail = $state('');
@@ -151,7 +149,6 @@
 
   function applyState(next: IntegrationsClientState) : void {
     isInitialLoading = next.isInitialLoading;
-    showSticky = next.showSticky;
     sessionPending = next.sessionPending;
     isSignedIn = next.isSignedIn;
     memberId = next.memberId;
@@ -236,37 +233,17 @@
     };
   });
 
-  $effect(() : (() => void) | undefined => {
-    const element = headerRef;
-    if (!element || typeof ResizeObserver === 'undefined') {
-      return;
-    }
-
-    const updateHeight = () : void => {
-      window.dispatchEvent(new CustomEvent('sticky-threshold', { detail: element.offsetHeight }));
-    };
-
-    updateHeight();
-    const observer = new ResizeObserver(updateHeight);
-    observer.observe(element);
-
-    return () : void => observer.disconnect();
-  });
-
   $effect(() : void => {
     paywallEmailRef?.focus();
   });
 </script>
 
 <div class="flex min-h-screen flex-col">
-  <div
-    bind:this={headerRef}
-    class={`sticky top-[5.5rem] z-20 bg-white transition-opacity duration-250 ease-in-out motion-reduce:transition-none ${showSticky || (!isSignedIn && !sessionPending) ? 'opacity-100' : 'pointer-events-none opacity-0'}`}
-  >
-    <h1 class="mx-auto max-w-3xl px-4 pt-6 pb-6 text-2xl font-bold text-zinc-900">Integrations</h1>
-  </div>
-
   <div class="mx-auto flex w-full max-w-3xl grow flex-col px-4 pb-6">
+    <div class="py-6">
+      <h1 class="text-2xl font-bold text-zinc-900">Integrations</h1>
+    </div>
+
     {#if isInitialLoading}
       <div class="animate-pulse">
         <div class="mb-6 h-8 w-32 rounded bg-zinc-200"></div>

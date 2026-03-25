@@ -5,8 +5,8 @@
 </script>
 
 <div class="mx-auto max-w-3xl px-4 pb-6">
-  <div class="sticky top-[5.5rem] z-20 bg-white">
-    <h1 class="py-6 text-2xl font-bold text-zinc-900">About</h1>
+  <div class="py-6">
+    <h1 class="text-2xl font-bold text-zinc-900">About</h1>
   </div>
   <div class="space-y-4 text-zinc-600">
     <p>
