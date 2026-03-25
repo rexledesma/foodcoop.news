@@ -136,7 +136,6 @@
   let paywallEmail = $state('');
   let paywallLoading = $state(false);
   let paywallError = $state('');
-  let paywallEmailRef = $state<HTMLInputElement | null>(null);
 
   let shouldShowSampleProfile = $derived(
     displayFullName.trim().length === 0 &&
@@ -366,10 +365,6 @@
       stopIdleCardAnimation();
       clearSampleSwapTimers();
     };
-  });
-
-  $effect(() : void => {
-    paywallEmailRef?.focus();
   });
 
   $effect(() : void | (() => void) => {
@@ -687,7 +682,6 @@
                     <input
                       type="email"
                       id="paywallEmail"
-                      bind:this={paywallEmailRef}
                       bind:value={paywallEmail}
                       required
                       placeholder="you@example.com"
