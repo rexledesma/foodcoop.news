@@ -63,6 +63,21 @@
     initialState: IntegrationsClientState;
   } = $props();
 
+  const SAMPLE_MEMBER_NAMES = [
+    'Kasandra Scarlet',
+    'Jack Mustard',
+    'Diane White',
+    'Jacob Green',
+    'Henrietta Peacock',
+    'Victor Plum',
+    'Miles Meadow-Brook',
+  ] as const;
+  const DEMO_MEMBER_ID_MIN = 100;
+  const DEMO_MEMBER_ID_MAX = 100000;
+  const DEMO_PROFILE_CYCLE_MS = 4000;
+  const DEMO_SWAP_DURATION_MS = Math.round(DEMO_PROFILE_CYCLE_MS * 0.16);
+  const DEMO_SWAP_HALF_MS = DEMO_SWAP_DURATION_MS / 2;
+
   let isInitialLoading = $state(true);
   let sessionPending = $state(true);
   let isSignedIn = $state(false);
@@ -105,12 +120,114 @@
   let onTogglePush = $state<() => Promise<void>>(async () : Promise<void> => {});
   let onSendTestNotification = $state<() => Promise<void>>(async () : Promise<void> => {});
 
+  let cardRef = $state<HTMLDivElement | null>(null);
   let shineRef = $state<HTMLDivElement | null>(null);
+  let sampleNameIndex = $state(0);
+  let sampleMemberId = $state(String(generateRandomMemberId()));
+  let isSampleSwapping = $state(false);
+  let isCardHovered = $state(false);
+  let isMemberNameFocused = $state(false);
+  let isMemberIdFocused = $state(false);
+  let prefersReducedMotion = $state(false);
+  let idleCardAnimationFrame: number | null = null;
+  let sampleSwapMidTimeout: ReturnType<typeof setTimeout> | null = null;
+  let sampleSwapEndTimeout: ReturnType<typeof setTimeout> | null = null;
 
   let paywallEmail = $state('');
   let paywallLoading = $state(false);
   let paywallError = $state('');
   let paywallEmailRef = $state<HTMLInputElement | null>(null);
+
+  let shouldShowSampleProfile = $derived(
+    displayFullName.trim().length === 0 &&
+      memberId.trim().length === 0 &&
+      !isMemberNameFocused &&
+      !isMemberIdFocused,
+  );
+  let shouldPauseSampleCycle = $derived(isMemberNameFocused || isMemberIdFocused);
+  let shouldPauseIdleCard = $derived(isCardHovered || isMemberNameFocused || isMemberIdFocused);
+  let visibleCardMemberName = $derived(
+    shouldShowSampleProfile
+      ? SAMPLE_MEMBER_NAMES[sampleNameIndex % SAMPLE_MEMBER_NAMES.length]
+      : displayFullName,
+  );
+  let visibleCardMemberId = $derived(shouldShowSampleProfile ? sampleMemberId : memberId);
+
+  function generateRandomMemberId() : number {
+    return Math.floor(Math.random() * (DEMO_MEMBER_ID_MAX - DEMO_MEMBER_ID_MIN + 1)) + DEMO_MEMBER_ID_MIN;
+  }
+
+  function stopIdleCardAnimation() : void {
+    if (idleCardAnimationFrame !== null) {
+      cancelAnimationFrame(idleCardAnimationFrame);
+      idleCardAnimationFrame = null;
+    }
+  }
+
+  function clearSampleSwapTimers() : void {
+    if (sampleSwapMidTimeout) {
+      clearTimeout(sampleSwapMidTimeout);
+      sampleSwapMidTimeout = null;
+    }
+    if (sampleSwapEndTimeout) {
+      clearTimeout(sampleSwapEndTimeout);
+      sampleSwapEndTimeout = null;
+    }
+  }
+
+  function advanceSampleProfile() : void {
+    if (isSampleSwapping) {return;}
+    isSampleSwapping = true;
+
+    sampleSwapMidTimeout = setTimeout(() : void => {
+      sampleNameIndex = (sampleNameIndex + 1) % SAMPLE_MEMBER_NAMES.length;
+      sampleMemberId = String(generateRandomMemberId());
+      sampleSwapMidTimeout = null;
+    }, DEMO_SWAP_HALF_MS);
+
+    sampleSwapEndTimeout = setTimeout(() : void => {
+      isSampleSwapping = false;
+      sampleSwapEndTimeout = null;
+    }, DEMO_SWAP_DURATION_MS);
+  }
+
+  function resetCardTransform() : void {
+    if (cardRef) {
+      cardRef.style.transform = 'rotateX(0deg) rotateY(0deg)';
+    }
+    if (shineRef) {
+      shineRef.style.opacity = '0';
+    }
+  }
+
+  function startIdleCardAnimation() : void {
+    if (!cardRef || idleCardAnimationFrame !== null) {return;}
+    const startedAt = performance.now();
+
+    const animate = (timestamp: number) : void => {
+      if (!cardRef) {
+        idleCardAnimationFrame = null;
+        return;
+      }
+
+      const t = (timestamp - startedAt) / 1000;
+      const rotateX = Math.sin(t * 1.15) * 5.5;
+      const rotateY = Math.cos(t * 0.9) * 8;
+      const floatY = Math.sin(t * 1.45) * 3.5;
+      cardRef.style.transform = `translateY(${floatY}px) rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
+
+      if (shineRef) {
+        const x = 50 + Math.cos(t * 0.9) * 24;
+        const y = 42 + Math.sin(t * 1.15) * 19;
+        shineRef.style.opacity = '0.62';
+        shineRef.style.background = `radial-gradient(circle at ${x}% ${y}%, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0) 50%)`;
+      }
+
+      idleCardAnimationFrame = requestAnimationFrame(animate);
+    };
+
+    idleCardAnimationFrame = requestAnimationFrame(animate);
+  }
 
   async function handlePaywallSubmit(event: Event): Promise<void> {
     event.preventDefault();
@@ -196,7 +313,14 @@
     applyState(event.detail as IntegrationsClientState);
   }
 
+  function handleCardMouseEnter() : void {
+    isCardHovered = true;
+    stopIdleCardAnimation();
+    resetCardTransform();
+  }
+
   function handleCardMouseMove(event: MouseEvent) : void {
+    isCardHovered = true;
     const target = event.currentTarget as HTMLDivElement;
     const rect = target.getBoundingClientRect();
     const x = event.clientX - rect.left;
@@ -215,6 +339,7 @@
   }
 
   function handleCardMouseLeave(event: MouseEvent) : void {
+    isCardHovered = false;
     const target = event.currentTarget as HTMLDivElement;
     target.style.transform = 'rotateX(0deg) rotateY(0deg)';
     if (shineRef) {
@@ -225,16 +350,61 @@
   onMount(() : () => void => {
     applyState(initialState);
 
+    const motionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+    prefersReducedMotion = motionQuery.matches;
+    const handleMotionPreferenceChange = (event: MediaQueryListEvent) : void => {
+      prefersReducedMotion = event.matches;
+    };
+    motionQuery.addEventListener('change', handleMotionPreferenceChange);
+
     const handler = (event: Event) : void => handleStateUpdate(event);
     window.addEventListener(`integrations-state:update:${channel}`, handler as EventListener);
 
     return () : void => {
       window.removeEventListener(`integrations-state:update:${channel}`, handler as EventListener);
+      motionQuery.removeEventListener('change', handleMotionPreferenceChange);
+      stopIdleCardAnimation();
+      clearSampleSwapTimers();
     };
   });
 
   $effect(() : void => {
     paywallEmailRef?.focus();
+  });
+
+  $effect(() : void | (() => void) => {
+    if (!shouldShowSampleProfile || shouldPauseSampleCycle) {return;}
+
+    const timer = setInterval(() : void => {
+      advanceSampleProfile();
+    }, DEMO_PROFILE_CYCLE_MS);
+
+    return () : void => {
+      clearInterval(timer);
+    };
+  });
+
+  $effect(() : void => {
+    if (shouldShowSampleProfile) {return;}
+    clearSampleSwapTimers();
+    isSampleSwapping = false;
+  });
+
+  $effect(() : void | (() => void) => {
+    const shouldAnimateIdleCard = shouldShowSampleProfile && !shouldPauseIdleCard && !prefersReducedMotion;
+
+    if (!shouldAnimateIdleCard || !cardRef) {
+      stopIdleCardAnimation();
+      resetCardTransform();
+      return;
+    }
+
+    startIdleCardAnimation();
+
+    return () : void => {
+      stopIdleCardAnimation();
+      resetCardTransform();
+    };
   });
 </script>
 
@@ -265,10 +435,12 @@
 
           <div class="w-full max-w-sm" style="perspective: 1000px;">
             <div
+              bind:this={cardRef}
               class="relative aspect-[1.586/1] w-full overflow-hidden rounded-2xl shadow-xl transition-transform duration-300 ease-out hover:shadow-2xl"
               style="background-color: rgb(255, 246, 220); background-image: url('/assets/coop-strip.png'); background-position: center 12%; background-repeat: no-repeat; background-size: 20% auto; transform-style: preserve-3d;"
               role="img"
               aria-label="Apple Wallet member card preview"
+              onmouseenter={handleCardMouseEnter}
               onmousemove={handleCardMouseMove}
               onmouseleave={handleCardMouseLeave}
             >
@@ -288,11 +460,19 @@
                   <input
                     type="text"
                     id="cardMemberName"
-                    value={displayFullName}
+                    value={visibleCardMemberName}
                     oninput={(event) => onMemberNameChange((event.currentTarget as HTMLInputElement).value)}
+                    onfocus={() => {
+                      isMemberNameFocused = true;
+                    }}
+                    onblur={() => {
+                      isMemberNameFocused = false;
+                    }}
                     placeholder="Your Name"
-                    class="w-full rounded-t border-b border-dashed bg-transparent px-1 py-0.5 text-xl font-semibold transition-colors placeholder:text-zinc-400 focus:outline-none"
-                    style="color: rgb(51, 51, 51); border-color: rgba(51, 51, 51, 0.35);"
+                    class={`w-full rounded-t border-b border-dashed bg-transparent px-1 py-0.5 text-xl font-semibold transition-colors placeholder:text-zinc-400 focus:outline-none ${
+                      shouldShowSampleProfile ? 'sample-name-shimmer' : ''
+                    } ${shouldShowSampleProfile && isSampleSwapping ? 'sample-swap-fade' : ''} ${shouldShowSampleProfile ? 'sample-swap-transition' : ''}`}
+                    style={`color: rgb(51, 51, 51); border-color: rgba(51, 51, 51, 0.35); --sample-shimmer-ms: ${DEMO_PROFILE_CYCLE_MS}ms; --sample-swap-half-ms: ${DEMO_SWAP_HALF_MS}ms;`}
                   />
                   <svg
                     class="pointer-events-none absolute top-1/2 right-1 h-4 w-4 -translate-y-1/2 transition-colors"
@@ -321,11 +501,19 @@
                     type="text"
                     id="cardMemberId"
                     inputmode="numeric"
-                    value={memberId}
+                    value={visibleCardMemberId}
                     oninput={(event) => onMemberIdChange((event.currentTarget as HTMLInputElement).value)}
+                    onfocus={() => {
+                      isMemberIdFocused = true;
+                    }}
+                    onblur={() => {
+                      isMemberIdFocused = false;
+                    }}
                     placeholder="000000"
-                    class="w-32 rounded-t border-b border-dashed bg-transparent px-1 py-0.5 text-xl font-semibold transition-colors placeholder:text-zinc-400 focus:outline-none"
-                    style="color: rgb(51, 51, 51); border-color: rgba(51, 51, 51, 0.35);"
+                    class={`w-32 rounded-t border-b border-dashed bg-transparent px-1 py-0.5 text-xl font-semibold transition-colors placeholder:text-zinc-400 focus:outline-none ${
+                      shouldShowSampleProfile ? 'sample-name-shimmer' : ''
+                    } ${shouldShowSampleProfile && isSampleSwapping ? 'sample-swap-fade' : ''} ${shouldShowSampleProfile ? 'sample-swap-transition' : ''}`}
+                    style={`color: rgb(51, 51, 51); border-color: rgba(51, 51, 51, 0.35); --sample-shimmer-ms: ${DEMO_PROFILE_CYCLE_MS}ms; --sample-swap-half-ms: ${DEMO_SWAP_HALF_MS}ms;`}
                   />
                   <svg
                     class="pointer-events-none absolute top-1/2 right-1 h-4 w-4 -translate-y-1/2 transition-colors"
@@ -644,3 +832,44 @@
     </div>
   {/if}
 </div>
+
+<style>
+  .sample-name-shimmer {
+    background-image: linear-gradient(
+      110deg,
+      rgba(51, 51, 51, 0.45) 30%,
+      rgba(51, 51, 51, 0.92) 50%,
+      rgba(51, 51, 51, 0.45) 70%
+    );
+    background-size: 220% 100%;
+    background-position: 150% 0;
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: sample-name-shimmer var(--sample-shimmer-ms, 4000ms) linear infinite;
+  }
+
+  .sample-swap-fade {
+    opacity: 0.25;
+  }
+
+  .sample-swap-transition {
+    transition: opacity var(--sample-swap-half-ms, 320ms) ease-in-out;
+  }
+
+  @keyframes sample-name-shimmer {
+    from {
+      background-position: 150% 0;
+    }
+    to {
+      background-position: -60% 0;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .sample-name-shimmer {
+      animation: none;
+      background-position: 50% 0;
+    }
+  }
+</style>
