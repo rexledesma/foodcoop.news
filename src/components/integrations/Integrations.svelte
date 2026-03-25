@@ -281,11 +281,10 @@
           event.preventDefault();
           void onSave();
         }}
-        class={`space-y-6 ${!isSignedIn && !sessionPending ? 'sticky top-[9rem] z-10 bg-white pb-4' : ''}`}
+        class="space-y-6"
       >
         <section class="space-y-4">
           <h2 class="text-lg font-semibold text-zinc-900">Profile</h2>
-          <p class="mt-2 text-sm text-zinc-600">Edit your unofficial member card.</p>
 
           <div class="w-full max-w-sm" style="perspective: 1000px;">
             <div
@@ -372,79 +371,54 @@
           </div>
         </section>
 
-        <div class="flex gap-2">
-          <button
-            type="submit"
-            disabled={isSaving || !isSignedIn}
-            class="rounded-lg bg-black px-4 py-1.5 text-sm font-medium text-white transition-colors hover:bg-zinc-800 disabled:bg-zinc-400 disabled:opacity-60"
-          >
-            {isSaving ? 'Saving...' : 'Save'}
-          </button>
-          <button
-            type="button"
-            onclick={() => void onAddToWallet()}
-            disabled={!isSignedIn || isGeneratingPass || !memberId || !displayFullName}
-            class="transition-opacity hover:opacity-80 disabled:opacity-40"
-          >
-            <img src="/apple-wallet.svg" alt="Add to Apple Wallet" class="h-[34px]" />
-          </button>
-          <button
-            type="button"
-            onclick={() => void onAddToGoogleWallet()}
-            disabled={!isSignedIn || isGeneratingGooglePass || !memberId || !displayFullName}
-            class="transition-opacity hover:opacity-80 disabled:opacity-40"
-          >
-            <img src="/google-wallet.svg" alt="Add to Google Wallet" class="h-[34px]" />
-          </button>
+        <div class="flex items-center gap-2">
+          {#if isSignedIn}
+            <button
+              type="submit"
+              disabled={isSaving}
+              class="min-h-[34px] shrink-0 whitespace-nowrap rounded-lg bg-black px-4 py-1.5 text-sm font-medium text-white transition-colors hover:bg-zinc-800 disabled:bg-zinc-400 disabled:opacity-60"
+            >
+              {isSaving ? 'Saving...' : 'Save'}
+            </button>
+          {:else}
+            <a
+              href="/login?next=%2Fintegrations"
+              class="flex min-h-[34px] shrink-0 items-center justify-center whitespace-nowrap rounded-lg bg-black px-4 py-1.5 text-sm font-medium text-white transition-colors hover:bg-zinc-800"
+            >
+              Sign in to save
+            </a>
+          {/if}
+          <div class="flex gap-2">
+            <button
+              type="button"
+              onclick={() => void onAddToWallet()}
+              disabled={!isSignedIn || isGeneratingPass || !memberId || !displayFullName}
+              class="transition-opacity hover:opacity-80 disabled:opacity-40"
+            >
+              <img src="/apple-wallet.svg" alt="Add to Apple Wallet" class="h-[34px]" />
+            </button>
+            <button
+              type="button"
+              onclick={() => void onAddToGoogleWallet()}
+              disabled={!isSignedIn || isGeneratingGooglePass || !memberId || !displayFullName}
+              class="transition-opacity hover:opacity-80 disabled:opacity-40"
+            >
+              <img src="/google-wallet.svg" alt="Add to Google Wallet" class="h-[34px]" />
+            </button>
+          </div>
         </div>
       </form>
 
-      {#if !isSignedIn && !sessionPending}
-        <div class="relative z-20 -mx-4 mt-10 flex grow justify-center bg-white px-4">
-            <div class="pointer-events-none absolute inset-x-0 bottom-full h-screen" style="background: linear-gradient(to top, rgba(0,0,0,0.5) 0%, rgba(0,0,0,0.15) 30%, rgba(0,0,0,0) 100%);"></div>
-            <div class="w-full max-w-sm pt-8">
-              <p class="text-center text-xl font-bold text-zinc-900">Stay in the loop with the<br />Park Slope Food Coop.</p>
-              <h2 class="mt-3 text-center text-xl font-bold text-zinc-900">Create a free account, or log in.</h2>
-              <p class="mt-2 text-center text-sm text-zinc-600">
-                Gain access to wallet passes, shift calendar subscriptions, and produce favorites.
-              </p>
+      {@const isPaywalled = !isSignedIn && !sessionPending}
+      <section class="mt-10">
+        <h2 class="text-lg font-semibold text-zinc-900">Shift Calendar</h2>
 
-              <form onsubmit={(event) => void handlePaywallSubmit(event)} class="mt-6 space-y-3">
-                <div>
-                  <label for="paywallEmail" class="block text-sm font-medium text-zinc-700">Email address</label>
-                  <input
-                    type="email"
-                    id="paywallEmail"
-                    bind:this={paywallEmailRef}
-                    bind:value={paywallEmail}
-                    required
-                    placeholder="you@example.com"
-                    class="mt-1 w-full rounded-lg border border-zinc-300 px-3 py-2.5 text-base text-zinc-900 shadow-sm placeholder:text-zinc-400 focus:border-zinc-500 focus:ring-2 focus:ring-zinc-500 focus:outline-none"
-                  />
-                </div>
-
-                {#if paywallError}
-                  <p class="text-sm text-red-600">{paywallError}</p>
-                {/if}
-
-                <button
-                  type="submit"
-                  disabled={paywallLoading}
-                  class="w-full rounded-lg bg-black px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-zinc-800 disabled:bg-zinc-400"
-                >
-                  {paywallLoading ? 'Checking...' : 'Continue'}
-                </button>
-              </form>
-            </div>
-        </div>
-      {:else}
-        <section class="mt-10">
-          <h2 class="text-lg font-semibold text-zinc-900">Calendar</h2>
-          <p class="mt-2 text-sm text-zinc-600">
-            Link your account to your calendar to view your prospective shifts.
-          </p>
-
-          <div class="mt-6 rounded-xl border border-zinc-200 bg-white p-4">
+        <div class="relative mt-6">
+          <div
+            class={`rounded-xl border border-zinc-200 bg-white p-4 transition-[filter,opacity] duration-200 ${isPaywalled ? 'pointer-events-none select-none blur-[5px] opacity-45 sm:blur-[2.5px] sm:opacity-60' : ''}`}
+            inert={isPaywalled}
+            aria-hidden={isPaywalled}
+          >
             <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <h3 class="text-base font-semibold text-zinc-900">Shift Calendar Syncing</h3>
@@ -530,53 +504,94 @@
               </div>
             </div>
           </div>
-        </section>
 
-        {#if pushSupported && canManageNotifications}
-          <section class="mt-10">
-            <h2 class="text-lg font-semibold text-zinc-900">Notifications</h2>
-            <p class="mt-2 text-sm text-zinc-600">Receive push notifications from foodcoop.news.</p>
+          {#if isPaywalled}
+            <div class="absolute inset-0 z-10 flex items-center justify-center p-3 sm:p-6">
+              <div class="w-full max-w-sm rounded-2xl border border-zinc-200 bg-white/95 p-6 shadow-2xl shadow-zinc-900/50 backdrop-blur-sm">
+                <p class="text-center text-xl font-bold text-zinc-900">
+                  Stay in the loop with the<br />Park Slope Food Coop.
+                </p>
+                <h2 class="mt-3 text-center text-xl font-bold text-zinc-900">Create an account, or log in.</h2>
+                <p class="mt-2 text-center text-sm text-zinc-600">
+                  Gain access to wallet passes, shift calendar subscriptions, and produce favorites.
+                </p>
 
-            <div class="mt-6 rounded-xl border border-zinc-200 bg-white p-4">
-              <div class="flex items-center justify-between">
-                <div>
-                  <h3 class="text-base font-semibold text-zinc-900">Push Notifications</h3>
-                  <p class="mt-1 text-sm text-zinc-600">Get notified about updates and announcements.</p>
-                </div>
+                <form onsubmit={(event) => void handlePaywallSubmit(event)} class="mt-6 space-y-3">
+                  <div>
+                    <label for="paywallEmail" class="block text-sm font-medium text-zinc-700">Email address</label>
+                    <input
+                      type="email"
+                      id="paywallEmail"
+                      bind:this={paywallEmailRef}
+                      bind:value={paywallEmail}
+                      required
+                      placeholder="you@example.com"
+                      class="mt-1 w-full rounded-lg border border-zinc-300 px-3 py-2.5 text-base text-zinc-900 shadow-sm placeholder:text-zinc-400 focus:border-zinc-500 focus:ring-2 focus:ring-zinc-500 focus:outline-none"
+                    />
+                  </div>
+
+                  {#if paywallError}
+                    <p class="text-sm text-red-600">{paywallError}</p>
+                  {/if}
+
+                  <button
+                    type="submit"
+                    disabled={paywallLoading}
+                    class="w-full rounded-lg bg-black px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-zinc-800 disabled:bg-zinc-400"
+                  >
+                    {paywallLoading ? 'Checking...' : 'Continue'}
+                  </button>
+                </form>
+              </div>
+            </div>
+          {/if}
+        </div>
+      </section>
+
+      {#if pushSupported && canManageNotifications}
+        <section class="mt-10">
+          <h2 class="text-lg font-semibold text-zinc-900">Notifications</h2>
+          <p class="mt-2 text-sm text-zinc-600">Receive push notifications from foodcoop.news.</p>
+
+          <div class="mt-6 rounded-xl border border-zinc-200 bg-white p-4">
+            <div class="flex items-center justify-between">
+              <div>
+                <h3 class="text-base font-semibold text-zinc-900">Push Notifications</h3>
+                <p class="mt-1 text-sm text-zinc-600">Get notified about updates and announcements.</p>
+              </div>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={pushEnabled}
+                aria-label="Toggle push notifications"
+                disabled={pushLoading}
+                onclick={() => void onTogglePush()}
+                class={`relative inline-flex h-7 w-12 shrink-0 cursor-pointer items-center rounded-full transition-colors duration-200 ease-in-out disabled:opacity-50 ${
+                  pushEnabled ? 'bg-green-600' : 'bg-zinc-300'
+                }`}
+              >
+                <span
+                  class={`inline-block h-5 w-5 rounded-full bg-white shadow-sm transition-transform duration-200 ease-in-out ${
+                    pushEnabled ? 'translate-x-6' : 'translate-x-1'
+                  }`}
+                ></span>
+              </button>
+            </div>
+
+            {#if pushEnabled}
+              <div class="mt-4 border-t border-zinc-100 pt-4">
                 <button
                   type="button"
-                  role="switch"
-                  aria-checked={pushEnabled}
-                  aria-label="Toggle push notifications"
-                  disabled={pushLoading}
-                  onclick={() => void onTogglePush()}
-                  class={`relative inline-flex h-7 w-12 shrink-0 cursor-pointer items-center rounded-full transition-colors duration-200 ease-in-out disabled:opacity-50 ${
-                    pushEnabled ? 'bg-green-600' : 'bg-zinc-300'
-                  }`}
+                  onclick={() => void onSendTestNotification()}
+                  disabled={isSendingTest}
+                  class="rounded-xl bg-green-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-green-700 disabled:bg-green-400 disabled:opacity-60"
                 >
-                  <span
-                    class={`inline-block h-5 w-5 rounded-full bg-white shadow-sm transition-transform duration-200 ease-in-out ${
-                      pushEnabled ? 'translate-x-6' : 'translate-x-1'
-                    }`}
-                  ></span>
+                  {isSendingTest ? 'Sending...' : 'Send test notification'}
                 </button>
               </div>
-
-              {#if pushEnabled}
-                <div class="mt-4 border-t border-zinc-100 pt-4">
-                  <button
-                    type="button"
-                    onclick={() => void onSendTestNotification()}
-                    disabled={isSendingTest}
-                    class="rounded-xl bg-green-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-green-700 disabled:bg-green-400 disabled:opacity-60"
-                  >
-                    {isSendingTest ? 'Sending...' : 'Send test notification'}
-                  </button>
-                </div>
-              {/if}
-            </div>
-          </section>
-        {/if}
+            {/if}
+          </div>
+        </section>
       {/if}
 
     {/if}
