@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { goto } from '$app/navigation';
   import { onMount } from 'svelte';
   import type {
     FeedPost,
@@ -85,6 +86,15 @@
     FeedItem,
     { type: 'foodcoopcooks-events' | 'wordsprouts-events' | 'concert-series-events' | 'gm-events' | 'foodcoop-orientation-events' | 'gazette-deadline' }
   >;
+  type UpcomingShiftCount = {
+    name: string;
+    count: number;
+  };
+  type UpcomingShiftsResponse = {
+    shifts?: UpcomingShiftCount[];
+    totalUpcomingEvents?: number;
+    asOf?: string;
+  };
 
   let {
     channel,
@@ -105,6 +115,9 @@
   let fetchFeeds = $state<() => void>(() : void => {});
   let primaryMenuOpen = $state(false);
   let sourceMenuOpen = $state(false);
+  let upcomingShiftsLoading = $state(true);
+  let upcomingShiftsError = $state('');
+  let upcomingShifts = $state<UpcomingShiftCount[]>([]);
 
   let filtersRef = $state<HTMLDivElement | null>(null);
 
@@ -163,6 +176,19 @@
 
   const isInitialLoading = $derived(loading && items.length === 0);
   const isInitialError = $derived(Boolean(error) && items.length === 0);
+  const showsUpcomingShiftsBySource = $derived(
+    sourceFilter === null || sourceFilter === 'foodcoop',
+  );
+  const shouldShowUpcomingShiftsCard = $derived(
+    primaryFilter === 'latest' &&
+      showsUpcomingShiftsBySource &&
+      !upcomingShiftsLoading &&
+      !upcomingShiftsError &&
+      upcomingShifts.length > 0,
+  );
+  const shouldShowUpcomingShiftsSkeleton = $derived(
+    primaryFilter === 'latest' && showsUpcomingShiftsBySource && upcomingShiftsLoading,
+  );
 
   function isEventItem(item: FeedItem) : item is EventFeedItem {
     return (
@@ -386,6 +412,49 @@
       : 'bg-zinc-100 text-zinc-700';
   }
 
+  async function loadUpcomingShifts(): Promise<void> {
+    upcomingShiftsLoading = true;
+    upcomingShiftsError = '';
+    try {
+      const response = await fetch('/api/calendar/upcoming-shifts', { cache: 'no-store' });
+      const payload = (await response.json().catch(() : Record<string, never> => ({}))) as UpcomingShiftsResponse;
+      if (!response.ok) {
+        upcomingShifts = [];
+        upcomingShiftsError = 'Failed to load upcoming shifts';
+        return;
+      }
+
+      const shifts = Array.isArray(payload.shifts)
+        ? payload.shifts
+            .filter(
+              (shift): shift is UpcomingShiftCount =>
+                Boolean(
+                  shift &&
+                    typeof shift.name === 'string' &&
+                    shift.name.trim().length > 0 &&
+                    typeof shift.count === 'number' &&
+                    Number.isFinite(shift.count) &&
+                    shift.count > 0,
+                ),
+            )
+            .map((shift): UpcomingShiftCount => ({
+              name: shift.name.trim(),
+              count: shift.count,
+            }))
+        : [];
+      upcomingShifts = shifts;
+    } catch {
+      upcomingShifts = [];
+      upcomingShiftsError = 'Failed to load upcoming shifts';
+    } finally {
+      upcomingShiftsLoading = false;
+    }
+  }
+
+  function openIntegrations() : void {
+    void goto('/integrations');
+  }
+
   onMount(() : () => void => {
     items = initialState.items;
     loading = initialState.loading;
@@ -394,6 +463,7 @@
     showSticky = initialState.showSticky;
     favoritesSnapshot = initialState.favoritesSnapshot;
     fetchFeeds = initialState.fetchFeeds;
+    void loadUpcomingShifts();
 
     // Filters intentionally do not persist; always default to All + Latest.
 
@@ -618,6 +688,23 @@
               onOpenUpcoming: openUpcomingFilter,
             })}
           </div>
+        {/if}
+
+        {#if shouldShowUpcomingShiftsCard}
+          <div class="feed-item-enter min-w-0">
+            {@render UpcomingShiftsCard({
+              shifts: upcomingShifts,
+              onOpenIntegrations: openIntegrations,
+            })}
+          </div>
+        {/if}
+        {#if shouldShowUpcomingShiftsSkeleton}
+          <div class="feed-item-enter min-w-0">
+            {@render UpcomingShiftsSkeletonCard()}
+          </div>
+        {/if}
+
+        {#if primaryFilter === 'latest' && upcomingFortnightEvents.length > 0}
           <div class="flex items-center gap-3 px-1 py-1" aria-label="Now">
             <div class="h-px flex-1 bg-zinc-200"></div>
             <span class="text-xs font-semibold tracking-[0.08em] text-zinc-500 uppercase">Now</span>
@@ -636,7 +723,7 @@
         {/if}
       </div>
 
-      {#if displayedItems.length === 0 && pendingSources === 0 && !(primaryFilter === 'latest' && upcomingFortnightEvents.length > 0)}
+      {#if displayedItems.length === 0 && pendingSources === 0 && !(primaryFilter === 'latest' && upcomingFortnightEvents.length > 0) && !shouldShowUpcomingShiftsCard && !shouldShowUpcomingShiftsSkeleton}
         <p class="py-8 text-center text-zinc-500">No items found.</p>
       {/if}
     {/if}
@@ -709,6 +796,70 @@
       </div>
     </div>
   </button>
+{/snippet}
+
+{#snippet UpcomingShiftsCard({
+  shifts,
+  onOpenIntegrations,
+}: {
+  shifts: UpcomingShiftCount[];
+  onOpenIntegrations: () => void;
+})}
+  <button
+    type="button"
+    onclick={onOpenIntegrations}
+    class="block w-full rounded-xl border border-zinc-200 bg-white p-4 text-left transition-colors hover:border-green-300"
+  >
+    <div class="flex items-start gap-3">
+      <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-sky-100 text-xl">🧩</div>
+      <div class="min-w-0 flex-1">
+        <div class="flex flex-wrap items-center gap-2">
+          <span class="font-semibold text-zinc-900">Upcoming Shifts</span>
+          <span class="shrink-0 text-sm text-zinc-400">Next 6 weeks</span>
+        </div>
+        <div class="mt-3 max-h-72 overflow-y-auto pr-1">
+          <div class="flex flex-wrap gap-1.5">
+            {#each shifts as shift, index (shift.name)}
+              <span
+                class={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs ${
+                  index < 5 ? 'bg-amber-100 text-amber-800' : 'bg-sky-100 text-sky-900'
+                }`}
+              >
+                <span>{shift.name}</span>
+                <span class="font-semibold">{shift.count}</span>
+              </span>
+            {/each}
+          </div>
+        </div>
+      </div>
+    </div>
+  </button>
+{/snippet}
+
+{#snippet UpcomingShiftsSkeletonCard()}
+  <div class="rounded-xl border border-zinc-200 bg-white p-4">
+    <div class="flex items-start gap-3">
+      <div class="feed-shimmer h-10 w-10 shrink-0 rounded-full"></div>
+      <div class="min-w-0 flex-1 space-y-3">
+        <div class="flex items-center gap-2">
+          <div class="feed-shimmer h-5 w-32 rounded-full"></div>
+          <div class="feed-shimmer h-4 w-24 rounded-full"></div>
+        </div>
+        <div class="flex flex-wrap gap-1.5">
+          <div class="feed-shimmer h-5 w-[5.5rem] rounded-full"></div>
+          <div class="feed-shimmer h-5 w-[6.5rem] rounded-full"></div>
+          <div class="feed-shimmer h-5 w-20 rounded-full"></div>
+          <div class="feed-shimmer h-5 w-28 rounded-full"></div>
+          <div class="feed-shimmer h-5 w-16 rounded-full"></div>
+          <div class="feed-shimmer h-5 w-[7.5rem] rounded-full"></div>
+          <div class="feed-shimmer h-5 w-[4.75rem] rounded-full"></div>
+          <div class="feed-shimmer h-5 w-[6.75rem] rounded-full"></div>
+          <div class="feed-shimmer h-5 w-[5.25rem] rounded-full"></div>
+          <div class="feed-shimmer h-5 w-[7rem] rounded-full"></div>
+        </div>
+      </div>
+    </div>
+  </div>
 {/snippet}
 
 {#snippet FeedItemSkeleton()}
