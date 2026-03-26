@@ -11,6 +11,7 @@
 - Unified Discover feed for Coop announcements, Gazette posts, Food Coop Cooks updates, events, and Bluesky posts
 - Filterable feed with recent-only items and rich media previews
 - Email/password signup and sign-in
+- Read past, current, and upcoming agenda items for general meetings
 - Member profile settings (name, member ID)
 - Unofficial member card preview
 - Add member card to Apple Wallet or Google Wallet

@@ -34,6 +34,7 @@
     <ul class="list-inside list-disc space-y-2">
       <li>Browse an assortment of feeds related to the Coop</li>
       <li>Search the Coop's produce for selection and pricing information</li>
+      <li>Read past, current, and upcoming agenda items for general meetings</li>
       <li>Add your Coop membership card to your Apple Wallet or Google Wallet</li>
       <li>Sync your favorite available work shifts to Google, Outlook, or Apple Calendar</li>
     </ul>
