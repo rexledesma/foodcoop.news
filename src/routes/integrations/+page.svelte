@@ -103,6 +103,17 @@
     return [...jobs].sort((a, b) : number => normalizeJobSortKey(a).localeCompare(normalizeJobSortKey(b)));
   }
 
+  function getOrderedJobOptions(query: string, selectedJobs: string[]) : string[] {
+    const normalizedQuery = query.toLowerCase().trim();
+    const filteredJobs = normalizedQuery
+      ? SHIFT_JOB_OPTIONS.filter((job) : boolean => job.toLowerCase().includes(normalizedQuery))
+      : SHIFT_JOB_OPTIONS;
+    const selectedJobSet = new Set(selectedJobs);
+    const selected = sortJobs(filteredJobs.filter((job) : boolean => selectedJobSet.has(job)));
+    const unselected = sortJobs(filteredJobs.filter((job) : boolean => !selectedJobSet.has(job)));
+    return [...selected, ...unselected];
+  }
+
   let state = {
     isInitialLoading: true,
     showSticky: getCurrentStickyVisibility(),
@@ -124,7 +135,7 @@
     jobSearch: '',
     isJobDropdownOpen: false,
     highlightedJobIndex: 0,
-    filteredJobOptions: SHIFT_JOB_OPTIONS,
+    filteredJobOptions: getOrderedJobOptions('', []),
     pushSupported: false,
     canManageNotifications: false,
     pushEnabled: false,
@@ -155,9 +166,7 @@
     },
     onCopyCalendarUrl: async () : Promise<void> => copyCalendarUrl(),
     onJobSearchChange: (value: string) : void => {
-      const filtered = value.trim()
-        ? SHIFT_JOB_OPTIONS.filter((job) : boolean => job.toLowerCase().includes(value.toLowerCase()))
-        : SHIFT_JOB_OPTIONS;
+      const filtered = getOrderedJobOptions(value, state.selectedJobs);
       state = {
         ...state,
         jobSearch: value,
@@ -168,7 +177,13 @@
       dispatchState();
     },
     onJobSearchFocus: () : void => {
-      state = { ...state, isJobDropdownOpen: true };
+      const filtered = getOrderedJobOptions(state.jobSearch, state.selectedJobs);
+      state = {
+        ...state,
+        isJobDropdownOpen: true,
+        filteredJobOptions: filtered,
+        highlightedJobIndex: filtered.length === 0 ? -1 : 0,
+      };
       dispatchState();
     },
     onJobSearchBlur: () : void => {
@@ -331,6 +346,7 @@
       displayFullName: (profile.memberName || '').trim(),
       calendarId: profile.calendarId || '',
       selectedJobs: sortedJobs,
+      filteredJobOptions: getOrderedJobOptions(state.jobSearch, sortedJobs),
       ...urls,
     };
   }
@@ -391,13 +407,20 @@
     const nextJobs = state.selectedJobs.includes(job)
       ? state.selectedJobs.filter((j) : boolean => j !== job)
       : [...state.selectedJobs, job];
-    state = { ...state, selectedJobs: nextJobs };
+    const sortedNextJobs = sortJobs(nextJobs);
+    const nextFilteredJobOptions = getOrderedJobOptions(state.jobSearch, sortedNextJobs);
+    state = {
+      ...state,
+      selectedJobs: sortedNextJobs,
+      filteredJobOptions: nextFilteredJobOptions,
+      highlightedJobIndex: nextFilteredJobOptions.length === 0 ? -1 : 0,
+    };
     maybeSaveDraft();
     dispatchState();
 
     if (session?.user) {
       try {
-        await updateProfile({ jobFilters: nextJobs });
+        await updateProfile({ jobFilters: sortedNextJobs });
       } catch (error) {
         pushToast('error', error instanceof Error ? error.message : 'Failed to update shift filters');
       }
@@ -609,11 +632,13 @@
           window.dispatchEvent(new CustomEvent('force-sticky', { detail: true }));
           const draft = loadDraft();
           if (draft) {
+            const sortedDraftJobs = sortJobs(draft.selectedJobs);
             state = {
               ...state,
               fullName: draft.fullName,
               memberId: draft.memberId,
-              selectedJobs: sortJobs(draft.selectedJobs),
+              selectedJobs: sortedDraftJobs,
+              filteredJobOptions: getOrderedJobOptions(state.jobSearch, sortedDraftJobs),
               displayFullName: draft.fullName.trim(),
             };
             dispatchState();

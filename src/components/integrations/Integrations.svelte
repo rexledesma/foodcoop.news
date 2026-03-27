@@ -610,7 +610,7 @@
                   onblur={onJobSearchBlur}
                   onkeydown={(event) => onJobSearchKeyDown(event)}
                   placeholder="Search jobs"
-                  class="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 shadow-sm focus:ring-2 focus:ring-green-500 focus:outline-none"
+                  class="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-base text-zinc-900 shadow-sm focus:ring-2 focus:ring-zinc-400 focus:outline-none sm:text-sm"
                 />
                 {#if isJobDropdownOpen}
                   <div class="absolute z-10 mt-2 w-full rounded-xl border border-zinc-200 bg-white shadow-lg">
@@ -621,16 +621,19 @@
                           {@const isHighlighted = index === highlightedJobIndex}
                           <button
                             type="button"
+                            onmousedown={(event) => event.preventDefault()}
                             onclick={() => onToggleJob(job)}
                             onmouseenter={() => onHighlightJobIndex(index)}
-                            class={`flex w-full items-center justify-between px-3 py-2 text-left text-sm transition-colors ${
-                              isSelected ? 'bg-green-50 text-green-700' : 'text-zinc-700 hover:bg-zinc-100'
+                            class={`flex w-full items-center gap-1 px-3 py-2 text-left text-sm transition-colors ${
+                              isSelected
+                                ? 'bg-amber-100 text-amber-800'
+                                : 'text-zinc-700 hover:bg-zinc-100'
                             } ${isHighlighted && !isSelected ? 'bg-zinc-100' : ''}`}
                           >
-                            <span>{job}</span>
                             {#if isSelected}
-                              <span class="text-xs">Selected</span>
+                              <span class="text-[12px] leading-none text-amber-700">♥</span>
                             {/if}
+                            <span class={isSelected ? 'font-bold' : ''}>{job}</span>
                           </button>
                         {/each}
                       {:else}
@@ -644,19 +647,20 @@
               <div class="flex flex-wrap gap-2">
                 {#if selectedJobs.length > 0}
                   {#each selectedJobs as job (job)}
-                    <span
-                      class="group inline-flex items-center gap-2 rounded-full bg-zinc-100 px-3 py-1 text-xs font-medium text-zinc-700 transition-colors hover:bg-red-50 hover:text-red-700"
+                    <button
+                      type="button"
+                      onclick={() => onRemoveJob(job)}
+                      class="group inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-xs text-amber-800 transition-colors hover:bg-red-50 hover:text-red-700"
+                      aria-label={`Remove ${job}`}
                     >
-                      {job}
-                      <button
-                        type="button"
-                        onclick={() => onRemoveJob(job)}
-                        class="text-xs font-semibold text-zinc-400 transition-colors group-hover:text-red-600"
-                        aria-label={`Remove ${job}`}
+                      <span class="text-[12px] leading-none text-amber-700 transition-colors group-hover:text-red-700">♥</span>
+                      <span class="font-bold">{job}</span>
+                      <span
+                        class="pointer-events-none text-xs font-semibold text-red-700 opacity-0 transition-opacity group-hover:pointer-events-auto group-hover:opacity-100 focus-visible:pointer-events-auto focus-visible:opacity-100"
                       >
                         ×
-                      </button>
-                    </span>
+                      </span>
+                    </button>
                   {/each}
                 {:else}
                   <span class="text-sm text-zinc-500">All shifts included.</span>
