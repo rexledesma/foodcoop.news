@@ -9,6 +9,7 @@
   import { signOut } from '@/lib/auth-client';
   import { withNextParam } from '@/lib/auth-redirect';
   import { prefetchProduceCache } from '@/lib/produce-cache-prefetch';
+  import { APPLE_STARTUP_IMAGES } from '@/lib/apple-startup-images';
   import type { LayoutData } from './$types';
   import {
     getCurrentStickyVisibility,
@@ -682,6 +683,14 @@
   <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
   <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
   <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  {#each APPLE_STARTUP_IMAGES as startupImage (startupImage.href)}
+    <link
+      rel="apple-touch-startup-image"
+      href={startupImage.href}
+      media={startupImage.media}
+    />
+  {/each}
   <link rel="manifest" href="/manifest.json" />
   <link rel="canonical" href={canonicalUrl} />
   <link rel="alternate" hreflang="en" href={canonicalUrl} />
