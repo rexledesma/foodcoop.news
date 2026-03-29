@@ -26,7 +26,7 @@
     | '5Y'
     | 'MAX'
     | 'YTD';
-  type SortField = 'name' | 'price' | 'change' | 'first_seen' | 'last_seen' | 'favorite_count';
+  type SortField = 'name' | 'price' | 'change' | 'stock_update' | 'favorite_count';
   type SortDirection = 'asc' | 'desc' | null;
   type QuickFilter =
     | 'favorites'
@@ -214,6 +214,12 @@
       apply: () : void => applySortSelection('name', 'desc'),
     },
     {
+      label: 'Date: Stock Update',
+      shortLabel: 'Stock',
+      isActive: (field, direction) => field === 'stock_update' && direction === 'desc',
+      apply: () : void => applySortSelection('stock_update', 'desc'),
+    },
+    {
       label: 'Favorites: Popular',
       shortLabel: 'Popular',
       isActive: (field, direction) => field === 'favorite_count' && direction === 'desc',
@@ -334,6 +340,15 @@
     return arrivedOnDate || becameUnavailableOnDate;
   }
 
+  function stockUpdateDate(row: ProduceRow): string | null {
+    const firstSeen = row.first_seen_date;
+    const unavailableSince = row.unavailable_since_date;
+    if (firstSeen && unavailableSince) {
+      return firstSeen > unavailableSince ? firstSeen : unavailableSince;
+    }
+    return unavailableSince ?? firstSeen ?? null;
+  }
+
   const filteredRows = $derived.by(() : ProduceRow[] => {
     let result = periodScopedRows;
 
@@ -385,15 +400,16 @@
       if (sortField === 'price') {
         return sortDirection === 'asc' ? a.price - b.price : b.price - a.price;
       }
-      if (sortField === 'first_seen') {
-        const aVal = a.first_seen_date ?? '';
-        const bVal = b.first_seen_date ?? '';
-        return sortDirection === 'asc' ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
-      }
-      if (sortField === 'last_seen') {
-        const aVal = a.unavailable_since_date ?? '';
-        const bVal = b.unavailable_since_date ?? '';
-        return sortDirection === 'asc' ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
+      if (sortField === 'stock_update') {
+        const aVal = stockUpdateDate(a);
+        const bVal = stockUpdateDate(b);
+        if (aVal === null && bVal === null) {return a.name.localeCompare(b.name);}
+        if (aVal === null) {return 1;}
+        if (bVal === null) {return -1;}
+        const dateDelta =
+          sortDirection === 'asc' ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
+        if (dateDelta !== 0) {return dateDelta;}
+        return a.name.localeCompare(b.name);
       }
       if (sortField === 'favorite_count') {
         const countDelta = favoriteCount(a.name) - favoriteCount(b.name);
@@ -915,6 +931,7 @@
   }
 
   function activeSortPillClass() : string {
+    if (sortField === 'stock_update' && sortDirection === 'desc') {return 'bg-blue-100 text-blue-800';}
     if (sortField === 'favorite_count' && sortDirection === 'desc') {return 'bg-amber-100 text-amber-800';}
     if (sortField === 'change' && sortDirection === 'asc') {return 'bg-green-100 text-green-700';}
     if (sortField === 'change' && sortDirection === 'desc') {return 'bg-red-100 text-red-700';}
@@ -926,6 +943,7 @@
   }
 
   function sortOptionPillClass(label: string) : string {
+    if (label === 'Date: Stock Update') {return 'bg-blue-100 text-blue-800';}
     if (label === 'Favorites: Popular') {return 'bg-amber-100 text-amber-800';}
     if (label === 'Trends: Price Drops') {return 'bg-green-100 text-green-700';}
     if (label === 'Trends: Price Hikes') {return 'bg-red-100 text-red-700';}
@@ -1320,8 +1338,8 @@
           const parsed = JSON.parse(stored) as {
             quickFilter?: QuickFilter;
             timePeriod?: TimePeriod;
-            sortField?: SortField | null;
-            sortDirection?: SortDirection;
+            sortField?: string | null;
+            sortDirection?: string | null;
           };
           const persistedQuickFilter = parsed.quickFilter;
           quickFilter =
@@ -1333,8 +1351,30 @@
           if (parsed.timePeriod && TIME_PERIODS.includes(parsed.timePeriod)) {
             timePeriod = parsed.timePeriod;
           }
-          sortField = parsed.sortField ?? sortField;
-          sortDirection = parsed.sortDirection ?? sortDirection;
+          const persistedSortField = parsed.sortField;
+          let migratedLegacyDateSort = false;
+          if (
+            persistedSortField === 'name' ||
+            persistedSortField === 'price' ||
+            persistedSortField === 'change' ||
+            persistedSortField === 'favorite_count' ||
+            persistedSortField === 'stock_update' ||
+            persistedSortField === null
+          ) {
+            sortField = persistedSortField;
+          } else if (persistedSortField === 'first_seen' || persistedSortField === 'last_seen') {
+            sortField = 'stock_update';
+            sortDirection = 'desc';
+            migratedLegacyDateSort = true;
+          }
+          const persistedSortDirection = parsed.sortDirection;
+          if (!migratedLegacyDateSort && (
+            persistedSortDirection === 'asc' ||
+            persistedSortDirection === 'desc' ||
+            persistedSortDirection === null
+          )) {
+            sortDirection = persistedSortDirection;
+          }
         }
       } catch {
         // ignore persisted filter parse issues
@@ -1448,7 +1488,7 @@
 
             {#if openControlsMenu === 'filter'}
               <div
-                class="absolute top-full left-0 z-40 mt-2 w-[min(14rem,calc(100vw-2.5rem))] max-w-[calc(100vw-2.5rem)] overflow-hidden rounded-2xl border border-zinc-200 bg-white py-1 shadow-[0_16px_50px_-24px_rgba(0,0,0,0.45)] sm:right-0 sm:left-auto sm:w-44 sm:max-w-none"
+                class="absolute top-full left-0 z-40 mt-2 w-[min(12rem,calc(100vw-2.5rem))] max-w-[calc(100vw-2.5rem)] overflow-hidden rounded-2xl border border-zinc-200 bg-white py-1 shadow-[0_16px_50px_-24px_rgba(0,0,0,0.45)] sm:right-0 sm:left-auto sm:w-40 sm:max-w-none"
                 data-produce-controls-menu="true"
               >
                 <div class="px-4 py-2 text-xs font-semibold tracking-[0.08em] text-zinc-500 uppercase">
@@ -1486,7 +1526,7 @@
               onclick={() => toggleControlsMenu('sort')}
               aria-expanded={openControlsMenu === 'sort'}
               data-produce-controls-trigger="true"
-              class={`inline-flex w-full items-center justify-between gap-1 rounded-full px-2.5 py-1 text-sm font-medium transition-colors sm:w-32 ${activeSortPillClass()}`}
+              class={`inline-flex w-full items-center justify-between gap-1 rounded-full px-2.5 py-1 text-sm font-medium transition-colors sm:w-36 ${activeSortPillClass()}`}
             >
               <span>{activeSortLabel()}</span>
               <span aria-hidden="true" class="text-[10px] text-zinc-500">▼</span>
@@ -1494,7 +1534,7 @@
 
             {#if openControlsMenu === 'sort'}
               <div
-                class="absolute top-full left-1/2 z-40 mt-2 w-[min(14rem,calc(100vw-2.5rem))] max-w-[calc(100vw-2.5rem)] -translate-x-1/2 overflow-hidden rounded-2xl border border-zinc-200 bg-white py-1 shadow-[0_16px_50px_-24px_rgba(0,0,0,0.45)] sm:right-0 sm:left-auto sm:w-44 sm:max-w-none sm:translate-x-0"
+                class="absolute top-full left-1/2 z-40 mt-2 w-[min(14rem,calc(100vw-2.5rem))] max-w-[calc(100vw-2.5rem)] -translate-x-1/2 overflow-hidden rounded-2xl border border-zinc-200 bg-white py-1 shadow-[0_16px_50px_-24px_rgba(0,0,0,0.45)] sm:right-0 sm:left-auto sm:w-64 sm:max-w-none sm:translate-x-0"
                 data-produce-controls-menu="true"
               >
                 <div class="px-4 py-2 text-xs font-semibold tracking-[0.08em] text-zinc-500 uppercase">
@@ -1533,7 +1573,7 @@
               onclick={() => toggleControlsMenu('period')}
               aria-expanded={openControlsMenu === 'period'}
               data-produce-controls-trigger="true"
-              class={`inline-flex w-full items-center justify-between gap-1 rounded-full px-2.5 py-1 text-sm font-medium transition-colors sm:w-32 ${activePeriodPillClass()}`}
+              class={`inline-flex w-full items-center justify-between gap-1 rounded-full px-2.5 py-1 text-sm font-medium transition-colors sm:w-36 ${activePeriodPillClass()}`}
             >
               <span>{PERIOD_LABELS[timePeriod]}</span>
               <span aria-hidden="true" class="text-[10px] text-zinc-500">▼</span>
@@ -1541,7 +1581,7 @@
 
             {#if openControlsMenu === 'period'}
               <div
-                class="absolute top-full right-0 z-40 mt-2 w-[min(10rem,calc(100vw-2.5rem))] max-w-[calc(100vw-2.5rem)] overflow-hidden rounded-2xl border border-zinc-200 bg-white py-1 shadow-[0_16px_50px_-24px_rgba(0,0,0,0.45)] sm:w-32 sm:max-w-none"
+                class="absolute top-full right-0 z-40 mt-2 w-[min(10rem,calc(100vw-2.5rem))] max-w-[calc(100vw-2.5rem)] overflow-hidden rounded-2xl border border-zinc-200 bg-white py-1 shadow-[0_16px_50px_-24px_rgba(0,0,0,0.45)] sm:w-52 sm:max-w-none"
                 data-produce-controls-menu="true"
               >
                 <div class="px-4 py-2 text-xs font-semibold tracking-[0.08em] text-zinc-500 uppercase">
