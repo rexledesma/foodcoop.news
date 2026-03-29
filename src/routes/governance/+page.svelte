@@ -125,7 +125,7 @@
           href={governance.currentAgendaUrl}
           target="_blank"
           rel="noopener noreferrer"
-          class="block rounded-xl border border-zinc-200 bg-white p-4 transition-colors hover:border-zinc-400"
+          class="block rounded-xl border border-zinc-200 bg-white p-4 transition-colors hover:border-zinc-400 hover:bg-zinc-50"
         >
           <div class="flex items-start gap-3">
             <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-rose-100 text-xl">
@@ -169,7 +169,7 @@
         href={governance.sourceUrl}
         target="_blank"
         rel="noopener noreferrer"
-        class="block rounded-xl border border-zinc-200 bg-white p-4 transition-colors hover:border-zinc-400"
+        class="block rounded-xl border border-zinc-200 bg-white p-4 transition-colors hover:border-zinc-400 hover:bg-zinc-50"
       >
         <div class="flex items-start gap-3">
           <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-amber-100 text-xl">
@@ -198,7 +198,7 @@
             href={group.url}
             target="_blank"
             rel="noopener noreferrer"
-            class="block rounded-xl border border-zinc-200 bg-white p-4 transition-colors hover:border-zinc-400"
+            class="block rounded-xl border border-zinc-200 bg-white p-4 transition-colors hover:border-zinc-400 hover:bg-zinc-50"
           >
             <div class="flex items-start gap-3">
               <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-sky-100 text-xl">

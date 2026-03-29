@@ -795,7 +795,7 @@
   <button
     type="button"
     onclick={onOpenUpcoming}
-    class="block w-full rounded-xl border border-zinc-200 bg-white p-4 text-left transition-colors hover:border-green-300"
+    class="block w-full rounded-xl border border-zinc-200 bg-white p-4 text-left transition-colors hover:border-zinc-400 hover:bg-zinc-50"
   >
     <div class="flex items-start gap-3">
       <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-rose-100 text-xl">📅</div>
@@ -832,7 +832,7 @@
   <button
     type="button"
     onclick={onOpenIntegrations}
-    class="block w-full rounded-xl border border-zinc-200 bg-white p-4 text-left transition-colors hover:border-green-300"
+    class="block w-full rounded-xl border border-zinc-200 bg-white p-4 text-left transition-colors hover:border-zinc-400 hover:bg-zinc-50"
   >
     <div class="flex items-start gap-3">
       <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-sky-100 text-xl">🧩</div>
@@ -922,7 +922,7 @@
     href="https://linewaitersgazette.com/about/"
     target="_blank"
     rel="noopener noreferrer"
-    class="block rounded-xl border border-zinc-200 bg-white p-4 transition-colors hover:border-green-300"
+    class="block rounded-xl border border-zinc-200 bg-white p-4 transition-colors hover:border-zinc-400 hover:bg-zinc-50"
   >
     <div class="flex items-start gap-3">
       <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-amber-100 text-xl">⏰</div>
@@ -945,7 +945,7 @@
     href={article.link}
     target="_blank"
     rel="noopener noreferrer"
-    class="block rounded-xl border border-zinc-200 bg-white p-4 transition-colors hover:border-green-300"
+    class="block rounded-xl border border-zinc-200 bg-white p-4 transition-colors hover:border-zinc-400 hover:bg-zinc-50"
   >
     <div class="flex items-start gap-3">
       <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-amber-100 text-xl">📰</div>
@@ -974,7 +974,7 @@
     href={article.link}
     target="_blank"
     rel="noopener noreferrer"
-    class="block rounded-xl border border-zinc-200 bg-white p-4 transition-colors hover:border-green-300"
+    class="block rounded-xl border border-zinc-200 bg-white p-4 transition-colors hover:border-zinc-400 hover:bg-zinc-50"
   >
     <div class="flex items-start gap-3">
       <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-green-100 text-xl">📢</div>
@@ -1006,7 +1006,7 @@
     href={article.link}
     target="_blank"
     rel="noopener noreferrer"
-    class="block rounded-xl border border-zinc-200 bg-white p-4 transition-colors hover:border-green-300"
+    class="block rounded-xl border border-zinc-200 bg-white p-4 transition-colors hover:border-zinc-400 hover:bg-zinc-50"
   >
     <div class="flex items-start gap-3">
       <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-orange-100 text-xl">🧑‍🍳</div>
@@ -1050,7 +1050,7 @@
     href={event.url}
     target="_blank"
     rel="noopener noreferrer"
-    class="block rounded-xl border border-zinc-200 bg-white p-4 transition-colors hover:border-green-300"
+    class="block rounded-xl border border-zinc-200 bg-white p-4 transition-colors hover:border-zinc-400 hover:bg-zinc-50"
   >
     <div class="flex items-start gap-3">
       <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-rose-100 text-xl">{emoji}</div>
@@ -1098,7 +1098,7 @@
     href={getPostUrl(post.uri)}
     target="_blank"
     rel="noopener noreferrer"
-    class="block rounded-xl border border-zinc-200 bg-white p-4 transition-colors hover:border-green-300"
+    class="block rounded-xl border border-zinc-200 bg-white p-4 transition-colors hover:border-zinc-400 hover:bg-zinc-50"
   >
     {#if post.repostedBy}
       <div class="mb-3 flex items-center gap-1 text-sm text-zinc-500">
@@ -1215,7 +1215,7 @@
 {#snippet ProduceCard({ update, date, favorites }: { update: ProduceEvent; date: Date; favorites: Set<string> })}
   <a
     href={`/produce?date=${update.id}`}
-    class="block rounded-xl border border-zinc-200 bg-white p-4 transition-colors hover:border-green-300"
+    class="block rounded-xl border border-zinc-200 bg-white p-4 transition-colors hover:border-zinc-400 hover:bg-zinc-50"
   >
     <div class="flex items-start gap-3">
       <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-green-100 text-xl">🥬</div>
