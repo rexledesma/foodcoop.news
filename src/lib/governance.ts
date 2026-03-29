@@ -16,8 +16,11 @@ export type GovernancePendingAgendaItem = z.infer<typeof governancePendingAgenda
 
 export const governancePreviousAgendaItemSchema = z.object({
   meetingDate: z.string(),
-  subject: z.string(),
-  url: z.string(),
+  minutesUrl: z.string(),
+  gazetteUrl: z.string().optional(),
+  gazetteTitle: z.string().optional(),
+  gazettePreviewImageUrl: z.string().optional(),
+  agendaSubjects: z.array(z.string()),
 });
 
 export type GovernancePreviousAgendaItem = z.infer<typeof governancePreviousAgendaItemSchema>;

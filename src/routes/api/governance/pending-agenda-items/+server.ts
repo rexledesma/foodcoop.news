@@ -12,7 +12,8 @@ import {
 
 const DEFAULT_SHEET_ID = '1yuBxeKZlTtbJLqabrzv2g3SiaxANppmy7GkaHlr8GbA';
 const DEFAULT_SHEET_RANGE = 'Pending!A:C';
-const DEFAULT_PREVIOUS_SHEET_RANGE = 'Previous!A:Z';
+const DEFAULT_MEETINGS_SHEET_RANGE = 'Meetings!A:E';
+const DEFAULT_AGENDA_ITEMS_SHEET_RANGE = 'AgendaItems!A:B';
 const SOURCE_PDF_URL =
   'https://www.foodcoop.com/wp-content/uploads/2026/02/2026_02_03_agenda_committee.pdf';
 const HARDCODED_LAST_UPDATED_ISO = '2026-02-03T12:00:00.000Z';
@@ -139,16 +140,16 @@ function parseDateKey(value: string): string | null {
     .padStart(2, '0')}`;
 }
 
-function parsePreviousAgendaItemsFromRows(
+function parsePreviousMeetingsFromRows(
   rawRows: string[][],
   fallbackUrl: string,
-): GovernancePreviousAgendaItem[] {
+): Map<string, Omit<GovernancePreviousAgendaItem, 'agendaSubjects'>> {
   const rows = rawRows
     .map((row): string[] => row.map((value): string => collapseWhitespace(value)))
     .filter((row): boolean => row.some((value): boolean => value.length > 0));
 
   if (rows.length === 0) {
-    return [];
+    return new Map();
   }
 
   const headerRow = rows[0] ?? [];
@@ -157,60 +158,131 @@ function parsePreviousAgendaItemsFromRows(
     headerMap.set(index, normalizeHeader(value));
   });
 
-  const subjectColumnIndex =
-    [...headerMap.entries()].find(([, value]): boolean => value.includes('subject'))?.[0] ?? 1;
-  const dateColumnIndex =
+  const meetingDateColumnIndex =
     [...headerMap.entries()].find(
       ([, value]): boolean => value.includes('date') || value.includes('meeting'),
     )?.[0] ?? 0;
-  const urlColumnIndex =
+  const minutesUrlColumnIndex =
     [...headerMap.entries()].find(
-      ([, value]): boolean => value.includes('url') || value === 'link',
+      ([, value]): boolean => value.includes('url') || value === 'link' || value.includes('minute'),
     )?.[0] ?? 2;
+  const gazetteUrlColumnIndex =
+    [...headerMap.entries()].find(([, value]): boolean => value.includes('gazetteurl'))?.[0] ??
+    [...headerMap.entries()].find(([, value]): boolean => value === 'gazette')?.[0];
+  const gazetteTitleColumnIndex =
+    [...headerMap.entries()].find(([, value]): boolean => value.includes('gazettetitle'))?.[0] ?? 3;
+  const gazettePreviewImageColumnIndex =
+    [...headerMap.entries()].find(([, value]): boolean =>
+      value.includes('gazettepreviewimageurl'),
+    )?.[0] ??
+    [...headerMap.entries()].find(([, value]): boolean => value.includes('previewimage'))?.[0] ??
+    4;
 
   const hasHeaderRow = [...headerMap.values()].some(
     (value): boolean =>
-      value.includes('subject') ||
       value.includes('date') ||
       value.includes('meeting') ||
       value.includes('url') ||
-      value === 'link',
+      value === 'link' ||
+      value.includes('minute') ||
+      value.includes('gazette') ||
+      value.includes('title') ||
+      value.includes('previewimage'),
   );
   const dataRows = hasHeaderRow ? rows.slice(1) : rows;
 
-  return dataRows
-    .map((row): GovernancePreviousAgendaItem | null => {
-      const subject = collapseWhitespace(row[subjectColumnIndex] ?? '');
-      if (!subject) {
-        return null;
-      }
+  const meetingsByDate = new Map<string, Omit<GovernancePreviousAgendaItem, 'agendaSubjects'>>();
+  for (const row of dataRows) {
+    const dateCell = row[meetingDateColumnIndex] ?? '';
+    const meetingDate = parseDateKey(dateCell);
+    if (!meetingDate) {
+      continue;
+    }
 
-      const dateCell = row[dateColumnIndex] ?? '';
-      const meetingDate = parseDateKey(dateCell);
-      if (!meetingDate) {
-        return null;
-      }
+    const minutesUrlCandidate = collapseWhitespace(row[minutesUrlColumnIndex] ?? '');
+    const minutesUrl = minutesUrlCandidate || fallbackUrl;
+    const gazetteUrlCandidate =
+      gazetteUrlColumnIndex === undefined
+        ? ''
+        : collapseWhitespace(row[gazetteUrlColumnIndex] ?? '');
+    const gazetteTitleCandidate = collapseWhitespace(row[gazetteTitleColumnIndex] ?? '');
+    const gazettePreviewImageUrlCandidate = collapseWhitespace(
+      row[gazettePreviewImageColumnIndex] ?? '',
+    );
+    const parsedRow = governancePreviousAgendaItemSchema.safeParse({
+      meetingDate,
+      minutesUrl,
+      gazetteUrl: gazetteUrlCandidate || undefined,
+      gazetteTitle: gazetteTitleCandidate || undefined,
+      gazettePreviewImageUrl: gazettePreviewImageUrlCandidate || undefined,
+      agendaSubjects: [],
+    });
+    if (!parsedRow.success) {
+      throw new Error('Invalid previous governance sheet row format.');
+    }
 
-      const urlCandidate = collapseWhitespace(row[urlColumnIndex] ?? '');
-      const url = urlCandidate || fallbackUrl;
-      const parsedRow = governancePreviousAgendaItemSchema.safeParse({
-        meetingDate,
-        subject,
-        url,
-      });
-      if (!parsedRow.success) {
-        throw new Error('Invalid previous governance sheet row format.');
-      }
+    meetingsByDate.set(meetingDate, parsedRow.data);
+  }
 
-      return parsedRow.data;
-    })
-    .filter((item): item is GovernancePreviousAgendaItem => Boolean(item));
+  return meetingsByDate;
+}
+
+function parsePreviousAgendaItemsFromRows(rawRows: string[][]): Map<string, string[]> {
+  const rows = rawRows
+    .map((row): string[] => row.map((value): string => collapseWhitespace(value)))
+    .filter((row): boolean => row.some((value): boolean => value.length > 0));
+
+  if (rows.length === 0) {
+    return new Map();
+  }
+
+  const headerRow = rows[0] ?? [];
+  const headerMap = new Map<number, string>();
+  headerRow.forEach((value, index): void => {
+    headerMap.set(index, normalizeHeader(value));
+  });
+
+  const meetingDateColumnIndex =
+    [...headerMap.entries()].find(
+      ([, value]): boolean => value.includes('date') || value.includes('meeting'),
+    )?.[0] ?? 0;
+  const subjectColumnIndex =
+    [...headerMap.entries()].find(([, value]): boolean => value.includes('subject'))?.[0] ?? 1;
+
+  const hasHeaderRow = [...headerMap.values()].some(
+    (value): boolean =>
+      value.includes('subject') || value.includes('date') || value.includes('meeting'),
+  );
+  const dataRows = hasHeaderRow ? rows.slice(1) : rows;
+
+  const subjectsByMeetingDate = new Map<string, string[]>();
+  for (const row of dataRows) {
+    const subject = collapseWhitespace(row[subjectColumnIndex] ?? '');
+    if (!subject) {
+      continue;
+    }
+
+    const meetingDate = parseDateKey(row[meetingDateColumnIndex] ?? '');
+    if (!meetingDate) {
+      continue;
+    }
+
+    const subjects = subjectsByMeetingDate.get(meetingDate);
+    if (subjects) {
+      subjects.push(subject);
+    } else {
+      subjectsByMeetingDate.set(meetingDate, [subject]);
+    }
+  }
+
+  return subjectsByMeetingDate;
 }
 
 function resolveSheetConfig(): {
   spreadsheetId: string;
   pendingRange: string;
-  previousRange: string;
+  meetingsRange: string;
+  agendaItemsRange: string;
   sourceUrl: string;
   credentials: ServiceAccountCredentials;
 } {
@@ -223,13 +295,16 @@ function resolveSheetConfig(): {
 
   const spreadsheetId = env['GOVERNANCE_SHEET_ID']?.trim() || DEFAULT_SHEET_ID;
   const pendingRange = env['GOVERNANCE_SHEET_RANGE']?.trim() || DEFAULT_SHEET_RANGE;
-  const previousRange =
-    env['GOVERNANCE_PREVIOUS_SHEET_RANGE']?.trim() || DEFAULT_PREVIOUS_SHEET_RANGE;
+  const meetingsRange =
+    env['GOVERNANCE_MEETINGS_SHEET_RANGE']?.trim() || DEFAULT_MEETINGS_SHEET_RANGE;
+  const agendaItemsRange =
+    env['GOVERNANCE_AGENDA_ITEMS_SHEET_RANGE']?.trim() || DEFAULT_AGENDA_ITEMS_SHEET_RANGE;
 
   return {
     spreadsheetId,
     pendingRange,
-    previousRange,
+    meetingsRange,
+    agendaItemsRange,
     sourceUrl: SOURCE_PDF_URL,
     credentials: {
       client_email: clientEmail,
@@ -261,7 +336,8 @@ async function fetchPendingAgendaItemsFromSheet(
 
 async function fetchPreviousAgendaItemsFromSheet(
   spreadsheetId: string,
-  range: string,
+  meetingsRange: string,
+  agendaItemsRange: string,
   credentials: ServiceAccountCredentials,
   fallbackUrl: string,
 ): Promise<GovernancePreviousAgendaItem[]> {
@@ -271,19 +347,40 @@ async function fetchPreviousAgendaItemsFromSheet(
     scopes: ['https://www.googleapis.com/auth/spreadsheets.readonly'],
   });
   const sheets = google.sheets({ version: 'v4', auth });
-  const response = await sheets.spreadsheets.values.get({
-    spreadsheetId,
-    range,
-  });
-  const rows = (response.data.values ?? []).map((row): string[] =>
+  const [meetingsResponse, agendaItemsResponse] = await Promise.all([
+    sheets.spreadsheets.values.get({
+      spreadsheetId,
+      range: meetingsRange,
+    }),
+    sheets.spreadsheets.values.get({
+      spreadsheetId,
+      range: agendaItemsRange,
+    }),
+  ]);
+  const meetingRows = (meetingsResponse.data.values ?? []).map((row): string[] =>
     row.map((value): string => collapseWhitespace(String(value ?? ''))),
   );
-  return parsePreviousAgendaItemsFromRows(rows, fallbackUrl);
+  const agendaItemRows = (agendaItemsResponse.data.values ?? []).map((row): string[] =>
+    row.map((value): string => collapseWhitespace(String(value ?? ''))),
+  );
+  const meetingsByDate = parsePreviousMeetingsFromRows(meetingRows, fallbackUrl);
+  const agendaSubjectsByMeetingDate = parsePreviousAgendaItemsFromRows(agendaItemRows);
+
+  const previousMeetings = [...meetingsByDate.values()]
+    .map(
+      (meeting): GovernancePreviousAgendaItem => ({
+        ...meeting,
+        agendaSubjects: agendaSubjectsByMeetingDate.get(meeting.meetingDate) ?? [],
+      }),
+    )
+    .sort((a, b): number => (a.meetingDate < b.meetingDate ? 1 : -1));
+
+  return previousMeetings;
 }
 
 export async function GET(): Promise<Response> {
   const now = Date.now();
-  const { spreadsheetId, pendingRange, previousRange, sourceUrl, credentials } =
+  const { spreadsheetId, pendingRange, meetingsRange, agendaItemsRange, sourceUrl, credentials } =
     resolveSheetConfig();
 
   if (
@@ -302,7 +399,8 @@ export async function GET(): Promise<Response> {
     try {
       previousItems = await fetchPreviousAgendaItemsFromSheet(
         spreadsheetId,
-        previousRange,
+        meetingsRange,
+        agendaItemsRange,
         credentials,
         sourceUrl,
       );
