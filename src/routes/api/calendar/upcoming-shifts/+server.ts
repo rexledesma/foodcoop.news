@@ -112,6 +112,11 @@ function parseIcsDateTime(raw: string): Date | null {
   return null;
 }
 
+function countBullets(description: string): number {
+  const matches = description.match(/<li>/gi);
+  return matches ? matches.length : 1;
+}
+
 function toShiftCounts(events: string[][], now: Date): ShiftCount[] {
   const counts = new Map<string, number>();
 
@@ -128,7 +133,9 @@ function toShiftCounts(events: string[][], now: Date): ShiftCount[] {
       continue;
     }
 
-    counts.set(summary, (counts.get(summary) ?? 0) + 1);
+    const description = readFieldValue(eventLines, 'DESCRIPTION') ?? '';
+    const slots = countBullets(description);
+    counts.set(summary, (counts.get(summary) ?? 0) + slots);
   }
 
   return Array.from(counts.entries())
