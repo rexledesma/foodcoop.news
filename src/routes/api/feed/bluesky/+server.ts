@@ -184,19 +184,18 @@ async function fetchBlueskyFeed(): Promise<FeedPost[]> {
     const images = extractImages(post.embed);
     const quotedPost = extractQuotedPost(post.embed);
 
-    const parent =
-      item.reply?.parent?.record
-        ? {
-            uri: item.reply.parent.uri,
-            text: item.reply.parent.record.text,
-            createdAt: item.reply.parent.record.createdAt,
-            author: {
-              handle: item.reply.parent.author.handle,
-              displayName: item.reply.parent.author.displayName || item.reply.parent.author.handle,
-              avatar: item.reply.parent.author.avatar,
-            },
-          }
-        : undefined;
+    const parent = item.reply?.parent?.record
+      ? {
+          uri: item.reply.parent.uri,
+          text: item.reply.parent.record.text,
+          createdAt: item.reply.parent.record.createdAt,
+          author: {
+            handle: item.reply.parent.author.handle,
+            displayName: item.reply.parent.author.displayName || item.reply.parent.author.handle,
+            avatar: item.reply.parent.author.avatar,
+          },
+        }
+      : undefined;
 
     const repostedBy =
       item.reason?.$type === 'app.bsky.feed.defs#reasonRepost'

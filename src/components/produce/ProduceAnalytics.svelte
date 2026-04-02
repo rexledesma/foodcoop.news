@@ -576,7 +576,6 @@
     return sourceStart + (targetStart - sourceStart) * statsTransitionProgress;
   }
 
-  const shouldScrubStats = $derived(statsFromPeriod !== null && statsTransitionProgress < 1);
 
   $effect(() : (() => void) | undefined => {
     if (lastStatsPeriod === null) {
@@ -628,18 +627,13 @@
       ? getAnimatedPeriodStartMs(period, endMs)
       : getPeriodStartMs(period, endMs);
 
-    let prev: number | null = null;
-    let closest = Number.POSITIVE_INFINITY;
     for (const point of points) {
       const ms = new Date(point.date + 'T00:00:00').getTime();
       if (ms > endMs) {continue;}
-      const dist = Math.abs(ms - startMs);
-      if (dist < closest) {
-        closest = dist;
-        prev = point.price;
-      }
+      if (ms < startMs) {continue;}
+      return point.price;
     }
-    return prev;
+    return null;
   }
 
   function getPreviousPrice(
@@ -649,8 +643,8 @@
     activeRange: ProduceDateRange | null = null,
     useAnimatedStart = true,
   ): number | null {
-    if (useAnimatedStart && shouldScrubStats) {
-      return historyPrev(points, activeRange, period, true);
+    if (points && points.length > 0) {
+      return historyPrev(points, activeRange, period, useAnimatedStart);
     }
     switch (period) {
       case '1D':
@@ -663,9 +657,6 @@
         return row.prev_year_price;
       case 'YTD':
         return row.prev_ytd_price;
-      case '5Y':
-      case 'MAX':
-        return historyPrev(points, activeRange, period, useAnimatedStart);
       default:
         return row.prev_day_price;
     }
@@ -677,7 +668,7 @@
     points?: ProduceHistoryPoint[],
     activeRange: ProduceDateRange | null = null,
   ): { prev: number | null; high: number | null; low: number | null } {
-    if (!shouldScrubStats) {
+    if (!points || points.length === 0) {
       if (period === '1D')
         {return { prev: row.prev_day_price, high: row.day_high, low: row.day_low };}
       if (period === '1W')
@@ -688,11 +679,9 @@
         {return { prev: row.prev_year_price, high: row.year_high, low: row.year_low };}
       if (period === 'YTD')
         {return { prev: row.prev_ytd_price, high: row.ytd_high, low: row.ytd_low };}
-    }
-
-    if (!points || points.length === 0) {
       return { prev: null, high: null, low: null };
     }
+
     const latestPoint = points[points.length - 1];
     if (!latestPoint) {
       return { prev: null, high: null, low: null };
@@ -703,21 +692,15 @@
       : new Date(latestPoint.date + 'T00:00:00').getTime();
     const periodStartMs = getAnimatedPeriodStartMs(period, endMs);
     let prev: number | null = null;
-    let closestPrevDist = Number.POSITIVE_INFINITY;
     let high: number | null = null;
     let low: number | null = null;
 
     for (const point of points) {
       const pointMs = new Date(point.date + 'T00:00:00').getTime();
       if (pointMs > endMs) {continue;}
-
-      const prevDist = Math.abs(pointMs - periodStartMs);
-      if (prevDist < closestPrevDist) {
-        closestPrevDist = prevDist;
-        prev = point.price;
-      }
-
       if (pointMs < periodStartMs) {continue;}
+
+      if (prev === null) {prev = point.price;}
       if (high === null || point.price > high) {high = point.price;}
       if (low === null || point.price < low) {low = point.price;}
     }
