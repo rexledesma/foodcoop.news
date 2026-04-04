@@ -9,6 +9,7 @@ export default defineSchema({
     passSerialNumber: v.string(), // UUID for future .pkpass
     calendarId: v.string(), // UUID for calendar subscription
     jobFilters: v.optional(v.array(v.string())), // Selected shift job names
+    lastSeenAt: v.optional(v.number()),
     createdAt: v.number(),
     updatedAt: v.number(),
   })

@@ -84,6 +84,30 @@ export const updateMemberProfile = mutation({
   },
 });
 
+const ONE_HOUR_MS = 60 * 60 * 1000;
+
+export const touchLastSeen = mutation({
+  args: {},
+  handler: async (ctx) => {
+    const user = await authComponent.getAuthUser(ctx);
+    if (!user) return;
+
+    const profile = await ctx.db
+      .query('memberProfiles')
+      .withIndex('by_userId', (q) => q.eq('userId', user._id))
+      .first();
+
+    if (!profile) return;
+
+    const now = Date.now();
+    if (profile.lastSeenAt && now - profile.lastSeenAt < ONE_HOUR_MS) {
+      return;
+    }
+
+    await ctx.db.patch(profile._id, { lastSeenAt: now });
+  },
+});
+
 export const getProfileByCalendarId = query({
   args: {
     calendarId: v.string(),
