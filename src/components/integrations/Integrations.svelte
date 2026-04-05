@@ -77,6 +77,8 @@
   const DEMO_PROFILE_CYCLE_MS = 4000;
   const DEMO_SWAP_DURATION_MS = Math.round(DEMO_PROFILE_CYCLE_MS * 0.16);
   const DEMO_SWAP_HALF_MS = DEMO_SWAP_DURATION_MS / 2;
+  const DEMO_SHIFT_SAMPLE_MIN = 2;
+  const DEMO_SHIFT_SAMPLE_MAX = 2;
 
   let isInitialLoading = $state(true);
   let sessionPending = $state(true);
@@ -125,13 +127,18 @@
   let sampleNameIndex = $state(0);
   let sampleMemberId = $state(String(generateRandomMemberId()));
   let isSampleSwapping = $state(false);
+  let isSampleJobsSwapping = $state(false);
   let isCardHovered = $state(false);
   let isMemberNameFocused = $state(false);
   let isMemberIdFocused = $state(false);
+  let isJobSearchFocused = $state(false);
   let prefersReducedMotion = $state(false);
   let idleCardAnimationFrame: number | null = null;
   let sampleSwapMidTimeout: ReturnType<typeof setTimeout> | null = null;
   let sampleSwapEndTimeout: ReturnType<typeof setTimeout> | null = null;
+  let sampleJobsSwapMidTimeout: ReturnType<typeof setTimeout> | null = null;
+  let sampleJobsSwapEndTimeout: ReturnType<typeof setTimeout> | null = null;
+  let sampleSelectedJobs = $state<string[]>([]);
 
   let paywallEmail = $state('');
   let paywallLoading = $state(false);
@@ -143,6 +150,7 @@
       !isMemberNameFocused &&
       !isMemberIdFocused,
   );
+  let canEditLockedFields = $derived(isSignedIn && !sessionPending);
   let shouldPauseSampleCycle = $derived(isMemberNameFocused || isMemberIdFocused);
   let shouldPauseIdleCard = $derived(isCardHovered || isMemberNameFocused || isMemberIdFocused);
   let visibleCardMemberName = $derived(
@@ -151,6 +159,26 @@
       : displayFullName,
   );
   let visibleCardMemberId = $derived(shouldShowSampleProfile ? sampleMemberId : memberId);
+  let shouldShowSampleSelectedJobs = $derived(
+    selectedJobs.length === 0 &&
+      jobSearch.trim().length === 0 &&
+      !isJobSearchFocused,
+  );
+  let visibleSelectedJobs = $derived(shouldShowSampleSelectedJobs ? sampleSelectedJobs : selectedJobs);
+
+  function getSampleShiftCandidates() : string[] {
+    return Array.from(new Set(filteredJobOptions));
+  }
+
+  function generateRandomSampleShifts(candidates: readonly string[]) : string[] {
+    if (candidates.length === 0) {return [];}
+    const pool = [...candidates].sort(() => Math.random() - 0.5);
+
+    const maxCount = Math.min(DEMO_SHIFT_SAMPLE_MAX, pool.length);
+    const minCount = Math.min(DEMO_SHIFT_SAMPLE_MIN, maxCount);
+    const count = minCount + Math.floor(Math.random() * (maxCount - minCount + 1));
+    return pool.slice(0, count).sort((a, b) => a.localeCompare(b));
+  }
 
   function generateRandomMemberId() : number {
     return Math.floor(Math.random() * (DEMO_MEMBER_ID_MAX - DEMO_MEMBER_ID_MIN + 1)) + DEMO_MEMBER_ID_MIN;
@@ -174,6 +202,17 @@
     }
   }
 
+  function clearSampleJobsSwapTimers() : void {
+    if (sampleJobsSwapMidTimeout) {
+      clearTimeout(sampleJobsSwapMidTimeout);
+      sampleJobsSwapMidTimeout = null;
+    }
+    if (sampleJobsSwapEndTimeout) {
+      clearTimeout(sampleJobsSwapEndTimeout);
+      sampleJobsSwapEndTimeout = null;
+    }
+  }
+
   function advanceSampleProfile() : void {
     if (isSampleSwapping) {return;}
     isSampleSwapping = true;
@@ -187,6 +226,21 @@
     sampleSwapEndTimeout = setTimeout(() : void => {
       isSampleSwapping = false;
       sampleSwapEndTimeout = null;
+    }, DEMO_SWAP_DURATION_MS);
+  }
+
+  function advanceSampleSelectedJobs() : void {
+    if (isSampleJobsSwapping) {return;}
+    isSampleJobsSwapping = true;
+
+    sampleJobsSwapMidTimeout = setTimeout(() : void => {
+      sampleSelectedJobs = generateRandomSampleShifts(getSampleShiftCandidates());
+      sampleJobsSwapMidTimeout = null;
+    }, DEMO_SWAP_HALF_MS);
+
+    sampleJobsSwapEndTimeout = setTimeout(() : void => {
+      isSampleJobsSwapping = false;
+      sampleJobsSwapEndTimeout = null;
     }, DEMO_SWAP_DURATION_MS);
   }
 
@@ -364,6 +418,7 @@
       motionQuery.removeEventListener('change', handleMotionPreferenceChange);
       stopIdleCardAnimation();
       clearSampleSwapTimers();
+      clearSampleJobsSwapTimers();
     };
   });
 
@@ -383,6 +438,32 @@
     if (shouldShowSampleProfile) {return;}
     clearSampleSwapTimers();
     isSampleSwapping = false;
+  });
+
+  $effect(() : void => {
+    if (!shouldShowSampleSelectedJobs) {return;}
+    const candidates = getSampleShiftCandidates();
+    if (sampleSelectedJobs.length === 0 || sampleSelectedJobs.some((job) => !candidates.includes(job))) {
+      sampleSelectedJobs = generateRandomSampleShifts(candidates);
+    }
+  });
+
+  $effect(() : void | (() => void) => {
+    if (!shouldShowSampleSelectedJobs) {return;}
+
+    const timer = setInterval(() : void => {
+      advanceSampleSelectedJobs();
+    }, DEMO_PROFILE_CYCLE_MS);
+
+    return () : void => {
+      clearInterval(timer);
+    };
+  });
+
+  $effect(() : void => {
+    if (shouldShowSampleSelectedJobs) {return;}
+    clearSampleJobsSwapTimers();
+    isSampleJobsSwapping = false;
   });
 
   $effect(() : void | (() => void) => {
@@ -456,6 +537,7 @@
                     type="text"
                     id="cardMemberName"
                     value={visibleCardMemberName}
+                    disabled={!canEditLockedFields}
                     oninput={(event) => onMemberNameChange((event.currentTarget as HTMLInputElement).value)}
                     onfocus={() => {
                       isMemberNameFocused = true;
@@ -466,7 +548,7 @@
                     placeholder="Your Name"
                     class={`w-full rounded-t border-b border-dashed bg-transparent px-1 py-0.5 text-xl font-semibold transition-colors placeholder:text-zinc-400 focus:outline-none ${
                       shouldShowSampleProfile ? 'sample-name-shimmer' : ''
-                    } ${shouldShowSampleProfile && isSampleSwapping ? 'sample-swap-fade' : ''} ${shouldShowSampleProfile ? 'sample-swap-transition' : ''}`}
+                    } ${shouldShowSampleProfile && isSampleSwapping ? 'sample-swap-fade' : ''} ${shouldShowSampleProfile ? 'sample-swap-transition' : ''} disabled:cursor-not-allowed disabled:opacity-90`}
                     style={`color: rgb(51, 51, 51); border-color: rgba(51, 51, 51, 0.35); --sample-shimmer-ms: ${DEMO_PROFILE_CYCLE_MS}ms; --sample-swap-half-ms: ${DEMO_SWAP_HALF_MS}ms;`}
                   />
                   <svg
@@ -497,6 +579,7 @@
                     id="cardMemberId"
                     inputmode="numeric"
                     value={visibleCardMemberId}
+                    disabled={!canEditLockedFields}
                     oninput={(event) => onMemberIdChange((event.currentTarget as HTMLInputElement).value)}
                     onfocus={() => {
                       isMemberIdFocused = true;
@@ -507,7 +590,7 @@
                     placeholder="000000"
                     class={`w-32 rounded-t border-b border-dashed bg-transparent px-1 py-0.5 text-xl font-semibold transition-colors placeholder:text-zinc-400 focus:outline-none ${
                       shouldShowSampleProfile ? 'sample-name-shimmer' : ''
-                    } ${shouldShowSampleProfile && isSampleSwapping ? 'sample-swap-fade' : ''} ${shouldShowSampleProfile ? 'sample-swap-transition' : ''}`}
+                    } ${shouldShowSampleProfile && isSampleSwapping ? 'sample-swap-fade' : ''} ${shouldShowSampleProfile ? 'sample-swap-transition' : ''} disabled:cursor-not-allowed disabled:opacity-90`}
                     style={`color: rgb(51, 51, 51); border-color: rgba(51, 51, 51, 0.35); --sample-shimmer-ms: ${DEMO_PROFILE_CYCLE_MS}ms; --sample-swap-half-ms: ${DEMO_SWAP_HALF_MS}ms;`}
                   />
                   <svg
@@ -573,83 +656,81 @@
       <section class="mt-10">
         <h2 class="text-lg font-semibold text-zinc-900">Shift Calendar</h2>
 
-        <div class="relative mt-6">
-          <div
-            class={`rounded-xl border border-zinc-200 bg-white p-4 transition-[filter,opacity] duration-200 ${isPaywalled ? 'pointer-events-none select-none blur-[5px] opacity-45 sm:blur-[2.5px] sm:opacity-60' : ''}`}
-            inert={isPaywalled}
-            aria-hidden={isPaywalled}
-          >
-            <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <h3 class="text-base font-semibold text-zinc-900">Shift Calendar Syncing</h3>
-                <p class="mt-1 text-sm text-zinc-600">
-                  Sync the shift calendar with your Google, Outlook, or Apple calendar.
-                </p>
-              </div>
-              <button
-                type="button"
-                onclick={onOpenCalendarModal}
-                class="rounded-xl bg-black px-4 py-2 font-medium text-white transition-colors hover:bg-zinc-800"
-              >
-                Add iCal subscription
-              </button>
+        <div class="mt-6 rounded-xl border border-zinc-200 bg-white p-4">
+          <div class="space-y-3">
+            <div class="space-y-1">
+              <h3 class="text-base font-semibold text-zinc-900">Selected Shifts</h3>
+              <p class="text-sm text-zinc-600">Filter the shift calendar for your preferred shifts.</p>
             </div>
-
-            <div class="mt-6 space-y-3">
-              <div class="space-y-1">
-                <h3 class="text-base font-semibold text-zinc-900">Selected Shifts</h3>
-                <p class="text-sm text-zinc-600">Filter the shift calendar for your preferred shifts.</p>
-              </div>
-              <div class="relative">
+            <div class="relative">
                 <input
                   type="text"
                   value={jobSearch}
+                  disabled={!canEditLockedFields}
                   oninput={(event) =>
                     onJobSearchChange((event.currentTarget as HTMLInputElement).value)}
-                  onfocus={onJobSearchFocus}
-                  onblur={onJobSearchBlur}
+                  onfocus={() => {
+                    isJobSearchFocused = true;
+                    onJobSearchFocus();
+                  }}
+                  onblur={() => {
+                    isJobSearchFocused = false;
+                    onJobSearchBlur();
+                  }}
                   onkeydown={(event) => onJobSearchKeyDown(event)}
                   placeholder="Search jobs"
-                  class="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-base text-zinc-900 shadow-sm focus:ring-2 focus:ring-zinc-400 focus:outline-none sm:text-sm"
+                  class="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-base text-zinc-900 shadow-sm focus:ring-2 focus:ring-zinc-400 focus:outline-none disabled:cursor-not-allowed disabled:bg-zinc-50 disabled:text-zinc-500 sm:text-sm"
                 />
-                {#if isJobDropdownOpen}
-                  <div class="absolute z-10 mt-2 w-full rounded-xl border border-zinc-200 bg-white shadow-lg">
-                    <div class="max-h-48 overflow-y-auto">
-                      {#if filteredJobOptions.length > 0}
-                        {#each filteredJobOptions as job, index (job)}
-                          {@const isSelected = selectedJobs.includes(job)}
-                          {@const isHighlighted = index === highlightedJobIndex}
-                          <button
-                            type="button"
-                            onmousedown={(event) => event.preventDefault()}
-                            onclick={() => onToggleJob(job)}
-                            onmouseenter={() => onHighlightJobIndex(index)}
-                            class={`flex w-full items-center gap-1 px-3 py-2 text-left text-sm transition-colors ${
-                              isSelected
-                                ? 'bg-amber-100 text-amber-800'
-                                : 'text-zinc-700 hover:bg-zinc-100'
-                            } ${isHighlighted && !isSelected ? 'bg-zinc-100' : ''}`}
-                          >
-                            {#if isSelected}
-                              <span class="text-[12px] leading-none text-amber-700">♥</span>
-                            {/if}
-                            <span class={isSelected ? 'font-bold' : ''}>{job}</span>
-                          </button>
-                        {/each}
-                      {:else}
-                        <div class="px-3 py-2 text-sm text-zinc-500">No matching jobs.</div>
-                      {/if}
-                    </div>
+              {#if canEditLockedFields && isJobDropdownOpen}
+                <div class="absolute z-10 mt-2 w-full rounded-xl border border-zinc-200 bg-white shadow-lg">
+                  <div class="max-h-48 overflow-y-auto">
+                    {#if filteredJobOptions.length > 0}
+                      {#each filteredJobOptions as job, index (job)}
+                        {@const isSelected = selectedJobs.includes(job)}
+                        {@const isHighlighted = index === highlightedJobIndex}
+                        <button
+                          type="button"
+                          onmousedown={(event) => event.preventDefault()}
+                          onclick={() => onToggleJob(job)}
+                          onmouseenter={() => onHighlightJobIndex(index)}
+                          class={`flex w-full items-center gap-1 px-3 py-2 text-left text-sm transition-colors ${
+                            isSelected
+                              ? 'bg-amber-100 text-amber-800'
+                              : 'text-zinc-700 hover:bg-zinc-100'
+                          } ${isHighlighted && !isSelected ? 'bg-zinc-100' : ''}`}
+                        >
+                          {#if isSelected}
+                            <span class="text-[12px] leading-none text-amber-700">♥</span>
+                          {/if}
+                          <span class={isSelected ? 'font-bold' : ''}>{job}</span>
+                        </button>
+                      {/each}
+                    {:else}
+                      <div class="px-3 py-2 text-sm text-zinc-500">No matching jobs.</div>
+                    {/if}
                   </div>
-                {/if}
-              </div>
+                </div>
+              {/if}
+            </div>
 
-              <div class="flex flex-wrap gap-2">
-                {#if selectedJobs.length > 0}
-                  {#each selectedJobs as job (job)}
+            <div class="flex flex-wrap gap-2">
+              {#if visibleSelectedJobs.length > 0}
+                {#each visibleSelectedJobs as job (job)}
+                  {#if shouldShowSampleSelectedJobs || !canEditLockedFields}
+                    <span
+                      class={`inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-xs text-amber-800 ${
+                        isSampleJobsSwapping ? 'sample-swap-fade' : ''
+                      } sample-swap-transition sample-name-shimmer`}
+                      style={`--sample-shimmer-ms: ${DEMO_PROFILE_CYCLE_MS}ms; --sample-swap-half-ms: ${DEMO_SWAP_HALF_MS}ms;`}
+                    >
+                      <span class="text-[12px] leading-none text-amber-700">♥</span>
+                      <span class="font-bold">{job}</span>
+                    </span>
+                  {:else}
                     <button
                       type="button"
                       onclick={() => onRemoveJob(job)}
+                      disabled={!canEditLockedFields}
                       class="group inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-xs text-amber-800 transition-colors hover:bg-red-50 hover:text-red-700"
                       aria-label={`Remove ${job}`}
                     >
@@ -661,53 +742,77 @@
                         ×
                       </span>
                     </button>
-                  {/each}
-                {:else}
-                  <span class="text-sm text-zinc-500">All shifts included.</span>
-                {/if}
-              </div>
+                  {/if}
+                {/each}
+              {:else}
+                <span class="text-sm text-zinc-500">All shifts included.</span>
+              {/if}
             </div>
           </div>
 
-          {#if isPaywalled}
-            <div class="absolute inset-0 z-10 flex items-center justify-center p-3 sm:p-6">
-              <div class="w-full max-w-sm rounded-2xl border border-zinc-200 bg-white/95 p-6 shadow-2xl shadow-zinc-900/50 backdrop-blur-sm">
-                <p class="text-center text-xl font-bold text-zinc-900">
-                  Stay in the loop with the<br />Park Slope Food Coop.
-                </p>
-                <h2 class="mt-3 text-center text-xl font-bold text-zinc-900">Create an account, or log in.</h2>
-                <p class="mt-2 text-center text-sm text-zinc-600">
-                  Gain access to wallet passes, shift calendar subscriptions, and produce favorites.
-                </p>
-
-                <form onsubmit={(event) => void handlePaywallSubmit(event)} class="mt-6 space-y-3">
-                  <div>
-                    <label for="paywallEmail" class="block text-sm font-medium text-zinc-700">Email address</label>
-                    <input
-                      type="email"
-                      id="paywallEmail"
-                      bind:value={paywallEmail}
-                      required
-                      placeholder="you@example.com"
-                      class="mt-1 w-full rounded-lg border border-zinc-300 px-3 py-2.5 text-base text-zinc-900 shadow-sm placeholder:text-zinc-400 focus:border-zinc-500 focus:ring-2 focus:ring-zinc-500 focus:outline-none"
-                    />
-                  </div>
-
-                  {#if paywallError}
-                    <p class="text-sm text-red-600">{paywallError}</p>
-                  {/if}
-
-                  <button
-                    type="submit"
-                    disabled={paywallLoading}
-                    class="w-full rounded-lg bg-black px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-zinc-800 disabled:bg-zinc-400"
-                  >
-                    {paywallLoading ? 'Checking...' : 'Continue'}
-                  </button>
-                </form>
+          <div class="relative mt-6 border-t border-zinc-100 pt-6">
+            <div
+              class={`transition-[filter,opacity] duration-200 ${isPaywalled ? 'pointer-events-none select-none blur-[5px] opacity-45 sm:blur-[2.5px] sm:opacity-60' : ''}`}
+              inert={isPaywalled}
+              aria-hidden={isPaywalled}
+            >
+              <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <h3 class="text-base font-semibold text-zinc-900">Shift Calendar Syncing</h3>
+                  <p class="mt-1 text-sm text-zinc-600">
+                    Sync the shift calendar with your Google, Outlook, or Apple calendar.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onclick={onOpenCalendarModal}
+                  class="rounded-xl bg-black px-4 py-2 font-medium text-white transition-colors hover:bg-zinc-800"
+                >
+                  Add iCal subscription
+                </button>
               </div>
             </div>
-          {/if}
+
+            {#if isPaywalled}
+              <div class="pointer-events-none absolute inset-0 z-10 flex items-start justify-center p-3 sm:p-6">
+                <div class="pointer-events-auto w-full max-w-sm rounded-2xl border border-zinc-200 bg-white/95 p-6 shadow-2xl shadow-zinc-900/50 backdrop-blur-sm">
+                  <p class="text-center text-xl font-bold text-zinc-900">
+                    Stay in the loop with the<br />Park Slope Food Coop.
+                  </p>
+                  <h2 class="mt-3 text-center text-xl font-bold text-zinc-900">Create an account, or log in.</h2>
+                  <p class="mt-2 text-center text-sm text-zinc-600">
+                    Gain access to wallet passes, shift calendar subscriptions, and produce favorites.
+                  </p>
+
+                  <form onsubmit={(event) => void handlePaywallSubmit(event)} class="mt-6 space-y-3">
+                    <div>
+                      <label for="paywallEmail" class="block text-sm font-medium text-zinc-700">Email address</label>
+                      <input
+                        type="email"
+                        id="paywallEmail"
+                        bind:value={paywallEmail}
+                        required
+                        placeholder="you@example.com"
+                        class="mt-1 w-full rounded-lg border border-zinc-300 px-3 py-2.5 text-base text-zinc-900 shadow-sm placeholder:text-zinc-400 focus:border-zinc-500 focus:ring-2 focus:ring-zinc-500 focus:outline-none"
+                      />
+                    </div>
+
+                    {#if paywallError}
+                      <p class="text-sm text-red-600">{paywallError}</p>
+                    {/if}
+
+                    <button
+                      type="submit"
+                      disabled={paywallLoading}
+                      class="w-full rounded-lg bg-black px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-zinc-800 disabled:bg-zinc-400"
+                    >
+                      {paywallLoading ? 'Checking...' : 'Continue'}
+                    </button>
+                  </form>
+                </div>
+              </div>
+            {/if}
+          </div>
         </div>
       </section>
 
