@@ -1,4 +1,6 @@
 {
+  "framework": "sveltekit",
+  "buildCommand": "pnpm exec convex deploy --cmd 'pnpm run build'",
   "crons": [
     {
       "path": "/api/cron/scrape-produce",
