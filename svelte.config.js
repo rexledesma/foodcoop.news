@@ -1,7 +1,6 @@
 import adapter from '@sveltejs/adapter-vercel';
-import type { Config } from '@sveltejs/kit';
 
-const config: Config = {
+const config = {
   compilerOptions: {
     runes: true,
   },
