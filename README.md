@@ -8,18 +8,13 @@
 
 ## Features
 
-- Unified Discover feed for Coop announcements, Gazette posts, Food Coop Cooks updates, events, and Bluesky posts
-- Filterable feed with recent-only items and rich media previews
-- Email/password signup and sign-in
+You can...
+
+- Browse an assortment of feeds related to the Coop
+- Produce inventory search with rich pricing information
 - Read past, current, and upcoming agenda items for general meetings
-- Member profile settings (name, member ID)
-- Unofficial member card preview
-- Add member card to Apple Wallet or Google Wallet
-- Shift calendar subscription with optional job-based filtering
-- Add the shift calendar to Google Calendar, Outlook, or Apple Calendar
-- At-a-glance coop open/closed status in the navigation
-- Produce search with current listings and historical price trends
-- Monthly produce analytics powered by DuckDB WASM
+- Add your Coop membership card to your Apple Wallet or Google Wallet
+- Sync your favorite available work shifts to Google, Outlook, or Apple Calendar
 
 ## Contributing
 
