@@ -10,6 +10,7 @@
     EventbriteEvent,
     FoodcoopEvent,
     ProduceEvent,
+    RedditPost,
   } from '@/lib/types';
   import type { FeedItem } from '@/lib/discover-feed';
   import { getFeedItemKey } from '@/lib/discover-feed';
@@ -22,7 +23,8 @@
     | 'foodcoopcooks'
     | 'wordsprouts'
     | 'concert-series'
-    | 'produce';
+    | 'produce'
+    | 'reddit';
 
   const PRIMARY_FILTER_OPTIONS: {
     value: PrimaryFilterType;
@@ -67,6 +69,11 @@
       value: 'concert-series',
       label: 'Concerts',
       description: 'Concert series performances and events',
+    },
+    {
+      value: 'reddit',
+      label: 'Reddit',
+      description: 'Posts from r/parkslopefoodcoop',
     },
   ];
 
@@ -778,6 +785,8 @@
     })}
   {:else if item.type === 'produce'}
     {@render ProduceCard({ update: item.data, date: item.date, favorites })}
+  {:else if item.type === 'reddit'}
+    {@render RedditCard({ post: item.data, date: item.date })}
   {:else}
     {@render BlueskyCard({ post: item.data })}
   {/if}
@@ -1082,6 +1091,38 @@
           <img
             src={event.image}
             alt={`Poster for ${event.title}`}
+            loading="lazy"
+            decoding="async"
+            class="mt-3 w-full rounded-lg"
+          />
+        {/if}
+      </div>
+    </div>
+  </a>
+{/snippet}
+
+{#snippet RedditCard({ post, date }: { post: RedditPost; date: Date })}
+  <a
+    href={post.permalink}
+    target="_blank"
+    rel="noopener noreferrer"
+    class="block rounded-xl border border-zinc-200 bg-white p-4 transition-colors hover:border-zinc-400 hover:bg-zinc-50"
+  >
+    <div class="flex items-start gap-3">
+      <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-orange-100 text-xl">👾</div>
+      <div class="min-w-0 flex-1">
+        <div class="flex flex-wrap items-center gap-2">
+          <span class="font-semibold text-zinc-900">Reddit</span>
+          <span class="shrink-0 text-sm text-zinc-400">{formatPublishedAt(date)}</span>
+        </div>
+        <p class="mt-2 font-medium text-zinc-700">{post.title}</p>
+        {#if post.selftext}
+          <p class="mt-1 line-clamp-3 text-sm text-zinc-500">{post.selftext}</p>
+        {/if}
+        {#if post.image}
+          <img
+            src={post.image}
+            alt={post.title}
             loading="lazy"
             decoding="async"
             class="mt-3 w-full rounded-lg"

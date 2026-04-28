@@ -115,6 +115,17 @@ export interface ProduceEvent {
   outOfStock: ProduceEventItem[];
 }
 
+export interface RedditPost {
+  id: string;
+  title: string;
+  link: string;
+  pubDate: string;
+  selftext?: string;
+  image?: string;
+  thumbnail?: string;
+  permalink: string;
+}
+
 export type ProduceUnit = 'pound' | 'each' | 'bunch';
 
 export interface ProduceItem {

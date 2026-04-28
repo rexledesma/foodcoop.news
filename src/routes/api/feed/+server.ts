@@ -9,6 +9,7 @@ import type {
   GazetteArticle,
   GazetteDeadlineEvent,
   ProduceEvent,
+  RedditPost,
 } from '@/lib/types';
 
 const COOP_BLUESKY_HANDLE = 'foodcoop.bsky.social';
@@ -33,7 +34,8 @@ type SourceName =
   | 'wordsprouts-events'
   | 'concert-series-events'
   | 'gm-events'
-  | 'produce';
+  | 'produce'
+  | 'reddit';
 
 type SourceResponse = {
   lastUpdated?: string;
@@ -290,6 +292,18 @@ const SOURCE_DEFINITIONS: SourceDefinition[] = [
       );
     },
   },
+  {
+    name: 'reddit',
+    path: '/api/reddit',
+    map: (payload): { type: 'reddit'; data: RedditPost; date: Date }[] => {
+      const data = payload as SourceResponse & { posts?: RedditPost[] };
+      return (data.posts ?? []).map((post): { type: 'reddit'; data: RedditPost; date: Date } => ({
+        type: 'reddit',
+        data: post,
+        date: new Date(post.pubDate),
+      }));
+    },
+  },
 ];
 
 function dedupeAndSort(items: FeedItem[]): FeedItem[] {
@@ -435,7 +449,8 @@ export async function GET({
       | { date: string; type: 'wordsprouts-events'; data: EventbriteEvent }
       | { date: string; type: 'concert-series-events'; data: EventbriteEvent }
       | { date: string; type: 'gm-events'; data: FoodcoopEvent }
-      | { date: string; type: 'produce'; data: ProduceEvent } => ({
+      | { date: string; type: 'produce'; data: ProduceEvent }
+      | { date: string; type: 'reddit'; data: RedditPost } => ({
       ...item,
       date: item.date.toISOString(),
     }),
