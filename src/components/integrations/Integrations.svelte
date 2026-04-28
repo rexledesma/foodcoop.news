@@ -285,7 +285,7 @@
   async function handlePaywallSubmit(event: Event): Promise<void> {
     event.preventDefault();
     const trimmed = paywallEmail.trim();
-    if (!trimmed) return;
+    if (!trimmed) {return;}
 
     paywallLoading = true;
     paywallError = '';

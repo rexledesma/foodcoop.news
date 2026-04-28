@@ -15,7 +15,8 @@ export async function registerServiceWorker(): Promise<ServiceWorkerRegistration
 
 export async function getExistingSubscription(): Promise<PushSubscription | null> {
   const registration = await navigator.serviceWorker.ready;
-  return registration.pushManager.getSubscription();
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-explicit-any
+  return (registration as any).pushManager.getSubscription();
 }
 
 function urlBase64ToUint8Array(base64String: string): Uint8Array {
@@ -41,7 +42,8 @@ export async function subscribeToPush(): Promise<PushSubscription> {
   }
 
   const registration = await navigator.serviceWorker.ready;
-  const subscription = await registration.pushManager.subscribe({
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-explicit-any
+  const subscription = await (registration as any).pushManager.subscribe({
     userVisibleOnly: true,
     applicationServerKey: urlBase64ToUint8Array(vapidPublicKey).buffer as ArrayBuffer,
   });

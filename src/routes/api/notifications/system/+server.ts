@@ -25,7 +25,7 @@ const systemNotificationResponseSchema = z.object({
   failed: z.number().int().nonnegative(),
 });
 
-export async function POST({ request }: { request: Request }) {
+export async function POST({ request }: { request: Request }): Promise<Response> {
   const authHeader = request.headers.get('authorization');
   if (authHeader !== `Bearer ${CRON_SECRET}`) {
     return Response.json({ error: 'Unauthorized' }, { status: 401 });

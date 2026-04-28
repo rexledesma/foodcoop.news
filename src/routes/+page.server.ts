@@ -245,7 +245,7 @@ export const load: PageServerLoad = async ({ fetch, url }) => {
       latestNews,
       upcomingEvents,
     };
-  } catch (_error) {
+  } catch {
     return {
       initialItems: [] as SerializedFeedItem[],
       initialPendingSources: 0,
