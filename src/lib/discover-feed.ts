@@ -7,7 +7,6 @@ import type {
   EventbriteEvent,
   FoodcoopEvent,
   ProduceEvent,
-  RedditPost,
 } from '@/lib/types';
 
 export type FeedItem =
@@ -21,8 +20,7 @@ export type FeedItem =
   | { type: 'wordsprouts-events'; data: EventbriteEvent; date: Date }
   | { type: 'concert-series-events'; data: EventbriteEvent; date: Date }
   | { type: 'gm-events'; data: FoodcoopEvent; date: Date }
-  | { type: 'produce'; data: ProduceEvent; date: Date }
-  | { type: 'reddit'; data: RedditPost; date: Date };
+  | { type: 'produce'; data: ProduceEvent; date: Date };
 
 export function getFeedItemKey(item: FeedItem): string {
   if (item.type === 'gazette') {
@@ -54,9 +52,6 @@ export function getFeedItemKey(item: FeedItem): string {
   }
   if (item.type === 'produce') {
     return `produce-${item.data.id}`;
-  }
-  if (item.type === 'reddit') {
-    return `reddit-${item.data.id}`;
   }
   return item.data.repostedBy
     ? `bluesky-${item.data.id}-repost-${item.data.repostedBy.handle}`
