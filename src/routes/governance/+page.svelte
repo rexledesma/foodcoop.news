@@ -37,6 +37,18 @@
     });
   }
 
+  function isFutureDate(value: string | null): boolean {
+    if (!value) {
+      return false;
+    }
+    const date = new Date(value);
+    return !Number.isNaN(date.getTime()) && date > new Date();
+  }
+
+  function currentAgendaTitle(startUtc: string | null): string {
+    return isFutureDate(startUtc) ? 'Upcoming General Meeting Agenda' : 'General Meeting Agenda';
+  }
+
   function splitCurrentItem(item: string): { title: string; details: string[] } {
     const lines = item
       .split(/\r?\n/)
@@ -144,7 +156,7 @@
             </div>
             <div class="min-w-0 flex-1">
               <div class="flex flex-wrap items-center gap-2">
-                <span class="font-semibold text-zinc-900">Upcoming General Meeting Agenda</span>
+                <span class="font-semibold text-zinc-900">{currentAgendaTitle(governance.currentMeetingStartUtc)}</span>
                 <span class="shrink-0 text-sm text-zinc-400">
                   {formatEventDateTime(governance.currentMeetingStartUtc, governance.currentMeetingTimezone)}
                 </span>

@@ -18,21 +18,6 @@ function normalizeWhitespace(text: string): string {
     .trim();
 }
 
-function dateKeyInTimezone(date: Date, timeZone: string): string {
-  const formatter = new Intl.DateTimeFormat('en-US', {
-    timeZone,
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-  });
-
-  const parts = formatter.formatToParts(date);
-  const year = parts.find((part) => part.type === 'year')?.value ?? '0000';
-  const month = parts.find((part) => part.type === 'month')?.value ?? '01';
-  const day = parts.find((part) => part.type === 'day')?.value ?? '01';
-  return `${year}-${month}-${day}`;
-}
-
 function parseGMAgendaDetails(html: string): {
   date: Date | null;
   agendaLines: string[];
@@ -159,17 +144,29 @@ function parseGMDateTime(text: string): Date | null {
 }
 
 async function fetchGMEvents(): Promise<FoodcoopEvent[]> {
+  let agendaDetails: ReturnType<typeof parseGMAgendaDetails> | null = null;
+
+  try {
+    const agendaResponse = await fetch(GM_AGENDA_URL);
+    if (agendaResponse.ok) {
+      const agendaHtml = await agendaResponse.text();
+      agendaDetails = parseGMAgendaDetails(agendaHtml);
+    }
+  } catch (error) {
+    console.warn('GM agenda page parse failed:', error);
+  }
+
+  const events: FoodcoopEvent[] = [];
+  const now = new Date();
+
   const response = await fetch(GM_SOURCE_URL);
 
   if (!response.ok) {
-    throw new Error(`GM Agenda page error: ${response.status}`);
+    throw new Error(`GM source page error: ${response.status}`);
   }
 
   const html = await response.text();
   const $ = cheerio.load(html);
-
-  const events: FoodcoopEvent[] = [];
-  const now = new Date();
 
   const gmHeading = $('h1, h2, h3, h4')
     .filter((_, el) => $(el).text().trim().toLowerCase().includes('psfc general meeting'))
@@ -179,12 +176,8 @@ async function fetchGMEvents(): Promise<FoodcoopEvent[]> {
     ? `${gmHeading.text()} ${gmHeading.nextUntil('h1, h2, h3, h4').text()}`
     : '';
 
-  if (!sectionText) {
-    return events;
-  }
-
-  // Parse the date/time from the General Meeting section
-  const eventDate = parseGMDateTime(sectionText);
+  const homepageEventDate = sectionText ? parseGMDateTime(sectionText) : null;
+  const eventDate = agendaDetails?.date ?? homepageEventDate;
   if (!eventDate) {
     return events;
   }
@@ -192,8 +185,8 @@ async function fetchGMEvents(): Promise<FoodcoopEvent[]> {
   const month = eventDate.toLocaleString('en-US', { month: 'long', timeZone: TIMEZONE });
   const title = `PSFC ${month} General Meeting`;
 
-  // Only return future events
-  if (eventDate < now) {
+  // Only suppress stale homepage events. The agenda page is the source of truth when it has a date.
+  if (!agendaDetails?.date && eventDate < now) {
     return events;
   }
 
@@ -211,24 +204,10 @@ async function fetchGMEvents(): Promise<FoodcoopEvent[]> {
   const id = `gm-${dateStr}`;
 
   const startUtc = eventDate.toISOString();
-  let description: string | undefined;
-
-  try {
-    const agendaResponse = await fetch(GM_AGENDA_URL);
-    if (agendaResponse.ok) {
-      const agendaHtml = await agendaResponse.text();
-      const agendaDetails = parseGMAgendaDetails(agendaHtml);
-
-      if (
-        agendaDetails.date &&
-        dateKeyInTimezone(agendaDetails.date, TIMEZONE) === dateKeyInTimezone(eventDate, TIMEZONE)
-      ) {
-        description = formatGMDescription(agendaDetails.agendaLines);
-      }
-    }
-  } catch (error) {
-    console.warn('GM agenda page parse failed:', error);
-  }
+  const description =
+    agendaDetails && agendaDetails.agendaLines.length > 0
+      ? formatGMDescription(agendaDetails.agendaLines)
+      : undefined;
 
   events.push({
     id,
