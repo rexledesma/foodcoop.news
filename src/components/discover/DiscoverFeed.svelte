@@ -338,7 +338,7 @@
   }
 
   function formatOrientationCardTitle(event: FoodcoopEvent): string {
-    return event.title || 'Registration for New Members';
+    return event.title || 'Online Pre-registration for New Members';
   }
 
   function handleStateUpdate(event: Event) : void {
