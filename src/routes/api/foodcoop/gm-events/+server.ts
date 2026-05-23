@@ -183,7 +183,7 @@ async function fetchGMEvents(): Promise<FoodcoopEvent[]> {
   }
 
   const month = eventDate.toLocaleString('en-US', { month: 'long', timeZone: TIMEZONE });
-  const title = `PSFC ${month} General Meeting`;
+  const title = `${month} General Meeting`;
 
   // Only suppress stale homepage events. The agenda page is the source of truth when it has a date.
   if (!agendaDetails?.date && eventDate < now) {

@@ -389,6 +389,10 @@
     return formatEventDateTime(item.data.startUtc, item.data.timezone);
   }
 
+  function shouldHighlightUpcomingEventTitle(item: EventFeedItem): boolean {
+    return item.type === 'foodcoop-orientation-events' || item.type === 'gm-events';
+  }
+
   function setSourceFilter(nextFilter: SourceFilterType | null) : void {
     sourceFilter = nextFilter;
     primaryMenuOpen = false;
@@ -767,7 +771,12 @@
   {:else if item.type === 'concert-series-events'}
     {@render EventbriteEventCard({ event: item.data, label: "Concerts", emoji: "🎶" })}
   {:else if item.type === 'gm-events'}
-    {@render EventbriteEventCard({ event: item.data, label: "General Meeting", emoji: "🗳️" })}
+    {@render EventbriteEventCard({
+      event: item.data,
+      label: "General Meeting",
+      emoji: "🗳️",
+      highlightTitle: true,
+    })}
   {:else if item.type === 'foodcoop-orientation-events'}
     {@render EventbriteEventCard({
       event: item.data,
@@ -775,6 +784,7 @@
       emoji: "🧭",
       titleOverride: formatOrientationCardTitle(item.data),
       datePrefix: "Opens",
+      highlightTitle: true,
     })}
   {:else if item.type === 'produce'}
     {@render ProduceCard({ update: item.data, date: item.date, favorites })}
@@ -810,7 +820,13 @@
         <ul class="mt-2 list-disc space-y-2 pl-5 text-sm text-zinc-600">
           {#each events as event (getFeedItemKey(event))}
             <li>
-              <p class="font-medium text-zinc-800">{upcomingEventTitle(event)}</p>
+              <p
+                class={shouldHighlightUpcomingEventTitle(event)
+                  ? 'inline rounded bg-amber-100 px-1 font-medium text-amber-900'
+                  : 'font-medium text-zinc-800'}
+              >
+                {upcomingEventTitle(event)}
+              </p>
               <p class="text-xs text-zinc-500">{upcomingEventSourceName(event)} · {upcomingEventDateTime(event)}</p>
             </li>
           {/each}
@@ -1039,12 +1055,14 @@
   emoji,
   titleOverride,
   datePrefix,
+  highlightTitle = false,
 }: {
   event: EventbriteEvent | FoodcoopEvent;
   label: string;
   emoji: string;
   titleOverride?: string;
   datePrefix?: string;
+  highlightTitle?: boolean;
 })}
   <a
     href={event.url}
@@ -1061,7 +1079,13 @@
             {datePrefix ? `${datePrefix} ${formatEventDateTime(event.startUtc, event.timezone)}` : formatEventDateTime(event.startUtc, event.timezone)}
           </span>
         </div>
-        <p class="mt-2 font-medium text-zinc-700">{titleOverride ?? event.title}</p>
+        <p
+          class={highlightTitle
+            ? 'mt-2 inline rounded bg-amber-100 px-1 font-medium text-amber-900'
+            : 'mt-2 font-medium text-zinc-700'}
+        >
+          {titleOverride ?? event.title}
+        </p>
         {#if event.description}
           {@const displayDescription =
             label === 'General Meeting'
