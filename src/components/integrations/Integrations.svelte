@@ -768,7 +768,7 @@
                   onclick={onOpenCalendarModal}
                   class="rounded-xl bg-black px-4 py-2 font-medium text-white transition-colors hover:bg-zinc-800"
                 >
-                  Add iCal subscription
+                  Sync Calendar
                 </button>
               </div>
             </div>
@@ -875,10 +875,14 @@
       ></button>
       <div class="relative w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl">
         <div>
-          <h3 class="text-lg font-semibold text-zinc-900">📅 Add iCal subscription</h3>
+          <h3 class="text-lg font-semibold text-zinc-900">📅 Sync Calendar</h3>
           <p class="mt-2 text-sm text-zinc-600">
             Add the shift calendar to your calendar app to keep up with new shifts and updates.
           </p>
+        </div>
+
+        <div class="mt-4 rounded-xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm text-blue-900">
+          Most calendar providers only sync once per day, meaning schedule changes may take a while to be reflected.
         </div>
 
         <div class="mt-6 space-y-3">
@@ -904,7 +908,7 @@
             disabled={!calendarId}
             class="w-full rounded-xl bg-zinc-100 px-4 py-2 font-medium text-zinc-500 transition-colors hover:text-zinc-700 disabled:opacity-60 disabled:hover:text-zinc-500"
           >
-            Add URL to clipboard
+            Copy Calendar URL
           </button>
         </div>
       </div>
