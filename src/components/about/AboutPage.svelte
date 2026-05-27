@@ -69,7 +69,7 @@
           </a>
           (or
           <a
-            href="mailto:rex.ledesma1@gmail.com"
+            href="mailto:rex.r.ledesma@gmail.com"
             class="underline transition-colors hover:text-zinc-900"
           >
             email me
@@ -156,7 +156,7 @@
       >
         Park Slope Food Coop App
       </a>. If you have any feedback, please
-      <a href="mailto:rex.ledesma1@gmail.com" class="underline transition-colors hover:text-zinc-900">
+      <a href="mailto:rex.r.ledesma@gmail.com" class="underline transition-colors hover:text-zinc-900">
         email me
       </a>!
     </p>

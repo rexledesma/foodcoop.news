@@ -633,7 +633,7 @@
 
       <div class="mt-auto border-t border-zinc-200 pt-4">
         <a
-          href="mailto:rex.ledesma1@gmail.com?subject=foodcoop.news%20feedback"
+          href="mailto:rex.r.ledesma@gmail.com?subject=foodcoop.news%20feedback"
           class="inline-flex w-full items-center justify-center rounded-lg border border-zinc-300 px-3 py-2 text-sm font-medium text-zinc-800 transition-colors hover:bg-zinc-100"
           onclick={closeSidebar}
         >
