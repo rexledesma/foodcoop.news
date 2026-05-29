@@ -746,7 +746,6 @@
       <div class="min-w-0 flex-1">
         <div class="flex flex-wrap items-center gap-2">
           <span class="font-semibold text-zinc-900">Upcoming Events</span>
-          <span class="shrink-0 text-sm text-zinc-400">Upcoming</span>
         </div>
         <p class="mt-2 font-medium text-zinc-700">
           {count} event{count === 1 ? '' : 's'} coming up next
@@ -783,7 +782,6 @@
       <div class="min-w-0 flex-1">
         <div class="flex flex-wrap items-center gap-2">
           <span class="font-semibold text-zinc-900">Upcoming Shifts</span>
-          <span class="shrink-0 text-sm text-zinc-400">Next 6 weeks</span>
         </div>
         <div class="mt-3">
           <div class="flex flex-wrap gap-1.5">
