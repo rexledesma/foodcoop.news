@@ -28,8 +28,7 @@
   const FEED_SOURCE_GROUPS = [
     ['bluesky'],
     ['produce'],
-    ['gazette', 'foodcoop', 'gazette-events', 'gm-events', 'foodcoop-orientation-events'],
-    ['foodcoopcooks-events', 'wordsprouts-events', 'concert-series-events'],
+    ['gazette', 'foodcoop', 'gazette-events', 'foodcoop-orientation-events'],
     // Isolated because this request spuriously times out when batched with other sources.
     ['foodcoopcooks'],
   ] as const;

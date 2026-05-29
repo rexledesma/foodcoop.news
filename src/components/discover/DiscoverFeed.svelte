@@ -7,7 +7,6 @@
     GazetteDeadlineEvent,
     FoodCoopAnnouncement,
     FoodCoopCooksArticle,
-    EventbriteEvent,
     FoodcoopEvent,
     ProduceEvent,
   } from '@/lib/types';
@@ -20,8 +19,6 @@
     | 'gazette'
     | 'bluesky'
     | 'foodcoopcooks'
-    | 'wordsprouts'
-    | 'concert-series'
     | 'produce';
 
   const PRIMARY_FILTER_OPTIONS: {
@@ -56,17 +53,7 @@
     {
       value: 'foodcoopcooks',
       label: 'Cooking',
-      description: 'Food Coop Cooks articles and classes',
-    },
-    {
-      value: 'wordsprouts',
-      label: 'Wordsprouts',
-      description: 'Writing events and workshop listings',
-    },
-    {
-      value: 'concert-series',
-      label: 'Concerts',
-      description: 'Concert series performances and events',
+      description: 'Food Coop Cooks articles',
     },
   ];
 
@@ -85,7 +72,7 @@
   };
   type EventFeedItem = Extract<
     FeedItem,
-    { type: 'foodcoopcooks-events' | 'wordsprouts-events' | 'concert-series-events' | 'gm-events' | 'foodcoop-orientation-events' | 'gazette-events' | 'gazette-deadline' }
+    { type: 'foodcoop-orientation-events' | 'gazette-events' | 'gazette-deadline' }
   >;
   type UpcomingShiftCount = {
     name: string;
@@ -140,19 +127,12 @@
     items.filter((item) : boolean => {
       if (sourceFilter === null) {return true;}
       if (sourceFilter === 'foodcoopcooks') {
-        return item.type === 'foodcoopcooks' || item.type === 'foodcoopcooks-events';
-      }
-      if (sourceFilter === 'wordsprouts') {
-        return item.type === 'wordsprouts-events';
-      }
-      if (sourceFilter === 'concert-series') {
-        return item.type === 'concert-series-events';
+        return item.type === 'foodcoopcooks';
       }
       if (sourceFilter === 'foodcoop') {
         return (
           item.type === 'foodcoop' ||
           item.type === 'gazette-events' ||
-          item.type === 'gm-events' ||
           item.type === 'foodcoop-orientation-events'
         );
       }
@@ -206,10 +186,6 @@
 
   function isEventItem(item: FeedItem) : item is EventFeedItem {
     return (
-      item.type === 'foodcoopcooks-events' ||
-      item.type === 'wordsprouts-events' ||
-      item.type === 'concert-series-events' ||
-      item.type === 'gm-events' ||
       item.type === 'foodcoop-orientation-events' ||
       item.type === 'gazette-events' ||
       item.type === 'gazette-deadline'
@@ -283,28 +259,6 @@
     return fullDateTime;
   }
 
-  function formatGeneralMeetingDescriptionForNews(description?: string): string {
-    if (!description) {
-      return '';
-    }
-
-    const romanHeaderPattern = /^[IVXLCDM]+\.\s+/i;
-    const topLevelItemPattern = /^Item\s+\d+\s*:/i;
-
-    const topLevelLines = description
-      .split(/\r?\n/)
-      .map((line): string => line.trim())
-      .filter((line): boolean => line.length > 0)
-      .filter((line): boolean => romanHeaderPattern.test(line) || topLevelItemPattern.test(line))
-      .map((line): string => (topLevelItemPattern.test(line) ? `\t${line}` : line));
-
-    if (topLevelLines.length === 0) {
-      return description;
-    }
-
-    return topLevelLines.join('\n');
-  }
-
   function getPostUrl(uri: string): string {
     const parts = uri.replace('at://', '').split('/');
     const handle = parts[0];
@@ -368,11 +322,7 @@
   }
 
   function upcomingEventSourceName(item: EventFeedItem): string {
-    if (item.type === 'foodcoopcooks-events') {return 'Cooking';}
-    if (item.type === 'wordsprouts-events') {return 'Wordsprouts';}
-    if (item.type === 'concert-series-events') {return 'Concerts';}
     if (item.type === 'gazette-events') {return 'Announcements';}
-    if (item.type === 'gm-events') {return 'General Meeting';}
     if (item.type === 'foodcoop-orientation-events') {return 'Orientation';}
     if (item.type === 'gazette-deadline') {return "Linewaiters' Gazette";}
     return 'Events';
@@ -762,27 +712,15 @@
   {:else if item.type === 'foodcoop'}
     {@render FoodCoopCard({ article: item.data })}
   {:else if item.type === 'gazette-events'}
-    {@render EventbriteEventCard({
+    {@render CoopEventCard({
       event: item.data,
       label: "Announcements",
       emoji: "📅",
     })}
   {:else if item.type === 'foodcoopcooks'}
     {@render FoodCoopCooksCard({ article: item.data })}
-  {:else if item.type === 'foodcoopcooks-events'}
-    {@render EventbriteEventCard({ event: item.data, label: "Cooking", emoji: "🧑‍🍳" })}
-  {:else if item.type === 'wordsprouts-events'}
-    {@render EventbriteEventCard({ event: item.data, label: "Wordsprouts", emoji: "🌱" })}
-  {:else if item.type === 'concert-series-events'}
-    {@render EventbriteEventCard({ event: item.data, label: "Concerts", emoji: "🎶" })}
-  {:else if item.type === 'gm-events'}
-    {@render EventbriteEventCard({
-      event: item.data,
-      label: "General Meeting",
-      emoji: "🗳️",
-    })}
   {:else if item.type === 'foodcoop-orientation-events'}
-    {@render EventbriteEventCard({
+    {@render CoopEventCard({
       event: item.data,
       label: "Orientation",
       emoji: "🧭",
@@ -1046,14 +984,14 @@
   </a>
 {/snippet}
 
-{#snippet EventbriteEventCard({
+{#snippet CoopEventCard({
   event,
   label,
   emoji,
   titleOverride,
   datePrefix,
 }: {
-  event: EventbriteEvent | FoodcoopEvent;
+  event: FoodcoopEvent;
   label: string;
   emoji: string;
   titleOverride?: string;
@@ -1078,16 +1016,8 @@
           {titleOverride ?? event.title}
         </p>
         {#if event.description}
-          {@const displayDescription =
-            label === 'General Meeting'
-              ? formatGeneralMeetingDescriptionForNews(event.description)
-              : event.description}
-          <p
-            class={label === 'General Meeting'
-              ? 'mt-1 text-sm whitespace-pre-wrap text-zinc-500 [tab-size:4]'
-              : 'mt-1 line-clamp-3 text-sm text-zinc-500'}
-          >
-            {displayDescription}
+          <p class="mt-1 line-clamp-3 text-sm text-zinc-500">
+            {event.description}
           </p>
         {/if}
         {#if event.venueName || event.venueAddress}

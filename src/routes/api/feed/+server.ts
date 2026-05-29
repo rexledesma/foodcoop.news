@@ -1,7 +1,6 @@
 import type { FeedItem } from '@/lib/discover-feed';
 import { getFeedItemKey } from '@/lib/discover-feed';
 import type {
-  EventbriteEvent,
   FeedPost,
   FoodCoopAnnouncement,
   FoodCoopCooksArticle,
@@ -30,10 +29,6 @@ type SourceName =
   | 'gazette-events'
   | 'foodcoop-orientation-events'
   | 'foodcoopcooks'
-  | 'foodcoopcooks-events'
-  | 'wordsprouts-events'
-  | 'concert-series-events'
-  | 'gm-events'
   | 'produce';
 
 type SourceResponse = {
@@ -236,62 +231,6 @@ const SOURCE_DEFINITIONS: SourceDefinition[] = [
     },
   },
   {
-    name: 'foodcoopcooks-events',
-    path: '/api/foodcoopcooks/events',
-    map: (payload): { type: 'foodcoopcooks-events'; data: EventbriteEvent; date: Date }[] => {
-      const data = payload as SourceResponse & { events?: EventbriteEvent[] };
-      return (data.events ?? []).map(
-        (event): { type: 'foodcoopcooks-events'; data: EventbriteEvent; date: Date } => ({
-          type: 'foodcoopcooks-events',
-          data: event,
-          date: new Date(event.startUtc),
-        }),
-      );
-    },
-  },
-  {
-    name: 'wordsprouts-events',
-    path: '/api/wordsprouts/events',
-    map: (payload): { type: 'wordsprouts-events'; data: EventbriteEvent; date: Date }[] => {
-      const data = payload as SourceResponse & { events?: EventbriteEvent[] };
-      return (data.events ?? []).map(
-        (event): { type: 'wordsprouts-events'; data: EventbriteEvent; date: Date } => ({
-          type: 'wordsprouts-events',
-          data: event,
-          date: new Date(event.startUtc),
-        }),
-      );
-    },
-  },
-  {
-    name: 'concert-series-events',
-    path: '/api/concert-series/events',
-    map: (payload): { type: 'concert-series-events'; data: EventbriteEvent; date: Date }[] => {
-      const data = payload as SourceResponse & { events?: EventbriteEvent[] };
-      return (data.events ?? []).map(
-        (event): { type: 'concert-series-events'; data: EventbriteEvent; date: Date } => ({
-          type: 'concert-series-events',
-          data: event,
-          date: new Date(event.startUtc),
-        }),
-      );
-    },
-  },
-  {
-    name: 'gm-events',
-    path: '/api/foodcoop/gm-events',
-    map: (payload): { type: 'gm-events'; data: FoodcoopEvent; date: Date }[] => {
-      const data = payload as SourceResponse & { events?: FoodcoopEvent[] };
-      return (data.events ?? []).map(
-        (event): { type: 'gm-events'; data: FoodcoopEvent; date: Date } => ({
-          type: 'gm-events',
-          data: event,
-          date: new Date(event.startUtc),
-        }),
-      );
-    },
-  },
-  {
     name: 'produce',
     path: '/api/produce/updates',
     map: (payload): { type: 'produce'; data: ProduceEvent; date: Date }[] => {
@@ -447,10 +386,6 @@ export async function GET({
       | { date: string; type: 'gazette-events'; data: FoodcoopEvent }
       | { date: string; type: 'foodcoop-orientation-events'; data: FoodcoopEvent }
       | { date: string; type: 'foodcoopcooks'; data: FoodCoopCooksArticle }
-      | { date: string; type: 'foodcoopcooks-events'; data: EventbriteEvent }
-      | { date: string; type: 'wordsprouts-events'; data: EventbriteEvent }
-      | { date: string; type: 'concert-series-events'; data: EventbriteEvent }
-      | { date: string; type: 'gm-events'; data: FoodcoopEvent }
       | { date: string; type: 'produce'; data: ProduceEvent } => ({
       ...item,
       date: item.date.toISOString(),

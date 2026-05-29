@@ -80,18 +80,6 @@ export interface FoodCoopCooksArticle {
   image?: string;
 }
 
-export interface EventbriteEvent {
-  id: string;
-  title: string;
-  description?: string;
-  url: string;
-  startUtc: string;
-  timezone: string;
-  venueName?: string;
-  venueAddress?: string;
-  image?: string;
-}
-
 export interface FoodcoopEvent {
   id: string;
   title: string;

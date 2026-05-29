@@ -1,14 +1,7 @@
 import type { PageServerLoad } from './$types';
-import type { EventbriteEvent, FoodcoopEvent } from '@/lib/types';
+import type { FoodcoopEvent } from '@/lib/types';
 
-const EVENT_ITEM_TYPES = new Set([
-  'foodcoopcooks-events',
-  'wordsprouts-events',
-  'concert-series-events',
-  'gazette-events',
-  'gm-events',
-  'foodcoop-orientation-events',
-]);
+const EVENT_ITEM_TYPES = new Set(['gazette-events', 'foodcoop-orientation-events']);
 const NEWS_ITEM_TYPES = new Set(['foodcoop', 'gazette', 'foodcoopcooks', 'produce', 'bluesky']);
 
 type DiscoverEventItem = {
@@ -30,7 +23,7 @@ type DiscoverNewsItem = {
 type SerializedFeedItem = {
   type: string;
   date: string;
-  data?: EventbriteEvent | FoodcoopEvent | Record<string, unknown>;
+  data?: FoodcoopEvent | Record<string, unknown>;
 };
 
 type FeedResponse = {
