@@ -151,13 +151,6 @@
       .sort((a, b) : number => a.date.getTime() - b.date.getTime());
   });
 
-  const upcomingFortnightEvents = $derived.by(() : EventFeedItem[] => {
-    const now = new Date();
-    const nextFourteenDays = new Date(now);
-    nextFourteenDays.setDate(nextFourteenDays.getDate() + 14);
-    return upcomingItems.filter((item) : boolean => item.date <= nextFourteenDays);
-  });
-
   const latestCurrentItems = $derived.by(() : FeedItem[] => {
     const now = new Date();
     return sourceFilteredItems.filter((item) : boolean => !(isEventItem(item) && item.date >= now));
@@ -653,11 +646,11 @@
       </div>
     {:else}
       <div class="grid gap-4 [&>*]:min-w-0">
-        {#if primaryFilter === 'latest' && upcomingFortnightEvents.length > 0}
+        {#if primaryFilter === 'latest' && upcomingItems.length > 0}
           <div class="feed-item-enter min-w-0">
             {@render UpcomingWeekSummaryCard({
-              count: upcomingFortnightEvents.length,
-              events: upcomingFortnightEvents,
+              count: upcomingItems.length,
+              events: upcomingItems,
               onOpenUpcoming: openUpcomingFilter,
             })}
           </div>
@@ -678,7 +671,7 @@
           </div>
         {/if}
 
-        {#if primaryFilter === 'latest' && upcomingFortnightEvents.length > 0}
+        {#if primaryFilter === 'latest' && upcomingItems.length > 0}
           <div class="flex items-center gap-3 px-1 py-1" aria-label="Now">
             <div class="h-px flex-1 bg-zinc-200"></div>
             <span class="text-xs font-semibold tracking-[0.08em] text-zinc-500 uppercase">Now</span>
@@ -697,7 +690,7 @@
         {/if}
       </div>
 
-      {#if displayedItems.length === 0 && pendingSources === 0 && !(primaryFilter === 'latest' && upcomingFortnightEvents.length > 0) && !shouldShowUpcomingShiftsCard && !shouldShowUpcomingShiftsSkeleton}
+      {#if displayedItems.length === 0 && pendingSources === 0 && !(primaryFilter === 'latest' && upcomingItems.length > 0) && !shouldShowUpcomingShiftsCard && !shouldShowUpcomingShiftsSkeleton}
         <p class="py-8 text-center text-zinc-500">No items found.</p>
       {/if}
     {/if}
@@ -753,7 +746,7 @@
       <div class="min-w-0 flex-1">
         <div class="flex flex-wrap items-center gap-2">
           <span class="font-semibold text-zinc-900">Upcoming Events</span>
-          <span class="shrink-0 text-sm text-zinc-400">Next 14 days</span>
+          <span class="shrink-0 text-sm text-zinc-400">Upcoming</span>
         </div>
         <p class="mt-2 font-medium text-zinc-700">
           {count} event{count === 1 ? '' : 's'} coming up next
