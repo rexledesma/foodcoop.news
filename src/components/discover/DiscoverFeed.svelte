@@ -85,7 +85,7 @@
   };
   type EventFeedItem = Extract<
     FeedItem,
-    { type: 'foodcoopcooks-events' | 'wordsprouts-events' | 'concert-series-events' | 'gm-events' | 'foodcoop-orientation-events' | 'gazette-deadline' }
+    { type: 'foodcoopcooks-events' | 'wordsprouts-events' | 'concert-series-events' | 'gm-events' | 'foodcoop-orientation-events' | 'gazette-events' | 'gazette-deadline' }
   >;
   type UpcomingShiftCount = {
     name: string;
@@ -151,6 +151,7 @@
       if (sourceFilter === 'foodcoop') {
         return (
           item.type === 'foodcoop' ||
+          item.type === 'gazette-events' ||
           item.type === 'gm-events' ||
           item.type === 'foodcoop-orientation-events'
         );
@@ -210,6 +211,7 @@
       item.type === 'concert-series-events' ||
       item.type === 'gm-events' ||
       item.type === 'foodcoop-orientation-events' ||
+      item.type === 'gazette-events' ||
       item.type === 'gazette-deadline'
     );
   }
@@ -369,6 +371,7 @@
     if (item.type === 'foodcoopcooks-events') {return 'Cooking';}
     if (item.type === 'wordsprouts-events') {return 'Wordsprouts';}
     if (item.type === 'concert-series-events') {return 'Concerts';}
+    if (item.type === 'gazette-events') {return 'Announcements';}
     if (item.type === 'gm-events') {return 'General Meeting';}
     if (item.type === 'foodcoop-orientation-events') {return 'Orientation';}
     if (item.type === 'gazette-deadline') {return "Linewaiters' Gazette";}
@@ -387,10 +390,6 @@
       return formatExactDateTime(item.date);
     }
     return formatEventDateTime(item.data.startUtc, item.data.timezone);
-  }
-
-  function shouldHighlightUpcomingEventTitle(item: EventFeedItem): boolean {
-    return item.type === 'foodcoop-orientation-events' || item.type === 'gm-events';
   }
 
   function setSourceFilter(nextFilter: SourceFilterType | null) : void {
@@ -762,6 +761,12 @@
     {@render GazetteDeadlineCard({ deadline: item.data })}
   {:else if item.type === 'foodcoop'}
     {@render FoodCoopCard({ article: item.data })}
+  {:else if item.type === 'gazette-events'}
+    {@render EventbriteEventCard({
+      event: item.data,
+      label: "Announcements",
+      emoji: "📅",
+    })}
   {:else if item.type === 'foodcoopcooks'}
     {@render FoodCoopCooksCard({ article: item.data })}
   {:else if item.type === 'foodcoopcooks-events'}
@@ -775,7 +780,6 @@
       event: item.data,
       label: "General Meeting",
       emoji: "🗳️",
-      highlightTitle: true,
     })}
   {:else if item.type === 'foodcoop-orientation-events'}
     {@render EventbriteEventCard({
@@ -784,7 +788,6 @@
       emoji: "🧭",
       titleOverride: formatOrientationCardTitle(item.data),
       datePrefix: "Opens",
-      highlightTitle: true,
     })}
   {:else if item.type === 'produce'}
     {@render ProduceCard({ update: item.data, date: item.date, favorites })}
@@ -820,13 +823,7 @@
         <ul class="mt-2 list-disc space-y-2 pl-5 text-sm text-zinc-600">
           {#each events as event (getFeedItemKey(event))}
             <li>
-              <p
-                class={shouldHighlightUpcomingEventTitle(event)
-                  ? 'inline rounded bg-amber-100 px-1 font-medium text-amber-900'
-                  : 'font-medium text-zinc-800'}
-              >
-                {upcomingEventTitle(event)}
-              </p>
+              <p class="font-medium text-zinc-800">{upcomingEventTitle(event)}</p>
               <p class="text-xs text-zinc-500">{upcomingEventSourceName(event)} · {upcomingEventDateTime(event)}</p>
             </li>
           {/each}
@@ -1055,14 +1052,12 @@
   emoji,
   titleOverride,
   datePrefix,
-  highlightTitle = false,
 }: {
   event: EventbriteEvent | FoodcoopEvent;
   label: string;
   emoji: string;
   titleOverride?: string;
   datePrefix?: string;
-  highlightTitle?: boolean;
 })}
   <a
     href={event.url}
@@ -1079,11 +1074,7 @@
             {datePrefix ? `${datePrefix} ${formatEventDateTime(event.startUtc, event.timezone)}` : formatEventDateTime(event.startUtc, event.timezone)}
           </span>
         </div>
-        <p
-          class={highlightTitle
-            ? 'mt-2 inline rounded bg-amber-100 px-1 font-medium text-amber-900'
-            : 'mt-2 font-medium text-zinc-700'}
-        >
+        <p class="mt-2 font-medium text-zinc-700">
           {titleOverride ?? event.title}
         </p>
         {#if event.description}

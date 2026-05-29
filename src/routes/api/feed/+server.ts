@@ -27,6 +27,7 @@ type SourceName =
   | 'gazette'
   | 'bluesky'
   | 'foodcoop'
+  | 'gazette-events'
   | 'foodcoop-orientation-events'
   | 'foodcoopcooks'
   | 'foodcoopcooks-events'
@@ -188,6 +189,20 @@ const SOURCE_DEFINITIONS: SourceDefinition[] = [
           type: 'foodcoop',
           data: article,
           date: new Date(article.pubDate),
+        }),
+      );
+    },
+  },
+  {
+    name: 'gazette-events',
+    path: '/api/gazette/events',
+    map: (payload): { type: 'gazette-events'; data: FoodcoopEvent; date: Date }[] => {
+      const data = payload as SourceResponse & { events?: FoodcoopEvent[] };
+      return (data.events ?? []).map(
+        (event): { type: 'gazette-events'; data: FoodcoopEvent; date: Date } => ({
+          type: 'gazette-events',
+          data: event,
+          date: new Date(event.startUtc),
         }),
       );
     },
@@ -429,6 +444,7 @@ export async function GET({
       | { date: string; type: 'gazette-deadline'; data: GazetteDeadlineEvent }
       | { date: string; type: 'bluesky'; data: FeedPost }
       | { date: string; type: 'foodcoop'; data: FoodCoopAnnouncement }
+      | { date: string; type: 'gazette-events'; data: FoodcoopEvent }
       | { date: string; type: 'foodcoop-orientation-events'; data: FoodcoopEvent }
       | { date: string; type: 'foodcoopcooks'; data: FoodCoopCooksArticle }
       | { date: string; type: 'foodcoopcooks-events'; data: EventbriteEvent }

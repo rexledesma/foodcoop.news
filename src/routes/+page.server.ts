@@ -5,6 +5,7 @@ const EVENT_ITEM_TYPES = new Set([
   'foodcoopcooks-events',
   'wordsprouts-events',
   'concert-series-events',
+  'gazette-events',
   'gm-events',
   'foodcoop-orientation-events',
 ]);

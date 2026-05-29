@@ -14,6 +14,7 @@ export type FeedItem =
   | { type: 'gazette-deadline'; data: GazetteDeadlineEvent; date: Date }
   | { type: 'bluesky'; data: FeedPost; date: Date }
   | { type: 'foodcoop'; data: FoodCoopAnnouncement; date: Date }
+  | { type: 'gazette-events'; data: FoodcoopEvent; date: Date }
   | { type: 'foodcoop-orientation-events'; data: FoodcoopEvent; date: Date }
   | { type: 'foodcoopcooks'; data: FoodCoopCooksArticle; date: Date }
   | { type: 'foodcoopcooks-events'; data: EventbriteEvent; date: Date }
@@ -31,6 +32,9 @@ export function getFeedItemKey(item: FeedItem): string {
   }
   if (item.type === 'foodcoop') {
     return `foodcoop-${item.data.id}`;
+  }
+  if (item.type === 'gazette-events') {
+    return `gazette-event-${item.data.id}`;
   }
   if (item.type === 'foodcoop-orientation-events') {
     return `foodcoop-orientation-event-${item.data.id}`;
