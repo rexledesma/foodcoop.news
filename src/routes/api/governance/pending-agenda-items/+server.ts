@@ -83,9 +83,9 @@ function parseCsvRows(csv: string): string[][] {
 }
 
 function parsePendingAgendaItemsFromAirtableCsv(csv: string): GovernancePendingAgendaItem[] {
-  const rows = parseCsvRows(csv)
-    .map((row): string[] => row.map((value): string => collapseWhitespace(value)))
-    .filter((row): boolean => row.some((value): boolean => value.length > 0));
+  const rows = parseCsvRows(csv).filter((row): boolean =>
+    row.some((value): boolean => collapseWhitespace(value).length > 0),
+  );
   const headerRow = rows[0] ?? [];
   const headerMap = new Map<string, number>();
   headerRow.forEach((value, index): void => {
@@ -94,6 +94,7 @@ function parsePendingAgendaItemsFromAirtableCsv(csv: string): GovernancePendingA
 
   const nameColumnIndex = headerMap.get('name');
   const itemNumberColumnIndex = headerMap.get('itemno');
+  const descriptionColumnIndex = headerMap.get('description');
   const typeStageColumnIndex = headerMap.get('typestage');
   const statusColumnIndex = headerMap.get('status');
 
@@ -104,11 +105,15 @@ function parsePendingAgendaItemsFromAirtableCsv(csv: string): GovernancePendingA
   return rows
     .slice(1)
     .map((row): GovernancePendingAgendaItem | null => {
-      const subject = row[nameColumnIndex] ?? '';
-      const agendaItemNumber = row[itemNumberColumnIndex] ?? '';
+      const subject = collapseWhitespace(row[nameColumnIndex] ?? '');
+      const agendaItemNumber = collapseWhitespace(row[itemNumberColumnIndex] ?? '');
+      const description =
+        descriptionColumnIndex === undefined ? '' : (row[descriptionColumnIndex] ?? '').trim();
       const statusParts = [
-        typeStageColumnIndex === undefined ? '' : (row[typeStageColumnIndex] ?? ''),
-        statusColumnIndex === undefined ? '' : (row[statusColumnIndex] ?? ''),
+        typeStageColumnIndex === undefined
+          ? ''
+          : collapseWhitespace(row[typeStageColumnIndex] ?? ''),
+        statusColumnIndex === undefined ? '' : collapseWhitespace(row[statusColumnIndex] ?? ''),
       ].filter((value): boolean => value.length > 0);
 
       if (!agendaItemNumber && !subject) {
@@ -117,6 +122,7 @@ function parsePendingAgendaItemsFromAirtableCsv(csv: string): GovernancePendingA
 
       const rowResult = governancePendingAgendaItemSchema.safeParse({
         agendaItemNumber: agendaItemNumber || 'No number assigned',
+        description: description || undefined,
         submittedRevisionDate: statusParts.join(' · '),
         subject,
       });

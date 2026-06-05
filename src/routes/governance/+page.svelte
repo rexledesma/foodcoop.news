@@ -19,6 +19,7 @@
     };
   } = $props();
   const governance = $derived(data.governanceData);
+  let expandedPendingItemKey = $state<string | null>(null);
 
   function formatEventDateTime(value: string | null, timezone: string | null): string {
     if (!value || !timezone) {
@@ -147,6 +148,23 @@
       shouldHighlightStatus: status.length > 0 && status.toLowerCase() !== 'not scheduled',
     };
   }
+
+  function pendingItemKey(item: GovernancePendingAgendaItem): string {
+    return `${item.agendaItemNumber}:${item.subject}`;
+  }
+
+  function togglePendingItem(item: GovernancePendingAgendaItem): void {
+    const key = pendingItemKey(item);
+    expandedPendingItemKey = expandedPendingItemKey === key ? null : key;
+  }
+
+  function expandDescriptionLineBreaks(description: string | undefined): string {
+    return (
+      description
+        ?.replace(/\r?\n/g, '\n\n')
+        .replace(/\n{3,}/g, '\n\n') || 'No description available.'
+    );
+  }
 </script>
 
 <div class="mx-auto w-full max-w-3xl px-4 pb-16">
@@ -206,45 +224,72 @@
         No pending agenda items found.
       </div>
     {:else}
-      <a
-        href={governance.sourceUrl}
-        target="_blank"
-        rel="noopener noreferrer"
-        class="block rounded-xl border border-zinc-200 bg-white p-4 transition-colors hover:border-zinc-400 hover:bg-zinc-50"
-      >
+      <div class="rounded-xl border border-zinc-200 bg-white p-4">
         <div class="flex items-start gap-3">
           <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-amber-100 text-xl">
             🔜
           </div>
           <div class="min-w-0 flex-1">
-            <p class="font-semibold text-zinc-900">Pending Agenda Items</p>
-            <ul class="mt-2 list-disc space-y-2 pl-5 text-sm text-zinc-700 marker:text-zinc-400">
+            <a
+              href={governance.sourceUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              class="font-semibold text-zinc-900 underline-offset-2 hover:underline focus-visible:underline"
+            >
+              Pending Agenda Items
+            </a>
+            <ul class="mt-2 space-y-2 text-sm text-zinc-700">
               {#each governance.items as item}
                 {@const meta = pendingItemMeta(item)}
-                <li>
-                  <p class="font-semibold text-zinc-900">{item.agendaItemNumber} · {item.subject}</p>
-                  <div class="mt-1 flex flex-wrap items-center gap-2 text-xs">
-                    {#if meta.stage}
-                      <span class="text-zinc-500">{meta.stage}</span>
-                    {/if}
-                    {#if meta.status}
-                      <span
-                        class={meta.shouldHighlightStatus
-                          ? 'inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-amber-800'
-                          : 'text-zinc-500'}
-                      >
-                        {meta.status}
+                {@const itemKey = pendingItemKey(item)}
+                {@const isExpanded = expandedPendingItemKey === itemKey}
+                <li class="grid grid-cols-[0.875rem_minmax(0,1fr)] gap-x-2">
+                  <span class="pt-2 text-xs text-zinc-950" aria-hidden="true">
+                    {isExpanded ? '▼' : '▶'}
+                  </span>
+                  <button
+                    type="button"
+                    aria-expanded={isExpanded}
+                    class="w-full rounded-lg px-2 py-1.5 text-left transition-colors hover:bg-zinc-50 focus-visible:bg-zinc-50 focus-visible:ring-2 focus-visible:ring-zinc-300 focus-visible:outline-none"
+                    onclick={(): void => togglePendingItem(item)}
+                  >
+                    <span class="flex items-start justify-between gap-3">
+                      <span class="min-w-0">
+                        <span class="block font-semibold text-zinc-900">
+                          {item.agendaItemNumber} · {item.subject}
+                        </span>
+                        <span class="mt-1 flex flex-wrap items-center gap-2 text-xs">
+                          {#if meta.stage}
+                            <span class="text-zinc-500">{meta.stage}</span>
+                          {/if}
+                          {#if meta.status}
+                            <span
+                              class={meta.shouldHighlightStatus
+                                ? 'inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-amber-800'
+                                : 'text-zinc-500'}
+                            >
+                              {meta.status}
+                            </span>
+                          {:else}
+                            <span class="text-zinc-500">Unavailable</span>
+                          {/if}
+                        </span>
                       </span>
-                    {:else}
-                      <span class="text-zinc-500">Unavailable</span>
-                    {/if}
-                  </div>
+                    </span>
+                  </button>
+                  {#if isExpanded}
+                    <div
+                      class="col-start-2 px-2 pt-1 pb-2 text-sm leading-6 whitespace-pre-line text-zinc-700"
+                    >
+                      {expandDescriptionLineBreaks(item.description)}
+                    </div>
+                  {/if}
                 </li>
               {/each}
             </ul>
           </div>
         </div>
-      </a>
+      </div>
     {/if}
     </section>
 

@@ -2,6 +2,7 @@ import { z } from 'zod';
 
 export const governancePendingAgendaItemSchema = z.object({
   agendaItemNumber: z.string(),
+  description: z.string().optional(),
   submittedRevisionDate: z.string(),
   subject: z.string(),
 });
