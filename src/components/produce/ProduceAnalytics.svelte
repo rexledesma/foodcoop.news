@@ -125,15 +125,15 @@
   const FILTER_MENU_OPTIONS: { value: QuickFilter; label: string; className: string; }[] = [
     { value: null, label: 'All', className: 'text-zinc-900' },
     { value: 'favorites', label: 'Favorites', className: 'text-amber-800' },
-    { value: 'new', label: 'New Arrivals', className: 'text-[#3F7540]' },
-    { value: 'recently_unavailable', label: 'Out of Stock', className: 'text-red-700' },
+    { value: 'new', label: 'New', className: 'text-[#3F7540]' },
+    { value: 'recently_unavailable', label: 'Sold Out', className: 'text-red-700' },
   ];
   const FILTER_COMPACT_LABELS: Record<Exclude<QuickFilter, null>, string> = {
     favorites: 'Favorites',
     drops: 'Drops',
     increases: 'Hikes',
     new: 'New',
-    recently_unavailable: 'Out',
+    recently_unavailable: 'Sold Out',
   };
   const SORT_MENU_OPTIONS: {
     label: string;
@@ -753,8 +753,8 @@
 
   function quickFilterPillLabel(filter: QuickFilter): string {
     if (filter === 'favorites') {return 'Favorites';}
-    if (filter === 'new') {return 'New Arrivals';}
-    if (filter === 'recently_unavailable') {return 'Out of Stock';}
+    if (filter === 'new') {return 'New';}
+    if (filter === 'recently_unavailable') {return 'Sold Out';}
     return 'Filter';
   }
 
@@ -1813,56 +1813,56 @@
                         {row.name}
                       </div>
 
-                      <div class="text-xs text-zinc-500">
-                        {#if row.is_unavailable && row.unavailable_since_date}
-                          <span class="rounded bg-red-100 px-1 text-red-700">
-                            <span class="inline-block">Out of stock</span>{' '}
-                            <span class="inline-block">{formatOutOfStockDate(row.unavailable_since_date)}</span>
-                          </span>
-                        {/if}
-                        {#if row.is_unavailable && row.unavailable_since_date && row.is_new}
-                          {' · '}
-                        {/if}
-                        {#if row.is_new}
-                          <span class="rounded bg-[rgb(255,246,220)] px-1 text-[#3F7540]">
-                            <span class="inline-block">New arrival</span>
-                            {#if row.first_seen_date}
-                              {' '}
-                              <span class="inline-block">{formatShortDate(row.first_seen_date)}</span>
-                            {/if}
-                          </span>
-                        {/if}
-                        {#if (row.is_unavailable || row.is_new) && (row.is_hydroponic || row.is_ipm || row.is_local || row.is_organic || row.is_waxed)}
-                          {' · '}
-                        {/if}
-                        {#if row.is_hydroponic}
-                          <span>Hydroponic</span>
-                        {/if}
-                        {#if row.is_hydroponic && (row.is_ipm || row.is_local || row.is_organic || row.is_waxed)}
-                          {' · '}
-                        {/if}
-                        {#if row.is_ipm}
-                          <span>IPM</span>
-                        {/if}
-                        {#if row.is_ipm && (row.is_local || row.is_organic || row.is_waxed)}
-                          {' · '}
-                        {/if}
-                        {#if row.is_local}
-                          <span class="text-blue-600">Local</span>
-                        {/if}
-                        {#if row.is_local && (row.is_organic || row.is_waxed)}
-                          {' · '}
-                        {/if}
-                        {#if row.is_organic}
-                          <span class="text-green-600">Organic</span>
-                        {/if}
-                        {#if row.is_organic && row.is_waxed}
-                          {' · '}
-                        {/if}
-                        {#if row.is_waxed}
-                          <span>Waxed</span>
-                        {/if}
-                      </div>
+                      {#if (row.is_unavailable && row.unavailable_since_date) || row.is_new}
+                        <div class="flex min-w-0 items-center gap-1 overflow-hidden text-xs">
+                          {#if row.is_unavailable && row.unavailable_since_date}
+                            <span class="inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded bg-red-100 px-1 text-red-700">
+                              <span>Sold Out</span>
+                              <span>{formatOutOfStockDate(row.unavailable_since_date)}</span>
+                            </span>
+                          {/if}
+                          {#if row.is_new}
+                            <span class="inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded bg-[rgb(255,246,220)] px-1 text-[#3F7540]">
+                              <span>New</span>
+                              {#if row.first_seen_date}
+                                <span>{formatShortDate(row.first_seen_date)}</span>
+                              {/if}
+                            </span>
+                          {/if}
+                        </div>
+                      {/if}
+
+                      {#if row.is_hydroponic || row.is_ipm || row.is_local || row.is_organic || row.is_waxed}
+                        <div class="text-xs text-zinc-500">
+                          {#if row.is_hydroponic}
+                            <span>Hydroponic</span>
+                          {/if}
+                          {#if row.is_hydroponic && (row.is_ipm || row.is_local || row.is_organic || row.is_waxed)}
+                            {' · '}
+                          {/if}
+                          {#if row.is_ipm}
+                            <span>IPM</span>
+                          {/if}
+                          {#if row.is_ipm && (row.is_local || row.is_organic || row.is_waxed)}
+                            {' · '}
+                          {/if}
+                          {#if row.is_local}
+                            <span class="text-blue-600">Local</span>
+                          {/if}
+                          {#if row.is_local && (row.is_organic || row.is_waxed)}
+                            {' · '}
+                          {/if}
+                          {#if row.is_organic}
+                            <span class="text-green-600">Organic</span>
+                          {/if}
+                          {#if row.is_organic && row.is_waxed}
+                            {' · '}
+                          {/if}
+                          {#if row.is_waxed}
+                            <span>Waxed</span>
+                          {/if}
+                        </div>
+                      {/if}
 
                       {#if row.origin}
                         <div class="text-xs text-zinc-400">{row.origin}</div>
