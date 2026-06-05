@@ -1814,7 +1814,7 @@
                       </div>
 
                       {#if (row.is_unavailable && row.unavailable_since_date) || row.is_new}
-                        <div class="flex min-w-0 items-center gap-1 overflow-hidden text-xs">
+                        <div class="flex min-w-0 flex-col items-start gap-1 overflow-hidden text-xs">
                           {#if row.is_unavailable && row.unavailable_since_date}
                             <span class="inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded bg-red-100 px-1 text-red-700">
                               <span>Sold Out</span>
