@@ -24,8 +24,10 @@
   const NEW_ARRIVALS_AMBER = 'rgb(255,246,220)';
   const PWA_INTERACTION_THRESHOLD = 3;
   const PWA_DISMISSED_STORAGE_KEY = 'foodcoop:pwa-install-dismissed';
+  const PWA_INSTALL_INTENT_STORAGE_KEY = 'foodcoop:show-pwa-install';
   const PWA_INSTALL_DESCRIPTION =
     'This site has app functionality. Install foodcoop.news on your device for easy access.';
+  const PWA_INSTALL_OPEN_RETRY_LIMIT = 20;
   const DOUBLE_TAP_DELAY_MS = 350;
   const SWIPE_NAV_ROUTES = ['/about', '/integrations', '/governance', '/produce', '/'] as const;
   const SWIPE_CAPTURE_THRESHOLD_PX = 14;
@@ -87,10 +89,8 @@
   let navState = $state(initialState);
   let isPwaInstallReady = $state(false);
   let pwaInstallElement: (HTMLElement & { showDialog?: (force?: boolean) => void; manualHowTo?: boolean }) | null = $state(null);
-  let shouldForcePwaInstallDialog = $state(false);
-  let shouldExpandPwaInstallHowTo = $state(false);
   let hasAutoShownPwaInstall = $state(false);
-  let shouldOpenPwaInstallDialog = $state(false);
+  let installIntentSignature = $state('');
   let hasDismissedPwaInstall = $state(false);
   let swipePreviewUrl = $state('');
   let swipePreviewOffsetX = $state(0);
@@ -105,6 +105,78 @@
   function setUnauthenticatedFooterHeight(height: number): void {
     if (typeof document === 'undefined') {return;}
     document.documentElement.style.setProperty('--unauth-footer-height', `${Math.max(0, height)}px`);
+  }
+
+  function isStandaloneMode(): boolean {
+    if (typeof window === 'undefined') {return false;}
+    return (
+      window.matchMedia('(display-mode: standalone)').matches ||
+      (window.navigator as Navigator & { standalone?: boolean }).standalone === true
+    );
+  }
+
+  function waitForAnimationFrame(): Promise<void> {
+    return new Promise((resolve) : void => {
+      requestAnimationFrame(() : void => resolve());
+    });
+  }
+
+  async function getPwaInstallElement(): Promise<HTMLElement & { showDialog?: (force?: boolean) => void; manualHowTo?: boolean }> {
+    if (typeof customElements !== 'undefined') {
+      await customElements.whenDefined('pwa-install');
+    }
+
+    for (let attempt = 0; attempt < PWA_INSTALL_OPEN_RETRY_LIMIT; attempt += 1) {
+      const element =
+        pwaInstallElement ??
+        (document.querySelector('pwa-install') as
+          | (HTMLElement & { showDialog?: (force?: boolean) => void; manualHowTo?: boolean })
+          | null);
+      if (element?.showDialog) {
+        return element;
+      }
+      await waitForAnimationFrame();
+    }
+
+    throw new Error('pwa-install element was not ready.');
+  }
+
+  async function openPwaInstallDialog({
+    force = false,
+    expandHowTo = false,
+  }: {
+    force?: boolean;
+    expandHowTo?: boolean;
+  } = {}) : Promise<void> {
+    if (isStandaloneMode()) {return;}
+    if (hasDismissedPwaInstall && !force) {return;}
+    const element = await getPwaInstallElement();
+    if (force) {
+      clearPwaInstallDismissals();
+    }
+    element.manualHowTo = expandHowTo;
+    element.showDialog?.(force);
+    clearPwaInstallIntent();
+  }
+
+  function requestPwaInstallDialog(options?: { force?: boolean; expandHowTo?: boolean }): void {
+    void openPwaInstallDialog(options).catch(() : void => {});
+  }
+
+  function hasPwaInstallIntent(): boolean {
+    return sessionStorage.getItem(PWA_INSTALL_INTENT_STORAGE_KEY) === 'true';
+  }
+
+  function clearPwaInstallIntent(): void {
+    sessionStorage.removeItem(PWA_INSTALL_INTENT_STORAGE_KEY);
+    installIntentSignature = '';
+  }
+
+  function clearPwaInstallDismissals(): void {
+    hasDismissedPwaInstall = false;
+    localStorage.removeItem(PWA_DISMISSED_STORAGE_KEY);
+    localStorage.removeItem('pwa-hide-install');
+    sessionStorage.removeItem('pwa-hide-install');
   }
 
   const measureUnauthenticatedFooter: Action<HTMLElement> = (node) => {
@@ -395,7 +467,7 @@
     }
   }
 
-  $effect(() : void => {
+  $effect(() : (() => void) | void => {
     if (typeof window === 'undefined') {return;}
     const pathname = $page.url.pathname;
     untrack(() : void => {
@@ -440,10 +512,6 @@
     dispatchState();
     void hydrateNavState();
 
-    const isStandaloneMode = () : boolean =>
-      window.matchMedia('(display-mode: standalone)').matches ||
-      (window.navigator as Navigator & { standalone?: boolean }).standalone === true;
-
     let interactionCount = 0;
     let hasCountedScrollInteraction = false;
 
@@ -452,12 +520,10 @@
         event instanceof CustomEvent
           ? ((event.detail as { force?: boolean; expandHowTo?: boolean } | null) ?? null)
           : null;
-      const forcePrompt = Boolean(eventDetail?.force);
-      if (isStandaloneMode()) {return;}
-      if (hasDismissedPwaInstall && !forcePrompt) {return;}
-      shouldForcePwaInstallDialog = forcePrompt;
-      shouldExpandPwaInstallHowTo = Boolean(eventDetail?.expandHowTo);
-      shouldOpenPwaInstallDialog = true;
+      requestPwaInstallDialog({
+        force: Boolean(eventDetail?.force),
+        expandHowTo: Boolean(eventDetail?.expandHowTo),
+      });
     };
 
     const handleInteraction = (event: Event) : void => {
@@ -475,15 +541,10 @@
       window.removeEventListener('keydown', handleInteraction);
       window.removeEventListener('scroll', handleInteraction);
     };
-
     window.addEventListener('pointerdown', handleInteraction);
     window.addEventListener('keydown', handleInteraction);
     window.addEventListener('scroll', handleInteraction, { passive: true });
     window.addEventListener('pwa-install:show', showPwaInstallDialog);
-    if ($page.url.searchParams.has('install-pwa')) {
-      hasAutoShownPwaInstall = true;
-      showPwaInstallDialog(new CustomEvent('pwa-install:show', { detail: { force: true, expandHowTo: true } }));
-    }
 
     let lastTouchEndAt = 0;
     const preventDoubleTapZoom = (event: TouchEvent) : void => {
@@ -643,18 +704,18 @@
     localStorage.setItem(PWA_DISMISSED_STORAGE_KEY, 'true');
   }
 
-  $effect(() : void => {
+  $effect(() : (() => void) | void => {
     if (typeof window === 'undefined') {return;}
     setStickyVisibilityRoute($page.url.pathname);
   });
 
   $effect(() : void => {
-    if (!shouldOpenPwaInstallDialog || !isPwaInstallReady || !pwaInstallElement?.showDialog) {return;}
-    pwaInstallElement.manualHowTo = shouldExpandPwaInstallHowTo;
-    pwaInstallElement.showDialog(shouldForcePwaInstallDialog);
-    shouldOpenPwaInstallDialog = false;
-    shouldForcePwaInstallDialog = false;
-    shouldExpandPwaInstallHowTo = false;
+    if (typeof window === 'undefined' || isSwipePreviewMode) {return;}
+    const routeSignature = $page.url.pathname;
+    if (!hasPwaInstallIntent()) {return;}
+    installIntentSignature = installIntentSignature || routeSignature;
+    hasAutoShownPwaInstall = true;
+    requestPwaInstallDialog({ force: true, expandHowTo: true });
   });
 
   const documentTitle = $derived(computePageTitle($page.url.pathname, $page.url.searchParams));

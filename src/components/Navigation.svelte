@@ -34,7 +34,7 @@
     label: 'About',
     icon: 'info',
   };
-  const INSTALL_LINK = 'https://foodcoop.news/?install-pwa';
+  const INSTALL_LINK = 'https://foodcoop.news/install';
 
   let {
     channel,
