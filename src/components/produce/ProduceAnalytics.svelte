@@ -1817,7 +1817,8 @@
                         <div class="flex min-w-0 flex-col items-start gap-1 overflow-hidden text-xs">
                           {#if row.is_unavailable && row.unavailable_since_date}
                             <span class="inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded bg-red-100 px-1 text-red-700">
-                              <span>Sold Out</span>
+                              <span>Out</span>
+                              <span aria-hidden="true">·</span>
                               <span>{formatOutOfStockDate(row.unavailable_since_date)}</span>
                             </span>
                           {/if}
@@ -1825,6 +1826,7 @@
                             <span class="inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded bg-[rgb(255,246,220)] px-1 text-[#3F7540]">
                               <span>New</span>
                               {#if row.first_seen_date}
+                                <span aria-hidden="true">·</span>
                                 <span>{formatShortDate(row.first_seen_date)}</span>
                               {/if}
                             </span>
