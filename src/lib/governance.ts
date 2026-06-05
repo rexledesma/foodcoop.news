@@ -1,11 +1,5 @@
 import { z } from 'zod';
 
-export const governanceSheetHeaderSchema = z.tuple([
-  z.literal('Agenda Item Number'),
-  z.literal('Submitted/Revision Date'),
-  z.literal('Subject'),
-]);
-
 export const governancePendingAgendaItemSchema = z.object({
   agendaItemNumber: z.string(),
   submittedRevisionDate: z.string(),

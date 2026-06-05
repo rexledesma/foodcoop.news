@@ -1,22 +1,22 @@
 import { env } from '$env/dynamic/private';
 import { google } from 'googleapis';
 
+import { getAirtableSharedViewCsvUrl } from '@/lib/airtable-shared-view';
 import {
   type GovernanceApiPayload,
   governancePendingAgendaItemSchema,
   governancePreviousAgendaItemSchema,
-  governanceSheetHeaderSchema,
   type GovernancePendingAgendaItem,
   type GovernancePreviousAgendaItem,
 } from '@/lib/governance';
 
 const DEFAULT_SHEET_ID = '1yuBxeKZlTtbJLqabrzv2g3SiaxANppmy7GkaHlr8GbA';
-const DEFAULT_SHEET_RANGE = 'Pending!A:C';
 const DEFAULT_MEETINGS_SHEET_RANGE = 'Meetings!A:E';
 const DEFAULT_AGENDA_ITEMS_SHEET_RANGE = 'AgendaItems!A:B';
+const DEFAULT_PENDING_AGENDA_AIRTABLE_URL =
+  'https://airtable.com/appqMfYTqdRaWqxsr/shr6fE6NN4XrlicPz/tblmo5foohrWXqdKU';
 const SOURCE_PDF_URL =
   'https://www.foodcoop.com/wp-content/uploads/2026/02/2026_02_03_agenda_committee.pdf';
-const HARDCODED_LAST_UPDATED_ISO = '2026-02-03T12:00:00.000Z';
 const CACHE_DURATION_MS = 5 * 60 * 1000;
 const CACHE_CONTROL = 'public, max-age=300, s-maxage=300, stale-while-revalidate=3600';
 
@@ -32,51 +32,101 @@ function collapseWhitespace(value: string): string {
   return value.replace(/\s+/g, ' ').trim();
 }
 
-function parsePendingAgendaItemsFromRows(rawRows: string[][]): GovernancePendingAgendaItem[] {
-  const rows = rawRows
-    .map((row): string[] => row.map((value): string => collapseWhitespace(value)))
-    .filter((row): boolean => row.some((value): boolean => value.length > 0));
+function normalizeHeader(value: string): string {
+  return value.toLowerCase().replace(/[^a-z0-9]/g, '');
+}
 
-  if (rows.length === 0) {
-    return [];
+function parseCsvRows(csv: string): string[][] {
+  const rows: string[][] = [];
+  let row: string[] = [];
+  let cell = '';
+  let inQuotes = false;
+  const input = csv.replace(/^\uFEFF/, '');
+
+  for (let index = 0; index < input.length; index += 1) {
+    const char = input[index] ?? '';
+    const nextChar = input[index + 1] ?? '';
+
+    if (inQuotes) {
+      if (char === '"' && nextChar === '"') {
+        cell += '"';
+        index += 1;
+      } else if (char === '"') {
+        inQuotes = false;
+      } else {
+        cell += char;
+      }
+      continue;
+    }
+
+    if (char === '"') {
+      inQuotes = true;
+    } else if (char === ',') {
+      row.push(cell);
+      cell = '';
+    } else if (char === '\n') {
+      row.push(cell);
+      rows.push(row);
+      row = [];
+      cell = '';
+    } else if (char !== '\r') {
+      cell += char;
+    }
   }
 
+  row.push(cell);
+  if (row.some((value): boolean => value.length > 0)) {
+    rows.push(row);
+  }
+
+  return rows;
+}
+
+function parsePendingAgendaItemsFromAirtableCsv(csv: string): GovernancePendingAgendaItem[] {
+  const rows = parseCsvRows(csv)
+    .map((row): string[] => row.map((value): string => collapseWhitespace(value)))
+    .filter((row): boolean => row.some((value): boolean => value.length > 0));
   const headerRow = rows[0] ?? [];
-  const headerCells = [headerRow[0] ?? '', headerRow[1] ?? '', headerRow[2] ?? ''];
-  const headerResult = governanceSheetHeaderSchema.safeParse(headerCells);
-  if (!headerResult.success) {
-    throw new Error(
-      'Invalid governance sheet headers. Expected: Agenda Item Number, Submitted/Revision Date, Subject.',
-    );
+  const headerMap = new Map<string, number>();
+  headerRow.forEach((value, index): void => {
+    headerMap.set(normalizeHeader(value), index);
+  });
+
+  const nameColumnIndex = headerMap.get('name');
+  const itemNumberColumnIndex = headerMap.get('itemno');
+  const typeStageColumnIndex = headerMap.get('typestage');
+  const statusColumnIndex = headerMap.get('status');
+
+  if (nameColumnIndex === undefined || itemNumberColumnIndex === undefined) {
+    throw new Error('Invalid Airtable pending agenda CSV headers.');
   }
 
   return rows
     .slice(1)
     .map((row): GovernancePendingAgendaItem | null => {
-      const rowResult = governancePendingAgendaItemSchema.safeParse({
-        agendaItemNumber: row[0] ?? '',
-        submittedRevisionDate: row[1] ?? '',
-        subject: row[2] ?? '',
-      });
-      if (!rowResult.success) {
-        throw new Error('Invalid governance sheet row format.');
-      }
+      const subject = row[nameColumnIndex] ?? '';
+      const agendaItemNumber = row[itemNumberColumnIndex] ?? '';
+      const statusParts = [
+        typeStageColumnIndex === undefined ? '' : (row[typeStageColumnIndex] ?? ''),
+        statusColumnIndex === undefined ? '' : (row[statusColumnIndex] ?? ''),
+      ].filter((value): boolean => value.length > 0);
 
-      if (!rowResult.data.agendaItemNumber && !rowResult.data.subject) {
+      if (!agendaItemNumber && !subject) {
         return null;
       }
 
-      return {
-        agendaItemNumber: rowResult.data.agendaItemNumber || 'No number assigned',
-        submittedRevisionDate: rowResult.data.submittedRevisionDate,
-        subject: rowResult.data.subject,
-      };
+      const rowResult = governancePendingAgendaItemSchema.safeParse({
+        agendaItemNumber: agendaItemNumber || 'No number assigned',
+        submittedRevisionDate: statusParts.join(' · '),
+        subject,
+      });
+      if (!rowResult.success) {
+        throw new Error('Invalid Airtable pending agenda CSV row format.');
+      }
+
+      return rowResult.data;
     })
     .filter((item): item is GovernancePendingAgendaItem => Boolean(item));
-}
-
-function normalizeHeader(value: string): string {
-  return value.toLowerCase().replace(/[^a-z0-9]/g, '');
 }
 
 function parseDateKey(value: string): string | null {
@@ -280,10 +330,8 @@ function parsePreviousAgendaItemsFromRows(rawRows: string[][]): Map<string, stri
 
 function resolveSheetConfig(): {
   spreadsheetId: string;
-  pendingRange: string;
   meetingsRange: string;
   agendaItemsRange: string;
-  sourceUrl: string;
   credentials: ServiceAccountCredentials;
 } {
   const clientEmail = env.GOOGLE_SHEETS_CLIENT_EMAIL?.trim();
@@ -294,7 +342,6 @@ function resolveSheetConfig(): {
   }
 
   const spreadsheetId = env['GOVERNANCE_SHEET_ID']?.trim() || DEFAULT_SHEET_ID;
-  const pendingRange = env['GOVERNANCE_SHEET_RANGE']?.trim() || DEFAULT_SHEET_RANGE;
   const meetingsRange =
     env['GOVERNANCE_MEETINGS_SHEET_RANGE']?.trim() || DEFAULT_MEETINGS_SHEET_RANGE;
   const agendaItemsRange =
@@ -302,36 +349,13 @@ function resolveSheetConfig(): {
 
   return {
     spreadsheetId,
-    pendingRange,
     meetingsRange,
     agendaItemsRange,
-    sourceUrl: SOURCE_PDF_URL,
     credentials: {
       client_email: clientEmail,
       private_key: privateKey,
     },
   };
-}
-
-async function fetchPendingAgendaItemsFromSheet(
-  spreadsheetId: string,
-  range: string,
-  credentials: ServiceAccountCredentials,
-): Promise<GovernancePendingAgendaItem[]> {
-  const auth = new google.auth.JWT({
-    email: credentials.client_email,
-    key: credentials.private_key,
-    scopes: ['https://www.googleapis.com/auth/spreadsheets.readonly'],
-  });
-  const sheets = google.sheets({ version: 'v4', auth });
-  const response = await sheets.spreadsheets.values.get({
-    spreadsheetId,
-    range,
-  });
-  const rows = (response.data.values ?? []).map((row): string[] =>
-    row.map((value): string => collapseWhitespace(String(value ?? ''))),
-  );
-  return parsePendingAgendaItemsFromRows(rows);
 }
 
 async function fetchPreviousAgendaItemsFromSheet(
@@ -378,10 +402,31 @@ async function fetchPreviousAgendaItemsFromSheet(
   return previousMeetings;
 }
 
+async function fetchPendingAgendaItemsFromAirtable(sourceUrl: string): Promise<{
+  items: GovernancePendingAgendaItem[];
+  lastUpdated: string;
+}> {
+  const csvUrl = await getAirtableSharedViewCsvUrl(sourceUrl);
+  const response = await fetch(csvUrl, {
+    headers: {
+      accept: 'text/csv,*/*;q=0.8',
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(`Airtable pending agenda CSV returned ${response.status}.`);
+  }
+
+  return {
+    items: parsePendingAgendaItemsFromAirtableCsv(await response.text()),
+    lastUpdated: new Date().toISOString(),
+  };
+}
+
 export async function GET(): Promise<Response> {
   const now = Date.now();
-  const { spreadsheetId, pendingRange, meetingsRange, agendaItemsRange, sourceUrl, credentials } =
-    resolveSheetConfig();
+  const sourceUrl =
+    env['GOVERNANCE_PENDING_AGENDA_AIRTABLE_URL']?.trim() || DEFAULT_PENDING_AGENDA_AIRTABLE_URL;
 
   if (
     cachedPayload &&
@@ -394,15 +439,16 @@ export async function GET(): Promise<Response> {
   }
 
   try {
-    const items = await fetchPendingAgendaItemsFromSheet(spreadsheetId, pendingRange, credentials);
+    const { items, lastUpdated } = await fetchPendingAgendaItemsFromAirtable(sourceUrl);
     let previousItems: GovernancePreviousAgendaItem[] = [];
     try {
+      const { spreadsheetId, meetingsRange, agendaItemsRange, credentials } = resolveSheetConfig();
       previousItems = await fetchPreviousAgendaItemsFromSheet(
         spreadsheetId,
         meetingsRange,
         agendaItemsRange,
         credentials,
-        sourceUrl,
+        SOURCE_PDF_URL,
       );
     } catch (error) {
       console.warn('Failed to load previous agenda items from sheet:', error);
@@ -410,7 +456,7 @@ export async function GET(): Promise<Response> {
     }
     const payload: GovernanceApiPayload = {
       sourceUrl,
-      lastUpdated: HARDCODED_LAST_UPDATED_ISO,
+      lastUpdated,
       items,
       previousItems,
     };
@@ -421,14 +467,14 @@ export async function GET(): Promise<Response> {
       headers: { 'cache-control': CACHE_CONTROL },
     });
   } catch (error) {
-    console.error('Failed to load governance pending agenda items from sheet:', error);
+    console.error('Failed to load governance pending agenda items from Airtable:', error);
     return Response.json(
       {
         sourceUrl,
-        lastUpdated: HARDCODED_LAST_UPDATED_ISO,
+        lastUpdated: new Date().toISOString(),
         items: [] as GovernancePendingAgendaItem[],
         previousItems: [] as GovernancePreviousAgendaItem[],
-        error: 'Unable to load pending agenda items from Google Sheets.',
+        error: 'Unable to load pending agenda items from Airtable.',
       },
       {
         status: 502,
