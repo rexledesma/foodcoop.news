@@ -66,6 +66,7 @@
   let showActiveIndicator = $state(false);
   let shouldReplaceHistoryOnMobile = $state(false);
   let isIosMobile = $state(false);
+  let isStandaloneApp = $state(false);
   let isSidebarOpen = $state(false);
   let produceFavoritesCount = $state(0);
   let produceFavoritesInStockCount = $state(0);
@@ -112,7 +113,8 @@
   }
 
   function updateSidebarInstallAppButtonVisibility() : void {
-    showSidebarInstallAppButton = !isStandaloneMode() && isMobileInstallCapableDevice();
+    isStandaloneApp = isStandaloneMode();
+    showSidebarInstallAppButton = !isStandaloneApp && isMobileInstallCapableDevice();
   }
 
   function openInstallPromptFromSidebar() : void {
@@ -472,13 +474,15 @@
       >
         FOODCOOP.NEWS
       </a>
-      <button
-        type="button"
-        class="absolute top-1/2 right-4 inline-flex -translate-y-1/2 items-center justify-center rounded-full bg-black px-3 py-1.5 text-xs font-semibold whitespace-nowrap text-white transition-colors hover:bg-zinc-800"
-        onclick={handleGetAppClick}
-      >
-        Get the app
-      </button>
+      {#if !isStandaloneApp}
+        <button
+          type="button"
+          class="absolute top-1/2 right-4 inline-flex -translate-y-1/2 items-center justify-center rounded-full bg-black px-3 py-1.5 text-xs font-semibold whitespace-nowrap text-white transition-colors hover:bg-zinc-800"
+          onclick={handleGetAppClick}
+        >
+          Get the app
+        </button>
+      {/if}
     </div>
     <div
       bind:this={mobileScrollRef}
