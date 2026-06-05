@@ -480,6 +480,10 @@
     window.addEventListener('keydown', handleInteraction);
     window.addEventListener('scroll', handleInteraction, { passive: true });
     window.addEventListener('pwa-install:show', showPwaInstallDialog);
+    if ($page.url.searchParams.has('install-pwa')) {
+      hasAutoShownPwaInstall = true;
+      showPwaInstallDialog(new CustomEvent('pwa-install:show', { detail: { force: true, expandHowTo: true } }));
+    }
 
     let lastTouchEndAt = 0;
     const preventDoubleTapZoom = (event: TouchEvent) : void => {

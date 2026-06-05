@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
+  import { toDataURL } from 'qrcode';
   import { fly } from 'svelte/transition';
   import { withNextParam } from '@/lib/auth-redirect';
 
@@ -33,6 +34,7 @@
     label: 'About',
     icon: 'info',
   };
+  const INSTALL_LINK = 'https://foodcoop.news/?install-pwa';
 
   let {
     channel,
@@ -69,6 +71,8 @@
   let produceFavoritesInStockCount = $state(0);
   let produceFavoritesOutOfStockCount = $state(0);
   let showSidebarInstallAppButton = $state(false);
+  let isInstallQrModalOpen = $state(false);
+  let installQrCodeDataUrl = $state('');
 
   function closeSidebar() : void {
     isSidebarOpen = false;
@@ -113,6 +117,32 @@
 
   function openInstallPromptFromSidebar() : void {
     window.dispatchEvent(new CustomEvent('pwa-install:show', { detail: { force: true, expandHowTo: true } }));
+  }
+
+  function openInstallQrModal() : void {
+    isInstallQrModalOpen = true;
+  }
+
+  function closeInstallQrModal() : void {
+    isInstallQrModalOpen = false;
+  }
+
+  function handleGetAppClick() : void {
+    if (window.matchMedia('(min-width: 768px)').matches) {
+      openInstallQrModal();
+      return;
+    }
+    openInstallPromptFromSidebar();
+  }
+
+  async function hydrateInstallQrCode() : Promise<void> {
+    installQrCodeDataUrl = await toDataURL(INSTALL_LINK, {
+      errorCorrectionLevel: 'M',
+      margin: 4,
+      scale: 8,
+      type: 'image/png',
+      width: 180,
+    });
   }
 
   async function handleSidebarSignOut() : Promise<void> {
@@ -298,6 +328,7 @@
     coarsePointerMedia.addEventListener('change', updateHistoryReplaceMode);
 
     applyState(initialState);
+    void hydrateInstallQrCode();
 
     const handler = (event: Event) : void => handleStateUpdate(event);
     const syncFavorites = () : void => {
@@ -307,6 +338,7 @@
     const handleEscapeKey = (event: KeyboardEvent) : void => {
       if (event.key === 'Escape') {
         closeSidebar();
+        closeInstallQrModal();
       }
     };
     const displayModeMedia = window.matchMedia('(display-mode: standalone)');
@@ -440,17 +472,13 @@
       >
         FOODCOOP.NEWS
       </a>
-      {#if showSidebarInstallAppButton}
-        <button
-          type="button"
-          class="absolute top-1/2 right-4 inline-flex -translate-y-1/2 items-center justify-center rounded-full bg-black px-3 py-1.5 text-xs font-semibold whitespace-nowrap text-white transition-colors hover:bg-zinc-800 md:hidden"
-          onclick={openInstallPromptFromSidebar}
-        >
-          Get the app
-        </button>
-      {:else}
-        <div aria-hidden="true" class="h-4 w-7"></div>
-      {/if}
+      <button
+        type="button"
+        class="absolute top-1/2 right-4 inline-flex -translate-y-1/2 items-center justify-center rounded-full bg-black px-3 py-1.5 text-xs font-semibold whitespace-nowrap text-white transition-colors hover:bg-zinc-800"
+        onclick={handleGetAppClick}
+      >
+        Get the app
+      </button>
     </div>
     <div
       bind:this={mobileScrollRef}
@@ -648,6 +676,49 @@
             Log out
           </button>
         {/if}
+      </div>
+    </div>
+  </div>
+{/if}
+
+{#if isInstallQrModalOpen}
+  <div
+    data-swipe-interactive="true"
+    class="fixed inset-0 z-50 flex min-h-[100dvh] items-center justify-center bg-zinc-900/45 px-4 py-8"
+    role="presentation"
+    onpointerdown={closeInstallQrModal}
+  >
+    <div
+      class="w-full max-w-sm overflow-hidden rounded-lg bg-white shadow-2xl"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Get the foodcoop.news app"
+      tabindex="-1"
+      onpointerdown={(event) => event.stopPropagation()}
+    >
+      <div class="flex justify-center px-5 py-6">
+        <a
+          href={INSTALL_LINK}
+          class="block rounded-lg border border-zinc-200 bg-white p-3 transition-colors hover:border-zinc-300"
+          aria-label="Open install link"
+        >
+          {#if installQrCodeDataUrl}
+            <img
+              src={installQrCodeDataUrl}
+              alt="QR code for foodcoop.news install link"
+              class="h-36 w-36"
+            />
+          {/if}
+        </a>
+      </div>
+
+      <div class="border-t border-zinc-200 px-5 py-5 text-center">
+        <p class="text-xl leading-tight font-bold text-zinc-950">
+          Stay in the loop with the<br />Park Slope Food Coop.
+        </p>
+        <p class="mt-2 text-sm text-zinc-600">
+          This site has app functionality. Install foodcoop.news on your device for easy access.
+        </p>
       </div>
     </div>
   </div>
