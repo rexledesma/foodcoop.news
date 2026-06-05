@@ -1874,7 +1874,7 @@
                           onclick={(event) => handleRowFavoriteButtonClick(event, row.name)}
                           aria-pressed={favorites.has(row.name)}
                           aria-label={favorites.has(row.name) ? `Remove ${row.name} from favorites` : `Add ${row.name} to favorites`}
-                          class={`inline-flex h-6 min-w-6 items-center justify-center rounded-full px-1 transition-colors ${
+                          class={`inline-flex h-8 min-w-8 items-center justify-center rounded-full px-1 transition-colors ${
                             favoriteCount(row.name) > 0
                               ? favorites.has(row.name)
                                 ? 'text-amber-800 hover:bg-amber-100'
@@ -1886,7 +1886,7 @@
                         >
                           <span
                             aria-hidden="true"
-                            class={`inline-flex h-6 w-6 items-center justify-center rounded-full text-sm leading-none transition-colors ${
+                            class={`inline-flex h-8 w-8 items-center justify-center rounded-full text-lg leading-none transition-colors ${
                               favoriteCount(row.name) > 0 ? '' : 'hover:bg-amber-100 hover:text-amber-800'
                             }`}
                           >
@@ -1894,7 +1894,7 @@
                           </span>
                           <span
                             aria-hidden="true"
-                            class="inline-flex w-[2ch] justify-start text-[10px] leading-none"
+                            class="inline-flex w-[2ch] justify-start text-xs leading-none"
                             style="font-variant-numeric: tabular-nums;"
                           >
                             {#if favoriteCount(row.name) > 0}
@@ -1909,9 +1909,9 @@
                             aria-expanded={actionsMenu?.itemName === row.name}
                             aria-label={`More actions for ${row.name}`}
                             data-produce-actions-trigger="true"
-                            class="inline-flex h-6 w-6 items-center justify-center rounded-full text-zinc-500 transition-colors hover:bg-zinc-100 hover:text-zinc-700"
+                            class="inline-flex h-8 w-8 items-center justify-center rounded-full text-zinc-500 transition-colors hover:bg-zinc-100 hover:text-zinc-700"
                           >
-                            <span aria-hidden="true" class="text-sm leading-none">⋯</span>
+                            <span aria-hidden="true" class="text-lg leading-none">⋯</span>
                           </button>
 
                           {#if actionsMenu?.itemName === row.name}
