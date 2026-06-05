@@ -129,6 +129,24 @@
   function previousMeetingDisplayTitle(item: GovernancePreviousAgendaItem): string {
     return item.gazetteTitle || formatPreviousMeetingTitle(item.meetingDate);
   }
+
+  function pendingItemMeta(item: GovernancePendingAgendaItem): {
+    stage: string;
+    status: string;
+    shouldHighlightStatus: boolean;
+  } {
+    const parts = item.submittedRevisionDate
+      .split(' · ')
+      .map((part): string => part.trim())
+      .filter(Boolean);
+    const status = parts.at(-1) ?? '';
+
+    return {
+      stage: parts.slice(0, -1).join(' · '),
+      status,
+      shouldHighlightStatus: status.length > 0 && status.toLowerCase() !== 'not scheduled',
+    };
+  }
 </script>
 
 <div class="mx-auto w-full max-w-3xl px-4 pb-16">
@@ -202,9 +220,25 @@
             <p class="font-semibold text-zinc-900">Pending Agenda Items</p>
             <ul class="mt-2 list-disc space-y-2 pl-5 text-sm text-zinc-700 marker:text-zinc-400">
               {#each governance.items as item}
+                {@const meta = pendingItemMeta(item)}
                 <li>
                   <p class="font-semibold text-zinc-900">{item.agendaItemNumber} · {item.subject}</p>
-                  <p class="mt-0.5 text-xs text-zinc-500">{item.submittedRevisionDate || 'Unavailable'}</p>
+                  <div class="mt-1 flex flex-wrap items-center gap-2 text-xs">
+                    {#if meta.stage}
+                      <span class="text-zinc-500">{meta.stage}</span>
+                    {/if}
+                    {#if meta.status}
+                      <span
+                        class={meta.shouldHighlightStatus
+                          ? 'inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-amber-800'
+                          : 'text-zinc-500'}
+                      >
+                        {meta.status}
+                      </span>
+                    {:else}
+                      <span class="text-zinc-500">Unavailable</span>
+                    {/if}
+                  </div>
                 </li>
               {/each}
             </ul>

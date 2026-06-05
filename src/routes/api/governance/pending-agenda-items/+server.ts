@@ -126,7 +126,21 @@ function parsePendingAgendaItemsFromAirtableCsv(csv: string): GovernancePendingA
 
       return rowResult.data;
     })
-    .filter((item): item is GovernancePendingAgendaItem => Boolean(item));
+    .filter((item): item is GovernancePendingAgendaItem => Boolean(item))
+    .map((item, index): { item: GovernancePendingAgendaItem; index: number } => ({ item, index }))
+    .sort((a, b): number => {
+      const aStatus = a.item.submittedRevisionDate.split(' · ').at(-1)?.toLowerCase() ?? '';
+      const bStatus = b.item.submittedRevisionDate.split(' · ').at(-1)?.toLowerCase() ?? '';
+      const aIsNotScheduled = aStatus === 'not scheduled';
+      const bIsNotScheduled = bStatus === 'not scheduled';
+
+      if (aIsNotScheduled === bIsNotScheduled) {
+        return a.index - b.index;
+      }
+
+      return aIsNotScheduled ? 1 : -1;
+    })
+    .map(({ item }): GovernancePendingAgendaItem => item);
 }
 
 function parseDateKey(value: string): string | null {
