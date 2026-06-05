@@ -779,7 +779,7 @@
 <div
   class={`relative min-h-[100dvh] min-h-[100svh] overflow-x-clip ${isSwipePreviewMode ? '' : 'pt-[5.5rem]'}`}
   style={showUnauthenticatedFooter
-    ? 'padding-bottom: calc(var(--unauth-footer-height, 0px) + env(safe-area-inset-bottom));'
+    ? 'padding-bottom: var(--unauth-footer-height, 0px);'
     : undefined}
 >
   {#if swipePreviewUrl}
