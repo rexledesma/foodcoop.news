@@ -59,6 +59,7 @@
 
   const DISCOVER_MENU_PILL_BASE_CLASS =
     'inline-flex items-center rounded-full px-2.5 py-1 text-sm font-medium';
+  const COOP_TIMEZONE = 'America/New_York';
 
   type DiscoverFeedClientState = {
     items: FeedItem[];
@@ -147,13 +148,15 @@
     const now = new Date();
     return sourceFilteredItems
       .filter((item): item is EventFeedItem => isEventItem(item))
-      .filter((item) : boolean => item.date >= now)
+      .filter((item) : boolean => isTodayOrLater(item.date, now))
       .sort((a, b) : number => a.date.getTime() - b.date.getTime());
   });
 
   const latestCurrentItems = $derived.by(() : FeedItem[] => {
     const now = new Date();
-    return sourceFilteredItems.filter((item) : boolean => !(isEventItem(item) && item.date >= now));
+    return sourceFilteredItems.filter(
+      (item) : boolean => !(isEventItem(item) && isTodayOrLater(item.date, now)),
+    );
   });
 
   const displayedItems = $derived(
@@ -183,6 +186,25 @@
       item.type === 'gazette-events' ||
       item.type === 'gazette-deadline'
     );
+  }
+
+  function getDateKey(date: Date, timeZone = COOP_TIMEZONE): string {
+    const parts = new Intl.DateTimeFormat('en-US', {
+      day: '2-digit',
+      month: '2-digit',
+      timeZone,
+      year: 'numeric',
+    }).formatToParts(date);
+
+    const year = parts.find((part) => part.type === 'year')?.value;
+    const month = parts.find((part) => part.type === 'month')?.value;
+    const day = parts.find((part) => part.type === 'day')?.value;
+
+    return `${year}-${month}-${day}`;
+  }
+
+  function isTodayOrLater(date: Date, now: Date): boolean {
+    return getDateKey(date) >= getDateKey(now);
   }
 
   function formatRelativeTime(date: Date): string | null {

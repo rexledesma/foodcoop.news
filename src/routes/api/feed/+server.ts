@@ -85,6 +85,7 @@ function createGazetteDeadlineEvents(now = new Date()): GazetteDeadlineEvent[] {
 
   const nowTime = now.getTime();
   const lookaheadTime = nextSixMonths.getTime();
+  const todayIso = toIsoDate(nowTime);
   const events: GazetteDeadlineEvent[] = [];
 
   let issueDateUtc = GAZETTE_ISSUE_START_UTC;
@@ -99,25 +100,25 @@ function createGazetteDeadlineEvents(now = new Date()): GazetteDeadlineEvent[] {
     const articleDueUtc = issueDateUtc - GAZETTE_ARTICLE_DUE_DAYS_BEFORE * DAY_MS;
     const letterDueUtc = issueDateUtc - GAZETTE_LETTERS_DUE_DAYS_BEFORE * DAY_MS;
 
-    if (articleDueUtc >= nowTime && articleDueUtc <= lookaheadTime) {
-      const dueDate = toIsoDate(articleDueUtc);
+    const articleDueDate = toIsoDate(articleDueUtc);
+    if (articleDueDate >= todayIso && articleDueUtc <= lookaheadTime) {
       events.push({
         id: `${issueDate}-article`,
         title: `Member-Submitted Article Deadline`,
-        description: `For the ${formatIssueLabel(issueDate)} issue, member article submissions are due on ${formatDueDateLabel(dueDate)}.`,
+        description: `For the ${formatIssueLabel(issueDate)} issue, member article submissions are due on ${formatDueDateLabel(articleDueDate)}.`,
         issueDate,
-        dueDate,
+        dueDate: articleDueDate,
       });
     }
 
-    if (letterDueUtc >= nowTime && letterDueUtc <= lookaheadTime) {
-      const dueDate = toIsoDate(letterDueUtc);
+    const letterDueDate = toIsoDate(letterDueUtc);
+    if (letterDueDate >= todayIso && letterDueUtc <= lookaheadTime) {
       events.push({
         id: `${issueDate}-letter`,
         title: `Letters to the Editor Deadline`,
-        description: `For the ${formatIssueLabel(issueDate)} issue, letters to the editor are due on ${formatDueDateLabel(dueDate)}.`,
+        description: `For the ${formatIssueLabel(issueDate)} issue, letters to the editor are due on ${formatDueDateLabel(letterDueDate)}.`,
         issueDate,
-        dueDate,
+        dueDate: letterDueDate,
       });
     }
 

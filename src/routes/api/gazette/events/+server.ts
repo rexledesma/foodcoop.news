@@ -42,6 +42,21 @@ function parseEventDate(value: string): string | null {
   return date.toISOString();
 }
 
+function getDateKey(date: Date): string {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    day: '2-digit',
+    month: '2-digit',
+    timeZone: TIMEZONE,
+    year: 'numeric',
+  }).formatToParts(date);
+
+  const year = parts.find((part) => part.type === 'year')?.value;
+  const month = parts.find((part) => part.type === 'month')?.value;
+  const day = parts.find((part) => part.type === 'day')?.value;
+
+  return `${year}-${month}-${day}`;
+}
+
 function parseEventId(itemXml: string, link: string): string {
   const postId = extractTextContent(itemXml, 'post-id');
   if (postId) {
@@ -98,7 +113,7 @@ async function fetchGazetteEventsFeed(): Promise<FoodcoopEvent[]> {
 
   const xml = await response.text();
   const events: FoodcoopEvent[] = [];
-  const now = Date.now();
+  const todayKey = getDateKey(new Date());
   const itemRegex = /<item>([\s\S]*?)<\/item>/gi;
   let match;
 
@@ -108,7 +123,7 @@ async function fetchGazetteEventsFeed(): Promise<FoodcoopEvent[]> {
     const url = extractTextContent(itemXml, 'link');
     const startUtc = parseEventDate(extractTextContent(itemXml, 'pubDate'));
 
-    if (!title || !url || !startUtc || new Date(startUtc).getTime() < now) {
+    if (!title || !url || !startUtc || getDateKey(new Date(startUtc)) < todayKey) {
       continue;
     }
 

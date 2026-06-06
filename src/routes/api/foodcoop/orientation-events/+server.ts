@@ -69,6 +69,21 @@ function easternDateTimeToUtc(
   return new Date(Date.UTC(year, month, day, utcHour, minute, 0));
 }
 
+function getDateKey(date: Date): string {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    day: '2-digit',
+    month: '2-digit',
+    timeZone: TIMEZONE,
+    year: 'numeric',
+  }).formatToParts(date);
+
+  const year = parts.find((part) => part.type === 'year')?.value;
+  const month = parts.find((part) => part.type === 'month')?.value;
+  const day = parts.find((part) => part.type === 'day')?.value;
+
+  return `${year}-${month}-${day}`;
+}
+
 function parseOrientationEvents(html: string): FoodcoopEvent[] {
   const $ = cheerio.load(html);
   const heading = $('h3')
@@ -84,7 +99,7 @@ function parseOrientationEvents(html: string): FoodcoopEvent[] {
     return [];
   }
 
-  const now = new Date();
+  const todayKey = getDateKey(new Date());
   const events: FoodcoopEvent[] = [];
 
   for (const li of list.find('li').toArray()) {
@@ -119,7 +134,7 @@ function parseOrientationEvents(html: string): FoodcoopEvent[] {
       19,
       0,
     );
-    if (releaseDate <= now) {
+    if (getDateKey(releaseDate) < todayKey) {
       continue;
     }
 

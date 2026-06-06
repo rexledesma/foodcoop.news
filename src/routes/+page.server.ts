@@ -3,6 +3,7 @@ import type { FoodcoopEvent } from '@/lib/types';
 
 const EVENT_ITEM_TYPES = new Set(['gazette-events', 'foodcoop-orientation-events']);
 const NEWS_ITEM_TYPES = new Set(['foodcoop', 'gazette', 'foodcoopcooks', 'produce', 'bluesky']);
+const COOP_TIMEZONE = 'America/New_York';
 
 type DiscoverEventItem = {
   title: string;
@@ -48,6 +49,25 @@ function parseDate(value: string): Date | null {
     return null;
   }
   return date;
+}
+
+function getDateKey(date: Date, timeZone = COOP_TIMEZONE): string {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    day: '2-digit',
+    month: '2-digit',
+    timeZone,
+    year: 'numeric',
+  }).formatToParts(date);
+
+  const year = parts.find((part) => part.type === 'year')?.value;
+  const month = parts.find((part) => part.type === 'month')?.value;
+  const day = parts.find((part) => part.type === 'day')?.value;
+
+  return `${year}-${month}-${day}`;
+}
+
+function isTodayOrLater(date: Date, now: Date): boolean {
+  return getDateKey(date) >= getDateKey(now);
 }
 
 function toRecord(value: unknown): Record<string, unknown> | null {
@@ -223,7 +243,7 @@ export const load: PageServerLoad = async ({ fetch, url }) => {
       .slice(0, 10);
 
     const upcomingEvents = [...eventItems]
-      .filter((item) => new Date(item.startUtc) >= now)
+      .filter((item) => isTodayOrLater(new Date(item.startUtc), now))
       .sort(sortByDateAsc)
       .slice(0, 10);
 
