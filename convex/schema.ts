@@ -15,7 +15,8 @@ export default defineSchema({
   })
     .index('by_userId', ['userId'])
     .index('by_memberId', ['memberId'])
-    .index('by_calendarId', ['calendarId']),
+    .index('by_calendarId', ['calendarId'])
+    .index('by_lastSeenAt', ['lastSeenAt']),
   produceFavorites: defineTable({
     userId: v.string(),
     itemName: v.string(),
