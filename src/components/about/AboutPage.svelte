@@ -1,7 +1,5 @@
 <script lang="ts">
   import TestimonialsCarousel from './TestimonialsCarousel.svelte';
-
-  let { starCountLabel = '...' }: { starCountLabel?: string } = $props();
 </script>
 
 <div class="mx-auto max-w-3xl px-4 pb-6">
@@ -11,16 +9,9 @@
   <div class="space-y-4 text-zinc-600">
     <p>
       <em class="font-medium text-zinc-900 not-italic">
-        <a
-          href="https://github.com/rexledesma/foodcoop.news"
-          target="_blank"
-          rel="noopener noreferrer"
-          class="underline transition-colors hover:text-zinc-900"
-        >
-          foodcoop.news
-        </a>
+        foodcoop.news
       </em>
-      was created as a convenient site to stay in the loop with the
+      was created as an app to stay in the loop with the
       <a
         href="https://www.foodcoop.com"
         target="_blank"
@@ -67,101 +58,38 @@
           >
             GitHub
           </a>
-          (or
+          or reach out by
           <a
             href="mailto:rex.r.ledesma@gmail.com"
             class="underline transition-colors hover:text-zinc-900"
           >
-            email me
-          </a>)
-        </li>
-        <li>
-          Star this project on
-          <a
-            href="https://github.com/rexledesma/foodcoop.news"
-            target="_blank"
-            rel="noopener noreferrer"
-            class="underline transition-colors hover:text-zinc-900"
-          >
-            GitHub
+            email
           </a>
-        </li>
-        <li>
-          Support the server costs and sponsor my work on
-          <a
-            href="https://github.com/sponsors/rexledesma"
-            target="_blank"
-            rel="noopener noreferrer"
-            class="underline transition-colors hover:text-zinc-900"
-          >
-            GitHub
-          </a>
-          <div class="mt-2 flex justify-center gap-2">
-            <a
-              href="https://github.com/rexledesma/foodcoop.news"
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-label={"Star repository (" + starCountLabel + ")"}
-              class="group inline-flex items-stretch rounded-md border border-zinc-300 text-sm font-medium text-zinc-900 transition-all hover:-translate-y-0.5 hover:shadow-[0_6px_18px_-8px_rgba(0,0,0,0.55)] focus-visible:-translate-y-0.5 focus-visible:shadow-[0_6px_18px_-8px_rgba(0,0,0,0.55)] focus-visible:ring-2 focus-visible:ring-zinc-400 focus-visible:ring-offset-2 focus-visible:outline-none active:-translate-y-0.5 active:shadow-[0_6px_18px_-8px_rgba(0,0,0,0.55)]"
-            >
-              <span class="inline-flex items-center justify-center rounded-l-md bg-zinc-100 px-3 py-1.5 text-center transition-colors group-hover:bg-zinc-200 group-focus-visible:bg-zinc-200 group-active:bg-zinc-200">
-                ⭐ Star
-              </span>
-              <span class="inline-flex min-w-8 items-center justify-center rounded-r-md border-l border-zinc-300 bg-white px-2 py-1 text-center transition-colors group-hover:bg-zinc-50 group-focus-visible:bg-zinc-50 group-active:bg-zinc-50">
-                {starCountLabel}
-              </span>
-            </a>
-            <a
-              href="https://github.com/sponsors/rexledesma"
-              target="_blank"
-              rel="noopener noreferrer"
-              class="group relative inline-flex items-center justify-center rounded-md border border-zinc-300 bg-zinc-100 px-3 py-1.5 text-center text-sm font-medium text-zinc-900 transition-all hover:-translate-y-0.5 hover:bg-zinc-200 hover:shadow-[0_6px_18px_-8px_rgba(0,0,0,0.55)] focus-visible:-translate-y-0.5 focus-visible:bg-zinc-200 focus-visible:shadow-[0_6px_18px_-8px_rgba(0,0,0,0.55)] focus-visible:ring-2 focus-visible:ring-zinc-400 focus-visible:ring-offset-2 focus-visible:outline-none active:-translate-y-0.5 active:bg-zinc-200 active:shadow-[0_6px_18px_-8px_rgba(0,0,0,0.55)]"
-            >
-              <span class="absolute top-0 -left-1 text-xs opacity-0 transition-all group-hover:-translate-x-0.5 group-hover:-translate-y-1 group-hover:opacity-100 group-focus-visible:-translate-x-0.5 group-focus-visible:-translate-y-1 group-focus-visible:opacity-100 group-active:-translate-x-0.5 group-active:-translate-y-1 group-active:opacity-100">
-                ✨
-              </span>
-              <span class="absolute -right-1 bottom-0 text-xs opacity-0 transition-all group-hover:translate-x-0.5 group-hover:translate-y-1 group-hover:opacity-100 group-focus-visible:translate-x-0.5 group-focus-visible:translate-y-1 group-focus-visible:opacity-100 group-active:translate-x-0.5 group-active:translate-y-1 group-active:opacity-100">
-                ✨
-              </span>
-              <span>💖 Sponsor</span>
-            </a>
-          </div>
         </li>
       </ul>
     </section>
-    <p>
-      This is an
-      <a
-        href="https://github.com/rexledesma/foodcoop.news"
-        target="_blank"
-        rel="noopener noreferrer"
-        class="underline transition-colors hover:text-zinc-900"
-      >
-        open-source project
-      </a>
-      by
-      <a
-        href="https://rexledesma.com"
-        target="_blank"
-        rel="noopener noreferrer"
-        class="underline transition-colors hover:text-zinc-900"
-      >
-        Rex Ledesma
-      </a>, inspired by the
-      <a
-        href="https://apps.apple.com/sa/app/park-slope-food-coop/id1236581358"
-        target="_blank"
-        rel="noopener noreferrer"
-        class="underline transition-colors hover:text-zinc-900"
-      >
-        Park Slope Food Coop App
-      </a>. If you have any feedback, please
-      <a href="mailto:rex.r.ledesma@gmail.com" class="underline transition-colors hover:text-zinc-900">
-        email me
-      </a>!
-    </p>
     <section class="space-y-2">
       <h2 class="text-xl font-semibold text-zinc-900">Acknowledgments</h2>
+      <p>
+        The foodcoop.news app was created and
+        <a
+          href="https://github.com/rexledesma/foodcoop.news"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="underline transition-colors hover:text-zinc-900"
+        >
+          open-sourced
+        </a>
+        by
+        <a
+          href="https://rexledesma.com"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="underline transition-colors hover:text-zinc-900"
+        >
+          Rex Ledesma
+        </a>.
+      </p>
       <p>
         Special thanks to
         <a
