@@ -2,6 +2,7 @@
   import { onMount } from 'svelte';
   import { toDataURL } from 'qrcode';
   import { fly } from 'svelte/transition';
+  import BrandName from '@/components/BrandName.svelte';
   import { withNextParam } from '@/lib/auth-redirect';
 
   type NavigationClientState = {
@@ -470,9 +471,8 @@
         href="/"
         data-sveltekit-preload-data="hover"
         class="select-none text-center text-base leading-none font-bold text-zinc-700"
-        style="font-family: 'DIN 1451 Std Engschrift', 'DIN 1451 Engschrift', Bahnschrift, 'DIN Alternate', 'Franklin Gothic Medium', sans-serif;"
       >
-        FOODCOOP.NEWS
+        <BrandName />
       </a>
       {#if !isStandaloneApp}
         <button
@@ -564,11 +564,8 @@
       out:fly={{ x: -320, duration: 180 }}
     >
       <div>
-        <p
-          class="text-base leading-tight font-bold text-zinc-800"
-          style="font-family: 'DIN 1451 Std Engschrift', 'DIN 1451 Engschrift', Bahnschrift, 'DIN Alternate', 'Franklin Gothic Medium', sans-serif;"
-        >
-          FOODCOOP.NEWS
+        <p class="text-base leading-tight font-bold text-zinc-800">
+          <BrandName />
         </p>
       </div>
 
@@ -721,7 +718,7 @@
           Stay in the loop with the<br />Park Slope Food Coop.
         </p>
         <p class="mt-2 text-sm text-zinc-600">
-          This site has app functionality. Install foodcoop.news on your device for easy access.
+          This site has app functionality. Install <BrandName /> on your device for easy access.
         </p>
       </div>
     </div>

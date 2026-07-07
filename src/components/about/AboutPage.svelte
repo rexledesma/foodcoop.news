@@ -1,4 +1,5 @@
 <script lang="ts">
+  import BrandName from '@/components/BrandName.svelte';
   import TestimonialsCarousel from './TestimonialsCarousel.svelte';
 </script>
 
@@ -8,9 +9,7 @@
   </div>
   <div class="space-y-4 text-zinc-600">
     <p>
-      <em class="font-medium text-zinc-900 not-italic">
-        foodcoop.news
-      </em>
+      <em class="font-medium text-zinc-900 not-italic"><BrandName /></em>
       was created as an app to stay in the loop with the
       <a
         href="https://www.foodcoop.com"
@@ -36,7 +35,7 @@
     <section class="space-y-2">
       <h2 class="text-xl font-semibold text-zinc-900">How to support this project</h2>
       <ul class="list-inside list-disc space-y-2">
-        <li>Tell your friends at the Coop about foodcoop.news</li>
+        <li>Share the project with your friends at the Coop</li>
         <li>
           Write a review on the
           <a
@@ -71,7 +70,7 @@
     <section class="space-y-2">
       <h2 class="text-xl font-semibold text-zinc-900">Acknowledgments</h2>
       <p>
-        The foodcoop.news app was created and
+        <BrandName /> was created and
         <a
           href="https://github.com/rexledesma/foodcoop.news"
           target="_blank"

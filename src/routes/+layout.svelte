@@ -5,6 +5,7 @@
   import type { Snippet } from 'svelte';
   import type { Action } from 'svelte/action';
   import { page } from '$app/stores';
+  import BrandName from '@/components/BrandName.svelte';
   import Navigation from '@/components/Navigation.svelte';
   import { signOut } from '@/lib/auth-client';
   import { withNextParam } from '@/lib/auth-redirect';
@@ -51,9 +52,6 @@
     memberId: string;
     userEmail: string;
   };
-
-  const BRAND_FONT_FAMILY =
-    "'DIN 1451 Std Engschrift', 'DIN 1451 Engschrift', Bahnschrift, 'DIN Alternate', 'Franklin Gothic Medium', sans-serif";
 
   let { data = {} as LayoutData, children } = $props<{ data: LayoutData; children: Snippet }>();
 
@@ -817,9 +815,8 @@
         href="/"
         data-sveltekit-preload-data="hover"
         class="shrink-0 select-none text-base leading-none font-bold text-zinc-700"
-        style={`font-family: ${BRAND_FONT_FAMILY};`}
       >
-        FOODCOOP.NEWS
+        <BrandName />
       </a>
       <div class="flex items-center gap-2">
         <a

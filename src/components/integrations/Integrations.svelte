@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
+  import BrandName from '@/components/BrandName.svelte';
 
   type ToastVariant = 'success' | 'error' | 'warning';
 
@@ -819,7 +820,7 @@
       {#if pushSupported && canManageNotifications}
         <section class="mt-10">
           <h2 class="text-lg font-semibold text-zinc-900">Notifications</h2>
-          <p class="mt-2 text-sm text-zinc-600">Receive push notifications from foodcoop.news.</p>
+          <p class="mt-2 text-sm text-zinc-600">Receive push notifications from <BrandName />.</p>
 
           <div class="mt-6 rounded-xl border border-zinc-200 bg-white p-4">
             <div class="flex items-center justify-between">
